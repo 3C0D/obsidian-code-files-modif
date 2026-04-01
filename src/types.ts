@@ -22,6 +22,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 
 export const viewType = 'code-editor';
 
+// Typed suggestion to avoid encoding intent in a display string
+export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
+
 export interface CodeEditorInstance {
 	iframe: HTMLIFrameElement;
 	send: (type: string, payload: Record<string, unknown>) => void;
