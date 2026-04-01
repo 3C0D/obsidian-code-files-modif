@@ -1,19 +1,14 @@
 {
-  "name": "obsidian-sample-plugin-modif",
-  "version": "1.0.2",
-  "description": "Template Obsidian plugin modifié avec scripts intégrés",
+  "name": "obsidian-code-files-modif",
+  "version": "1.0.0",
+  "description": "Code Files Modif",
   "type": "module",
   "main": "src/index.ts",
   "license": "MIT",
   "keywords": [
     "obsidian",
     "obsidian-plugin",
-    "typescript",
-    "injection",
-    "autonomous",
-    "cli",
-    "development-tools",
-    "plugin-utilities"
+    "typescript"
   ],
   "scripts": {
     "start": "yarn install && yarn dev",
@@ -52,7 +47,13 @@
     "eslint": "latest",
     "eslint-import-resolver-typescript": "latest",
     "jiti": "latest",
-    "prettier": "latest"
+    "prettier": "latest",
+    "@lukasbach/eslint-config-deps": "^1.0.2",
+    "obsidian-plugin-cli": "^0.9.0",
+    "publish-fast": "^0.0.19",
+    "tslib": "2.4.0",
+    "@codemirror/state": "6.0.0",
+    "@codemirror/view": "6.0.0"
   },
   "dependencies": {
     "@types/lodash": "^4.17.17",
