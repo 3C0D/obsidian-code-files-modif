@@ -1,4 +1,4 @@
-import { Modal, Notice } from 'obsidian';
+import { Modal, Notice, type Editor } from 'obsidian';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 import type CodeFilesPlugin from './main.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
@@ -44,19 +44,15 @@ export class FenceEditModal extends Modal {
 		this.onSave(this.codeEditor.getValue());
 	}
 
-	static openOnCurrentCode(plugin: CodeFilesPlugin): void {
-		const context = FenceEditContext.create(plugin);
+	static openOnCurrentCode(plugin: CodeFilesPlugin, editor: Editor): void {
+		const context = FenceEditContext.create(plugin, editor);
 
-		if (!context.isInFence()) {
+		if (!context) {
 			new Notice('Your cursor is currently not in a valid code block.');
 			return;
 		}
 
 		const fenceData = context.getFenceData();
-
-		if (!fenceData) {
-			return;
-		}
 
 		new FenceEditModal(plugin, fenceData.content, fenceData.language, (value) =>
 			context.replaceFenceContent(value)

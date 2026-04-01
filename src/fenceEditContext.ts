@@ -4,72 +4,45 @@ import { getLanguage } from './getLanguage.ts';
 
 export class FenceEditContext {
 	private start = 0;
-
 	private end = 0;
+	private editor: Editor;
 
-	private editor?: Editor;
-
-	private isInValidFence = false;
-
-	private constructor(private plugin: CodeFilesPlugin) {
-		this.initializeStartAndEnd();
-		this.validateFence();
+	private constructor(
+		editor: Editor,
+		start: number,
+		end: number
+	) {
+		this.editor = editor;
+		this.start = start;
+		this.end = end;
 	}
 
-	static create(plugin: CodeFilesPlugin): FenceEditContext {
-		return new FenceEditContext(plugin);
-	}
+	static create(plugin: CodeFilesPlugin, editor: Editor): FenceEditContext | null {
+		const file = plugin.app.workspace.getActiveFile();
+		const cursor = editor.getCursor();
 
-	private initializeStartAndEnd(): void {
-		this.editor = this.plugin.app.workspace.activeEditor?.editor;
-		const cursor = this.editor?.getCursor();
+		if (!file || !cursor) return null;
 
-		if (!this.editor || !cursor) return;
+		const metadata = plugin.app.metadataCache.getFileCache(file);
+		if (!metadata?.sections) return null;
 
-		this.start = cursor.line;
-		this.end = cursor.line;
-		do {
-			this.start--;
-		} while (this.start >= 0 && !this.editor.getLine(this.start).startsWith('```'));
-		do {
-			this.end++;
-		} while (
-			this.end < this.editor.lineCount() &&
-			!this.editor.getLine(this.end).startsWith('```')
+		const codeSection = metadata.sections.find(
+			(s) =>
+				s.type === 'code' &&
+				s.position.start.line <= cursor.line &&
+				s.position.end.line >= cursor.line
+		);
+
+		if (!codeSection) return null;
+
+		return new FenceEditContext(
+			editor,
+			codeSection.position.start.line,
+			codeSection.position.end.line
 		);
 	}
 
-	private validateFence(): void {
-		if (!this.editor) {
-			return;
-		}
-
-		if (this.start < 0 || this.end >= this.editor.lineCount()) {
-			return;
-		}
-
-		let fenceLines = 0;
-
-		for (let i = 0; i < this.start; i++) {
-			if (this.editor.getLine(i).startsWith('```')) {
-				fenceLines++;
-			}
-		}
-
-		if (fenceLines % 2 === 1) {
-			return;
-		}
-
-		this.isInValidFence = true;
-	}
-
-	isInFence(): boolean {
-		return this.isInValidFence;
-	}
-
-	getFenceData(): { content: string; language: string } | null {
-		if (!this.editor || !this.isInValidFence) return null;
-
+	getFenceData(): { content: string; language: string } {
 		let editorContent = '';
 		for (let i = this.start + 1; i < this.end; i++) {
 			editorContent += `${this.editor.getLine(i)}\n`;
@@ -82,7 +55,7 @@ export class FenceEditContext {
 		return { content, language };
 	}
 
-	getEditor(): Editor | undefined {
+	getEditor(): Editor {
 		return this.editor;
 	}
 
@@ -91,7 +64,7 @@ export class FenceEditContext {
 	}
 
 	replaceFenceContent(value: string): void {
-		this.editor?.replaceRange(
+		this.editor.replaceRange(
 			`${value}\n`,
 			{ line: this.start + 1, ch: 0 },
 			{ line: this.end, ch: 0 }

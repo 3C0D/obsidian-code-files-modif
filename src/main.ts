@@ -31,8 +31,8 @@ export default class CodeFilesPlugin extends Plugin {
 		this.addCommand({
 			id: 'open-codeblock-in-monaco',
 			name: 'Open current code block in Monaco Editor',
-			callback: () => {
-				FenceEditModal.openOnCurrentCode(this);
+			editorCallback: (editor) => {
+				FenceEditModal.openOnCurrentCode(this, editor);
 			}
 		});
 
@@ -75,15 +75,15 @@ export default class CodeFilesPlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.workspace.on('editor-menu', (menu) => {
-				if (!FenceEditContext.create(this).isInFence()) {
+			this.app.workspace.on('editor-menu', (menu, editor) => {
+				if (!FenceEditContext.create(this, editor)) {
 					return;
 				}
 				menu.addItem((item) => {
 					item.setTitle('Edit Code Block in Monaco Editor')
 						.setIcon('code')
 						.onClick(() => {
-							FenceEditModal.openOnCurrentCode(this);
+							FenceEditModal.openOnCurrentCode(this, editor);
 						});
 				});
 			})
