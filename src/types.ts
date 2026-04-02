@@ -7,7 +7,23 @@ export interface MyPluginSettings {
 	syntaxValidation: boolean;
 	theme: string;
 	overwriteBg: boolean;
+	showRibbonIcon: boolean;
+	/** Per-extension formatter config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
+	formatterConfigs: Record<string, string>;
 }
+
+const DEFAULT_FORMATTER_CONFIG = JSON.stringify(
+	{
+		tabSize: 2,
+		insertSpaces: true,
+		formatOnSave: false,
+		formatOnType: false
+	},
+	null,
+	2
+);
+
+export { DEFAULT_FORMATTER_CONFIG };
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
 	extensions: ['ts', 'tsx', 'js', 'jsx', 'py'],
@@ -17,7 +33,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	semanticValidation: true,
 	syntaxValidation: true,
 	theme: 'default',
-	overwriteBg: true
+	overwriteBg: true,
+	showRibbonIcon: true,
+	formatterConfigs: {}
 };
 
 export const viewType = 'code-editor';

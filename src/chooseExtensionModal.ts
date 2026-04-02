@@ -38,11 +38,7 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 	}
 
 	renderSuggestion(item: ExtensionSuggestion, el: HTMLElement): void {
-		el.setText(
-			item.kind === 'add'
-				? `Add ".${item.ext}"`
-				: `Remove ".${item.ext}"`
-		);
+		el.setText(item.kind === 'add' ? `Add ".${item.ext}"` : `Remove ".${item.ext}"`);
 	}
 
 	async onChooseSuggestion(item: ExtensionSuggestion): Promise<void> {
@@ -51,7 +47,8 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 		if (item.kind === 'add') {
 			if (!extensions.includes(item.ext)) {
 				extensions.push(item.ext);
-				new Notice(`Added ".${item.ext}" — restart Obsidian to apply`);
+				this.plugin.registerExtension(item.ext);
+				new Notice(`Added ".${item.ext}"`);
 			}
 			await this.plugin.saveSettings();
 			this.onUpdate(item.ext);
@@ -59,7 +56,8 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 			const idx = extensions.indexOf(item.ext);
 			if (idx !== -1) {
 				extensions.splice(idx, 1);
-				new Notice(`Removed ".${item.ext}" — restart Obsidian to apply`);
+				this.plugin.unregisterExtension(item.ext);
+				new Notice(`Removed ".${item.ext}"`);
 			}
 			await this.plugin.saveSettings();
 			this.onUpdate();

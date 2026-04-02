@@ -33,7 +33,7 @@ export class CodeEditorView extends TextFileView {
 
 	async onClose(): Promise<void> {
 		await super.onClose();
-		this.codeEditor.destroy();
+		this.codeEditor?.destroy();
 	}
 
 	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
@@ -55,11 +55,11 @@ export class CodeEditorView extends TextFileView {
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
 		// destroy() removes the message listener and revokes the blob URL
-		this.codeEditor.destroy();
+		this.codeEditor?.destroy();
 	}
 
 	clear(): void {
-		this.codeEditor.clear();
+		this.codeEditor?.clear();
 	}
 
 	getViewData(): string {

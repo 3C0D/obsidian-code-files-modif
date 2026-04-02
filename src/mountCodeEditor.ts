@@ -1,3 +1,4 @@
+import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
 import manifest from '../manifest.json' with { type: 'json' };
@@ -59,6 +60,9 @@ export const mountCodeEditor = async (
 	if (plugin.settings.overwriteBg) {
 		initParams.background = 'transparent';
 	}
+	if (plugin.settings.formatterConfigs?.[language]) {
+		initParams.formatterConfig = plugin.settings.formatterConfigs[language];
+	}
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
@@ -67,8 +71,12 @@ export const mountCodeEditor = async (
 	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
 	// before using the URL as a base for relative paths inside the HTML
-	const htmlUrl = plugin.app.vault.adapter.getResourcePath(`${pluginBase}/monacoEditor.html`);
-	const vsBase = plugin.app.vault.adapter.getResourcePath(`${pluginBase}/vs`).replace(/\?.*$/, '');
+	const htmlUrl = plugin.app.vault.adapter.getResourcePath(
+		`${pluginBase}/monacoEditor.html`
+	);
+	const vsBase = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/vs`)
+		.replace(/\?.*$/, '');
 
 	let html = await (await fetch(htmlUrl)).text();
 	// Patch relative ./vs paths to absolute app:// URLs so Monaco can load its workers and modules
@@ -83,7 +91,9 @@ export const mountCodeEditor = async (
 	cssText = cssText.replace(/@font-face\s*\{[^}]*\}/g, '');
 	// Inject CSS inline and intercept dynamic <link> insertions Monaco attempts at runtime.
 	// Without this, Monaco tries to inject a <link rel="stylesheet"> which the parent CSP blocks.
-	html = html.replace('</head>', `<style>${cssText}</style>
+	html = html.replace(
+		'</head>',
+		`<style>${cssText}</style>
 <script>
 const _orig = Element.prototype.appendChild;
 Element.prototype.appendChild = function(node) {
@@ -91,7 +101,8 @@ Element.prototype.appendChild = function(node) {
     return _orig.call(this, node);
 };
 </script>
-</head>`);
+</head>`
+	);
 	const blob = new Blob([html], { type: 'text/html' });
 	const blobUrl = URL.createObjectURL(blob);
 	iframe.src = blobUrl;
@@ -114,6 +125,26 @@ Element.prototype.appendChild = function(node) {
 				// Received the full Monaco language→extension map.
 				// registerAndPersistLanguages is a no-op after the first call (guards on dynamicMap.size).
 				await registerAndPersistLanguages(data.langs, plugin);
+				break;
+			}
+			case 'open-formatter-config': {
+				if (data.context === codeContext) {
+					const { FormatterConfigModal } =
+						await import('./formatterConfigModal.ts');
+					const ext = codeContext.split('.').pop() ?? '';
+					new FormatterConfigModal(plugin, ext).open();
+				}
+				break;
+			}
+			case 'open-rename-extension': {
+				if (data.context === codeContext) {
+					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
+					if (file && 'extension' in file) {
+						const { RenameExtensionModal } =
+							await import('./renameExtensionModal.ts');
+						new RenameExtensionModal(plugin, file as TFile).open();
+					}
+				}
 				break;
 			}
 			case 'change': {

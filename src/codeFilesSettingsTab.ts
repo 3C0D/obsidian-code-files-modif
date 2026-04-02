@@ -3,6 +3,7 @@ import { PluginSettingTab, Setting } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { themes } from './themes.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
+import { FormatterConfigModal } from './formatterConfigModal.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	constructor(
@@ -54,10 +55,25 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName('Show ribbon icon')
+			.setDesc('Show the Code Files icon in the left sidebar ribbon.')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showRibbonIcon)
+					.onChange(async (value) => {
+						this.plugin.settings.showRibbonIcon = value;
+						this.plugin.updateRibbonIcon();
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
 			.setName('File Extensions')
 			.setDesc(
-				'Files with these extensions will be opened with the Monaco editor. ' +
-				'Changes require a restart to take effect.'
+				'Extensions registered with Obsidian. ' +
+					'Changes take effect immediately — no restart needed. ' +
+					'Adding an extension makes files with that extension open in Monaco. ' +
+					'Removing one hands them back to Obsidian.'
 			)
 			.addButton((btn) => {
 				btn.setButtonText('Add / Remove').onClick(() => {
@@ -68,7 +84,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		// Display current extensions list below the setting
 		containerEl.createEl('p', {
 			text: `Active: ${this.plugin.settings.extensions.join(', ') || 'none'}`,
-			attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
+			attr: {
+				style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;'
+			}
 		});
 
 		new Setting(containerEl)
@@ -126,5 +144,29 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		// ── Formatter Config ──────────────────────────────────────────────────
+		containerEl.createEl('h3', { text: 'Formatter Config' });
+		containerEl.createEl('p', {
+			text: 'Configure Monaco formatter options per extension (tabSize, insertSpaces, formatOnSave, formatOnType).',
+			attr: {
+				style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
+			}
+		});
+
+		const extensions = this.plugin.settings.extensions;
+		for (const ext of extensions) {
+			const hasConfig = !!this.plugin.settings.formatterConfigs?.[ext];
+			new Setting(containerEl)
+				.setName(`.${ext}`)
+				.setDesc(hasConfig ? 'Custom config' : 'Using defaults')
+				.addButton((btn) => {
+					btn.setButtonText('Edit')
+						.setIcon('settings')
+						.onClick(() => {
+							new FormatterConfigModal(this.plugin, ext).open();
+						});
+				});
+		}
 	}
 }
