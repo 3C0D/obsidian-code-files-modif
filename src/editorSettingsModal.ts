@@ -22,12 +22,10 @@ export class EditorSettingsModal extends Modal {
 		super.onOpen();
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
-		this.modalEl.style.height = '600px';
 
 		const { contentEl } = this;
 		contentEl.style.display = 'flex';
 		contentEl.style.flexDirection = 'column';
-		contentEl.style.height = 'calc(100% - 40px)';
 
 		// ── Toggles ──────────────────────────────────────────────────────────
 		const toggleSection = contentEl.createEl('div', { cls: 'code-files-settings-toggles' });
@@ -94,12 +92,18 @@ export class EditorSettingsModal extends Modal {
 
 		// ── Formatter Config ──────────────────────────────────────────────────
 		const formatterSection = contentEl.createEl('div', { cls: 'code-files-formatter-section' });
+		formatterSection.style.marginTop = '1rem';
 		formatterSection.createEl('div', {
 			text: `Formatter — .${this.extension}`,
 			cls: 'code-files-formatter-title'
 		});
 
 		const editorContainer = formatterSection.createEl('div', { cls: 'code-files-formatter-editor' });
+		editorContainer.style.height = '200px';
+		editorContainer.style.border = '1px solid var(--background-modifier-border)';
+		editorContainer.style.marginTop = '8px';
+		editorContainer.style.borderRadius = '4px';
+		editorContainer.style.overflow = 'hidden';
 
 		const existing = this.plugin.settings.formatterConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_FORMATTER_CONFIG;
@@ -113,7 +117,12 @@ export class EditorSettingsModal extends Modal {
 		editorContainer.append(this.codeEditor.iframe);
 
 		// Save button
-		const footer = this.modalEl.createEl('div', { cls: 'code-files-settings-footer' });
+		const footer = contentEl.createEl('div', { cls: 'code-files-settings-footer' });
+		footer.style.display = 'flex';
+		footer.style.justifyContent = 'flex-end';
+		footer.style.marginTop = '16px';
+		footer.style.paddingBottom = '8px';
+
 		new ButtonComponent(footer)
 			.setButtonText('Save Formatter')
 			.setCta()
@@ -135,11 +144,11 @@ export class EditorSettingsModal extends Modal {
 			this.onFormatterSaved(value);
 			this.close();
 		} catch {
-			const existing = this.modalEl.querySelector('.code-files-formatter-error') as HTMLElement;
+			const existing = this.contentEl.querySelector('.code-files-formatter-error') as HTMLElement;
 			if (existing) {
 				existing.textContent = 'Invalid JSON — please fix before saving.';
 			} else {
-				this.modalEl.createEl('p', {
+				this.contentEl.createEl('p', {
 					text: 'Invalid JSON — please fix before saving.',
 					cls: 'code-files-formatter-error',
 					attr: { style: 'color: var(--text-error); padding: 0 16px;' }

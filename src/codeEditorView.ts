@@ -11,7 +11,7 @@ import { EditorSettingsModal } from './editorSettingsModal.ts';
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {
 	codeEditor: CodeEditorInstance;
-	private dirty = false;
+	private isDirty = false;
 	private forceSave = false;
 	private gearAction: { remove: () => void } | null = null;
 
@@ -20,6 +20,12 @@ export class CodeEditorView extends TextFileView {
 		private plugin: CodeFilesPlugin
 	) {
 		super(leaf);
+		const originalRequestSave = this.requestSave;
+		this.requestSave = () => {
+			if (this.plugin.settings.autoSave) {
+				originalRequestSave.call(this);
+			}
+		};
 	}
 
 	getDisplayText(): string {
@@ -35,12 +41,7 @@ export class CodeEditorView extends TextFileView {
 		return file?.path ?? this.file?.path ?? '';
 	}
 
-	/** Block Obsidian's auto-save debounce when autoSave is disabled. */
-	requestSave(): void {
-		if (this.plugin.settings.autoSave) {
-			super.requestSave();
-		}
-	}
+
 
 	async save(clear?: boolean): Promise<void> {
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
@@ -54,11 +55,11 @@ export class CodeEditorView extends TextFileView {
 		this.gearAction?.remove();
 	}
 
-	private setDirty(isDirty: boolean): void {
-		this.dirty = isDirty;
+	private setDirty(isDirtyBadge: boolean): void {
+		this.isDirty = isDirtyBadge;
 		const badge = this.containerEl.querySelector('.code-files-dirty-badge');
 		if (!badge) return;
-		badge.toggleClass('code-files-dirty-unsaved', isDirty);
+		badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
 	}
 
 	private setSaving(isSaving: boolean): void {
