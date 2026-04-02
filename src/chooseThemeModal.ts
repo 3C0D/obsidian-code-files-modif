@@ -11,8 +11,6 @@ export class ChooseThemeModal extends SuggestModal<string> {
 	private originalTheme: string;
 	private confirmed = false;
 
-	private observer: MutationObserver;
-
 	constructor(
 		private plugin: CodeFilesPlugin,
 		private onChoose: (theme: string) => void | Promise<void>,
@@ -23,19 +21,33 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.setPlaceholder('Choose a theme');
 		this.modalEl.style.width = '300px';
 
-		this.observer = new MutationObserver(() => {
-			const selected = this.resultContainerEl.querySelector('.is-selected');
-			if (selected) this.applyTheme(selected.textContent ?? '');
-		});
-		this.observer.observe(this.resultContainerEl, { subtree: true, attributeFilter: ['class'] });
+		const previewSelected = (): void => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const chooser = (this as any).chooser as { values?: string[]; selectedItem?: number };
+			const theme = chooser?.values?.[chooser?.selectedItem ?? -1];
+			if (theme) this.applyTheme(theme);
+		};
+		this.scope.register([], 'ArrowDown', () => { setTimeout(previewSelected, 0); return true; });
+		this.scope.register([], 'ArrowUp', () => { setTimeout(previewSelected, 0); return true; });
 	}
 
 	onOpen(): void {
 		super.onOpen();
-		const { modalEl } = this;
-		modalEl.style.position = 'fixed';
-		modalEl.style.left = '50%';
-		modalEl.style.top = '10%';
+		this.modalEl.style.position = 'fixed';
+		this.modalEl.style.left = '50%';
+		this.modalEl.style.top = '10%';
+
+		this.resultContainerEl.addEventListener('mousemove', (e) => {
+			const item = (e.target as HTMLElement).closest('.suggestion-item');
+			if (!item) return;
+			const items = this.resultContainerEl.querySelectorAll('.suggestion-item');
+			const idx = Array.from(items).indexOf(item as HTMLElement);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const chooser = (this as any).chooser as { values?: string[]; setSelectedItem?: (i: number, e: MouseEvent) => void };
+			if (idx === -1 || !chooser?.values?.[idx]) return;
+			chooser.setSelectedItem?.(idx, e);
+			this.applyTheme(chooser.values[idx]);
+		});
 	}
 
 	getSuggestions(query: string): string[] {
@@ -66,7 +78,6 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	onClose(): void {
 		super.onClose();
-		this.observer.disconnect();
 		if (!this.confirmed) {
 			this.applyTheme(this.originalTheme);
 		}

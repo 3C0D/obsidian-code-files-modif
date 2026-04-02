@@ -161,7 +161,7 @@ Element.prototype.appendChild = function(node) {
 			case 'open-theme-picker': {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
-					const applyTheme = async (theme: string) => {
+					const applyTheme = async (theme: string): Promise<void> => {
 						const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 						const resolvedTheme = theme === 'default'
 							? (document.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs')

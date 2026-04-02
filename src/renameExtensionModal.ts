@@ -1,5 +1,5 @@
 import { ButtonComponent, Modal, Notice, TextComponent } from 'obsidian';
-import type { TFile, View, WorkspaceLeaf } from 'obsidian';
+import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 
 /** Modal to rename the extension of an existing file.
@@ -85,7 +85,7 @@ export class RenameExtensionModal extends Modal {
 			base = base.slice(0, base.length - this.file.extension.length - 1);
 		}
 		// Also prevent double extension if user accidentally typed the existing extension suffix
-		let newPath = `${base}.${ext}`;
+		const newPath = `${base}.${ext}`;
 		
 		if (base.endsWith(`.${ext}`)) {
 			// If base was 'test.js' and user typed 'js', and somehow it wasn't caught as the file's extension
