@@ -6,11 +6,15 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 
 - **Monaco Editor** — full VS Code editor embedded in Obsidian, loaded locally (no external dependency)
 - **Syntax highlighting** — automatic language detection from file extension, covering all Monaco-supported languages
+- **Custom themes** — 50+ themes (Dracula, Monokai, Nord, etc.) with live preview
 - **Create code files** — ribbon icon or right-click in the explorer to create a new file with a chosen extension
 - **Edit CSS snippets** — open and edit Obsidian CSS snippets directly from the command palette
 - **Edit code blocks** — open any code fence in a full Monaco modal from the editor context menu
 - **Dynamic extension management** — add or remove file extensions at runtime, no restart needed
 - **Rename extension** — right-click any registered file to rename its extension on the fly
+- **Formatter config** — per-extension formatting rules (tabSize, insertSpaces, formatOnSave, formatOnType)
+- **Word wrap** — toggle with `Alt+Z` or from the editor context menu
+- **Manual save** — `Ctrl+S` saves explicitly; with formatOnSave enabled, formats before saving
 
 ## Usage
 
@@ -38,11 +42,28 @@ Place your cursor inside a code fence and use:
 
 Command palette → **"Edit CSS Snippet"** — opens a search modal to choose an existing snippet or create a new one.
 
+### Editor context menu (right-click inside Monaco)
+
+| Action | Description |
+|---|---|
+| **Formatter Config** | Edit formatting options for the current file's extension |
+| **Rename Extension** | Rename the file's extension on the fly |
+| **Change Theme** | Pick a theme with live preview — navigating the list applies it instantly, closing without confirming restores the previous theme |
+| **Toggle Word Wrap** | Toggle word wrap (`Alt+Z`) |
+
+### Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+S` | Save (formats first if formatOnSave is enabled) |
+| `Alt+Z` | Toggle word wrap |
+| `F1` | Monaco command palette (all editor actions) |
+
 ## Settings
 
 | Setting | Description |
 |---|---|
-| **Theme** | Monaco editor theme. `Default` follows Obsidian's dark/light mode. |
+| **Theme** | Monaco editor theme. `Default` follows Obsidian's dark/light mode. Can also be changed live from the editor context menu. |
 | **Overwrite background** | Use Obsidian's background color instead of the theme's. Disable if text is illegible. |
 | **File Extensions** | Extensions registered with Obsidian. Click **Add / Remove** to manage them. Changes take effect immediately — no restart needed. |
 | **Folding** | Enable code block folding in the editor. |
@@ -50,6 +71,7 @@ Command palette → **"Edit CSS Snippet"** — opens a search modal to choose an
 | **Minimap** | Show the minimap on the right side. |
 | **Semantic Validation** | Show semantic errors (type errors, etc.) for JS/TS files. |
 | **Syntax Validation** | Show syntax errors for JS/TS files. |
+| **Formatter Config** | Per-extension formatting rules. Click **Edit** next to an extension to configure it. |
 
 ### Managing extensions
 
@@ -94,6 +116,8 @@ yarn h          # Help
 - `src/createCodeFileModal.ts` — modal for creating new code files
 - `src/renameExtensionModal.ts` — modal to rename a file's extension from the context menu
 - `src/chooseExtensionModal.ts` — SuggestModal for adding/removing extensions
+- `src/chooseThemeModal.ts` — SuggestModal for theme selection with live preview
 - `src/chooseCssFileModal.ts` — SuggestModal for CSS snippets
+- `src/formatterConfigModal.ts` — modal for per-extension formatter config
 
 See `docs/monaco-local-integration.md` for the full technical story of how Monaco was integrated locally.

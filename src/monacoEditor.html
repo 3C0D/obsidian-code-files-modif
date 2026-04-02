@@ -73,6 +73,7 @@
 
       editor = monaco.editor.create(document.getElementById('container'), opts);
 
+      var formatOnSave = false;
       // Apply per-extension formatter config if provided
       if (params.formatterConfig) {
         try {
@@ -85,14 +86,38 @@
             editor.updateOptions({ formatOnType: true });
           }
           if (cfg.formatOnSave) {
-              editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
-                editor.getAction('editor.action.formatDocument').run();
-              });
-            }
+            formatOnSave = true;
+          }
         } catch(e) {
           console.warn('code-files: invalid formatterConfig JSON', e);
         }
       }
+
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+        if (formatOnSave) {
+          var formatAction = editor.getAction('editor.action.formatDocument');
+          if (formatAction && formatAction.isSupported()) {
+            formatAction.run().then(function() {
+              window.parent.postMessage({ type: 'save-document', context: context }, '*');
+            });
+            return;
+          }
+        }
+        window.parent.postMessage({ type: 'save-document', context: context }, '*');
+      });
+
+      // Add Alt+Z to toggle word wrap
+      editor.addAction({
+        id: 'code-files-toggle-word-wrap',
+        label: 'Toggle Word Wrap',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.8,
+        keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyZ],
+        run: function() {
+          var current = editor.getRawOptions().wordWrap;
+          editor.updateOptions({ wordWrap: current === 'on' ? 'off' : 'on' });
+        }
+      });
 
       editor.onDidChangeModelContent(function () {
         // Send context along with the value so the parent can identify which editor changed
@@ -160,6 +185,23 @@
               }
             }
             monaco.editor.setTheme(data.theme);
+          }
+          break;
+        case 'change-formatter-config':
+          if (editor) {
+            try {
+              var cfg = JSON.parse(data.config);
+              editor.getModel().updateOptions({
+                tabSize: cfg.tabSize ?? 2,
+                insertSpaces: cfg.insertSpaces !== false,
+              });
+              editor.updateOptions({
+                formatOnType: !!cfg.formatOnType
+              });
+              formatOnSave = !!cfg.formatOnSave;
+            } catch(e) {
+              console.warn('code-files: invalid formatterConfig JSON', e);
+            }
           }
           break;
         case 'change-background':

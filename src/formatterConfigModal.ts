@@ -12,7 +12,8 @@ export class FormatterConfigModal extends Modal {
 
 	constructor(
 		private plugin: CodeFilesPlugin,
-		private extension: string
+		private extension: string,
+		private onSaved?: (config: string) => void
 	) {
 		super(plugin.app);
 	}
@@ -60,6 +61,7 @@ export class FormatterConfigModal extends Modal {
 			JSON.parse(value); // validate JSON before saving
 			this.plugin.settings.formatterConfigs[this.extension] = value;
 			await this.plugin.saveSettings();
+			this.onSaved?.(value);
 			this.close();
 		} catch {
 			// Leave modal open so user can fix the JSON

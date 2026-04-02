@@ -27,7 +27,8 @@ export const mountCodeEditor = async (
 	language: string,
 	initialValue: string,
 	codeContext: string,
-	onChange?: () => void
+	onChange?: () => void,
+	onSave?: () => void
 ): Promise<CodeEditorInstance> => {
 	let value = initialValue;
 	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
@@ -76,8 +77,10 @@ export const mountCodeEditor = async (
 	if (plugin.settings.overwriteBg) {
 		initParams.background = 'transparent';
 	}
-	if (plugin.settings.formatterConfigs?.[language]) {
-		initParams.formatterConfig = plugin.settings.formatterConfigs[language];
+	const extMatch = codeContext.match(/\.([^.]+)$/);
+	const extension = extMatch ? extMatch[1] : '';
+	if (plugin.settings.formatterConfigs?.[extension]) {
+		initParams.formatterConfig = plugin.settings.formatterConfigs[extension];
 	}
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
@@ -144,11 +147,11 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-formatter-config': {
 				if (data.context === codeContext) {
-					// Blur to prevent Obsidian from saving an iframe inner element as activeElement
-					// which causes "n.instanceOf is not a function" on modal close.
 					(document.activeElement as HTMLElement)?.blur();
 					const ext = codeContext.split('.').pop() ?? '';
-					const modal = new FormatterConfigModal(plugin, ext);
+					const modal = new FormatterConfigModal(plugin, ext, (config) => {
+						send('change-formatter-config', { config });
+					});
 					const origOnClose = modal.onClose.bind(modal);
 					modal.onClose = () => {
 						origOnClose();
@@ -214,6 +217,12 @@ Element.prototype.appendChild = function(node) {
 						value = data.value as string;
 						onChange?.();
 					}
+				}
+				break;
+			}
+			case 'save-document': {
+				if (data.context === codeContext) {
+					onSave?.();
 				}
 				break;
 			}

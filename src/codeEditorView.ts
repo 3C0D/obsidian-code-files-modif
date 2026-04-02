@@ -56,7 +56,8 @@ export class CodeEditorView extends TextFileView {
 			getLanguage(file.extension),
 			this.data,
 			this.getContext(file),
-			() => this.requestSave()
+			() => this.requestSave(), // onChange auto-save
+			() => this.save() // explicit manual save
 		);
 
 		this.contentEl.style.overflow = 'hidden';
@@ -88,7 +89,8 @@ export class CodeEditorView extends TextFileView {
 			getLanguage(file.extension),
 			this.data,
 			this.getContext(file),
-			() => this.requestSave()
+			() => this.requestSave(), // onChange
+			() => this.save()
 		);
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
@@ -102,7 +104,13 @@ export class CodeEditorView extends TextFileView {
 	 *  The optional chaining on codeEditor handles the case where setViewData is called before onLoadFile completes. */
 	setViewData(data: string, clear: boolean): void {
 		this.data = data;
-		this.codeEditor?.setValue(data);
+		if (this.codeEditor) {
+			// Protect Monaco's undo/redo history!
+			// Only update if the disk data actually differs from the editor's current state.
+			if (this.codeEditor.getValue() !== data) {
+				this.codeEditor.setValue(data);
+			}
+		}
 	}
 
 	/** Static helper method to open a file in a new CodeEditorView. This abstracts away the details of creating the view and loading the file, providing a simple interface for other parts of the plugin to open files in the code editor. */
