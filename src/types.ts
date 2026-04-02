@@ -15,6 +15,8 @@ export interface MyPluginSettings {
 	overwriteBg: boolean;
 	/** Show the ribbon icon to create a new code file */
 	showRibbonIcon: boolean;
+	/** Last 5 recently used themes, most recent first */
+	recentThemes: string[];
 	/** Per-extension formatter config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
 	formatterConfigs: Record<string, string>;
 }
@@ -44,6 +46,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	theme: 'default',
 	overwriteBg: true,
 	showRibbonIcon: true,
+	recentThemes: [],
 	formatterConfigs: {}
 };
 

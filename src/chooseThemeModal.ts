@@ -16,7 +16,14 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	getSuggestions(query: string): string[] {
 		const q = query.toLowerCase();
-		return ALL_THEMES.filter((t) => t.toLowerCase().includes(q));
+		const current = this.plugin.settings.theme;
+		const recent = this.plugin.settings.recentThemes.filter((t) => t !== current);
+		const priority = [current, ...recent];
+		const filtered = ALL_THEMES.filter((t) => t.toLowerCase().includes(q));
+		return [
+			...priority.filter((t) => filtered.includes(t)),
+			...filtered.filter((t) => !priority.includes(t))
+		];
 	}
 
 	renderSuggestion(theme: string, el: HTMLElement): void {
@@ -25,6 +32,8 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	async onChooseSuggestion(theme: string | null): Promise<void> {
 		if (!theme) return;
+		const recent = [theme, ...this.plugin.settings.recentThemes.filter((t) => t !== theme)].slice(0, 5);
+		this.plugin.settings.recentThemes = recent;
 		this.plugin.settings.theme = theme;
 		await this.plugin.saveSettings();
 		await this.onChoose(theme);
