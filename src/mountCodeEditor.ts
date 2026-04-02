@@ -161,7 +161,7 @@ Element.prototype.appendChild = function(node) {
 			case 'open-theme-picker': {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
-					const modal = new ChooseThemeModal(plugin, async (theme) => {
+					const applyTheme = async (theme: string) => {
 						const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 						const resolvedTheme = theme === 'default'
 							? (document.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs')
@@ -179,7 +179,8 @@ Element.prototype.appendChild = function(node) {
 						}
 						const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
 						send('change-theme', { theme: safeThemeId, themeData });
-					});
+					};
+					const modal = new ChooseThemeModal(plugin, applyTheme, applyTheme);
 					const origOnClose = modal.onClose.bind(modal);
 					modal.onClose = () => {
 						origOnClose();
