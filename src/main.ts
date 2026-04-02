@@ -6,12 +6,14 @@ import { FenceEditModal } from './fenceEditModal.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
 import { ChooseCssFileModal } from './chooseCssFileModal.ts';
 import { DEFAULT_SETTINGS, viewType, type MyPluginSettings } from './types.ts';
+import { loadPersistedLanguages } from './getLanguage.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings: MyPluginSettings;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
+		await loadPersistedLanguages(this);
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 

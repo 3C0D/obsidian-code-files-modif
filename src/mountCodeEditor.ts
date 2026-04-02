@@ -1,7 +1,7 @@
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
 import manifest from '../manifest.json' with { type: 'json' };
-import { registerLanguages } from './getLanguage.ts';
+import { registerAndPersistLanguages } from './getLanguage.ts';
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage. Returns a control object to get/set the editor value and manage its lifecycle. */
 export const mountCodeEditor = async (
@@ -88,7 +88,7 @@ Element.prototype.appendChild = function(node) {
 		);
 	};
 
-	const onMessage = ({ data }: MessageEvent): void => {
+	const onMessage = async ({ data }: MessageEvent): Promise<void> => {
 		// Listen for messages from the iframe and synchronize state
 		switch (data.type) {
 			case 'ready': {
@@ -98,7 +98,7 @@ Element.prototype.appendChild = function(node) {
 				break;
 			}
 			case 'languages': {
-				registerLanguages(data.langs);
+				await registerAndPersistLanguages(data.langs, plugin);
 				break;
 			}
 			case 'change': {
