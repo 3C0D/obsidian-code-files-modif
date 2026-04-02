@@ -219,6 +219,14 @@ Priorité de résolution : `dynamicMap` (Monaco) > `staticMap` (fallback) > `'pl
 
 ---
 
+## Gestion du cycle de vie
+
+`mountCodeEditor` retourne un objet de contrôle (`iframe`, `getValue`, `setValue`, `clear`, `destroy`, `send`). Le `window.addEventListener('message', onMessage)` reste actif tant que l'éditeur est ouvert — `destroy()` doit impérativement le retirer via `removeEventListener`, sinon des memory leaks s'accumulent si des dizaines d'éditeurs sont créés et détruits pendant une session.
+
+Le `codeContext` identifie chaque instance : si plusieurs iframes Monaco sont ouvertes simultanément (un fichier + un fence modal par exemple), elles envoient toutes des `change` sur le même `window`. Le `codeContext` permet de n'écouter que les messages de sa propre iframe.
+
+---
+
 ## Ce qu'il faut retenir
 
 La contrainte principale est la **CSP d'Obsidian** qui s'applique à toutes les frames enfants et qu'on ne peut pas surcharger. Elle autorise `app:` et `'self'` mais bloque `data:` et `blob:` pour les polices, et les stylesheets externes.
