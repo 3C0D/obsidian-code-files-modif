@@ -2,10 +2,11 @@ import { Modal, Notice, type Editor } from 'obsidian';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 import type CodeFilesPlugin from './main.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
+import type { CodeEditorInstance } from './types.ts';
 
 /** Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed. */
 export class FenceEditModal extends Modal {
-	private codeEditor: ReturnType<typeof mountCodeEditor>;
+	private codeEditor: CodeEditorInstance;
 
 	private constructor(
 		private plugin: CodeFilesPlugin,
@@ -16,10 +17,10 @@ export class FenceEditModal extends Modal {
 		super(plugin.app);
 	}
 
-	onOpen(): void {
+	async onOpen(): Promise<void> {
 		super.onOpen();
 
-		this.codeEditor = mountCodeEditor(
+		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			this.language,
 			this.code,

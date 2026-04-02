@@ -8,11 +8,7 @@ export class FenceEditContext {
 	private end = 0;
 	private editor: Editor;
 
-	private constructor(
-		editor: Editor,
-		start: number,
-		end: number
-	) {
+	private constructor(editor: Editor, start: number, end: number) {
 		this.editor = editor;
 		this.start = start;
 		this.end = end;

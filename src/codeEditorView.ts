@@ -5,11 +5,11 @@ import { TextFileView } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 import { getLanguage } from './getLanguage.ts';
-import { viewType } from './types.ts';
+import { viewType, type CodeEditorInstance } from './types.ts';
 
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {
-	codeEditor: ReturnType<typeof mountCodeEditor>;
+	codeEditor: CodeEditorInstance;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -40,7 +40,7 @@ export class CodeEditorView extends TextFileView {
 	async onLoadFile(file: TFile): Promise<void> {
 		await super.onLoadFile(file);
 
-		this.codeEditor = mountCodeEditor(
+		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			getLanguage(file.extension),
 			this.data,

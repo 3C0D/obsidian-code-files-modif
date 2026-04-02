@@ -1,14 +1,15 @@
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
+import manifest from '../manifest.json' with { type: 'json' };
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage. Returns a control object to get/set the editor value and manage its lifecycle. */
-export const mountCodeEditor = (
+export const mountCodeEditor = async (
 	plugin: CodeFilesPlugin,
 	language: string,
 	initialValue: string,
 	codeContext: string,
 	onChange?: () => void
-): CodeEditorInstance => {
+): Promise<CodeEditorInstance> => {
 	let value = initialValue;
 	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
 	const defaultTheme = document.body.classList.contains('theme-dark')
@@ -17,40 +18,63 @@ export const mountCodeEditor = (
 	const theme =
 		plugin.settings.theme === 'default' ? defaultTheme : plugin.settings.theme;
 
-	const queryParameters = new URLSearchParams();
-	queryParameters.append('context', codeContext);
-	queryParameters.append('lang', language);
-	queryParameters.append('theme', theme);
+	const initParams: Record<string, string> = {
+		context: codeContext,
+		lang: language,
+		theme,
+		folding: plugin.settings.folding ? 'true' : 'false',
+		lineNumbers: plugin.settings.lineNumbers ? 'on' : 'off',
+		minimap: plugin.settings.minimap ? 'true' : 'false',
+		javascriptDefaults: 'true',
+		typescriptDefaults: 'true',
+		// Validation checks use negation (_No): if validation is disabled, send 'true'
+		javascriptDefaultsNoSemanticValidation: !plugin.settings.semanticValidation
+			? 'true'
+			: 'false',
+		typescriptDefaultsNoSemanticValidation: !plugin.settings.semanticValidation
+			? 'true'
+			: 'false',
+		javascriptDefaultsNoSyntaxValidation: !plugin.settings.syntaxValidation
+			? 'true'
+			: 'false',
+		typescriptDefaultsNoSyntaxValidation: !plugin.settings.syntaxValidation
+			? 'true'
+			: 'false'
+	};
 	if (plugin.settings.overwriteBg) {
-		queryParameters.append('background', 'transparent');
+		initParams.background = 'transparent';
 	}
-	queryParameters.append('folding', plugin.settings.folding ? 'true' : 'false');
-	queryParameters.append('lineNumbers', plugin.settings.lineNumbers ? 'on' : 'off');
-	queryParameters.append('minimap', plugin.settings.minimap ? 'true' : 'false');
-	queryParameters.append('javascriptDefaults', 'true');
-	queryParameters.append('typescriptDefaults', 'true');
-	// Validation checks use negation (_No): if validation is disabled, send 'true'
-	queryParameters.append(
-		'javascriptDefaultsNoSemanticValidation',
-		!plugin.settings.semanticValidation ? 'true' : 'false'
-	);
-	queryParameters.append(
-		'typescriptDefaultsNoSemanticValidation',
-		!plugin.settings.semanticValidation ? 'true' : 'false'
-	);
-	queryParameters.append(
-		'javascriptDefaultsNoSyntaxValidation',
-		!plugin.settings.syntaxValidation ? 'true' : 'false'
-	);
-	queryParameters.append(
-		'typescriptDefaultsNoSyntaxValidation',
-		!plugin.settings.syntaxValidation ? 'true' : 'false'
-	);
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
-	iframe.src = `https://embeddable-monaco.lukasbach.com?${queryParameters.toString()}`;
 	iframe.style.width = '100%';
 	iframe.style.height = '100%';
+
+	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
+	const htmlUrl = plugin.app.vault.adapter.getResourcePath(`${pluginBase}/monacoEditor.html`);
+	const vsBase = plugin.app.vault.adapter.getResourcePath(`${pluginBase}/vs`).replace(/\?.*$/, '');
+
+	let html = await (await fetch(htmlUrl)).text();
+	html = html
+		.replace("'./vs'", `'${vsBase}'`)
+		.replace('"./vs/loader.js"', `"${vsBase}/loader.js"`);
+
+	const cssUrl = `${vsBase}/editor/editor.main.css`;
+	let cssText = await (await fetch(cssUrl)).text();
+	// Remove @font-face rules entirely — Obsidian's CSP blocks all font loading (data:, blob:)
+	// Monaco falls back to system fonts gracefully
+	cssText = cssText.replace(/@font-face\s*\{[^}]*\}/g, '');
+	html = html.replace('</head>', `<style>${cssText}</style>
+<script>
+const _orig = Element.prototype.appendChild;
+Element.prototype.appendChild = function(node) {
+    if (node.tagName === 'LINK' && node.rel === 'stylesheet') return node;
+    return _orig.call(this, node);
+};
+</script>
+</head>`);
+	const blob = new Blob([html], { type: 'text/html' });
+	const blobUrl = URL.createObjectURL(blob);
+	iframe.src = blobUrl;
 
 	const send = (type: string, payload: Record<string, unknown>): void => {
 		// Send a message to the iframe via postMessage (secure cross-origin communication)
@@ -67,17 +91,9 @@ export const mountCodeEditor = (
 		// Listen for messages from the iframe and synchronize state
 		switch (data.type) {
 			case 'ready': {
-				// When the iframe editor is ready, initialize its value and language
+				// Send init params, then the initial value
+				send('init', initParams);
 				send('change-value', { value });
-				send('change-language', {
-					language
-				});
-				if (plugin.settings.overwriteBg) {
-					send('change-background', {
-						background: 'transparent',
-						theme
-					});
-				}
 				break;
 			}
 			case 'change': {
@@ -111,6 +127,7 @@ export const mountCodeEditor = (
 	// The onMessage function is stored so it can be removed during cleanup
 	const destroy = (): void => {
 		window.removeEventListener('message', onMessage);
+		URL.revokeObjectURL(blobUrl);
 		iframe.remove();
 	};
 

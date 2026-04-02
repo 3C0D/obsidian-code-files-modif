@@ -1,10 +1,13 @@
-import type { App} from 'obsidian';
+import type { App } from 'obsidian';
 import { PluginSettingTab, Setting } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { themes } from './themes.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
-	constructor(app: App, public plugin: CodeFilesPlugin) {
+	constructor(
+		app: App,
+		public plugin: CodeFilesPlugin
+	) {
 		super(app, plugin);
 	}
 
@@ -29,12 +32,10 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					dropdown.addOption(theme, theme);
 				}
 
-				dropdown
-					.setValue(this.plugin.settings.theme)
-					.onChange(async (value) => {
-						this.plugin.settings.theme = value;
-						await this.plugin.saveSettings();
-					});
+				dropdown.setValue(this.plugin.settings.theme).onChange(async (value) => {
+					this.plugin.settings.theme = value;
+					await this.plugin.saveSettings();
+				});
 			});
 
 		new Setting(containerEl)

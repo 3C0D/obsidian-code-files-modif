@@ -4,7 +4,7 @@ import builtins from 'builtin-modules';
 import { config } from 'dotenv';
 import path from 'path';
 import { readFileSync } from 'fs';
-import { rm } from 'fs/promises';
+import { rm, cp, copyFile } from 'fs/promises';
 import fs from 'fs';
 import {
 	isValidPath,
@@ -221,6 +221,15 @@ async function createBuildContext(
 			name: 'copy-to-plugins-folder',
 			setup: (build: esbuild.PluginBuild): void => {
 				build.onEnd(async () => {
+					const monacoSrc = path.join(
+						pluginDir,
+						'node_modules/monaco-editor/min/vs'
+					);
+					const monacoTarget = path.join(buildPath, 'vs');
+					const htmlSrc = path.join(pluginDir, 'src/monacoEditor.html');
+					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
+					await cp(monacoSrc, monacoTarget, { recursive: true });
+					await copyFile(htmlSrc, htmlTarget);
 					// if real or build
 					if (isProd) {
 						if (
