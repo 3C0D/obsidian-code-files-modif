@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<!--
+  CSP for the blob iframe. Note: Obsidian's parent CSP applies to child frames,
+  but inline content in a blob URL is not subject to it for script/style execution.
+  img-src includes data: to allow Monaco's squiggle error decorations (inline SVGs).
+  worker-src blob: allows Monaco's web workers (syntax checking, etc.).
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' app:; script-src 'self' 'unsafe-eval' 'unsafe-inline' app:; style-src 'self' 'unsafe-inline' app:; img-src 'self' app: data:; worker-src blob:;" />
+<style>
+  html, body, #container { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="container"></div>
+<!--
+  require.paths.vs is patched to an absolute app:// URL by mountCodeEditor.ts before
+  this HTML is injected as a blob URL, so ./vs resolves correctly.
+-->
+<script>
+  var require = { paths: { vs: './vs' } };
+</script>
+<script src="./vs/loader.js"></script>
+<script>
+  require(['vs/editor/editor.main'], function () {
+    var editor;
+    var context;
+    // Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
+    var initialized = false;
+
+    function applyParams(params) {
+      if (initialized) return;
+      initialized = true;
+      context = params.context;
+
+      var opts = {
+        language: params.lang || 'plaintext',
+        theme: params.theme || 'vs-dark',
+        folding: params.folding !== 'false',
+        lineNumbers: params.lineNumbers || 'on',
+        minimap: { enabled: params.minimap !== 'false' },
+        // automaticLayout recomputes editor size when the container resizes
+        automaticLayout: true,
+      };
+
+      if (params.background === 'transparent') {
+        document.body.style.background = 'transparent';
+        document.documentElement.style.background = 'transparent';
+      }
+
+      if (params.javascriptDefaults === 'true') {
+        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: params.javascriptDefaultsNoSemanticValidation === 'true',
+          noSyntaxValidation: params.javascriptDefaultsNoSyntaxValidation === 'true',
+        });
+      }
+      if (params.typescriptDefaults === 'true') {
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: params.typescriptDefaultsNoSemanticValidation === 'true',
+          noSyntaxValidation: params.typescriptDefaultsNoSyntaxValidation === 'true',
+        });
+      }
+
+      editor = monaco.editor.create(document.getElementById('container'), opts);
+
+      // Apply per-extension formatter config if provided
+      if (params.formatterConfig) {
+        try {
+          var cfg = JSON.parse(params.formatterConfig);
+          editor.getModel().updateOptions({
+            tabSize: cfg.tabSize ?? 2,
+            insertSpaces: cfg.insertSpaces !== false,
+          });
+          if (cfg.formatOnType) {
+            editor.updateOptions({ formatOnType: true });
+          }
+          if (cfg.formatOnSave) {
+            editor.onDidChangeModelContent(function() {
+              // formatOnSave: trigger format when content is saved (Ctrl+S)
+            });
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+              editor.getAction('editor.action.formatDocument').run();
+            });
+          }
+        } catch(e) {
+          console.warn('code-files: invalid formatterConfig JSON', e);
+        }
+      }
+
+      editor.onDidChangeModelContent(function () {
+        // Send context along with the value so the parent can identify which editor changed
+        window.parent.postMessage({ type: 'change', value: editor.getValue(), context: context }, '*');
+      });
+
+      // Add a context menu action in Monaco to open the formatter config for this file
+      editor.addAction({
+        id: 'code-files-formatter-config',
+        label: 'Formatter Config',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        run: function() {
+          window.parent.postMessage({ type: 'open-formatter-config', context: context }, '*');
+        }
+      });
+
+      editor.addAction({
+        id: 'code-files-rename-extension',
+        label: 'Rename Extension',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.6,
+        run: function() {
+          window.parent.postMessage({ type: 'open-rename-extension', context: context }, '*');
+        }
+      });
+    }
+
+    // Signal that Monaco is fully loaded and ready to receive 'init'.
+    // This must fire before the message listener is set up — the parent
+    // will respond with 'init' + 'get-languages' + 'change-value' in sequence.
+    window.parent.postMessage({ type: 'ready' }, '*');
+
+    window.addEventListener('message', function (e) {
+      var data = e.data;
+      if (!data || !data.type) return;
+
+      switch (data.type) {
+        case 'init':
+          applyParams(data);
+          break;
+        case 'change-value':
+          if (editor) editor.setValue(data.value || '');
+          break;
+        case 'change-language':
+          if (editor) monaco.editor.setModelLanguage(editor.getModel(), data.language);
+          break;
+        case 'change-background':
+          document.body.style.background = data.background;
+          document.documentElement.style.background = data.background;
+          if (data.theme) monaco.editor.setTheme(data.theme);
+          break;
+        case 'get-languages':
+          // Return all Monaco language registrations as [extension, languageId] pairs.
+          // Extensions come with a leading dot (.js) which is stripped here.
+          var langs = monaco.languages.getLanguages().flatMap(function(lang) {
+            return (lang.extensions || []).map(function(ext) {
+              return [ext.replace('.', ''), lang.id];
+            });
+          });
+          window.parent.postMessage({ type: 'languages', langs: langs }, '*');
+          break;
+      }
+    });
+  });
+</script>
+</body>
+</html>
