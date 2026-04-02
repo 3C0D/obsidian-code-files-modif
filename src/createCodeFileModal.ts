@@ -9,6 +9,7 @@ import {
 	TFile
 } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
+import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
@@ -46,7 +47,7 @@ export class CreateCodeFileModal extends Modal {
 		});
 
 		const fileExtensionInput = new DropdownComponent(contentEl);
-		fileExtensionInput.selectEl.style.marginRight = '10px';
+		fileExtensionInput.selectEl.style.marginRight = '4px';
 		fileExtensionInput.addOptions(
 			Object.fromEntries(this.plugin.settings.extensions.map((ext) => [ext, ext]))
 		);
@@ -59,6 +60,25 @@ export class CreateCodeFileModal extends Modal {
 			if (e.key === 'Enter') {
 				this.complete();
 			}
+		});
+
+		// '+' button to add a new extension on the fly without leaving the modal
+		const addExtBtn = new ButtonComponent(contentEl);
+		addExtBtn.setIcon('plus');
+		addExtBtn.setTooltip('Add a new extension');
+		addExtBtn.buttonEl.style.marginRight = '10px';
+		addExtBtn.onClick(() => {
+			new ChooseExtensionModal(this.plugin, (newExt) => {
+				// Reload the dropdown with the updated list and select the new extension
+				fileExtensionInput.selectEl.empty();
+				for (const ext of this.plugin.settings.extensions) {
+					fileExtensionInput.selectEl.createEl('option', { text: ext, value: ext });
+				}
+				if (newExt) {
+					fileExtensionInput.setValue(newExt);
+					this.fileExtension = newExt;
+				}
+			}).open();
 		});
 
 		const submitButton = new ButtonComponent(contentEl);

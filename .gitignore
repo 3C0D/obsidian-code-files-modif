@@ -36,3 +36,6 @@ monacoEditor.html
 
 # Keep injection info for traceability
 # .injection-info.json should be committed to track injection version
+
+# symlink
+my-obsidian-repos

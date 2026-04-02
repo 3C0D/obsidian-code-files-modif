@@ -2,6 +2,7 @@ import type { App } from 'obsidian';
 import { PluginSettingTab, Setting } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { themes } from './themes.ts';
+import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	constructor(
@@ -55,19 +56,20 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('File Extensions')
 			.setDesc(
-				'Files with these extensions will show up in the sidebar, and will ' +
-					'be available to create new files from. Separated by commas. ' +
-					'Changes to the file extensions need a restart to take effect.'
+				'Files with these extensions will be opened with the Monaco editor. ' +
+				'Changes require a restart to take effect.'
 			)
-			.addText((text) =>
-				text
-					.setPlaceholder('js,ts')
-					.setValue(this.plugin.settings.extensions.join(','))
-					.onChange(async (value) => {
-						this.plugin.settings.extensions = value.split(',');
-						await this.plugin.saveSettings();
-					})
-			);
+			.addButton((btn) => {
+				btn.setButtonText('Add / Remove').onClick(() => {
+					new ChooseExtensionModal(this.plugin, () => this.display()).open();
+				});
+			});
+
+		// Display current extensions list below the setting
+		containerEl.createEl('p', {
+			text: `Active: ${this.plugin.settings.extensions.join(', ') || 'none'}`,
+			attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
+		});
 
 		new Setting(containerEl)
 			.setName('Folding')
