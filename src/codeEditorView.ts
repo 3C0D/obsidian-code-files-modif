@@ -9,10 +9,6 @@ import { viewType } from './types.ts';
 
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {
-	static i = 0;
-
-	id = CodeEditorView.i++;
-
 	codeEditor: ReturnType<typeof mountCodeEditor>;
 
 	constructor(
@@ -61,10 +57,6 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor.destroy();
 	}
 
-	async onOpen(): Promise<void> {
-		await super.onOpen();
-	}
-
 	clear(): void {
 		this.codeEditor.clear();
 	}
@@ -73,8 +65,8 @@ export class CodeEditorView extends TextFileView {
 		return this.codeEditor.getValue();
 	}
 
-	/** Allows external code (e.g. the CSS snippet modal) to set the editor content directly, bypassing file loading. This is useful for non-file views or when we want to update the editor content without changing the loaded file. */
-	setViewData(data: string): void {
+	/** Called by Obsidian when the file content is ready to be displayed. Syncs the inherited `data` property and the Monaco editor instance. */
+	setViewData(data: string, clear: boolean): void {
 		this.data = data;
 		this.codeEditor?.setValue(data);
 	}

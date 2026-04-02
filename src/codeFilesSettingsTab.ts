@@ -4,11 +4,8 @@ import type CodeFilesPlugin from './main.ts';
 import { themes } from './themes.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
-	plugin: CodeFilesPlugin;
-
-	constructor(app: App, plugin: CodeFilesPlugin) {
+	constructor(app: App, public plugin: CodeFilesPlugin) {
 		super(app, plugin);
-		this.plugin = plugin;
 	}
 
 	display(): void {
@@ -32,7 +29,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					dropdown.addOption(theme, theme);
 				}
 
-				return dropdown
+				dropdown
 					.setValue(this.plugin.settings.theme)
 					.onChange(async (value) => {
 						this.plugin.settings.theme = value;
@@ -48,9 +45,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					' custom themes. Disable this if the text colors are illegible on Obsidians background.'
 			)
 			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.overwriteBg).onChange((v) => {
+				toggle.setValue(this.plugin.settings.overwriteBg).onChange(async (v) => {
 					this.plugin.settings.overwriteBg = v;
-					this.plugin.saveSettings();
+					await this.plugin.saveSettings();
 				})
 			);
 
@@ -58,7 +55,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			.setName('File Extensions')
 			.setDesc(
 				'Files with these extensions will show up in the sidebar, and will ' +
-					'be available to create new files from. Seperated by commas. ' +
+					'be available to create new files from. Separated by commas. ' +
 					'Changes to the file extensions need a restart to take effect.'
 			)
 			.addText((text) =>

@@ -1,7 +1,4 @@
-import type {
-	TAbstractFile,
-	TFolder
-} from 'obsidian';
+import type { TAbstractFile, TFolder } from 'obsidian';
 import {
 	ButtonComponent,
 	DropdownComponent,
@@ -13,19 +10,22 @@ import {
 } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 
+/** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
 	fileName = 'My Code File';
 
 	fileExtension = this.plugin.settings.extensions[0];
 
-	parent: TAbstractFile;
+	parent: TFolder;
 
 	constructor(
 		private plugin: CodeFilesPlugin,
 		parent?: TAbstractFile
 	) {
 		super(plugin.app);
-		this.parent = parent ?? this.plugin.app.vault.getRoot();
+		this.parent =
+			((parent instanceof TFile ? parent.parent : parent) as TFolder) ??
+			this.plugin.app.vault.getRoot();
 	}
 
 	onOpen(): void {
@@ -48,10 +48,7 @@ export class CreateCodeFileModal extends Modal {
 		const fileExtensionInput = new DropdownComponent(contentEl);
 		fileExtensionInput.selectEl.style.marginRight = '10px';
 		fileExtensionInput.addOptions(
-			this.plugin.settings.extensions.reduce((acc: Record<string, string>, ext) => {
-				acc[ext] = ext;
-				return acc;
-			}, {})
+			Object.fromEntries(this.plugin.settings.extensions.map((ext) => [ext, ext]))
 		);
 		fileExtensionInput.setValue(this.fileExtension);
 		fileExtensionInput.onChange((value) => {
@@ -72,21 +69,21 @@ export class CreateCodeFileModal extends Modal {
 		fileNameInput.inputEl.focus();
 	}
 
+	/** Creates the new file and opens it in a new leaf, or shows a notice if a file with the same name already exists */
 	async complete(): Promise<void> {
 		this.close();
-		const parent = (
-			this.parent instanceof TFile ? this.parent.parent : this.parent
-		) as TFolder;
-		const newPath = `${parent.path}/${this.fileName}.${this.fileExtension}`;
-		const existingFile = this.app.vault.getAbstractFileByPath(normalizePath(newPath));
+		const newPath = normalizePath(
+			`${this.parent.path}/${this.fileName}.${this.fileExtension}`
+		);
+		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');
 			const leaf = this.app.workspace.getLeaf(true);
-			leaf.openFile(existingFile as TFile);
+			leaf.openFile(existingFile);
 			return;
 		}
 
-		const newFile = await this.app.vault.create(newPath, '', {});
+		const newFile = await this.app.vault.create(newPath, '');
 		const leaf = this.app.workspace.getLeaf(true);
 		leaf.openFile(newFile);
 	}

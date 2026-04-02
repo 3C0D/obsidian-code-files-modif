@@ -1,6 +1,7 @@
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
 
+/** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage. Returns a control object to get/set the editor value and manage its lifecycle. */
 export const mountCodeEditor = (
 	plugin: CodeFilesPlugin,
 	language: string,
@@ -9,6 +10,7 @@ export const mountCodeEditor = (
 	onChange?: () => void
 ): CodeEditorInstance => {
 	let value = initialValue;
+	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
 	const defaultTheme = document.body.classList.contains('theme-dark')
 		? 'vs-dark'
 		: 'vs';
@@ -27,6 +29,7 @@ export const mountCodeEditor = (
 	queryParameters.append('minimap', plugin.settings.minimap ? 'true' : 'false');
 	queryParameters.append('javascriptDefaults', 'true');
 	queryParameters.append('typescriptDefaults', 'true');
+	// Validation checks use negation (_No): if validation is disabled, send 'true'
 	queryParameters.append(
 		'javascriptDefaultsNoSemanticValidation',
 		!plugin.settings.semanticValidation ? 'true' : 'false'
@@ -50,7 +53,8 @@ export const mountCodeEditor = (
 	iframe.style.height = '100%';
 
 	const send = (type: string, payload: Record<string, unknown>): void => {
-		iframe?.contentWindow?.postMessage(
+		// Send a message to the iframe via postMessage (secure cross-origin communication)
+		iframe.contentWindow?.postMessage(
 			{
 				type,
 				...payload
@@ -59,9 +63,11 @@ export const mountCodeEditor = (
 		);
 	};
 
-	window.addEventListener('message', ({ data }: MessageEvent): void => {
+	const onMessage = ({ data }: MessageEvent): void => {
+		// Listen for messages from the iframe and synchronize state
 		switch (data.type) {
 			case 'ready': {
+				// When the iframe editor is ready, initialize its value and language
 				send('change-value', { value });
 				send('change-language', {
 					language
@@ -75,20 +81,20 @@ export const mountCodeEditor = (
 				break;
 			}
 			case 'change': {
+				// Synchronize changes from the iframe user input
+				// The 'codeContext' check prevents interference from other iframe editors
 				if (data.context === codeContext) {
-					// console.log("!change event", data.value, data.context);
 					value = data.value;
 					onChange?.();
-				} else {
-					// console.log("!change event", data.value, data.context, "ignored!!!!!!!!!!!!");
 				}
-				// this.requestSave();
 				break;
 			}
 			default:
 				break;
 		}
-	});
+	};
+
+	window.addEventListener('message', onMessage);
 
 	const clear = (): void => {
 		send('change-value', { value: '' });
@@ -102,7 +108,9 @@ export const mountCodeEditor = (
 
 	const getValue = (): string => value;
 
+	// The onMessage function is stored so it can be removed during cleanup
 	const destroy = (): void => {
+		window.removeEventListener('message', onMessage);
 		iframe.remove();
 	};
 
