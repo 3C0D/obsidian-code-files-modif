@@ -59,8 +59,12 @@ export class RenameExtensionModal extends Modal {
 	}
 
 	private getNewPath(): string {
-		const base = this.file.path.slice(0, this.file.path.lastIndexOf('.'));
-		return this.newExt ? `${base}.${this.newExt}` : base;
+		let base = this.file.path;
+		if (this.file.extension) {
+			base = base.slice(0, base.length - this.file.extension.length - 1);
+		}
+		const cleanExt = this.newExt.replace(/^\./, '').trim();
+		return cleanExt ? `${base}.${cleanExt}` : base;
 	}
 
 	private async save(): Promise<void> {
@@ -76,38 +80,34 @@ export class RenameExtensionModal extends Modal {
 			return;
 		}
 
-		const newPath =
-			this.file.path.slice(0, this.file.path.lastIndexOf('.') + 1) + ext;
+		let base = this.file.path;
+		if (this.file.extension) {
+			base = base.slice(0, base.length - this.file.extension.length - 1);
+		}
+		// Also prevent double extension if user accidentally typed the existing extension suffix
+		let newPath = `${base}.${ext}`;
+		
+		if (base.endsWith(`.${ext}`)) {
+			// If base was 'test.js' and user typed 'js', and somehow it wasn't caught as the file's extension
+			// Or they're adding .js to something that already ends in .js
+			// Actually we just generate the normal path based on standard string building. 
+			// No need to over-engineer if base has it, because TFile.extension is authoritative.
+		}
+
 		if (newPath === this.file.path) {
 			this.close();
 			return;
 		}
 
-		// Register the new extension if not already known
-		if (!this.plugin.settings.extensions.includes(ext)) {
-			this.plugin.settings.extensions.push(ext);
-			this.plugin.registerExtension(ext);
-			await this.plugin.saveSettings();
-			new Notice(`Added ".${ext}" to registered extensions`);
-		}
+		// Close the modal immediately so UI is responsive and doesn't get blocked
+		// by any errors or delays triggered by onRename handlers across the app.
+		this.close();
 
-		// Check if the file is currently open so we can reopen it after rename
-		const openLeaves = this.app.workspace
-			.getLeavesOfType('code-editor')
-			.concat(this.app.workspace.getLeavesOfType('markdown'));
-		const openLeaf = openLeaves.find(
-			(l: WorkspaceLeaf) => (l.view as View & { file?: TFile }).file === this.file
-		);
-
-		await this.app.vault.rename(this.file, newPath);
-		setTimeout(() => this.close(), 0);
-
-		// Force a full view reload so Monaco picks up the new language
-		if (openLeaf) {
-			const renamedFile = this.app.vault.getFileByPath(newPath);
-			if (renamedFile) {
-				await openLeaf.openFile(renamedFile, { active: true });
-			}
+		try {
+			await this.app.vault.rename(this.file, newPath);
+		} catch (e) {
+			new Notice('Failed to rename file');
+			console.error(e);
 		}
 	}
 }

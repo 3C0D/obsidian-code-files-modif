@@ -151,8 +151,16 @@ export class CreateCodeFileModal extends Modal {
 			new Notice(`Added ".${ext}" to registered extensions`);
 		}
 
+		let cleanName = this.fileName.trim();
+		// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
+		if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+			cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
+		} else if (cleanName.endsWith('.')) {
+			cleanName = cleanName.slice(0, -1);
+		}
+
 		this.close();
-		const newPath = normalizePath(`${this.parent.path}/${this.fileName}.${ext}`);
+		const newPath = normalizePath(`${this.parent.path}/${cleanName}.${ext}`);
 		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');

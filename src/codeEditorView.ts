@@ -19,7 +19,7 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	getDisplayText(): string {
-		return this.file?.name ?? 'Code Editor';
+		return this.file?.basename ?? 'Code Editor';
 	}
 
 	getViewType(): string {
@@ -60,6 +60,25 @@ export class CodeEditorView extends TextFileView {
 
 	clear(): void {
 		this.codeEditor?.clear();
+	}
+
+	async onRename(file: TFile): Promise<void> {
+		super.onRename(file);
+		// When the file is renamed (e.g. extension changed), Obsidian updates the TFile
+		// but does not automatically reload the view's inner content. We must manually
+		// destroy the old Monaco iframe and mount a new one so it picks up the new syntax
+		// highlighting and updates its internal codeContext message router.
+		this.codeEditor?.destroy();
+		this.contentEl.empty();
+
+		this.codeEditor = await mountCodeEditor(
+			this.plugin,
+			getLanguage(file.extension),
+			this.data,
+			this.getContext(file),
+			() => this.requestSave()
+		);
+		this.contentEl.append(this.codeEditor.iframe);
 	}
 
 	getViewData(): string {

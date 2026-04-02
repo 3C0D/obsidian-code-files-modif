@@ -228,8 +228,11 @@ async function createBuildContext(
 					const monacoTarget = path.join(buildPath, 'vs');
 					const htmlSrc = path.join(pluginDir, 'src/monacoEditor.html');
 					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
+					const themesSrc = path.join(pluginDir, 'node_modules/monaco-themes/themes');
+					const themesTarget = path.join(buildPath, 'monaco-themes');
 					await cp(monacoSrc, monacoTarget, { recursive: true });
 					await copyFile(htmlSrc, htmlTarget);
+					await cp(themesSrc, themesTarget, { recursive: true });
 					// if real or build
 					if (isProd) {
 						if (

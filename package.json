@@ -57,8 +57,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@types/lodash": "^4.17.17",
-    "lodash": "^4.17.21"
+    "monaco-themes": "latest"
   },
   "engines": {
     "npm": "please-use-yarn",

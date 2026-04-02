@@ -28,6 +28,7 @@ main.css
 # Monaco editor (generated at build time)
 vs/
 /monacoEditor.html
+/monaco-themes/
 
 # VSCode - keep settings.json for yarn protection
 .vscode/*

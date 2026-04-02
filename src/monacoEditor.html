@@ -35,6 +35,14 @@
       initialized = true;
       context = params.context;
 
+      if (params.themeData) {
+        try {
+          monaco.editor.defineTheme(params.theme, JSON.parse(params.themeData));
+        } catch(e) {
+          console.warn('code-files: defineTheme failed', e);
+        }
+      }
+
       var opts = {
         language: params.lang || 'plaintext',
         theme: params.theme || 'vs-dark',
@@ -77,13 +85,10 @@
             editor.updateOptions({ formatOnType: true });
           }
           if (cfg.formatOnSave) {
-            editor.onDidChangeModelContent(function() {
-              // formatOnSave: trigger format when content is saved (Ctrl+S)
-            });
-            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
-              editor.getAction('editor.action.formatDocument').run();
-            });
-          }
+              editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+                editor.getAction('editor.action.formatDocument').run();
+              });
+            }
         } catch(e) {
           console.warn('code-files: invalid formatterConfig JSON', e);
         }
@@ -114,6 +119,16 @@
           window.parent.postMessage({ type: 'open-rename-extension', context: context }, '*');
         }
       });
+
+      editor.addAction({
+        id: 'code-files-change-theme',
+        label: 'Change Theme',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.7,
+        run: function() {
+          window.parent.postMessage({ type: 'open-theme-picker', context: context }, '*');
+        }
+      });
     }
 
     // Signal that Monaco is fully loaded and ready to receive 'init'.
@@ -134,6 +149,18 @@
           break;
         case 'change-language':
           if (editor) monaco.editor.setModelLanguage(editor.getModel(), data.language);
+          break;
+        case 'change-theme':
+          if (editor) {
+            if (data.themeData) {
+              try {
+                monaco.editor.defineTheme(data.theme, JSON.parse(data.themeData));
+              } catch(e) {
+                console.warn('code-files: defineTheme failed', e);
+              }
+            }
+            monaco.editor.setTheme(data.theme);
+          }
           break;
         case 'change-background':
           document.body.style.background = data.background;

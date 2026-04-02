@@ -3,6 +3,9 @@ import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
 import manifest from '../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from './getLanguage.ts';
+import { ChooseThemeModal } from './chooseThemeModal.ts';
+import { RenameExtensionModal } from './renameExtensionModal.ts';
+import { FormatterConfigModal } from './formatterConfigModal.ts';
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
  *  Returns a control object to get/set the editor value and manage its lifecycle.
@@ -34,10 +37,12 @@ export const mountCodeEditor = async (
 	const theme =
 		plugin.settings.theme === 'default' ? defaultTheme : plugin.settings.theme;
 
+	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
+
 	const initParams: Record<string, string> = {
 		context: codeContext,
 		lang: language,
-		theme,
+		theme: theme.replace(/[^a-z0-9\-]/gi, '-'),
 		folding: plugin.settings.folding ? 'true' : 'false',
 		lineNumbers: plugin.settings.lineNumbers ? 'on' : 'off',
 		minimap: plugin.settings.minimap ? 'true' : 'false',
@@ -57,6 +62,17 @@ export const mountCodeEditor = async (
 			? 'true'
 			: 'false'
 	};
+	if (!['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'].includes(theme)) {
+		try {
+			const url = plugin.app.vault.adapter
+				.getResourcePath(`${pluginBase}/monaco-themes/${theme}.json`)
+				.replace(/\?.*$/, '');
+			initParams.themeData = JSON.stringify(await (await fetch(url)).json());
+		} catch (e) {
+			console.warn(`code-files: theme "${theme}" not found`, e);
+		}
+	}
+
 	if (plugin.settings.overwriteBg) {
 		initParams.background = 'transparent';
 	}
@@ -68,7 +84,6 @@ export const mountCodeEditor = async (
 	iframe.style.width = '100%';
 	iframe.style.height = '100%';
 
-	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
 	// before using the URL as a base for relative paths inside the HTML
 	const htmlUrl = plugin.app.vault.adapter.getResourcePath(
@@ -129,20 +144,63 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-formatter-config': {
 				if (data.context === codeContext) {
-					const { FormatterConfigModal } =
-						await import('./formatterConfigModal.ts');
+					// Blur to prevent Obsidian from saving an iframe inner element as activeElement
+					// which causes "n.instanceOf is not a function" on modal close.
+					(document.activeElement as HTMLElement)?.blur();
 					const ext = codeContext.split('.').pop() ?? '';
-					new FormatterConfigModal(plugin, ext).open();
+					const modal = new FormatterConfigModal(plugin, ext);
+					const origOnClose = modal.onClose.bind(modal);
+					modal.onClose = () => {
+						origOnClose();
+						iframe.focus();
+					};
+					modal.open();
+				}
+				break;
+			}
+			case 'open-theme-picker': {
+				if (data.context === codeContext) {
+					(document.activeElement as HTMLElement)?.blur();
+					const modal = new ChooseThemeModal(plugin, async (theme) => {
+						const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
+						const resolvedTheme = theme === 'default'
+							? (document.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs')
+							: theme;
+						let themeData: string | undefined;
+						if (!builtins.includes(theme)) {
+							try {
+								const url = plugin.app.vault.adapter
+									.getResourcePath(`${pluginBase}/monaco-themes/${theme}.json`)
+									.replace(/\?.*$/, '');
+								themeData = JSON.stringify(await (await fetch(url)).json());
+							} catch (e) {
+								console.warn(`code-files: theme "${theme}" not found`, e);
+							}
+						}
+						const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
+						send('change-theme', { theme: safeThemeId, themeData });
+					});
+					const origOnClose = modal.onClose.bind(modal);
+					modal.onClose = () => {
+						origOnClose();
+						iframe.focus();
+					};
+					modal.open();
 				}
 				break;
 			}
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
+					(document.activeElement as HTMLElement)?.blur();
 					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
 					if (file && 'extension' in file) {
-						const { RenameExtensionModal } =
-							await import('./renameExtensionModal.ts');
-						new RenameExtensionModal(plugin, file as TFile).open();
+						const modal = new RenameExtensionModal(plugin, file as TFile);
+						const origOnClose = modal.onClose.bind(modal);
+						modal.onClose = () => {
+							origOnClose();
+							iframe.focus();
+						};
+						modal.open();
 					}
 				}
 				break;
@@ -151,8 +209,10 @@ Element.prototype.appendChild = function(node) {
 				// Filter by codeContext to avoid processing changes from other open editors.
 				// Each iframe sends its own context string so messages don't cross-contaminate.
 				if (data.context === codeContext) {
-					value = data.value;
-					onChange?.();
+					if (value !== data.value) {
+						value = data.value as string;
+						onChange?.();
+					}
 				}
 				break;
 			}

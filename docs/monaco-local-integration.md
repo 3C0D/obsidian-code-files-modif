@@ -227,6 +227,104 @@ Le `codeContext` identifie chaque instance : si plusieurs iframes Monaco sont ou
 
 ---
 
+## Problème 9 — Fausse sauvegarde à l'ouverture d'un fichier
+
+**Symptôme :** le simple fait d'ouvrir un fichier le marquait comme modifié sur le disque, affolant les services de sync (Obsidian Sync, iCloud, Dropbox) qui voyaient une modification fantôme.
+
+**Cause :** dans `codeEditorView.ts`, `onLoadFile` injectait le contenu du fichier dans Monaco via `setValue`. Monaco déclenchait alors son événement `onDidChangeModelContent`, que le plugin écoutait aveuglément pour appeler `requestSave()`. Résultat : ouverture = écriture disque inutile.
+
+**Solution :** dans le handler `change` de `mountCodeEditor.ts`, ignorer le message si le contenu reçu est identique à la valeur courante. Le fichier n'est plus jamais sauvegardé sur le disque juste en l'ouvrant.
+
+```typescript
+case 'change':
+    if (data.context === codeContext && value !== data.value) {
+        value = data.value;
+        onChange?.();
+    }
+```
+
+---
+
+## Problème 10 — Double extension au renommage d'onglet (`.js` → `.js.js`)
+
+**Symptôme :** cliquer sur le titre d'un onglet Monaco déclenchait silencieusement un renommage du fichier, ajoutant l'extension en double (`test.js` → `test.js.js`).
+
+**Cause :** `getDisplayText()` dans `CodeEditorView` retournait `file.name` (nom complet avec extension) au lieu de `file.basename` (sans extension). Quand l'utilisateur cliquait sur le titre de l'onglet, Obsidian entrait en mode renommage en initialisant sa boîte de texte avec `test.js`. À la validation, Obsidian ajoutait automatiquement l'extension — donnant `test.js.js`.
+
+**Solution :** utiliser `file.basename` dans `getDisplayText()`, conformément à la convention Obsidian.
+
+---
+
+## Problème 11 — Rename extension depuis Monaco : rechargement non déclenché après le premier rename
+
+**Symptôme :** le premier rename via le menu contextuel Monaco fonctionnait, mais les suivants ne rechargaient plus la vue. Monaco restait coincé avec l'ancien `codeContext` (ex. `script.py`) alors que le fichier s'appelait désormais `script.js`. Les messages `postMessage` suivants étaient ignorés silencieusement.
+
+**Cause :** l'ancienne approche forçait `openLeaf.openFile()` depuis `RenameExtensionModal`. Obsidian optimisait en refusant de recharger un onglet qu'il considérait déjà ouvert sur le même objet `TFile`. La vue Monaco gardait donc son ancien `codeContext`, rendant le modal inaccessible au deuxième appel.
+
+**Solution en deux parties :**
+
+1. **Interception native du rename dans `CodeEditorView`** — implémentation de `onRename(file: TFile)` qui détruit l'ancienne iframe et en monte une nouvelle avec le bon langage et le bon `codeContext` :
+
+```typescript
+async onRename(file: TFile): Promise<void> {
+    super.onRename(file);
+    this.codeEditor?.destroy();
+    this.contentEl.empty();
+    this.codeEditor = await mountCodeEditor(
+        this.plugin,
+        getLanguage(file.extension),
+        this.data,
+        this.getContext(file),
+        () => this.requestSave()
+    );
+    this.contentEl.append(this.codeEditor.iframe);
+}
+```
+
+2. **Simplification de `RenameExtensionModal`** — suppression de la logique `openLeaf.openFile()` devenue inutile. La vue se gère seule via `onRename`.
+
+3. **Restauration de `iframe.focus()`** dans le monkey-patch `onClose` de `mountCodeEditor` — nécessaire pour le cas annulation (croix) : si l'utilisateur ferme le modal sans valider, le focus est gracieusement rendu à l'iframe Monaco.
+
+**Erreur :** lors de la fermeture de `ChooseThemeModal`, `RenameExtensionModal` et `FormatterConfigModal` (ouverts via le menu contextuel Monaco), Obsidian crashait avec :
+
+```
+Uncaught TypeError: n.instanceOf is not a function
+    at e.close (app.js:1:1079118)
+```
+
+**Cause :** Obsidian sauvegarde `document.activeElement` à l'ouverture d'un modal pour restaurer le focus à la fermeture. Quand le modal est ouvert depuis l'iframe Monaco, l'élément actif capturé est un élément interne de l'iframe (le `<textarea>` caché de Monaco). À la fermeture, Obsidian tente de valider le type de cet élément avec `element.instanceOf(HTMLElement)` — une méthode qu'Obsidian injecte globalement sur `Node.prototype`. Mais les éléments de l'iframe n'héritent pas de ce patch (document isolé), donc `instanceOf` n'existe pas et le code minifié crashe.
+
+**Solution :** avant d'ouvrir le modal, forcer le blur de l'élément actif avec `(document.activeElement as HTMLElement)?.blur()`. Le focus retombe sur le `body` d'Obsidian qui possède `instanceOf`. Puis monkey-patcher `modal.onClose` pour restaurer manuellement le focus sur l'iframe après fermeture :
+
+```typescript
+(document.activeElement as HTMLElement)?.blur();
+const modal = new ChooseThemeModal(plugin, callback);
+const origOnClose = modal.onClose.bind(modal);
+modal.onClose = () => {
+    origOnClose();
+    iframe.focus();
+};
+modal.open();
+```
+
+Cela contourne le `instanceOf` fatal tout en préservant l'expérience utilisateur.
+
+---
+
+## Intégration des thèmes Monaco custom
+
+**Contexte :** la liste `themes.ts` contenait ~50 noms de thèmes (Dracula, Monokai, Nord, etc.) mais aucun n'était défini — Monaco les ignorait silencieusement et tombait sur `vs-dark`.
+
+**Solution :** installation du package `monaco-themes` qui fournit les définitions JSON de tous ces thèmes. Au build, esbuild copie `node_modules/monaco-themes/themes/` → `{buildPath}/monaco-themes/`. Au chargement d'un thème custom :
+
+1. Fetch du JSON via `app://` : `getResourcePath(${pluginBase}/monaco-themes/${theme}.json)`
+2. Envoi du JSON stringifié dans `initParams.themeData`
+3. Dans `monacoEditor.html`, appel de `monaco.editor.defineTheme(theme, JSON.parse(themeData))` avant `monaco.editor.create()`
+
+Le changement de thème à la volée (via le menu contextuel Monaco) suit le même flux : fetch du JSON, envoi via `change-theme`, appel de `defineTheme` puis `monaco.editor.setTheme()`.
+
+---
+
 ## Ce qu'il faut retenir
 
 La contrainte principale est la **CSP d'Obsidian** qui s'applique à toutes les frames enfants et qu'on ne peut pas surcharger. Elle autorise `app:` et `'self'` mais bloque `data:` et `blob:` pour les polices, et les stylesheets externes.
