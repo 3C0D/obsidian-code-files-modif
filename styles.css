@@ -11,3 +11,59 @@
   line-height: 1.6;
   pointer-events: none;
 }
+
+.code-files-dirty-badge {
+  display: inline-block;
+  margin-left: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+  background: transparent;
+  vertical-align: middle;
+  pointer-events: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.code-files-dirty-badge.code-files-dirty-unsaved {
+  background: white;
+  border-color: white;
+}
+
+.code-files-settings-toggles {
+  flex-shrink: 0;
+}
+
+.code-files-formatter-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
+}
+
+.code-files-formatter-title {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px 0 6px 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.code-files-formatter-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.code-files-formatter-editor iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.code-files-settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  flex-shrink: 0;
+}

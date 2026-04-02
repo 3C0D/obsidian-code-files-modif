@@ -47,6 +47,7 @@ export const mountCodeEditor = async (
 		folding: plugin.settings.folding ? 'true' : 'false',
 		lineNumbers: plugin.settings.lineNumbers ? 'on' : 'off',
 		minimap: plugin.settings.minimap ? 'true' : 'false',
+		wordWrap: plugin.settings.wordWrap,
 		javascriptDefaults: 'true',
 		typescriptDefaults: 'true',
 		// Validation checks use negation (_No): if validation is disabled, send 'true'
@@ -223,6 +224,13 @@ Element.prototype.appendChild = function(node) {
 			case 'save-document': {
 				if (data.context === codeContext) {
 					onSave?.();
+				}
+				break;
+			}
+			case 'word-wrap-toggled': {
+				if (data.context === codeContext) {
+					plugin.settings.wordWrap = data.wordWrap as 'on' | 'off';
+					await plugin.saveSettings();
 				}
 				break;
 			}

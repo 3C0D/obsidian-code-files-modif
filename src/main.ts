@@ -1,4 +1,4 @@
-import { Plugin, TFile, TFolder } from 'obsidian';
+import { Plugin, TFile, TFolder, addIcon } from 'obsidian';
 import { CodeEditorView } from './codeEditorView.ts';
 import { CreateCodeFileModal } from './createCodeFileModal.ts';
 import { CodeFilesSettingsTab } from './codeFilesSettingsTab.ts';
@@ -17,6 +17,8 @@ export default class CodeFilesPlugin extends Plugin {
 	async onload(): Promise<void> {
 		await this.loadSettings();
 		await loadPersistedLanguages(this);
+
+		addIcon('code-files-settings', '<rect x="5" y="5" width="90" height="90" rx="15" fill="none" stroke="currentColor" stroke-width="8"/><circle cx="50" cy="50" r="25" fill="currentColor"/>');
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 
@@ -270,5 +272,21 @@ export default class CodeFilesPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+	}
+
+	/** Sends updated editor options to all open code-editor iframes. */
+	broadcastOptions(): void {
+		const views = this.app.workspace.getLeavesOfType(viewType)
+			.map((l) => l.view as import('./codeEditorView.ts').CodeEditorView);
+		for (const view of views) {
+			view.codeEditor?.send('change-options', {
+				wordWrap: this.settings.wordWrap,
+				lineNumbers: this.settings.lineNumbers ? 'on' : 'off',
+				minimap: this.settings.minimap,
+				folding: this.settings.folding,
+				semanticValidation: !this.settings.semanticValidation,
+				syntaxValidation: !this.settings.syntaxValidation,
+			});
+		}
 	}
 }

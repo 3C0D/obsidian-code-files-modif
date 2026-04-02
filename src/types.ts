@@ -17,6 +17,10 @@ export interface MyPluginSettings {
 	showRibbonIcon: boolean;
 	/** Last 5 recently used themes, most recent first */
 	recentThemes: string[];
+	/** If false, Obsidian's auto-save is blocked — only Ctrl+S saves */
+	autoSave: boolean;
+	/** Word wrap mode for the Monaco editor */
+	wordWrap: 'on' | 'off';
 	/** Per-extension formatter config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
 	formatterConfigs: Record<string, string>;
 }
@@ -47,6 +51,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	overwriteBg: true,
 	showRibbonIcon: true,
 	recentThemes: [],
+	autoSave: true,
+	wordWrap: 'off',
 	formatterConfigs: {}
 };
 

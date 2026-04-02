@@ -49,6 +49,7 @@
         folding: params.folding !== 'false',
         lineNumbers: params.lineNumbers || 'on',
         minimap: { enabled: params.minimap !== 'false' },
+        wordWrap: params.wordWrap || 'off',
         // automaticLayout recomputes editor size when the container resizes
         automaticLayout: true,
       };
@@ -115,7 +116,20 @@
         keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyZ],
         run: function() {
           var current = editor.getRawOptions().wordWrap;
-          editor.updateOptions({ wordWrap: current === 'on' ? 'off' : 'on' });
+          var next = current === 'on' ? 'off' : 'on';
+          editor.updateOptions({ wordWrap: next });
+          window.parent.postMessage({ type: 'word-wrap-toggled', wordWrap: next, context: context }, '*');
+        }
+      });
+
+      editor.addAction({
+        id: 'code-files-save',
+        label: 'Save',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.9,
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+        run: function() {
+          window.parent.postMessage({ type: 'save-document', context: context }, '*');
         }
       });
 
@@ -203,6 +217,29 @@
               console.warn('code-files: invalid formatterConfig JSON', e);
             }
           }
+          break;
+        case 'change-options':
+          if (editor) {
+            editor.updateOptions({
+              wordWrap: data.wordWrap,
+              lineNumbers: data.lineNumbers,
+              minimap: { enabled: data.minimap },
+              folding: data.folding,
+            });
+            if (typeof data.semanticValidation === 'boolean') {
+              monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+                noSemanticValidation: data.semanticValidation,
+                noSyntaxValidation: data.syntaxValidation,
+              });
+              monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                noSemanticValidation: data.semanticValidation,
+                noSyntaxValidation: data.syntaxValidation,
+              });
+            }
+          }
+          break;
+        case 'change-word-wrap':
+          if (editor) editor.updateOptions({ wordWrap: data.wordWrap });
           break;
         case 'change-background':
           document.body.style.background = data.background;

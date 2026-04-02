@@ -96,6 +96,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				toggle.setValue(this.plugin.settings.folding).onChange(async (value) => {
 					this.plugin.settings.folding = value;
 					await this.plugin.saveSettings();
+					this.plugin.broadcastOptions();
 				})
 			);
 
@@ -108,6 +109,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.lineNumbers = value;
 						await this.plugin.saveSettings();
+						this.plugin.broadcastOptions();
 					})
 			);
 
@@ -118,6 +120,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				toggle.setValue(this.plugin.settings.minimap).onChange(async (value) => {
 					this.plugin.settings.minimap = value;
 					await this.plugin.saveSettings();
+					this.plugin.broadcastOptions();
 				})
 			);
 
@@ -130,6 +133,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.semanticValidation = value;
 						await this.plugin.saveSettings();
+						this.plugin.broadcastOptions();
 					})
 			);
 
@@ -142,6 +146,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.syntaxValidation = value;
 						await this.plugin.saveSettings();
+						this.plugin.broadcastOptions();
 					})
 			);
 
