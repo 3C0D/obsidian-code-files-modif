@@ -36,6 +36,17 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.destroy();
 	}
 
+	private updateExtBadge(file: TFile): void {
+		const titleContainer = this.containerEl.querySelector('.view-header-title-container');
+		if (!titleContainer) return;
+		titleContainer.querySelector('.code-files-ext-badge')?.remove();
+		const badge = createEl('span', {
+			text: `.${file.extension}`,
+			cls: 'code-files-ext-badge'
+		});
+		titleContainer.appendChild(badge);
+	}
+
 	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
 	async onLoadFile(file: TFile): Promise<void> {
 		await super.onLoadFile(file);
@@ -50,6 +61,7 @@ export class CodeEditorView extends TextFileView {
 
 		this.contentEl.style.overflow = 'hidden';
 		this.contentEl.append(this.codeEditor.iframe);
+		this.updateExtBadge(file);
 	}
 
 	async onUnloadFile(file: TFile): Promise<void> {
@@ -79,6 +91,7 @@ export class CodeEditorView extends TextFileView {
 			() => this.requestSave()
 		);
 		this.contentEl.append(this.codeEditor.iframe);
+		this.updateExtBadge(file);
 	}
 
 	getViewData(): string {
