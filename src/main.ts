@@ -118,7 +118,7 @@ export default class CodeFilesPlugin extends Plugin {
 					return;
 				}
 
-				// On a file — Rename + Formatter only
+				// On a file — Rename only
 				const addRename = (m: typeof menu): void => {
 					m.addItem((i) =>
 						i
@@ -133,33 +133,10 @@ export default class CodeFilesPlugin extends Plugin {
 					);
 				};
 
-				const addFormatter = (m: typeof menu): void => {
-					m.addItem((i) =>
-						i
-							.setTitle('Formatter Config')
-							.setIcon('settings')
-							.onClick(() =>
-								new FormatterConfigModal(
-									this,
-									(abstractFile as TFile).extension
-								).open()
-							)
-					);
-				};
-
-				if (isExplorer && isRegistered) {
-					menu.addItem((item) => {
-						item.setTitle('Code Files').setIcon('file-json');
-						const sub = item.setSubmenu();
-						addRename(sub);
-						addFormatter(sub);
-					});
-				} else if (isExplorer) {
+				if (isExplorer && isFile) {
 					addRename(menu);
-				} else {
-					// Tab header: flat
+				} else if (!isExplorer) {
 					addRename(menu);
-					if (isRegistered) addFormatter(menu);
 				}
 			})
 		);

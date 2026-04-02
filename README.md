@@ -15,6 +15,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Formatter config** — per-extension formatting rules (tabSize, insertSpaces, formatOnSave, formatOnType)
 - **Word wrap** — toggle with `Alt+Z` or from the editor context menu
 - **Manual save** — `Ctrl+S` saves explicitly; with formatOnSave enabled, formats before saving
+- **Save indicator** — when Auto Save is off, a small circle appears next to the file extension in the tab title: empty = no unsaved changes, filled white = unsaved changes pending
 
 ## Usage
 
@@ -38,7 +39,19 @@ Place your cursor inside a code fence and use:
 - Right-click → **"Edit Code Block in Monaco Editor"**
 - Command palette → **"Open current code block in Monaco Editor"**
 
-### Editing CSS snippets
+### Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+S` | Save (formats first if formatOnSave is enabled). With Auto Save off, this is the only way to persist changes. |
+| `Alt+Z` | Toggle word wrap |
+| `F1` | Monaco command palette (all editor actions) |
+
+### Editor settings (gear icon ⚙ in tab header)
+
+Click the gear icon on any code file tab to open the editor settings modal:
+- **Top section** — toggles for AutoSave, WordWrap, Folding, Line Numbers, Minimap, Semantic Validation, Syntax Validation
+- **Bottom section** — formatter config JSON for the current file's extension (tabSize, insertSpaces, formatOnSave, formatOnType)
 
 Command palette → **"Edit CSS Snippet"** — opens a search modal to choose an existing snippet or create a new one.
 
@@ -46,18 +59,14 @@ Command palette → **"Edit CSS Snippet"** — opens a search modal to choose an
 
 | Action | Description |
 |---|---|
-| **Formatter Config** | Edit formatting options for the current file's extension |
 | **Rename Extension** | Rename the file's extension on the fly |
 | **Change Theme** | Pick a theme with live preview — navigating the list applies it instantly, closing without confirming restores the previous theme |
 | **Toggle Word Wrap** | Toggle word wrap (`Alt+Z`) |
+| **Save** | Save the file (`Ctrl+S`), formats first if formatOnSave is enabled |
 
-### Keyboard shortcuts
+All these actions are also accessible via the Monaco command palette (`F1`), along with all other built-in Monaco actions.
 
-| Shortcut | Action |
-|---|---|
-| `Ctrl+S` | Save (formats first if formatOnSave is enabled) |
-| `Alt+Z` | Toggle word wrap |
-| `F1` | Monaco command palette (all editor actions) |
+Formatter config is accessible via the gear icon (⚙) in the tab header — it shows the formatter options for the current file's extension.
 
 ## Settings
 
@@ -71,7 +80,8 @@ Command palette → **"Edit CSS Snippet"** — opens a search modal to choose an
 | **Minimap** | Show the minimap on the right side. |
 | **Semantic Validation** | Show semantic errors (type errors, etc.) for JS/TS files. |
 | **Syntax Validation** | Show syntax errors for JS/TS files. |
-| **Formatter Config** | Per-extension formatting rules. Click **Edit** next to an extension to configure it. |
+| **Auto Save** | Off by default. When off, changes are only saved with `Ctrl+S` — useful for code files where accidental edits should not be silently persisted. When on, Obsidian saves automatically after each change. A small circle in the tab title indicates save status when Auto Save is off: empty circle = nothing to save, filled white circle = unsaved changes. |
+| **Word Wrap** | Toggle word wrap in the editor. Can also be toggled with `Alt+Z`. |
 
 ### Managing extensions
 

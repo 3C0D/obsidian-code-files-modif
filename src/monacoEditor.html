@@ -94,41 +94,28 @@
         }
       }
 
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
-        if (formatOnSave) {
-          var formatAction = editor.getAction('editor.action.formatDocument');
-          if (formatAction && formatAction.isSupported()) {
-            formatAction.run().then(function() {
-              window.parent.postMessage({ type: 'save-document', context: context }, '*');
-            });
-            return;
-          }
-        }
-        window.parent.postMessage({ type: 'save-document', context: context }, '*');
-      });
-
-      // Add Alt+Z to toggle word wrap
-      editor.addAction({
-        id: 'code-files-toggle-word-wrap',
-        label: 'Toggle Word Wrap',
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.8,
-        keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyZ],
-        run: function() {
-          var current = editor.getRawOptions().wordWrap;
-          var next = current === 'on' ? 'off' : 'on';
-          editor.updateOptions({ wordWrap: next });
-          window.parent.postMessage({ type: 'word-wrap-toggled', wordWrap: next, context: context }, '*');
-        }
+      // Alt+Z toggles word wrap and persists the setting
+      editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, function() {
+        var current = editor.getRawOptions().wordWrap;
+        var next = current === 'on' ? 'off' : 'on';
+        editor.updateOptions({ wordWrap: next });
+        window.parent.postMessage({ type: 'word-wrap-toggled', wordWrap: next, context: context }, '*');
       });
 
       editor.addAction({
         id: 'code-files-save',
         label: 'Save',
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.9,
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
         run: function() {
+          if (formatOnSave) {
+            var formatAction = editor.getAction('editor.action.formatDocument');
+            if (formatAction && formatAction.isSupported()) {
+              formatAction.run().then(function() {
+                window.parent.postMessage({ type: 'save-document', context: context }, '*');
+              });
+              return;
+            }
+          }
           window.parent.postMessage({ type: 'save-document', context: context }, '*');
         }
       });
@@ -140,20 +127,10 @@
 
       // Add a context menu action in Monaco to open the formatter config for this file
       editor.addAction({
-        id: 'code-files-formatter-config',
-        label: 'Formatter Config',
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.5,
-        run: function() {
-          window.parent.postMessage({ type: 'open-formatter-config', context: context }, '*');
-        }
-      });
-
-      editor.addAction({
         id: 'code-files-rename-extension',
-        label: 'Rename Extension',
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.6,
+        label: '🍋‍🟩 Rename Extension',
+        contextMenuGroupId: 'code-files',
+        contextMenuOrder: 1,
         run: function() {
           window.parent.postMessage({ type: 'open-rename-extension', context: context }, '*');
         }
@@ -161,9 +138,9 @@
 
       editor.addAction({
         id: 'code-files-change-theme',
-        label: 'Change Theme',
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.7,
+        label: '🍒 Change Theme',
+        contextMenuGroupId: 'code-files',
+        contextMenuOrder: 2,
         run: function() {
           window.parent.postMessage({ type: 'open-theme-picker', context: context }, '*');
         }

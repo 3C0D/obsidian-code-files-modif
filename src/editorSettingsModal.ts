@@ -34,7 +34,7 @@ export class EditorSettingsModal extends Modal {
 
 		new Setting(toggleSection)
 			.setName('Auto Save')
-			.setDesc('If off, only Ctrl+S saves the file.')
+			.setDesc('(Ctrl+S) to save when Off')
 			.addToggle((t) => t.setValue(this.plugin.settings.autoSave).onChange(async (v) => {
 				this.plugin.settings.autoSave = v;
 				await this.plugin.saveSettings();
@@ -43,6 +43,7 @@ export class EditorSettingsModal extends Modal {
 
 		new Setting(toggleSection)
 			.setName('Word Wrap')
+			.setDesc('(Alt+Z)')
 			.addToggle((t) => t.setValue(this.plugin.settings.wordWrap === 'on').onChange(async (v) => {
 				this.plugin.settings.wordWrap = v ? 'on' : 'off';
 				await this.plugin.saveSettings();

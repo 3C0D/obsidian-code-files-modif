@@ -51,7 +51,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	overwriteBg: true,
 	showRibbonIcon: true,
 	recentThemes: [],
-	autoSave: true,
+	autoSave: false,
 	wordWrap: 'off',
 	formatterConfigs: {}
 };

@@ -75,10 +75,17 @@ Le modal `FormatterConfigModal` existant peut être supprimé une fois la migrat
 
 ## AutoSave — comportement
 
-Obsidian sauvegarde via `requestSave()` — debounce ~2s déclenché à chaque frappe. Si `autoSave: false` :
-- `save()` est bloqué via override dans `CodeEditorView` : si `dirty` est false, la sauvegarde est ignorée
-- Seul `Ctrl+S` met `dirty` à true et déclenche la sauvegarde
-- Un indicateur visuel apparaît dès l'ouverture du fichier : un petit cercle après le badge d'extension. Cercle vide = rien à sauver, cercle plein blanc = modifications non sauvegardées. Disparaît si autoSave est réactivé.
+**Par défaut : off.** Dans du code, une frappe accidentelle peut modifier silencieusement un fichier. Avec autoSave off, rien n'est écrit sur le disque tant que l'utilisateur ne fait pas `Ctrl+S` explicitement.
+
+Si autoSave est réactivé, Obsidian reprend son comportement normal : sauvegarde automatique ~2s après chaque frappe, `Ctrl+S` n'est plus nécessaire.
+
+**Implémentation :**
+- `requestSave()` est bloqué via override dans `CodeEditorView` quand autoSave est off
+- `save()` est aussi bloqué via override sauf si `forceSave = true`
+- Ctrl+S met `forceSave = true` avant d'appeler `save()`, ce qui laisse passer la sauvegarde
+- À la fermeture d'Obsidian, `save()` est appelé par Obsidian mais `forceSave` est false → bloqué → les modifs non sauvegardées sont perdues (comportement voulu)
+
+**Indicateur visuel :** un petit cercle apparaît après le badge d'extension dès l'ouverture du fichier quand autoSave est off. Cercle vide = rien à sauver, cercle plein blanc = modifications non sauvegardées. Disparaît si autoSave est réactivé.
 
 ## WordWrap — comportement
 
