@@ -3,7 +3,21 @@ import type { CodeEditorInstance } from './types.ts';
 import manifest from '../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from './getLanguage.ts';
 
-/** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage. Returns a control object to get/set the editor value and manage its lifecycle. */
+/** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
+ *  Returns a control object to get/set the editor value and manage its lifecycle.
+ *
+ *  Why an iframe?
+ *  Monaco requires a full browser environment and conflicts with Obsidian's DOM if loaded directly.
+ *  An iframe provides isolation while postMessage handles bidirectional communication.
+ *
+ *  Why async + fetch + blob URL?
+ *  - getResourcePath() returns an app:// URL with a cache-busting timestamp (?1234...).
+ *    This timestamp breaks relative paths like ./vs/loader.js inside the HTML.
+ *  - file:// URLs are blocked by Electron.
+ *  - Solution: fetch the HTML, patch the ./vs paths to absolute app:// URLs (timestamp stripped),
+ *    inline the Monaco CSS (Obsidian's CSP blocks external <link> stylesheets in child frames),
+ *    then inject via a blob URL which is not subject to the parent CSP for its own inline content.
+ */
 export const mountCodeEditor = async (
 	plugin: CodeFilesPlugin,
 	language: string,
@@ -51,19 +65,24 @@ export const mountCodeEditor = async (
 	iframe.style.height = '100%';
 
 	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
+	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
+	// before using the URL as a base for relative paths inside the HTML
 	const htmlUrl = plugin.app.vault.adapter.getResourcePath(`${pluginBase}/monacoEditor.html`);
 	const vsBase = plugin.app.vault.adapter.getResourcePath(`${pluginBase}/vs`).replace(/\?.*$/, '');
 
 	let html = await (await fetch(htmlUrl)).text();
+	// Patch relative ./vs paths to absolute app:// URLs so Monaco can load its workers and modules
 	html = html
 		.replace("'./vs'", `'${vsBase}'`)
 		.replace('"./vs/loader.js"', `"${vsBase}/loader.js"`);
 
 	const cssUrl = `${vsBase}/editor/editor.main.css`;
 	let cssText = await (await fetch(cssUrl)).text();
-	// Remove @font-face rules entirely — Obsidian's CSP blocks all font loading (data:, blob:)
-	// Monaco falls back to system fonts gracefully
+	// Remove @font-face rules — Obsidian's CSP blocks data: and blob: font sources in child frames.
+	// Monaco degrades gracefully to system monospace fonts.
 	cssText = cssText.replace(/@font-face\s*\{[^}]*\}/g, '');
+	// Inject CSS inline and intercept dynamic <link> insertions Monaco attempts at runtime.
+	// Without this, Monaco tries to inject a <link rel="stylesheet"> which the parent CSP blocks.
 	html = html.replace('</head>', `<style>${cssText}</style>
 <script>
 const _orig = Element.prototype.appendChild;
@@ -78,32 +97,28 @@ Element.prototype.appendChild = function(node) {
 	iframe.src = blobUrl;
 
 	const send = (type: string, payload: Record<string, unknown>): void => {
-		// Send a message to the iframe via postMessage (secure cross-origin communication)
-		iframe.contentWindow?.postMessage(
-			{
-				type,
-				...payload
-			},
-			'*'
-		);
+		iframe.contentWindow?.postMessage({ type, ...payload }, '*');
 	};
 
 	const onMessage = async ({ data }: MessageEvent): Promise<void> => {
-		// Listen for messages from the iframe and synchronize state
 		switch (data.type) {
 			case 'ready': {
+				// Monaco is loaded — send config, request language map, then set initial content.
+				// Order matters: init must come before change-value so the editor exists when value arrives.
 				send('init', initParams);
 				send('get-languages', {});
 				send('change-value', { value });
 				break;
 			}
 			case 'languages': {
+				// Received the full Monaco language→extension map.
+				// registerAndPersistLanguages is a no-op after the first call (guards on dynamicMap.size).
 				await registerAndPersistLanguages(data.langs, plugin);
 				break;
 			}
 			case 'change': {
-				// Synchronize changes from the iframe user input
-				// The 'codeContext' check prevents interference from other iframe editors
+				// Filter by codeContext to avoid processing changes from other open editors.
+				// Each iframe sends its own context string so messages don't cross-contaminate.
 				if (data.context === codeContext) {
 					value = data.value;
 					onChange?.();
@@ -129,9 +144,9 @@ Element.prototype.appendChild = function(node) {
 
 	const getValue = (): string => value;
 
-	// The onMessage function is stored so it can be removed during cleanup
 	const destroy = (): void => {
 		window.removeEventListener('message', onMessage);
+		// Revoke the blob URL to free memory — the iframe HTML is no longer needed after close
 		URL.revokeObjectURL(blobUrl);
 		iframe.remove();
 	};

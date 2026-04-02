@@ -27,9 +27,14 @@ export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
 
 export interface CodeEditorInstance {
 	iframe: HTMLIFrameElement;
+	/** Sends a typed postMessage to the Monaco iframe */
 	send: (type: string, payload: Record<string, unknown>) => void;
+	/** Clears the editor content */
 	clear: () => void;
+	/** Returns the current editor content */
 	getValue: () => string;
+	/** Sets the editor content */
 	setValue: (newValue: string) => void;
+	/** Removes the iframe, revokes the blob URL, and cleans up the message listener */
 	destroy: () => void;
 }

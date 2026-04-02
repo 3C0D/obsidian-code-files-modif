@@ -29,6 +29,12 @@ Ces fichiers sont dans `.gitignore` (`vs/` et `monacoEditor.html` à la racine).
 
 Les paramètres qui étaient dans la query string de l'URL externe passent maintenant via `postMessage` (`init`).
 
+### 5. Remplacer la liste statique de langages par une map dynamique
+
+Monaco est local, donc on peut interroger `monaco.languages.getLanguages()` depuis l'iframe et construire la map extension → langage dynamiquement. Cela évite de maintenir une liste à la main et couvre automatiquement tous les langages Monaco.
+
+La map est **persistée dans `data.json`** du plugin pour être disponible dès le prochain démarrage, avant même qu'un éditeur soit ouvert.
+
 ---
 
 ## Les problèmes rencontrés
@@ -107,7 +113,19 @@ cssText = cssText.replace(/@font-face\s*\{[^}]*\}/g, '');
 
 ---
 
-### Problème 4 — Éditeur vide, mauvais ordre des messages
+### Problème 4 — SVG des décorations d'erreur bloqués par la CSP
+
+**Erreur :** Monaco charge ses squiggles (vagues rouges sous les erreurs) via des SVG inline en `data:image/svg+xml`. La CSP bloque `data:` pour les images.
+
+**Solution :** ajouter `data:` à `img-src` dans la CSP du `<meta>` du HTML. Contrairement aux polices et stylesheets, `img-src` n'est pas écrasé par la CSP parent pour le contenu inline d'une blob URL.
+
+```html
+<meta http-equiv="Content-Security-Policy" content="... img-src 'self' app: data:; ..." />
+```
+
+---
+
+### Problème 5 — Éditeur vide, mauvais ordre des messages
 
 **Erreur :** l'éditeur apparaissait vide.
 
@@ -121,13 +139,14 @@ cssText = cssText.replace(/@font-face\s*\{[^}]*\}/g, '');
 **Solution :** émettre `ready` immédiatement après le chargement de Monaco, avant tout message. Le flux correct :
 
 1. Monaco charge → émet `ready`
-2. Parent reçoit `ready` → envoie `init` (params) + `change-value` (contenu)
+2. Parent reçoit `ready` → envoie `init` (params) + `get-languages` + `change-value` (contenu)
 3. HTML reçoit `init` → crée l'éditeur
-4. HTML reçoit `change-value` → remplit l'éditeur
+4. HTML reçoit `get-languages` → répond avec la map extension → langage
+5. HTML reçoit `change-value` → remplit l'éditeur
 
 ---
 
-### Problème 5 — "Element already has context attribute" sur le modal
+### Problème 6 — "Element already has context attribute" sur le modal
 
 **Cause :** `applyParams` pouvait être appelé deux fois si des messages arrivaient dans le mauvais ordre.
 
@@ -145,6 +164,29 @@ function applyParams(params) {
 
 ---
 
+### Problème 7 — Pas de coloration syntaxique au redémarrage
+
+**Cause :** la map dynamique est vide au démarrage. Elle n'est remplie que quand un éditeur Monaco est ouvert. Si Obsidian rouvre des fichiers au démarrage, `getLanguage()` retourne `'plaintext'`.
+
+**Solution en deux parties :**
+
+1. **Liste statique comme fallback** — couvre les langages courants immédiatement, avant que Monaco soit chargé.
+
+2. **Persistance de la map dynamique** — au premier démarrage avec un éditeur ouvert, la map Monaco est sauvegardée dans `data.json`. Aux démarrages suivants, elle est rechargée avant même qu'un éditeur soit ouvert.
+
+```typescript
+// Dans main.ts — onload()
+await loadPersistedLanguages(this);
+
+// Dans mountCodeEditor.ts — case 'languages'
+await registerAndPersistLanguages(data.langs, plugin);
+// registerAndPersistLanguages est un no-op si dynamicMap est déjà remplie (une seule persistance par session)
+```
+
+Priorité de résolution : `dynamicMap` (Monaco) > `staticMap` (fallback) > `'plaintext'`.
+
+---
+
 ## Architecture finale
 
 ### `mountCodeEditor.ts`
@@ -155,7 +197,8 @@ function applyParams(params) {
 - Fetch le CSS Monaco, supprime les `@font-face`, injecte inline dans le HTML
 - Intercepte `appendChild` pour bloquer les `<link>` dynamiques de Monaco
 - Crée une blob URL pour l'iframe, révoquée dans `destroy()`
-- Sur `ready` → envoie `init` + `change-value`
+- Sur `ready` → envoie `init` + `get-languages` + `change-value`
+- Sur `languages` → enregistre et persiste la map (une seule fois par session)
 - Sur `change` → filtre par `codeContext` pour n'écouter que sa propre iframe
 
 ### `monacoEditor.html`
@@ -163,8 +206,16 @@ function applyParams(params) {
 - Charge Monaco via `./vs/loader.js` (remplacé par URL `app://` avant injection)
 - Émet `ready` dès que Monaco est chargé
 - Sur `init` → crée l'éditeur (une seule fois grâce au flag `initialized`)
+- Sur `get-languages` → retourne la map complète `[extension, languageId][]`
 - Sur `change-value` → met à jour le contenu
 - Émet `change` avec `context` à chaque modification utilisateur
+
+### `getLanguage.ts`
+
+- `staticMap` — fallback immédiat pour les langages courants
+- `dynamicMap` — map complète issue de Monaco, persistée entre sessions
+- `loadPersistedLanguages` — appelé au démarrage du plugin
+- `registerAndPersistLanguages` — appelé à la réception de la map Monaco, no-op si déjà remplie
 
 ---
 
@@ -179,3 +230,4 @@ La solution qui contourne tout ça :
 3. Inliner le CSS Monaco dans le HTML (évite le `<link>` bloqué)
 4. Supprimer les `@font-face` (polices bloquées de toute façon)
 5. Injecter via blob URL (l'iframe blob n'est pas soumise à la CSP du parent pour son propre contenu inline)
+6. Autoriser `data:` uniquement pour `img-src` (nécessaire pour les décorations d'erreur Monaco)

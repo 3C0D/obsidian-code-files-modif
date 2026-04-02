@@ -54,6 +54,7 @@ export class CodeEditorView extends TextFileView {
 
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
+		// destroy() removes the message listener and revokes the blob URL
 		this.codeEditor.destroy();
 	}
 
@@ -65,7 +66,8 @@ export class CodeEditorView extends TextFileView {
 		return this.codeEditor.getValue();
 	}
 
-	/** Called by Obsidian when the file content is ready to be displayed. Syncs the inherited `data` property and the Monaco editor instance. */
+	/** Called by Obsidian when the file content is ready to be displayed. Syncs the inherited `data` property and the Monaco editor instance.
+	 *  The optional chaining on codeEditor handles the case where setViewData is called before onLoadFile completes. */
 	setViewData(data: string, clear: boolean): void {
 		this.data = data;
 		this.codeEditor?.setValue(data);

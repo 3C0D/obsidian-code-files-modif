@@ -42,7 +42,8 @@ export class FenceEditModal extends Modal {
 
 	onClose(): void {
 		super.onClose();
-
+		// getValue() is called here rather than in onOpen() because the user may have
+		// edited the content after opening — we want the final state at close time
 		this.onSave(this.codeEditor.getValue());
 	}
 
