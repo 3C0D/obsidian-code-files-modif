@@ -105,9 +105,13 @@ export const mountCodeEditor = async (
 
 	const cssUrl = `${vsBase}/editor/editor.main.css`;
 	let cssText = await (await fetch(cssUrl)).text();
-	// Remove @font-face rules — Obsidian's CSP blocks data: and blob: font sources in child frames.
-	// Monaco degrades gracefully to system monospace fonts.
-	cssText = cssText.replace(/@font-face\s*\{[^}]*\}/g, '');
+	// Replace the base64-encoded font source in @font-face with an absolute app:// URL.
+	// Obsidian's CSP blocks data: font sources in child frames, but app:// URLs are allowed.
+	const codiconFontUrl = `${vsBase}/editor/codicon.ttf`;
+	cssText = cssText.replace(
+		/(@font-face\s*\{[^}]*src:[^;]*)(url\([^)]+\)\s*format\(["']truetype["']\))/g,
+		`$1url('${codiconFontUrl}') format('truetype')`
+	);
 	// Inject CSS inline and intercept dynamic <link> insertions Monaco attempts at runtime.
 	// Without this, Monaco tries to inject a <link rel="stylesheet"> which the parent CSP blocks.
 	html = html.replace(
@@ -166,17 +170,30 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
 					const applyTheme = async (theme: string): Promise<void> => {
-						const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
-						const resolvedTheme = theme === 'default'
-							? (document.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs')
-							: theme;
+						const builtins = [
+							'vs',
+							'vs-dark',
+							'hc-black',
+							'hc-light',
+							'default'
+						];
+						const resolvedTheme =
+							theme === 'default'
+								? document.body.classList.contains('theme-dark')
+									? 'vs-dark'
+									: 'vs'
+								: theme;
 						let themeData: string | undefined;
 						if (!builtins.includes(theme)) {
 							try {
 								const url = plugin.app.vault.adapter
-									.getResourcePath(`${pluginBase}/monaco-themes/${theme}.json`)
+									.getResourcePath(
+										`${pluginBase}/monaco-themes/${theme}.json`
+									)
 									.replace(/\?.*$/, '');
-								themeData = JSON.stringify(await (await fetch(url)).json());
+								themeData = JSON.stringify(
+									await (await fetch(url)).json()
+								);
 							} catch (e) {
 								console.warn(`code-files: theme "${theme}" not found`, e);
 							}

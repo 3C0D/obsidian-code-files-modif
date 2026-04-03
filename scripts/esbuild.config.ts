@@ -228,9 +228,20 @@ async function createBuildContext(
 					const monacoTarget = path.join(buildPath, 'vs');
 					const htmlSrc = path.join(pluginDir, 'src/monacoEditor.html');
 					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
-					const themesSrc = path.join(pluginDir, 'node_modules/monaco-themes/themes');
+					const themesSrc = path.join(
+						pluginDir,
+						'node_modules/monaco-themes/themes'
+					);
 					const themesTarget = path.join(buildPath, 'monaco-themes');
 					await cp(monacoSrc, monacoTarget, { recursive: true });
+					// Copy Codicons font so Monaco's @font-face can load it via app:// URL
+					// (Obsidian's CSP blocks data: font sources in child iframes)
+					const codiconSrc = path.join(
+						pluginDir,
+						'node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.ttf'
+					);
+					const codiconTarget = path.join(buildPath, 'vs/editor/codicon.ttf');
+					await copyFile(codiconSrc, codiconTarget);
 					await copyFile(htmlSrc, htmlTarget);
 					await cp(themesSrc, themesTarget, { recursive: true });
 					// if real or build
