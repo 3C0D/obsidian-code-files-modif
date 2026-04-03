@@ -57,17 +57,12 @@ export class FenceEditModal extends Modal {
 		setIcon(gearEl, 'settings');
 		gearEl.addEventListener('click', () => {
 			(document.activeElement as HTMLElement)?.blur();
-			const modal = new EditorSettingsModal(
+			new EditorSettingsModal(
 				this.plugin,
 				this.langKey,
 				() => this.plugin.broadcastOptions(),
 				(config) => this.codeEditor?.send('change-formatter-config', { config })
-			);
-			const origOnClose = modal.onClose.bind(modal);
-			modal.onClose = () => {
-				origOnClose();
-			};
-			modal.open();
+			).open();
 		});
 		this.titleEl.appendChild(gearEl);
 

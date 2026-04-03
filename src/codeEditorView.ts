@@ -102,12 +102,7 @@ export class CodeEditorView extends TextFileView {
 
 		this.renameAction = this.addAction('pencil', 'Rename Extension', () => {
 			(document.activeElement as HTMLElement)?.blur();
-			const modal = new RenameExtensionModal(this.plugin, file);
-			const origOnClose = modal.onClose.bind(modal);
-			modal.onClose = () => {
-				origOnClose();
-			};
-			modal.open();
+			new RenameExtensionModal(this.plugin, file).open();
 		});
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
@@ -116,29 +111,19 @@ export class CodeEditorView extends TextFileView {
 				const params = await resolveThemeParams(this.plugin, theme);
 				this.codeEditor?.send('change-theme', params);
 			};
-			const modal = new ChooseThemeModal(this.plugin, applyTheme, applyTheme);
-			const origOnClose = modal.onClose.bind(modal);
-			modal.onClose = () => {
-				origOnClose();
-			};
-			modal.open();
+			new ChooseThemeModal(this.plugin, applyTheme, applyTheme).open();
 		});
 
 		this.gearAction = this.addAction('settings', 'Editor Settings', () => {
 			(document.activeElement as HTMLElement)?.blur();
-			const modal = new EditorSettingsModal(
+			new EditorSettingsModal(
 				this.plugin,
 				file.extension,
 				() => this.plugin.broadcastOptions(),
 				(config) => {
 					this.codeEditor?.send('change-formatter-config', { config });
 				}
-			);
-			const origOnClose = modal.onClose.bind(modal);
-			modal.onClose = () => {
-				origOnClose();
-			};
-			modal.open();
+			).open();
 		});
 	}
 

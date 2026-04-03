@@ -212,8 +212,6 @@ export default class CodeFilesPlugin extends Plugin {
 		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));
 	}
 
-	onunload(): void {}
-
 	/** Adds or removes the ribbon icon based on the showRibbonIcon setting. */
 	updateRibbonIcon(): void {
 		this.ribbonIconEl?.remove();

@@ -53,7 +53,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 							}
 							this.plugin.settings.extraExtensions = [];
 						}
-						await this.plugin.saveSettings();
 						await this.plugin.reregisterExtensions();
 						this.display();
 					})

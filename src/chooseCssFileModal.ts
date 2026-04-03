@@ -32,14 +32,17 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 		const path = normalizePath(`${snippetsDir}/${item.name}.css`);
 
 		if (item.kind === 'new') {
-			// vault.create() only works for vault-indexed files,
-			// so adapter.write is intentional here
 			await this.plugin.app.vault.adapter.write(path, '');
 			new Notification('Make sure to enable new snippet in options.');
 		}
 
-		// @ts-expect-error - TFile is designed for vault files, but it works fine for our purposes
-		CodeEditorView.openFile(new TFile(this.plugin.app.vault, path), this.plugin);
+		const existingFile = this.plugin.app.vault.getAbstractFileByPath(path);
+		const file = existingFile instanceof TFile
+			? existingFile
+			: await this.plugin.app.vault.adapter.read(path).then(() =>
+				this.plugin.app.vault.getAbstractFileByPath(path) as TFile
+			);
+		CodeEditorView.openFile(file, this.plugin);
 	}
 
 	renderSuggestion(item: CssSuggestion, el: HTMLElement): void {
