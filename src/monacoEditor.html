@@ -220,8 +220,6 @@
 					editor.addAction({
 						id: 'code-files-obsidian-settings',
 						label: '🔧 Obsidian Settings (Ctrl+,)',
-						contextMenuGroupId: 'code-files',
-						contextMenuOrder: 4,
 						run: function () {
 							window.parent.postMessage(
 								{ type: 'open-settings', context: context },
@@ -229,6 +227,28 @@
 							);
 						}
 					});
+
+					editor.addAction({
+						id: 'code-files-obsidian-palette',
+						label: '🎹 Obsidian Command Palette (Ctrl+P)',
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-obsidian-palette', context: context },
+								'*'
+							);
+						}
+					});
+
+					// Ctrl+P opens Obsidian command palette
+					editor.addCommand(
+						monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP,
+						function () {
+							window.parent.postMessage(
+								{ type: 'open-obsidian-palette', context: context },
+								'*'
+							);
+						}
+					);
 
 					// Ctrl+, opens Obsidian settings (intercepted before Monaco can consume it)
 					editor.addCommand(

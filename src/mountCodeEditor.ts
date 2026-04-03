@@ -218,6 +218,13 @@ Element.prototype.appendChild = function(node) {
 				}
 				break;
 			}
+			case 'open-obsidian-palette': {
+				if (data.context === codeContext) {
+					(document.activeElement as HTMLElement)?.blur();
+					plugin.app.commands.executeCommandById('command-palette:open');
+				}
+				break;
+			}
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();

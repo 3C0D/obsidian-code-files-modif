@@ -4,10 +4,11 @@ import type CodeFilesPlugin from './main.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
 import type { CodeEditorInstance } from './types.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
+import { ChooseThemeModal } from './chooseThemeModal.ts';
 
 /** Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed. */
 export class FenceEditModal extends Modal {
-	private codeEditor: CodeEditorInstance;
+	private codeEditor!: CodeEditorInstance;
 
 	private constructor(
 		private plugin: CodeFilesPlugin,
@@ -33,6 +34,18 @@ export class FenceEditModal extends Modal {
 			attr: { style: 'margin-left: auto; margin-right: 0;' }
 		});
 		this.titleEl.appendChild(badgeEl);
+
+		const paletteEl = createEl('div', { cls: 'code-files-fence-gear', attr: { 'aria-label': 'Change Theme' } });
+		setIcon(paletteEl, 'palette');
+		paletteEl.addEventListener('click', () => {
+			(document.activeElement as HTMLElement)?.blur();
+			new ChooseThemeModal(
+				this.plugin,
+				async (theme) => this.codeEditor?.send('change-theme', { theme }),
+				async (theme) => this.codeEditor?.send('change-theme', { theme })
+			).open();
+		});
+		this.titleEl.appendChild(paletteEl);
 
 		const gearEl = createEl('div', { cls: 'code-files-fence-gear', attr: { 'aria-label': 'Editor Settings' } });
 		setIcon(gearEl, 'settings');
