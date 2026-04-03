@@ -60,9 +60,9 @@
 					var opts = {
 						language: params.lang || 'plaintext',
 						theme: params.theme || 'vs-dark',
-						folding: params.folding !== 'false',
+						folding: params.folding !== false,
 						lineNumbers: params.lineNumbers || 'on',
-						minimap: { enabled: params.minimap !== 'false' },
+						minimap: { enabled: params.minimap !== false },
 						wordWrap: params.wordWrap || 'off',
 						// automaticLayout recomputes editor size when the container resizes
 						automaticLayout: true

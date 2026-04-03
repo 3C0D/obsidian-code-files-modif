@@ -1,4 +1,4 @@
-import { normalizePath, SuggestModal, TFile } from 'obsidian';
+import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
 import { CodeEditorView } from './codeEditorView.ts';
 import type CodeFilesPlugin from './main.ts';
 import type { CssSuggestion } from './types.ts';
@@ -35,7 +35,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 			// vault.create() only works for vault-indexed files,
 			// so adapter.write is intentional here
 			await this.plugin.app.vault.adapter.write(path, '');
-			new Notification('Make sure to enable new snippet in options.');
+			new Notice('Make sure to enable the new snippet in Obsidian options.');
 		}
 
 		// @ts-expect-error - TFile is designed for vault files, but it works fine for our purposes

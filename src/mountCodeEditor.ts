@@ -68,13 +68,13 @@ export const mountCodeEditor = async (
 
 	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 
-	const initParams: Record<string, string> = {
+	const initParams: Record<string, string | boolean> = {
 		context: codeContext,
 		lang: language,
 		theme: theme.replace(/[^a-z0-9\-]/gi, '-'),
-		folding: plugin.settings.folding ? 'true' : 'false',
+		folding: plugin.settings.folding,
 		lineNumbers: plugin.settings.lineNumbers ? 'on' : 'off',
-		minimap: plugin.settings.minimap ? 'true' : 'false',
+		minimap: plugin.settings.minimap,
 		wordWrap: plugin.settings.wordWrap,
 		javascriptDefaults: 'true',
 		typescriptDefaults: 'true',

@@ -1,4 +1,4 @@
-import { Plugin, TFile, TFolder, addIcon } from 'obsidian';
+import { Notice, Plugin, TFile, TFolder, addIcon } from 'obsidian';
 import { CodeEditorView } from './codeEditorView.ts';
 import { CreateCodeFileModal } from './createCodeFileModal.ts';
 import { CodeFilesSettingsTab } from './codeFilesSettingsTab.ts';
@@ -33,12 +33,7 @@ export default class CodeFilesPlugin extends Plugin {
 			this._registeredExts = new Set(activeExts);
 		} catch (e) {
 			console.log('code-files plugin error:', e);
-			new Notification('Code Files Plugin Error', {
-				body:
-					`Could not register extensions ${activeExts.join(', ')}; ` +
-					`there are probably some other extensions that already registered them. ` +
-					`Please change code-files's extensions in the plugin settings or remove conflicting plugins.`
-			});
+			new Notice(`Code Files: could not register extensions ${activeExts.join(', ')}`);
 		}
 
 		this.updateRibbonIcon();
@@ -89,7 +84,7 @@ export default class CodeFilesPlugin extends Plugin {
 			callback: () => {
 				const file = this.app.workspace.activeEditor?.file;
 				if (!file || !this.getActiveExtensions().includes(file.extension)) {
-					new Notification('No registered code file open');
+					new Notice('No registered code file open');
 					return;
 				}
 				new RenameExtensionModal(this, file).open();
