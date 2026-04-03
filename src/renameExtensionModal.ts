@@ -75,11 +75,6 @@ export class RenameExtensionModal extends Modal {
 			return;
 		}
 
-		if (ext.length < 2) {
-			new Notice('Extension must be at least 2 characters');
-			return;
-		}
-
 		let base = this.file.path;
 		if (this.file.extension) {
 			base = base.slice(0, base.length - this.file.extension.length - 1);

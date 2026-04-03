@@ -123,11 +123,6 @@ export class CreateCodeFileModal extends Modal {
 			return;
 		}
 
-		if (ext.length < 2) {
-			new Notice('Extension must be at least 2 characters');
-			return;
-		}
-
 		// If the extension is not registered yet, register it on the fly
 		if (!this.plugin.getActiveExtensions().includes(ext)) {
 			this.plugin.addExtension(ext);
