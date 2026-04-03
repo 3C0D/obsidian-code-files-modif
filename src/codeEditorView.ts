@@ -7,6 +7,8 @@ import { mountCodeEditor } from './mountCodeEditor.ts';
 import { getLanguage } from './getLanguage.ts';
 import { viewType, type CodeEditorInstance } from './types.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
+import { ChooseThemeModal } from './chooseThemeModal.ts';
+import { RenameExtensionModal } from './renameExtensionModal.ts';
 
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {
@@ -14,6 +16,8 @@ export class CodeEditorView extends TextFileView {
 	private isDirty = false;
 	private forceSave = false;
 	private gearAction: { remove: () => void } | null = null;
+	private themeAction: { remove: () => void } | null = null;
+	private renameAction: { remove: () => void } | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -41,8 +45,6 @@ export class CodeEditorView extends TextFileView {
 		return file?.path ?? this.file?.path ?? '';
 	}
 
-
-
 	async save(clear?: boolean): Promise<void> {
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
 		this.forceSave = false;
@@ -53,6 +55,8 @@ export class CodeEditorView extends TextFileView {
 		await super.onClose();
 		this.codeEditor?.destroy();
 		this.gearAction?.remove();
+		this.themeAction?.remove();
+		this.renameAction?.remove();
 	}
 
 	private setDirty(isDirtyBadge: boolean): void {
@@ -69,7 +73,9 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	private updateExtBadge(file: TFile): void {
-		const titleContainer = this.containerEl.querySelector('.view-header-title-container');
+		const titleContainer = this.containerEl.querySelector(
+			'.view-header-title-container'
+		);
 		if (!titleContainer) return;
 		titleContainer.querySelector('.code-files-ext-badge')?.remove();
 		titleContainer.querySelector('.code-files-dirty-badge')?.remove();
@@ -86,6 +92,33 @@ export class CodeEditorView extends TextFileView {
 
 	private injectGearIcon(file: TFile): void {
 		this.gearAction?.remove();
+		this.themeAction?.remove();
+		this.renameAction?.remove();
+
+		this.renameAction = this.addAction('pencil', 'Rename Extension', () => {
+			(document.activeElement as HTMLElement)?.blur();
+			const modal = new RenameExtensionModal(this.plugin, file);
+			const origOnClose = modal.onClose.bind(modal);
+			modal.onClose = () => {
+				origOnClose();
+			};
+			modal.open();
+		});
+
+		this.themeAction = this.addAction('palette', 'Change Theme', () => {
+			(document.activeElement as HTMLElement)?.blur();
+			const modal = new ChooseThemeModal(
+				this.plugin,
+				async (theme) => this.codeEditor?.send('change-theme', { theme }),
+				async (theme) => this.codeEditor?.send('change-theme', { theme })
+			);
+			const origOnClose = modal.onClose.bind(modal);
+			modal.onClose = () => {
+				origOnClose();
+			};
+			modal.open();
+		});
+
 		this.gearAction = this.addAction('settings', 'Editor Settings', () => {
 			(document.activeElement as HTMLElement)?.blur();
 			const modal = new EditorSettingsModal(
@@ -97,7 +130,9 @@ export class CodeEditorView extends TextFileView {
 				}
 			);
 			const origOnClose = modal.onClose.bind(modal);
-			modal.onClose = () => { origOnClose(); };
+			modal.onClose = () => {
+				origOnClose();
+			};
 			modal.open();
 		});
 	}
@@ -135,10 +170,13 @@ export class CodeEditorView extends TextFileView {
 
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
-		// destroy() removes the message listener and revokes the blob URL
 		this.codeEditor?.destroy();
 		this.gearAction?.remove();
+		this.themeAction?.remove();
+		this.renameAction?.remove();
 		this.gearAction = null;
+		this.themeAction = null;
+		this.renameAction = null;
 	}
 
 	clear(): void {
@@ -159,8 +197,18 @@ export class CodeEditorView extends TextFileView {
 			getLanguage(file.extension),
 			this.data,
 			this.getContext(file),
-			() => { this.setDirty(true); this.requestSave(); },
-			() => { this.forceSave = true; this.setSaving(true); void this.save().then(() => { this.setDirty(false); this.setSaving(false); }); }
+			() => {
+				this.setDirty(true);
+				this.requestSave();
+			},
+			() => {
+				this.forceSave = true;
+				this.setSaving(true);
+				void this.save().then(() => {
+					this.setDirty(false);
+					this.setSaving(false);
+				});
+			}
 		);
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);

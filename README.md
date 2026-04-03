@@ -41,47 +41,51 @@ Place your cursor inside a code fence and use:
 
 ### Keyboard shortcuts
 
-| Shortcut | Action |
-|---|---|
+| Shortcut | Action                                                                                                        |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
 | `Ctrl+S` | Save (formats first if formatOnSave is enabled). With Auto Save off, this is the only way to persist changes. |
-| `Alt+Z` | Toggle word wrap |
-| `F1` | Monaco command palette (all editor actions) |
+| `Alt+Z`  | Toggle word wrap                                                                                              |
+| `F1`     | Monaco command palette (all editor actions)                                                                   |
 
 ### Editor settings (gear icon ⚙ in tab header)
 
-Click the gear icon on any code file tab to open the editor settings modal:
-- **Top section** — toggles for AutoSave, WordWrap, Folding, Line Numbers, Minimap, Semantic Validation, Syntax Validation
-- **Bottom section** — formatter config JSON for the current file's extension (tabSize, insertSpaces, formatOnSave, formatOnType)
+The tab header of any code file shows three action buttons:
 
-Command palette → **"Edit CSS Snippet"** — opens a search modal to choose an existing snippet or create a new one.
+| Icon      | Action                                                                                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✏️ pencil  | **Rename Extension** — rename the file's extension on the fly                                                                                                    |
+| 🎨 palette | **Change Theme** — pick a theme with live preview                                                                                                                |
+| ⚙️ gear    | **Editor Settings** — toggles (AutoSave, WordWrap, Folding, Line Numbers, Minimap, Semantic/Syntax Validation) + formatter config JSON for the current extension |
+
+### Monaco command palette (F1)
+
+Press `F1` inside the Monaco editor to open the Monaco command palette. All built-in Monaco actions are available there, plus the Code Files actions:
+
+| Action                           | Description                                     |
+| -------------------------------- | ----------------------------------------------- |
+| **🍋‍🟩 Rename Extension**          | Rename the file's extension                     |
+| **🍒 Change Theme**               | Pick a theme with live preview                  |
+| **📐 Formatter Config**           | Edit formatter config for the current extension |
+| **🔧 Obsidian Settings (Ctrl+,)** | Open Obsidian settings                          |
 
 ### Editor context menu (right-click inside Monaco)
 
-| Action | Description |
-|---|---|
-| **Rename Extension** | Rename the file's extension on the fly |
-| **Change Theme** | Pick a theme with live preview — navigating the list applies it instantly, closing without confirming restores the previous theme |
-| **Toggle Word Wrap** | Toggle word wrap (`Alt+Z`) |
-| **Save** | Save the file (`Ctrl+S`), formats first if formatOnSave is enabled |
-
-All these actions are also accessible via the Monaco command palette (`F1`), along with all other built-in Monaco actions.
-
-Formatter config is accessible via the gear icon (⚙) in the tab header — it shows the formatter options for the current file's extension.
+Same actions as F1, plus all built-in Monaco actions (Format Document, Go to Definition, etc.).
 
 ## Settings
 
-| Setting | Description |
-|---|---|
-| **Theme** | Monaco editor theme. `Default` follows Obsidian's dark/light mode. Can also be changed live from the editor context menu. |
-| **Overwrite background** | Use Obsidian's background color instead of the theme's. Disable if text is illegible. |
-| **File Extensions** | Extensions registered with Obsidian. Click **Add / Remove** to manage them. Changes take effect immediately — no restart needed. |
-| **Folding** | Enable code block folding in the editor. |
-| **Line Numbers** | Show line numbers. |
-| **Minimap** | Show the minimap on the right side. |
-| **Semantic Validation** | Show semantic errors (type errors, etc.) for JS/TS files. |
-| **Syntax Validation** | Show syntax errors for JS/TS files. |
-| **Auto Save** | Off by default. When off, changes are only saved with `Ctrl+S` — useful for code files where accidental edits should not be silently persisted. When on, Obsidian saves automatically after each change. A small circle in the tab title indicates save status when Auto Save is off: empty circle = nothing to save, filled white circle = unsaved changes. |
-| **Word Wrap** | Toggle word wrap in the editor. Can also be toggled with `Alt+Z`. |
+| Setting                  | Description                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Theme**                | Monaco editor theme. `Default` follows Obsidian's dark/light mode. Can also be changed live from the editor context menu.                                                                                                                                                                                                                                    |
+| **Overwrite background** | Use Obsidian's background color instead of the theme's. Disable if text is illegible.                                                                                                                                                                                                                                                                        |
+| **File Extensions**      | Extensions registered with Obsidian. Click **Add / Remove** to manage them. Changes take effect immediately — no restart needed.                                                                                                                                                                                                                             |
+| **Folding**              | Enable code block folding in the editor.                                                                                                                                                                                                                                                                                                                     |
+| **Line Numbers**         | Show line numbers.                                                                                                                                                                                                                                                                                                                                           |
+| **Minimap**              | Show the minimap on the right side.                                                                                                                                                                                                                                                                                                                          |
+| **Semantic Validation**  | Show semantic errors (type errors, etc.) for JS/TS files.                                                                                                                                                                                                                                                                                                    |
+| **Syntax Validation**    | Show syntax errors for JS/TS files.                                                                                                                                                                                                                                                                                                                          |
+| **Auto Save**            | Off by default. When off, changes are only saved with `Ctrl+S` — useful for code files where accidental edits should not be silently persisted. When on, Obsidian saves automatically after each change. A small circle in the tab title indicates save status when Auto Save is off: empty circle = nothing to save, filled white circle = unsaved changes. |
+| **Word Wrap**            | Toggle word wrap in the editor. Can also be toggled with `Alt+Z`.                                                                                                                                                                                                                                                                                            |
 
 ### Managing extensions
 

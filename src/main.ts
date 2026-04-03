@@ -51,7 +51,10 @@ export default class CodeFilesPlugin extends Plugin {
 		this.addCommand({
 			id: 'create',
 			name: 'Create new Code File',
-			callback: () => new CreateCodeFileModal(this).open()
+			callback: () => {
+				(document.activeElement as HTMLElement)?.blur();
+				new CreateCodeFileModal(this).open();
+			}
 		});
 
 		this.addCommand({
@@ -219,6 +222,7 @@ export default class CodeFilesPlugin extends Plugin {
 				'file-json',
 				'Create Code File',
 				() => {
+					(document.activeElement as HTMLElement)?.blur();
 					new CreateCodeFileModal(this).open();
 				}
 			);

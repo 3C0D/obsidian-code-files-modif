@@ -89,7 +89,7 @@ Uncaught TypeError: n.instanceOf is not a function
 modal.open(); // ou app.setting.open()
 ```
 
-Cette règle s'applique à **tous** les points d'entrée depuis Monaco vers Obsidian, sans exception.
+Cette règle s'applique à **tous** les points d'entrée depuis Monaco vers Obsidian, sans exception — y compris les commandes Obsidian enregistrées via `addCommand()` qui peuvent être invoquées depuis la palette de commandes Obsidian alors que Monaco a le focus.
 
 ---
 

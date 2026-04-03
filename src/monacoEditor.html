@@ -204,6 +204,32 @@
 						}
 					});
 
+					editor.addAction({
+						id: 'code-files-formatter-config',
+						label: '📐 Formatter Config',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 3,
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-formatter-config', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.addAction({
+						id: 'code-files-obsidian-settings',
+						label: '🔧 Obsidian Settings (Ctrl+,)',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 4,
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-settings', context: context },
+								'*'
+							);
+						}
+					});
+
 					// Ctrl+, opens Obsidian settings (intercepted before Monaco can consume it)
 					editor.addCommand(
 						monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma,

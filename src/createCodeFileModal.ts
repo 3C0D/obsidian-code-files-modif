@@ -10,7 +10,6 @@ import {
 } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { FormatterConfigModal } from './formatterConfigModal.ts';
 
 /** Autocomplete suggester for registered extensions, attached to a text input. */
 class ExtensionSuggest extends AbstractInputSuggest<string> {
@@ -103,20 +102,6 @@ export class CreateCodeFileModal extends Modal {
 					this.fileExtension = newExt;
 				}
 			}).open();
-		});
-
-		// Settings button — opens formatter config for the current extension
-		const configBtn = new ButtonComponent(contentEl);
-		configBtn.setIcon('settings');
-		configBtn.setTooltip('Formatter config for this extension');
-		configBtn.buttonEl.style.marginRight = '6px';
-		configBtn.onClick(() => {
-			const ext = this.fileExtension.replace(/^\./, '').trim();
-			if (!ext) {
-				new Notice('Enter an extension first');
-				return;
-			}
-			new FormatterConfigModal(this.plugin, ext).open();
 		});
 
 		// Create button
