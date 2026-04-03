@@ -144,24 +144,20 @@
 						label: 'Save',
 						keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
 						run: function () {
-							if (formatOnSave) {
-								var formatAction = editor.getAction(
-									'editor.action.formatDocument'
+							var formatAction = editor.getAction('editor.action.formatDocument');
+							if (formatAction && formatAction.isSupported()) {
+								formatAction.run().then(function () {
+									window.parent.postMessage(
+										{ type: 'save-document', context: context },
+										'*'
+									);
+								});
+							} else {
+								window.parent.postMessage(
+									{ type: 'save-document', context: context },
+									'*'
 								);
-								if (formatAction && formatAction.isSupported()) {
-									formatAction.run().then(function () {
-										window.parent.postMessage(
-											{ type: 'save-document', context: context },
-											'*'
-										);
-									});
-									return;
-								}
 							}
-							window.parent.postMessage(
-								{ type: 'save-document', context: context },
-								'*'
-							);
 						}
 					});
 
