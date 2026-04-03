@@ -38,6 +38,7 @@
 			require(['vs/editor/editor.main'], function () {
 				var editor;
 				var context;
+				var formatOnSave = false;
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
 
@@ -101,7 +102,6 @@
 						opts
 					);
 
-					var formatOnSave = false;
 					// Apply per-extension formatter config if provided
 					if (params.formatterConfig) {
 						try {
@@ -144,20 +144,22 @@
 						label: 'Save',
 						keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
 						run: function () {
-							var formatAction = editor.getAction('editor.action.formatDocument');
-							if (formatAction && formatAction.isSupported()) {
-								formatAction.run().then(function () {
-									window.parent.postMessage(
-										{ type: 'save-document', context: context },
-										'*'
-									);
-								});
-							} else {
-								window.parent.postMessage(
-									{ type: 'save-document', context: context },
-									'*'
-								);
+							if (formatOnSave) {
+								var formatAction = editor.getAction('editor.action.formatDocument');
+								if (formatAction && formatAction.isSupported()) {
+									formatAction.run().then(function () {
+										window.parent.postMessage(
+											{ type: 'save-document', context: context },
+											'*'
+										);
+									});
+									return;
+								}
 							}
+							window.parent.postMessage(
+								{ type: 'save-document', context: context },
+								'*'
+							);
 						}
 					});
 

@@ -168,7 +168,7 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	async onRename(file: TFile): Promise<void> {
-		super.onRename(file);
+		await super.onRename(file);
 		this.codeEditor?.destroy();
 		this.contentEl.empty();
 		await this.mountEditor(file);

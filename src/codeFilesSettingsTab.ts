@@ -1,8 +1,9 @@
 import type { App } from 'obsidian';
-import { AbstractInputSuggest, debounce, PluginSettingTab, Setting, TextAreaComponent, TextComponent } from 'obsidian';
+import { debounce, PluginSettingTab, Setting, TextAreaComponent, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
+import { ExtensionSuggest } from './extensionSuggest.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	constructor(
@@ -118,7 +119,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			textarea.inputEl.style.opacity = '1';
 		};
 
-		new ExtensionInputSuggest(this.plugin, extInput.inputEl, extensions, showExt);
+		new ExtensionSuggest(this.plugin, extInput.inputEl, showExt, () => extensions);
 
 		const debouncedSave = debounce(async () => {
 			if (!selectedExt) return;
@@ -139,31 +140,5 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		}, 600, true);
 
 		textarea.inputEl.addEventListener('input', () => debouncedSave());
-	}
-}
-
-class ExtensionInputSuggest extends AbstractInputSuggest<string> {
-	constructor(
-		private plugin: CodeFilesPlugin,
-		inputEl: HTMLInputElement,
-		private extensions: string[],
-		private onChoose: (ext: string) => void
-	) {
-		super(plugin.app, inputEl);
-	}
-
-	protected getSuggestions(query: string): string[] {
-		const q = query.toLowerCase().replace(/^\./, '');
-		return this.extensions.filter((ext) => ext.includes(q));
-	}
-
-	renderSuggestion(ext: string, el: HTMLElement): void {
-		el.setText(`.${ext}`);
-	}
-
-	selectSuggestion(ext: string): void {
-		this.onChoose(ext);
-		this.setValue(ext);
-		this.close();
 	}
 }

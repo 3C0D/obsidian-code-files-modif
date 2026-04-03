@@ -1,6 +1,5 @@
 import type { TAbstractFile, TFolder } from 'obsidian';
 import {
-	AbstractInputSuggest,
 	ButtonComponent,
 	Modal,
 	normalizePath,
@@ -10,31 +9,7 @@ import {
 } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-
-/** Autocomplete suggester for registered extensions, attached to a text input. */
-class ExtensionSuggest extends AbstractInputSuggest<string> {
-	constructor(
-		private plugin: CodeFilesPlugin,
-		inputEl: HTMLInputElement,
-		private onChoose: (ext: string) => void
-	) {
-		super(plugin.app, inputEl);
-	}
-
-	protected getSuggestions(query: string): string[] {
-		const q = query.toLowerCase().replace(/^\./, '');
-		return this.plugin.getActiveExtensions().filter((ext) => ext.includes(q));
-	}
-
-	renderSuggestion(ext: string, el: HTMLElement): void {
-		el.setText(`.${ext}`);
-	}
-
-	selectSuggestion(ext: string): void {
-		this.onChoose(ext);
-		this.close();
-	}
-}
+import { ExtensionSuggest } from './extensionSuggest.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {

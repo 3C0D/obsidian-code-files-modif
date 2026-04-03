@@ -93,14 +93,8 @@ export const mountCodeEditor = async (
 			: 'false'
 	};
 	if (!['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'].includes(theme)) {
-		try {
-			const url = plugin.app.vault.adapter
-				.getResourcePath(`${pluginBase}/monaco-themes/${theme}.json`)
-				.replace(/\?.*$/, '');
-			initParams.themeData = JSON.stringify(await (await fetch(url)).json());
-		} catch (e) {
-			console.warn(`code-files: theme "${theme}" not found`, e);
-		}
+		const resolved = await resolveThemeParams(plugin, theme);
+		if (resolved.themeData) initParams.themeData = resolved.themeData;
 	}
 
 	if (plugin.settings.theme === 'default') {
@@ -179,7 +173,7 @@ Element.prototype.appendChild = function(node) {
 			case 'open-formatter-config': {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
-					const ext = codeContext.split('.').pop() ?? '';
+					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
 					const modal = new EditorSettingsModal(plugin, ext, () => plugin.broadcastOptions(), (config) => {
 						send('change-formatter-config', { config });
 					});
