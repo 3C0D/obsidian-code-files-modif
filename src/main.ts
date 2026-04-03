@@ -60,19 +60,22 @@ export default class CodeFilesPlugin extends Plugin {
 		this.addCommand({
 			id: 'open-codeblock-in-monaco',
 			name: 'Open current code block in Monaco Editor',
-			editorCallback: (editor) => FenceEditModal.openOnCurrentCode(this, editor)
+			editorCheckCallback: (checking, editor) => {
+				if (!FenceEditContext.create(this, editor)) return false;
+				if (!checking) FenceEditModal.openOnCurrentCode(this, editor);
+				return true;
+			}
 		});
 
 		this.addCommand({
 			id: 'open-current-file-in-monaco',
 			name: 'Open current file in Monaco Editor',
-			callback: () => {
+			checkCallback: (checking) => {
 				const file = this.app.workspace.activeEditor?.file;
-				if (!file) {
-					new Notification('No viable file open');
-					return;
-				}
-				CodeEditorView.openFile(file, this);
+				const activeView = this.app.workspace.getActiveViewOfType(CodeEditorView);
+				if (!file || activeView) return false;
+				if (!checking) CodeEditorView.openFile(file, this);
+				return true;
 			}
 		});
 
