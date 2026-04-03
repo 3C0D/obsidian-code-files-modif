@@ -7,11 +7,11 @@ import { FenceEditContext } from './fenceEditContext.ts';
 import { ChooseCssFileModal } from './chooseCssFileModal.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
 import { FormatterConfigModal } from './formatterConfigModal.ts';
-import { DEFAULT_SETTINGS, viewType, type MyPluginSettings } from './types.ts';
+import { DEFAULT_SETTINGS, viewType, DEFAULT_FORMATTER_CONFIG, type MyPluginSettings } from './types.ts';
 import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts';
 
 export default class CodeFilesPlugin extends Plugin {
-	settings: MyPluginSettings;
+	settings!: MyPluginSettings;
 	private ribbonIconEl: HTMLElement | null = null;
 
 	async onload(): Promise<void> {
@@ -122,8 +122,6 @@ export default class CodeFilesPlugin extends Plugin {
 				const isExplorer = source === 'file-explorer-context-menu';
 				const isFolder = abstractFile instanceof TFolder;
 				const isFile = abstractFile instanceof TFile;
-				const isRegistered =
-					isFile && this.settings.extensions.includes(abstractFile.extension);
 
 				if (isFolder) {
 					menu.addItem((i) =>
@@ -293,7 +291,7 @@ export default class CodeFilesPlugin extends Plugin {
 	broadcastOptions(): void {
 		const views = this.app.workspace
 			.getLeavesOfType(viewType)
-			.map((l) => l.view as import('./codeEditorView.ts').CodeEditorView);
+			.map((l) => l.view as CodeEditorView);
 		for (const view of views) {
 			view.codeEditor?.send('change-options', {
 				wordWrap: this.settings.wordWrap,
@@ -303,6 +301,18 @@ export default class CodeFilesPlugin extends Plugin {
 				semanticValidation: !this.settings.semanticValidation,
 				syntaxValidation: !this.settings.syntaxValidation
 			});
+		}
+	}
+
+	/** Sends updated formatter config to all open code-editor iframes matching the extension. */
+	broadcastFormatterConfig(ext: string): void {
+		const config = this.settings.formatterConfigs[ext] ?? DEFAULT_FORMATTER_CONFIG;
+		const views = this.app.workspace
+			.getLeavesOfType(viewType)
+			.map((l) => l.view as CodeEditorView)
+			.filter((v) => v.file?.extension === ext);
+		for (const view of views) {
+			view.codeEditor?.send('change-formatter-config', { config });
 		}
 	}
 }

@@ -1,9 +1,7 @@
-// https://github.com/microsoft/monaco-editor/issues/1288
-
 import type { TFile, WorkspaceLeaf } from 'obsidian';
 import { TextFileView } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
-import { mountCodeEditor } from './mountCodeEditor.ts';
+import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import { getLanguage } from './getLanguage.ts';
 import { viewType, type CodeEditorInstance } from './types.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
@@ -12,7 +10,7 @@ import { RenameExtensionModal } from './renameExtensionModal.ts';
 
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {
-	codeEditor: CodeEditorInstance;
+	codeEditor!: CodeEditorInstance;
 	private isDirty = false;
 	private forceSave = false;
 	private gearAction: { remove: () => void } | null = null;
@@ -107,11 +105,11 @@ export class CodeEditorView extends TextFileView {
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
 			(document.activeElement as HTMLElement)?.blur();
-			const modal = new ChooseThemeModal(
-				this.plugin,
-				async (theme) => this.codeEditor?.send('change-theme', { theme }),
-				async (theme) => this.codeEditor?.send('change-theme', { theme })
-			);
+			const applyTheme = async (theme: string): Promise<void> => {
+				const params = await resolveThemeParams(this.plugin, theme);
+				this.codeEditor?.send('change-theme', params);
+			};
+			const modal = new ChooseThemeModal(this.plugin, applyTheme, applyTheme);
 			const origOnClose = modal.onClose.bind(modal);
 			modal.onClose = () => {
 				origOnClose();

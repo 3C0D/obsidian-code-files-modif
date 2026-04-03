@@ -22,13 +22,18 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.modalEl.style.width = '300px';
 
 		const previewSelected = (): void => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const chooser = this.chooser as { values?: string[]; selectedItem?: number };
 			const theme = chooser?.values?.[chooser?.selectedItem ?? -1];
 			if (theme) this.applyTheme(theme);
 		};
-		this.scope.register([], 'ArrowDown', () => { setTimeout(previewSelected, 0); return true; });
-		this.scope.register([], 'ArrowUp', () => { setTimeout(previewSelected, 0); return true; });
+		this.scope.register([], 'ArrowDown', () => {
+			setTimeout(previewSelected, 0);
+			return true;
+		});
+		this.scope.register([], 'ArrowUp', () => {
+			setTimeout(previewSelected, 0);
+			return true;
+		});
 	}
 
 	onOpen(): void {
@@ -42,8 +47,10 @@ export class ChooseThemeModal extends SuggestModal<string> {
 			if (!item) return;
 			const items = this.resultContainerEl.querySelectorAll('.suggestion-item');
 			const idx = Array.from(items).indexOf(item as HTMLElement);
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const chooser = this.chooser as { values?: string[]; setSelectedItem?: (i: number, e: MouseEvent) => void };
+			const chooser = this.chooser as {
+				values?: string[];
+				setSelectedItem?: (i: number, e: MouseEvent) => void;
+			};
 			if (idx === -1 || !chooser?.values?.[idx]) return;
 			chooser.setSelectedItem?.(idx, e);
 			this.applyTheme(chooser.values[idx]);
@@ -69,7 +76,10 @@ export class ChooseThemeModal extends SuggestModal<string> {
 	onChooseSuggestion(theme: string | null): void {
 		if (!theme) return;
 		this.confirmed = true;
-		const recent = [theme, ...this.plugin.settings.recentThemes.filter((t) => t !== theme)].slice(0, 5);
+		const recent = [
+			theme,
+			...this.plugin.settings.recentThemes.filter((t) => t !== theme)
+		].slice(0, 5);
 		this.plugin.settings.recentThemes = recent;
 		this.plugin.settings.theme = theme;
 		void this.plugin.saveSettings();

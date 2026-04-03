@@ -1,4 +1,4 @@
-import { Modal, ButtonComponent } from 'obsidian';
+import { Modal, debounce } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
@@ -8,7 +8,7 @@ import type { CodeEditorInstance } from './types.ts';
  *  The config is a JSON object with options like tabSize, insertSpaces, formatOnSave, formatOnType.
  *  It is saved to plugin settings on close. */
 export class FormatterConfigModal extends Modal {
-	private codeEditor: CodeEditorInstance;
+	private codeEditor!: CodeEditorInstance;
 
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -25,56 +25,56 @@ export class FormatterConfigModal extends Modal {
 		this.modalEl.style.width = '600px';
 		this.modalEl.style.height = '400px';
 
-		// Load existing config or fall back to default
 		const existing = this.plugin.settings.formatterConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_FORMATTER_CONFIG;
+
+		const debouncedSave = debounce(async () => {
+			if (!this.codeEditor) return;
+			const value = this.codeEditor.getValue().trim();
+			try {
+				JSON.parse(value);
+				if (value === DEFAULT_FORMATTER_CONFIG.trim()) {
+					delete this.plugin.settings.formatterConfigs[this.extension];
+				} else {
+					this.plugin.settings.formatterConfigs[this.extension] = value;
+				}
+				void this.plugin.saveSettings();
+				this.onSaved?.(value);
+			} catch {
+				// invalid JSON - wait
+			}
+		}, 600, true);
 
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			'json',
 			initialValue,
-			`formatter-config-${this.extension}`
+			`formatter-config-${this.extension}`,
+			() => debouncedSave()
 		);
 
-		this.contentEl.style.height = 'calc(100% - 60px)';
+		this.contentEl.style.height = '100%';
 		this.contentEl.append(this.codeEditor.iframe);
-
-		// Save button
-		const footer = this.modalEl.createEl('div', {
-			attr: { style: 'display:flex; justify-content:flex-end; padding: 8px 16px;' }
-		});
-		new ButtonComponent(footer)
-			.setButtonText('Save')
-			.setCta()
-			.onClick(() => this.save());
 	}
 
 	onClose(): void {
 		super.onClose();
-		this.codeEditor?.destroy();
-		this.contentEl.empty();
-	}
-
-	private async save(): Promise<void> {
-		const value = this.codeEditor.getValue().trim();
-		try {
-			JSON.parse(value); // validate JSON before saving
-			this.plugin.settings.formatterConfigs[this.extension] = value;
-			await this.plugin.saveSettings();
-			this.onSaved?.(value);
-			this.close();
-		} catch {
-			// Leave modal open so user can fix the JSON
-			const notice = this.modalEl.querySelector('.formatter-error') as HTMLElement;
-			if (notice) {
-				notice.textContent = 'Invalid JSON — please fix before saving.';
-			} else {
-				this.modalEl.createEl('p', {
-					text: 'Invalid JSON — please fix before saving.',
-					cls: 'formatter-error',
-					attr: { style: 'color: var(--text-error); padding: 0 16px;' }
-				});
+		if (this.codeEditor) {
+			const value = this.codeEditor.getValue().trim();
+			try {
+				JSON.parse(value);
+				if (value === DEFAULT_FORMATTER_CONFIG.trim()) {
+					delete this.plugin.settings.formatterConfigs[this.extension];
+				} else {
+					this.plugin.settings.formatterConfigs[this.extension] = value;
+				}
+				void this.plugin.saveSettings();
+				this.onSaved?.(value);
+			} catch {
+				// invalid JSON — discard changes
 			}
+			this.codeEditor.destroy();
 		}
+		this.contentEl.empty();
 	}
 }

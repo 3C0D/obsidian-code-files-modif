@@ -11,8 +11,6 @@ export interface MyPluginSettings {
 	syntaxValidation: boolean;
 	/** Monaco editor theme — 'default' follows Obsidian's dark/light mode */
 	theme: string;
-	/** Use Obsidian's background color instead of the editor theme's */
-	overwriteBg: boolean;
 	/** Show the ribbon icon to create a new code file */
 	showRibbonIcon: boolean;
 	/** Last 5 recently used themes, most recent first */
@@ -76,8 +74,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	minimap: true,
 	semanticValidation: true,
 	syntaxValidation: true,
-	theme: 'default',
-	overwriteBg: true,
+	theme: 'tomorrow-night',
 	showRibbonIcon: true,
 	recentThemes: [],
 	autoSave: false,

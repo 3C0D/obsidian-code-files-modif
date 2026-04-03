@@ -1,6 +1,7 @@
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
+import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
 import manifest from '../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from './getLanguage.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
@@ -22,6 +23,33 @@ import { FormatterConfigModal } from './formatterConfigModal.ts';
  *    inline the Monaco CSS (Obsidian's CSP blocks external <link> stylesheets in child frames),
  *    then inject via a blob URL which is not subject to the parent CSP for its own inline content.
  */
+export const resolveThemeParams = async (
+	plugin: CodeFilesPlugin,
+	theme: string
+): Promise<{ theme: string; themeData?: string }> => {
+	const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
+	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
+	const resolvedTheme =
+		theme === 'default'
+			? document.body.classList.contains('theme-dark')
+				? 'vs-dark'
+				: 'vs'
+			: theme;
+	const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
+	let themeData: string | undefined;
+	if (!builtins.includes(theme)) {
+		try {
+			const url = plugin.app.vault.adapter
+				.getResourcePath(`${pluginBase}/monaco-themes/${theme}.json`)
+				.replace(/\?.*$/, '');
+			themeData = JSON.stringify(await (await fetch(url)).json());
+		} catch (e) {
+			console.warn(`code-files: theme "${theme}" not found`, e);
+		}
+	}
+	return { theme: safeThemeId, themeData };
+};
+
 export const mountCodeEditor = async (
 	plugin: CodeFilesPlugin,
 	language: string,
@@ -75,14 +103,12 @@ export const mountCodeEditor = async (
 		}
 	}
 
-	if (plugin.settings.overwriteBg) {
+	if (plugin.settings.theme === 'default') {
 		initParams.background = 'transparent';
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	if (plugin.settings.formatterConfigs?.[extension]) {
-		initParams.formatterConfig = plugin.settings.formatterConfigs[extension];
-	}
+	initParams.formatterConfig = plugin.settings.formatterConfigs?.[extension] ?? DEFAULT_FORMATTER_CONFIG;
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
@@ -169,37 +195,9 @@ Element.prototype.appendChild = function(node) {
 			case 'open-theme-picker': {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
-					const applyTheme = async (theme: string): Promise<void> => {
-						const builtins = [
-							'vs',
-							'vs-dark',
-							'hc-black',
-							'hc-light',
-							'default'
-						];
-						const resolvedTheme =
-							theme === 'default'
-								? document.body.classList.contains('theme-dark')
-									? 'vs-dark'
-									: 'vs'
-								: theme;
-						let themeData: string | undefined;
-						if (!builtins.includes(theme)) {
-							try {
-								const url = plugin.app.vault.adapter
-									.getResourcePath(
-										`${pluginBase}/monaco-themes/${theme}.json`
-									)
-									.replace(/\?.*$/, '');
-								themeData = JSON.stringify(
-									await (await fetch(url)).json()
-								);
-							} catch (e) {
-								console.warn(`code-files: theme "${theme}" not found`, e);
-							}
-						}
-						const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
-						send('change-theme', { theme: safeThemeId, themeData });
+					const applyTheme = async (t: string): Promise<void> => {
+						const params = await resolveThemeParams(plugin, t);
+						send('change-theme', params);
 					};
 					const modal = new ChooseThemeModal(plugin, applyTheme, applyTheme);
 					const origOnClose = modal.onClose.bind(modal);

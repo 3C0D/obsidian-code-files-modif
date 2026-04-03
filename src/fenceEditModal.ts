@@ -1,5 +1,5 @@
 import { Modal, Notice, setIcon, type Editor } from 'obsidian';
-import { mountCodeEditor } from './mountCodeEditor.ts';
+import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import type CodeFilesPlugin from './main.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
 import type { CodeEditorInstance } from './types.ts';
@@ -35,19 +35,25 @@ export class FenceEditModal extends Modal {
 		});
 		this.titleEl.appendChild(badgeEl);
 
-		const paletteEl = createEl('div', { cls: 'code-files-fence-gear', attr: { 'aria-label': 'Change Theme' } });
+		const paletteEl = createEl('div', {
+			cls: 'code-files-fence-gear',
+			attr: { 'aria-label': 'Change Theme' }
+		});
 		setIcon(paletteEl, 'palette');
 		paletteEl.addEventListener('click', () => {
 			(document.activeElement as HTMLElement)?.blur();
-			new ChooseThemeModal(
-				this.plugin,
-				async (theme) => this.codeEditor?.send('change-theme', { theme }),
-				async (theme) => this.codeEditor?.send('change-theme', { theme })
-			).open();
+			const applyTheme = async (theme: string): Promise<void> => {
+				const params = await resolveThemeParams(this.plugin, theme);
+				this.codeEditor?.send('change-theme', params);
+			};
+			new ChooseThemeModal(this.plugin, applyTheme, applyTheme).open();
 		});
 		this.titleEl.appendChild(paletteEl);
 
-		const gearEl = createEl('div', { cls: 'code-files-fence-gear', attr: { 'aria-label': 'Editor Settings' } });
+		const gearEl = createEl('div', {
+			cls: 'code-files-fence-gear',
+			attr: { 'aria-label': 'Editor Settings' }
+		});
 		setIcon(gearEl, 'settings');
 		gearEl.addEventListener('click', () => {
 			(document.activeElement as HTMLElement)?.blur();
@@ -58,7 +64,9 @@ export class FenceEditModal extends Modal {
 				(config) => this.codeEditor?.send('change-formatter-config', { config })
 			);
 			const origOnClose = modal.onClose.bind(modal);
-			modal.onClose = () => { origOnClose(); };
+			modal.onClose = () => {
+				origOnClose();
+			};
 			modal.open();
 		});
 		this.titleEl.appendChild(gearEl);
@@ -99,8 +107,12 @@ export class FenceEditModal extends Modal {
 
 		const fenceData = context.getFenceData();
 
-		new FenceEditModal(plugin, fenceData.content, fenceData.language, fenceData.langKey, (value) =>
-			context.replaceFenceContent(value)
+		new FenceEditModal(
+			plugin,
+			fenceData.content,
+			fenceData.language,
+			fenceData.langKey,
+			(value) => context.replaceFenceContent(value)
 		).open();
 	}
 }

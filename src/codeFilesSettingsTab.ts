@@ -1,11 +1,9 @@
 import type { App } from 'obsidian';
-import { PluginSettingTab, Setting } from 'obsidian';
+import { AbstractInputSuggest, debounce, PluginSettingTab, Setting, TextAreaComponent, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
-import { themes } from './themes.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { FormatterConfigModal } from './formatterConfigModal.ts';
 import { getAllMonacoExtensions } from './getLanguage.ts';
-import { OBSIDIAN_NATIVE_EXTENSIONS } from './types.ts';
+import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	constructor(
@@ -22,38 +20,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', { text: 'Code Files Settings' });
 		containerEl.createEl('p', {
-			text: 'If you change any settings, you need to reopen already opened files for the changes to take effect.'
+			text: 'Most editor settings (Theme, Word Wrap, Folding, Line Numbers, Minimap, Semantic & Syntax Validation) are directly accessible from the editor interface via the gear icon or the palette icon in the tab header.'
 		});
-
-		new Setting(containerEl)
-			.setName('Theme')
-			.setDesc(
-				'Theme of the editor, defaults to dark or light based on the current editor theme.'
-			)
-			.addDropdown((dropdown) => {
-				dropdown.addOption('default', 'Default');
-				for (const theme of themes) {
-					dropdown.addOption(theme, theme);
-				}
-				dropdown.setValue(this.plugin.settings.theme).onChange(async (value) => {
-					this.plugin.settings.theme = value;
-					await this.plugin.saveSettings();
-				});
-			});
-
-		new Setting(containerEl)
-			.setName('Overwrite background with Obsidian background')
-			.setDesc(
-				'Always use the background of Obsidian as background, instead of the theme default background.' +
-					" It's recommended to turn this off if you are using" +
-					' custom themes. Disable this if the text colors are illegible on Obsidians background.'
-			)
-			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.overwriteBg).onChange(async (v) => {
-					this.plugin.settings.overwriteBg = v;
-					await this.plugin.saveSettings();
-				})
-			);
 
 		new Setting(containerEl)
 			.setName('Show ribbon icon')
@@ -68,14 +36,12 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					})
 			);
 
-		// ── File Extensions ───────────────────────────────────────────────────
+		// -- File Extensions --------------------------------------------------
 		containerEl.createEl('h3', { text: 'File Extensions' });
 
 		new Setting(containerEl)
 			.setName('Use all Monaco extensions')
-			.setDesc(
-				'Automatically register all extensions supported by Monaco, minus the excluded list below.'
-			)
+			.setDesc('Automatically register all extensions supported by Monaco, minus the excluded list below.')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.allExtensions)
@@ -88,20 +54,15 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			);
 
 		if (this.plugin.settings.allExtensions) {
-			// ── Excluded extensions ───────────────────────────────────────────
 			containerEl.createEl('p', {
 				text: 'Excluded extensions (will not open in Monaco):',
-				attr: {
-					style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 4px;'
-				}
+				attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 4px;' }
 			});
 
 			const excluded = this.plugin.settings.excludedExtensions;
 
 			const tagContainer = containerEl.createDiv({
-				attr: {
-					style: 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;'
-				}
+				attr: { style: 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;' }
 			});
 			for (const ext of [...excluded].sort()) {
 				const tag = tagContainer.createEl('span', {
@@ -114,13 +75,11 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				});
 				tag.createSpan({ text: ext });
 				const removeBtn = tag.createEl('span', {
-					text: '×',
+					text: 'x',
 					attr: { style: 'font-weight: bold; margin-left: 4px;' }
 				});
 				removeBtn.addEventListener('click', async () => {
-					this.plugin.settings.excludedExtensions = excluded.filter(
-						(e) => e !== ext
-					);
+					this.plugin.settings.excludedExtensions = excluded.filter((e) => e !== ext);
 					await this.plugin.saveSettings();
 					await this.plugin.reregisterExtensions();
 					this.display();
@@ -130,14 +89,10 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			let addInput = '';
 			new Setting(containerEl)
 				.setName('Add exclusion')
-				.setDesc(
-					'Extension to exclude from Monaco (without dot). Press Enter or click Add.'
-				)
+				.setDesc('Extension to exclude from Monaco (without dot). Press Enter or click Add.')
 				.addText((text) => {
 					text.setPlaceholder('e.g. svg');
-					text.onChange((v) => {
-						addInput = v;
-					});
+					text.onChange((v) => { addInput = v; });
 					text.inputEl.addEventListener('keydown', async (e) => {
 						if (e.key === 'Enter') {
 							const val = addInput.trim().toLowerCase().replace(/^\./, '');
@@ -164,9 +119,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 			containerEl.createEl('p', {
 				text: `Active: ${getAllMonacoExtensions(excluded).length} extensions registered`,
-				attr: {
-					style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
-				}
+				attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
 			});
 		} else {
 			new Setting(containerEl)
@@ -178,103 +131,104 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				)
 				.addButton((btn) => {
 					btn.setButtonText('Add / Remove').onClick(() => {
-						new ChooseExtensionModal(this.plugin, () =>
-							this.display()
-						).open();
+						new ChooseExtensionModal(this.plugin, () => this.display()).open();
 					});
 				});
 
 			containerEl.createEl('p', {
 				text: `Active: ${this.plugin.settings.extensions.join(', ') || 'none'}`,
-				attr: {
-					style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;'
-				}
+				attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
 			});
 		}
 
-		new Setting(containerEl)
-			.setName('Folding')
-			.setDesc('Editor will support code block folding.')
-			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.folding).onChange(async (value) => {
-					this.plugin.settings.folding = value;
-					await this.plugin.saveSettings();
-					this.plugin.broadcastOptions();
-				})
-			);
-
-		new Setting(containerEl)
-			.setName('Line Numbers')
-			.setDesc('Editor will show line numbers.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.lineNumbers)
-					.onChange(async (value) => {
-						this.plugin.settings.lineNumbers = value;
-						await this.plugin.saveSettings();
-						this.plugin.broadcastOptions();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Minimap')
-			.setDesc('Editor will show a minimap.')
-			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.minimap).onChange(async (value) => {
-					this.plugin.settings.minimap = value;
-					await this.plugin.saveSettings();
-					this.plugin.broadcastOptions();
-				})
-			);
-
-		new Setting(containerEl)
-			.setName('Semantic Validation')
-			.setDesc('Editor will show semantic validation errors.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.semanticValidation)
-					.onChange(async (value) => {
-						this.plugin.settings.semanticValidation = value;
-						await this.plugin.saveSettings();
-						this.plugin.broadcastOptions();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName('Syntax Validation')
-			.setDesc('Editor will show syntax validation errors.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.syntaxValidation)
-					.onChange(async (value) => {
-						this.plugin.settings.syntaxValidation = value;
-						await this.plugin.saveSettings();
-						this.plugin.broadcastOptions();
-					})
-			);
-
-		// ── Formatter Config ──────────────────────────────────────────────────
+		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Formatter Config' });
 		containerEl.createEl('p', {
-			text: 'Configure Monaco formatter options per extension (tabSize, insertSpaces, formatOnSave, formatOnType).',
-			attr: {
-				style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
-			}
+			text: 'Per-extension formatter options (tabSize, insertSpaces, formatOnSave, formatOnType).',
+			attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
 		});
 
 		const extensions = this.plugin.settings.extensions;
-		for (const ext of extensions) {
-			const hasConfig = !!this.plugin.settings.formatterConfigs?.[ext];
-			new Setting(containerEl)
-				.setName(`.${ext}`)
-				.setDesc(hasConfig ? 'Custom config' : 'Using defaults')
-				.addButton((btn) => {
-					btn.setButtonText('Edit')
-						.setIcon('settings')
-						.onClick(() => {
-							new FormatterConfigModal(this.plugin, ext).open();
-						});
-				});
-		}
+		let selectedExt = '';
+
+		const extInput = new TextComponent(containerEl);
+		extInput.setPlaceholder('Type or select an extension...');
+		extInput.inputEl.style.width = '100%';
+		extInput.inputEl.style.marginBottom = '8px';
+
+		const extLabel = containerEl.createEl('p', {
+			attr: { style: 'font-size: 0.85em; color: var(--text-muted); margin-bottom: 4px;' }
+		});
+		extLabel.setText('Formatter - select an extension above');
+
+		const textarea = new TextAreaComponent(containerEl);
+		textarea.inputEl.style.width = '100%';
+		textarea.inputEl.style.height = '120px';
+		textarea.inputEl.style.fontFamily = 'monospace';
+		textarea.inputEl.style.fontSize = '0.85em';
+		textarea.inputEl.style.opacity = '0.6';
+		textarea.setValue(DEFAULT_FORMATTER_CONFIG);
+		textarea.inputEl.disabled = true;
+
+		const updateLabel = (ext: string): void => {
+			extLabel.setText(`Formatter - .${ext}`);
+		};
+
+		const showExt = (ext: string): void => {
+			selectedExt = ext;
+			const existing = this.plugin.settings.formatterConfigs?.[ext];
+			updateLabel(ext);
+			textarea.setValue(existing ?? DEFAULT_FORMATTER_CONFIG);
+			textarea.inputEl.disabled = false;
+			textarea.inputEl.style.opacity = '1';
+		};
+
+		new ExtensionInputSuggest(this.plugin, extInput.inputEl, extensions, showExt);
+
+		const debouncedSave = debounce(async () => {
+			if (!selectedExt) return;
+			const val = textarea.getValue().trim();
+			try {
+				JSON.parse(val);
+				if (val === DEFAULT_FORMATTER_CONFIG.trim()) {
+					delete this.plugin.settings.formatterConfigs[selectedExt];
+				} else {
+					this.plugin.settings.formatterConfigs[selectedExt] = val;
+				}
+				await this.plugin.saveSettings();
+				this.plugin.broadcastFormatterConfig(selectedExt);
+				updateLabel(selectedExt);
+			} catch {
+				// invalid JSON - wait for valid input
+			}
+		}, 600, true);
+
+		textarea.inputEl.addEventListener('input', () => debouncedSave());
+	}
+}
+
+class ExtensionInputSuggest extends AbstractInputSuggest<string> {
+	constructor(
+		private plugin: CodeFilesPlugin,
+		inputEl: HTMLInputElement,
+		private extensions: string[],
+		private onChoose: (ext: string) => void
+	) {
+		super(plugin.app, inputEl);
+	}
+
+	protected getSuggestions(query: string): string[] {
+		const q = query.toLowerCase().replace(/^\./, '');
+		return this.extensions.filter((ext) => ext.includes(q));
+	}
+
+	renderSuggestion(ext: string, el: HTMLElement): void {
+		el.setText(`.${ext}`);
+	}
+
+	selectSuggestion(ext: string): void {
+		this.onChoose(ext);
+		this.setValue(ext);
+		this.close();
 	}
 }
