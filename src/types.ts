@@ -70,7 +70,7 @@ export const OBSIDIAN_NATIVE_EXTENSIONS = [
 
 /** Plugin default settings applied on first install */
 export const DEFAULT_SETTINGS: MyPluginSettings = {
-	extensions: ['ts', 'tsx', 'js', 'jsx', 'py'],
+	extensions: ['ts', 'tsx', 'js', 'jsx', 'py', 'json', 'css', 'html', 'sh', 'yaml', 'sql', 'php', 'cs', 'java', 'go', 'rs', 'cpp', 'c'],
 	folding: true,
 	lineNumbers: true,
 	minimap: true,

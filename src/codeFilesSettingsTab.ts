@@ -39,8 +39,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		containerEl.createEl('h3', { text: 'File Extensions' });
 
 		new Setting(containerEl)
-			.setName('Use all Monaco extensions')
-			.setDesc('Automatically register all extensions supported by Monaco, minus the excluded list below.')
+			.setName('Use extended extensions list')
+			.setDesc('Register a broad curated list of extensions. Each mode (manual/extended) keeps its own independent list when toggling.')
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.allExtensions)
@@ -73,7 +73,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			});
 
 		containerEl.createEl('p', {
-			text: this.plugin.getActiveExtensions().join(', ') || 'none',
+			text: 'Active: ' + (this.plugin.getActiveExtensions().sort().join(', ') || 'none'),
 			attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
 		});
 
