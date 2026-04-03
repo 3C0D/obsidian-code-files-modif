@@ -99,13 +99,16 @@ export default class CodeFilesPlugin extends Plugin {
 		this.addCommand({
 			id: 'formatter-config',
 			name: 'Edit formatter config for current file',
-			callback: () => {
+			checkCallback: (checking) => {
 				const file = this.app.workspace.activeEditor?.file;
-				if (!file) {
-					new Notification('No file open');
-					return;
+				const isCodeFile =
+					file && this.settings.extensions.includes(file.extension);
+				if (!isCodeFile) return false;
+				if (!checking) {
+					(document.activeElement as HTMLElement)?.blur();
+					new FormatterConfigModal(this, file.extension).open();
 				}
-				new FormatterConfigModal(this, file.extension).open();
+				return true;
 			}
 		});
 
