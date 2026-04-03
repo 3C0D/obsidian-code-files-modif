@@ -135,22 +135,17 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
-	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
-	async onLoadFile(file: TFile): Promise<void> {
-		await super.onLoadFile(file);
-
+	private async mountEditor(file: TFile): Promise<void> {
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			getLanguage(file.extension),
 			this.data,
 			this.getContext(file),
 			() => {
-				// onChange: mark dirty, trigger auto-save if enabled
 				this.setDirty(true);
 				this.requestSave();
 			},
 			() => {
-				// onSave (Ctrl+S): force save and clear dirty
 				this.forceSave = true;
 				this.setSaving(true);
 				void this.save().then(() => {
@@ -159,7 +154,12 @@ export class CodeEditorView extends TextFileView {
 				});
 			}
 		);
+	}
 
+	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
+	async onLoadFile(file: TFile): Promise<void> {
+		await super.onLoadFile(file);
+		await this.mountEditor(file);
 		this.contentEl.style.overflow = 'hidden';
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
@@ -183,31 +183,9 @@ export class CodeEditorView extends TextFileView {
 
 	async onRename(file: TFile): Promise<void> {
 		super.onRename(file);
-		// When the file is renamed (e.g. extension changed), Obsidian updates the TFile
-		// but does not automatically reload the view's inner content. We must manually
-		// destroy the old Monaco iframe and mount a new one so it picks up the new syntax
-		// highlighting and updates its internal codeContext message router.
 		this.codeEditor?.destroy();
 		this.contentEl.empty();
-
-		this.codeEditor = await mountCodeEditor(
-			this.plugin,
-			getLanguage(file.extension),
-			this.data,
-			this.getContext(file),
-			() => {
-				this.setDirty(true);
-				this.requestSave();
-			},
-			() => {
-				this.forceSave = true;
-				this.setSaving(true);
-				void this.save().then(() => {
-					this.setDirty(false);
-					this.setSaving(false);
-				});
-			}
-		);
+		await this.mountEditor(file);
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
 		this.injectGearIcon(file);

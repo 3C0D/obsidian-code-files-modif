@@ -59,7 +59,7 @@ export class FenceEditModal extends Modal {
 			(document.activeElement as HTMLElement)?.blur();
 			const modal = new EditorSettingsModal(
 				this.plugin,
-				this.language,
+				this.langKey,
 				() => this.plugin.broadcastOptions(),
 				(config) => this.codeEditor?.send('change-formatter-config', { config })
 			);
@@ -75,7 +75,7 @@ export class FenceEditModal extends Modal {
 			this.plugin,
 			this.language,
 			this.code,
-			'modal-editor'
+			`modal-editor.${this.langKey}`
 		);
 
 		this.contentEl.append(this.codeEditor.iframe);

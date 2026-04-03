@@ -18,6 +18,20 @@ export class EditorSettingsModal extends Modal {
 		super(plugin.app);
 	}
 
+	private applyFormatterValue(value: string): boolean {
+		try {
+			JSON.parse(value);
+			if (value === DEFAULT_FORMATTER_CONFIG.trim()) {
+				delete this.plugin.settings.formatterConfigs[this.extension];
+			} else {
+				this.plugin.settings.formatterConfigs[this.extension] = value;
+			}
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
 	async onOpen(): Promise<void> {
 		super.onOpen();
 		this.titleEl.setText('Editor Settings');
@@ -127,17 +141,7 @@ export class EditorSettingsModal extends Modal {
 		const debouncedSave = debounce(async () => {
 			if (!this.codeEditor) return;
 			const value = this.codeEditor.getValue().trim();
-			try {
-				JSON.parse(value);
-				if (value === DEFAULT_FORMATTER_CONFIG.trim()) {
-					delete this.plugin.settings.formatterConfigs[this.extension];
-				} else {
-					this.plugin.settings.formatterConfigs[this.extension] = value;
-				}
-				await this.plugin.saveSettings();
-			} catch {
-				// invalid JSON - wait
-			}
+			if (this.applyFormatterValue(value)) await this.plugin.saveSettings();
 		}, 600, true);
 
 		this.codeEditor = await mountCodeEditor(
@@ -156,17 +160,9 @@ export class EditorSettingsModal extends Modal {
 		super.onClose();
 		if (this.codeEditor) {
 			const value = this.codeEditor.getValue().trim();
-			try {
-				JSON.parse(value);
-				if (value === DEFAULT_FORMATTER_CONFIG.trim()) {
-					delete this.plugin.settings.formatterConfigs[this.extension];
-				} else {
-					this.plugin.settings.formatterConfigs[this.extension] = value;
-				}
+			if (this.applyFormatterValue(value)) {
 				void this.plugin.saveSettings();
 				this.onFormatterSaved(value);
-			} catch {
-				// invalid JSON — discard
 			}
 			this.codeEditor.destroy();
 		}

@@ -87,13 +87,6 @@ export class RenameExtensionModal extends Modal {
 		// Also prevent double extension if user accidentally typed the existing extension suffix
 		const newPath = `${base}.${ext}`;
 
-		if (base.endsWith(`.${ext}`)) {
-			// If base was 'test.js' and user typed 'js', and somehow it wasn't caught as the file's extension
-			// Or they're adding .js to something that already ends in .js
-			// Actually we just generate the normal path based on standard string building.
-			// No need to over-engineer if base has it, because TFile.extension is authoritative.
-		}
-
 		if (newPath === this.file.path) {
 			this.close();
 			return;
