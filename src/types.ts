@@ -25,6 +25,8 @@ export interface MyPluginSettings {
 	allExtensions: boolean;
 	/** Extensions excluded from auto-registration when allExtensions is true */
 	excludedExtensions: string[];
+	/** Extra extensions added manually while allExtensions is true */
+	extraExtensions: string[];
 }
 
 /** Default Monaco formatter options applied when no per-extension config exists */
@@ -81,7 +83,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	wordWrap: 'off',
 	formatterConfigs: {},
 	allExtensions: false,
-	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS]
+	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
+	extraExtensions: []
 };
 
 /** Obsidian view type identifier for the Monaco editor */

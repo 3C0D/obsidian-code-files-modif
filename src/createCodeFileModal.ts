@@ -129,8 +129,8 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		// If the extension is not registered yet, register it on the fly
-		if (!this.plugin.settings.extensions.includes(ext)) {
-			this.plugin.settings.extensions.push(ext);
+		if (!this.plugin.getActiveExtensions().includes(ext)) {
+			this.plugin.addExtension(ext);
 			this.plugin.registerExtension(ext);
 			await this.plugin.saveSettings();
 			new Notice(`Added ".${ext}" to registered extensions`);

@@ -121,6 +121,37 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				text: `Active: ${getAllMonacoExtensions(excluded).length} extensions registered`,
 				attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
 			});
+
+			if (this.plugin.settings.extraExtensions.length > 0) {
+				containerEl.createEl('p', {
+					text: 'Extra extensions (added manually in all-extensions mode):',
+					attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 4px;' }
+				});
+				const extraContainer = containerEl.createDiv({
+					attr: { style: 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;' }
+				});
+				for (const ext of [...this.plugin.settings.extraExtensions].sort()) {
+					const tag = extraContainer.createEl('span', {
+						attr: {
+							style:
+								'background: var(--background-modifier-border); ' +
+								'border-radius: 4px; padding: 2px 8px; font-size: 0.85em; ' +
+								'cursor: pointer; display: flex; align-items: center; gap: 4px;'
+						}
+					});
+					tag.createSpan({ text: ext });
+					const removeBtn = tag.createEl('span', {
+						text: 'x',
+						attr: { style: 'font-weight: bold; margin-left: 4px;' }
+					});
+					removeBtn.addEventListener('click', async () => {
+						this.plugin.removeExtension(ext);
+						this.plugin.unregisterExtension(ext);
+						await this.plugin.saveSettings();
+						this.display();
+					});
+				}
+			}
 		} else {
 			new Setting(containerEl)
 				.setName('Manage extensions')
@@ -148,7 +179,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
 		});
 
-		const extensions = this.plugin.settings.extensions;
+		const extensions = this.plugin.getActiveExtensions();
 		let selectedExt = '';
 
 		const extInput = new TextComponent(containerEl);

@@ -22,7 +22,7 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 
 	getSuggestions(query: string): ExtensionSuggestion[] {
 		const q = query.toLowerCase().replace(/^\./, '').trim();
-		const current = this.plugin.settings.extensions;
+		const current = this.plugin.getActiveExtensions();
 
 		// Filter existing extensions matching the query
 		const matches = current
@@ -42,23 +42,16 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 	}
 
 	async onChooseSuggestion(item: ExtensionSuggestion): Promise<void> {
-		const extensions = this.plugin.settings.extensions;
-
 		if (item.kind === 'add') {
-			if (!extensions.includes(item.ext)) {
-				extensions.push(item.ext);
-				this.plugin.registerExtension(item.ext);
-				new Notice(`Added ".${item.ext}"`);
-			}
+			this.plugin.addExtension(item.ext);
+			this.plugin.registerExtension(item.ext);
+			new Notice(`Added ".${item.ext}"`);
 			await this.plugin.saveSettings();
 			this.onUpdate(item.ext);
 		} else {
-			const idx = extensions.indexOf(item.ext);
-			if (idx !== -1) {
-				extensions.splice(idx, 1);
-				this.plugin.unregisterExtension(item.ext);
-				new Notice(`Removed ".${item.ext}"`);
-			}
+			this.plugin.removeExtension(item.ext);
+			this.plugin.unregisterExtension(item.ext);
+			new Notice(`Removed ".${item.ext}"`);
 			await this.plugin.saveSettings();
 			this.onUpdate();
 		}

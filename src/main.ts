@@ -13,17 +13,12 @@ import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
 	private ribbonIconEl: HTMLElement | null = null;
+	/** Snapshot of the active extensions at last registration, used to diff on reregister. */
+	private _registeredExts: Set<string> = new Set();
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
 		await loadPersistedLanguages(this);
-
-		// If allExtensions mode is on, apply the full static list minus exclusions
-		if (this.settings.allExtensions) {
-			this.settings.extensions = getAllMonacoExtensions(
-				this.settings.excludedExtensions
-			);
-		}
 
 		addIcon(
 			'code-files-settings',
@@ -32,13 +27,15 @@ export default class CodeFilesPlugin extends Plugin {
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 
+		const activeExts = this.getActiveExtensions();
 		try {
-			this.registerExtensions(this.settings.extensions, viewType);
+			this.registerExtensions(activeExts, viewType);
+			this._registeredExts = new Set(activeExts);
 		} catch (e) {
 			console.log('code-files plugin error:', e);
 			new Notification('Code Files Plugin Error', {
 				body:
-					`Could not register extensions ${this.settings.extensions.join(', ')}; ` +
+					`Could not register extensions ${activeExts.join(', ')}; ` +
 					`there are probably some other extensions that already registered them. ` +
 					`Please change code-files's extensions in the plugin settings or remove conflicting plugins.`
 			});
@@ -91,7 +88,7 @@ export default class CodeFilesPlugin extends Plugin {
 			name: 'Rename extension of current file',
 			callback: () => {
 				const file = this.app.workspace.activeEditor?.file;
-				if (!file || !this.settings.extensions.includes(file.extension)) {
+				if (!file || !this.getActiveExtensions().includes(file.extension)) {
 					new Notification('No registered code file open');
 					return;
 				}
@@ -105,7 +102,7 @@ export default class CodeFilesPlugin extends Plugin {
 			checkCallback: (checking) => {
 				const file = this.app.workspace.activeEditor?.file;
 				const isCodeFile =
-					file && this.settings.extensions.includes(file.extension);
+					file && this.getActiveExtensions().includes(file.extension);
 				if (!isCodeFile) return false;
 				if (!checking) {
 					(document.activeElement as HTMLElement)?.blur();
@@ -165,7 +162,7 @@ export default class CodeFilesPlugin extends Plugin {
 				const fenceContext = FenceEditContext.create(this, editor);
 				const activeFile = this.app.workspace.activeEditor?.file;
 				const isRegistered =
-					activeFile && this.settings.extensions.includes(activeFile.extension);
+					activeFile && this.getActiveExtensions().includes(activeFile.extension);
 
 				// Build the list of applicable items
 				type MenuItem = { title: string; icon: string; action: () => void };
@@ -255,35 +252,72 @@ export default class CodeFilesPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+		// Migration: extraExtensions may not exist in older saved data
+		if (!this.settings.extraExtensions) {
+			this.settings.extraExtensions = [];
+		}
+		// Migration: if allExtensions was on, settings.extensions was polluted — reset to defaults
+		if (this.settings.allExtensions) {
+			this.settings.extensions = DEFAULT_SETTINGS.extensions;
+		}
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 
+	/** Returns the computed list of active extensions based on current settings. */
+	getActiveExtensions(): string[] {
+		if (this.settings.allExtensions) {
+			return [
+				...getAllMonacoExtensions(this.settings.excludedExtensions),
+				...this.settings.extraExtensions
+			];
+		}
+		return this.settings.extensions;
+	}
+
+	/** Adds an extension to the appropriate list depending on the current mode. */
+	addExtension(ext: string): void {
+		if (this.settings.allExtensions) {
+			if (!this.settings.extraExtensions.includes(ext))
+				this.settings.extraExtensions.push(ext);
+		} else {
+			if (!this.settings.extensions.includes(ext))
+				this.settings.extensions.push(ext);
+		}
+	}
+
+	/** Removes an extension from the appropriate list depending on the current mode. */
+	removeExtension(ext: string): void {
+		if (this.settings.allExtensions) {
+			const idx = this.settings.extraExtensions.indexOf(ext);
+			if (idx !== -1) {
+				this.settings.extraExtensions.splice(idx, 1);
+			} else if (!this.settings.excludedExtensions.includes(ext)) {
+				this.settings.excludedExtensions.push(ext);
+			}
+		} else {
+			const idx = this.settings.extensions.indexOf(ext);
+			if (idx !== -1) this.settings.extensions.splice(idx, 1);
+		}
+	}
+
 	/**
 	 * Recomputes and reregisters extensions based on current settings.
-	 * In allExtensions mode: uses dynamicMap minus excludedExtensions.
-	 * In manual mode: uses settings.extensions as-is.
+	 * Diffs against the last registered snapshot to avoid redundant calls.
 	 */
 	async reregisterExtensions(): Promise<void> {
-		const newExts = this.settings.allExtensions
-			? getAllMonacoExtensions(this.settings.excludedExtensions)
-			: this.settings.extensions;
+		const next = new Set(this.getActiveExtensions());
 
-		const current = new Set(this.settings.extensions);
-		const next = new Set(newExts);
-
-		// Unregister removed
-		for (const ext of current) {
+		for (const ext of this._registeredExts) {
 			if (!next.has(ext)) this.unregisterExtension(ext);
 		}
-		// Register added
 		for (const ext of next) {
-			if (!current.has(ext)) this.registerExtension(ext);
+			if (!this._registeredExts.has(ext)) this.registerExtension(ext);
 		}
 
-		this.settings.extensions = newExts;
+		this._registeredExts = next;
 		await this.saveSettings();
 	}
 
