@@ -8,7 +8,7 @@ import { ChooseCssFileModal } from './chooseCssFileModal.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
 import { FormatterConfigModal } from './formatterConfigModal.ts';
 import { DEFAULT_SETTINGS, viewType, type MyPluginSettings } from './types.ts';
-import { loadPersistedLanguages } from './getLanguage.ts';
+import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings: MyPluginSettings;
@@ -18,7 +18,17 @@ export default class CodeFilesPlugin extends Plugin {
 		await this.loadSettings();
 		await loadPersistedLanguages(this);
 
-		addIcon('code-files-settings', '<rect x="5" y="5" width="90" height="90" rx="15" fill="none" stroke="currentColor" stroke-width="8"/><circle cx="50" cy="50" r="25" fill="currentColor"/>');
+		// If allExtensions mode is on, apply the full static list minus exclusions
+		if (this.settings.allExtensions) {
+			this.settings.extensions = getAllMonacoExtensions(
+				this.settings.excludedExtensions
+			);
+		}
+
+		addIcon(
+			'code-files-settings',
+			'<rect x="5" y="5" width="90" height="90" rx="15" fill="none" stroke="currentColor" stroke-width="8"/><circle cx="50" cy="50" r="25" fill="currentColor"/>'
+		);
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 
@@ -243,9 +253,36 @@ export default class CodeFilesPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	/**
+	 * Recomputes and reregisters extensions based on current settings.
+	 * In allExtensions mode: uses dynamicMap minus excludedExtensions.
+	 * In manual mode: uses settings.extensions as-is.
+	 */
+	async reregisterExtensions(): Promise<void> {
+		const newExts = this.settings.allExtensions
+			? getAllMonacoExtensions(this.settings.excludedExtensions)
+			: this.settings.extensions;
+
+		const current = new Set(this.settings.extensions);
+		const next = new Set(newExts);
+
+		// Unregister removed
+		for (const ext of current) {
+			if (!next.has(ext)) this.unregisterExtension(ext);
+		}
+		// Register added
+		for (const ext of next) {
+			if (!current.has(ext)) this.registerExtension(ext);
+		}
+
+		this.settings.extensions = newExts;
+		await this.saveSettings();
+	}
+
 	/** Sends updated editor options to all open code-editor iframes. */
 	broadcastOptions(): void {
-		const views = this.app.workspace.getLeavesOfType(viewType)
+		const views = this.app.workspace
+			.getLeavesOfType(viewType)
 			.map((l) => l.view as import('./codeEditorView.ts').CodeEditorView);
 		for (const view of views) {
 			view.codeEditor?.send('change-options', {
@@ -254,7 +291,7 @@ export default class CodeFilesPlugin extends Plugin {
 				minimap: this.settings.minimap,
 				folding: this.settings.folding,
 				semanticValidation: !this.settings.semanticValidation,
-				syntaxValidation: !this.settings.syntaxValidation,
+				syntaxValidation: !this.settings.syntaxValidation
 			});
 		}
 	}

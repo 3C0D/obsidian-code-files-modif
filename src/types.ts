@@ -23,6 +23,10 @@ export interface MyPluginSettings {
 	wordWrap: 'on' | 'off';
 	/** Per-extension formatter config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
 	formatterConfigs: Record<string, string>;
+	/** When true, all Monaco-supported extensions are registered (minus excludedExtensions) */
+	allExtensions: boolean;
+	/** Extensions excluded from auto-registration when allExtensions is true */
+	excludedExtensions: string[];
 }
 
 /** Default Monaco formatter options applied when no per-extension config exists */
@@ -38,6 +42,32 @@ const DEFAULT_FORMATTER_CONFIG = JSON.stringify(
 );
 export { DEFAULT_FORMATTER_CONFIG };
 
+/** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
+export const OBSIDIAN_NATIVE_EXTENSIONS = [
+	'md',
+	'canvas',
+	'pdf',
+	'png',
+	'jpg',
+	'jpeg',
+	'gif',
+	'bmp',
+	'svg',
+	'webp',
+	'mp3',
+	'wav',
+	'm4a',
+	'ogg',
+	'3gp',
+	'flac',
+	'mp4',
+	'webm',
+	'ogv',
+	'mov',
+	'mkv',
+	'base'
+];
+
 /** Plugin default settings applied on first install */
 export const DEFAULT_SETTINGS: MyPluginSettings = {
 	extensions: ['ts', 'tsx', 'js', 'jsx', 'py'],
@@ -52,7 +82,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	recentThemes: [],
 	autoSave: false,
 	wordWrap: 'off',
-	formatterConfigs: {}
+	formatterConfigs: {},
+	allExtensions: false,
+	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS]
 };
 
 /** Obsidian view type identifier for the Monaco editor */
