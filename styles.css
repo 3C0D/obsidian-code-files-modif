@@ -1,6 +1,8 @@
 .code-files-ext-badge {
   display: inline-block;
+  width: auto;
   margin-left: 6px;
+  margin-right: 4px;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 0.75em;
@@ -28,6 +30,22 @@
 .code-files-dirty-badge.code-files-dirty-unsaved {
   background: white;
   border-color: white;
+}
+
+.code-files-fence-gear {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--icon-color);
+  opacity: var(--icon-opacity);
+  border-radius: 4px;
+  padding: 2px;
+  margin-right: 30px;
+}
+
+.code-files-fence-gear:hover {
+  opacity: 1;
+  background-color: var(--background-modifier-hover);
 }
 
 .code-files-settings-toggles {

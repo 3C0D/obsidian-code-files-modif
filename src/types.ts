@@ -17,7 +17,7 @@ export interface MyPluginSettings {
 	showRibbonIcon: boolean;
 	/** Last 5 recently used themes, most recent first */
 	recentThemes: string[];
-	/** If false, Obsidian's auto-save is blocked — only Ctrl+S saves */
+	/** If false, Obsidian's auto-save is blocked in Monaco views — only Ctrl+S saves */
 	autoSave: boolean;
 	/** Word wrap mode for the Monaco editor */
 	wordWrap: 'on' | 'off';
@@ -28,15 +28,14 @@ export interface MyPluginSettings {
 /** Default Monaco formatter options applied when no per-extension config exists */
 const DEFAULT_FORMATTER_CONFIG = JSON.stringify(
 	{
-		tabSize: 2,
+		tabSize: 4,
 		insertSpaces: true,
-		formatOnSave: false,
+		formatOnSave: true,
 		formatOnType: false
 	},
 	null,
 	2
 );
-
 export { DEFAULT_FORMATTER_CONFIG };
 
 /** Plugin default settings applied on first install */
@@ -59,12 +58,13 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 /** Obsidian view type identifier for the Monaco editor */
 export const viewType = 'code-editor';
 
-/** Typed suggestion to avoid encoding intent in a display string */
+/** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */
 export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
 
 export interface CodeEditorInstance {
+	/** The iframe element containing the Monaco editor */
 	iframe: HTMLIFrameElement;
-	/** Sends a typed postMessage to the Monaco iframe */
+	/** Sends a postMessage instruction from Obsidian to the Monaco iframe (e.g. change theme, update options, set content) */
 	send: (type: string, payload: Record<string, unknown>) => void;
 	/** Clears the editor content */
 	clear: () => void;

@@ -160,17 +160,9 @@ export default class CodeFilesPlugin extends Plugin {
 						icon: 'code',
 						action: () => FenceEditModal.openOnCurrentCode(this, editor)
 					});
-					items.push({
-						title: 'Formatter Config (code block)',
-						icon: 'settings',
-						action: () => {
-							const lang = fenceContext.getFenceData().language;
-							new FormatterConfigModal(this, lang).open();
-						}
-					});
 				}
 
-				if (isRegistered && activeFile) {
+				if (isRegistered && activeFile && !fenceContext) {
 					items.push({
 						title: 'Rename Extension',
 						icon: 'pencil',

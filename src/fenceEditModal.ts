@@ -1,8 +1,9 @@
-import { Modal, Notice, type Editor } from 'obsidian';
+import { Modal, Notice, setIcon, type Editor } from 'obsidian';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 import type CodeFilesPlugin from './main.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
 import type { CodeEditorInstance } from './types.ts';
+import { EditorSettingsModal } from './editorSettingsModal.ts';
 
 /** Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed. */
 export class FenceEditModal extends Modal {
@@ -12,6 +13,7 @@ export class FenceEditModal extends Modal {
 		private plugin: CodeFilesPlugin,
 		private code: string,
 		private language: string,
+		private langKey: string,
 		private onSave: (changedCode: string) => void
 	) {
 		super(plugin.app);
@@ -20,6 +22,34 @@ export class FenceEditModal extends Modal {
 	async onOpen(): Promise<void> {
 		super.onOpen();
 
+		// ── Badge extension + gear dans la barre de titre ────────────
+		this.titleEl.style.display = 'flex';
+		this.titleEl.style.alignItems = 'center';
+		this.titleEl.style.gap = '8px';
+
+		const badgeEl = createEl('span', {
+			text: `.${this.langKey}`,
+			cls: 'code-files-ext-badge',
+			attr: { style: 'margin-left: auto; margin-right: 0;' }
+		});
+		this.titleEl.appendChild(badgeEl);
+
+		const gearEl = createEl('div', { cls: 'code-files-fence-gear', attr: { 'aria-label': 'Editor Settings' } });
+		setIcon(gearEl, 'settings');
+		gearEl.addEventListener('click', () => {
+			(document.activeElement as HTMLElement)?.blur();
+			const modal = new EditorSettingsModal(
+				this.plugin,
+				this.language,
+				() => this.plugin.broadcastOptions(),
+				(config) => this.codeEditor?.send('change-formatter-config', { config })
+			);
+			const origOnClose = modal.onClose.bind(modal);
+			modal.onClose = () => { origOnClose(); };
+			modal.open();
+		});
+		this.titleEl.appendChild(gearEl);
+
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			this.language,
@@ -27,14 +57,11 @@ export class FenceEditModal extends Modal {
 			'modal-editor'
 		);
 
-		// Ensure the editor fills the modal when it opens
 		this.contentEl.append(this.codeEditor.iframe);
 
-		// Apply custom styles to make the modal more spacious and better suited for code editing
 		this.modalEl.style.width = '90vw';
 		this.modalEl.style.height = '90vh';
 
-		// Match close button background to the modal to avoid visual bleed
 		this.modalEl.querySelector<HTMLDivElement>(
 			'.modal-close-button'
 		)!.style.background = 'var(--modal-background)';
@@ -59,7 +86,7 @@ export class FenceEditModal extends Modal {
 
 		const fenceData = context.getFenceData();
 
-		new FenceEditModal(plugin, fenceData.content, fenceData.language, (value) =>
+		new FenceEditModal(plugin, fenceData.content, fenceData.language, fenceData.langKey, (value) =>
 			context.replaceFenceContent(value)
 		).open();
 	}

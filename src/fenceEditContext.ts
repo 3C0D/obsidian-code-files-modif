@@ -41,19 +41,17 @@ export class FenceEditContext {
 	}
 
 	/** Extracts the content of the code fence by concatenating the lines between the start and end bounds, and determines the language of the fence from the info string on the opening line. It returns an object containing both the content and the language, which is used to initialize the Monaco Editor in the modal. */
-	getFenceData(): { content: string; language: string } {
+	getFenceData(): { content: string; language: string; langKey: string } {
 		let editorContent = '';
 		for (let i = this.start + 1; i < this.end; i++) {
 			editorContent += `${this.editor.getLine(i)}\n`;
 		}
 
 		const content = editorContent.slice(0, editorContent.length - 1);
-		// The info string is everything after the opening ``` on the first line (e.g. ```typescript → 'typescript')
-		// We take only the first word to ignore extra attributes like ```js filename=foo.js
 		const langKey = this.editor.getLine(this.start).slice(3).trim().split(' ')[0];
 		const language = getLanguage(langKey);
 
-		return { content, language };
+		return { content, language, langKey };
 	}
 
 	getEditor(): Editor {
