@@ -71,11 +71,33 @@ case 'mon-action': {
 
 ---
 
+## Pourquoi le `blur()` est obligatoire avant tout `modal.open()`
+
+Monaco tourne dans une **iframe isolée**. Son DOM est complètement séparé du DOM d'Obsidian — les éléments de l'iframe n'héritent pas des patches que le code minifié d'Obsidian injecte sur `Node.prototype`, notamment la méthode `instanceOf`.
+
+Quand on appelle `modal.open()` (ou `app.setting.open()`), Obsidian sauvegarde `document.activeElement` pour restaurer le focus à la fermeture. Si l'élément actif au moment de l'ouverture est un élément interne de l'iframe Monaco (le `<textarea>` caché, un bouton, etc.), Obsidian tente à la fermeture de valider cet élément avec `element.instanceOf(HTMLElement)` — méthode inexistante sur les éléments de l'iframe. Résultat :
+
+```
+Uncaught TypeError: n.instanceOf is not a function
+    at e.close (app.js:1:...)
+```
+
+**La solution** : appeler `(document.activeElement as HTMLElement)?.blur()` juste avant toute ouverture de modal ou de fenêtre Obsidian. Le focus retombe sur le `body` d'Obsidian qui possède `instanceOf`, et la fermeture se passe sans erreur.
+
+```typescript
+(document.activeElement as HTMLElement)?.blur();
+modal.open(); // ou app.setting.open()
+```
+
+Cette règle s'applique à **tous** les points d'entrée depuis Monaco vers Obsidian, sans exception.
+
+---
+
 ## Piège 1 — `n.instanceOf is not a function` à la fermeture du modal
 
-**Cause :** Obsidian sauvegarde `document.activeElement` à l'ouverture d'un modal pour restaurer le focus à la fermeture. Quand le modal est ouvert depuis l'iframe Monaco, l'élément actif est un élément interne de l'iframe qui n'hérite pas du patch `instanceOf` qu'Obsidian injecte sur `Node.prototype`. Le code minifié crashe à la fermeture.
+**Cause :** voir la section "Pourquoi le `blur()` est obligatoire" ci-dessus.
 
-**Solution obligatoire :** appeler `(document.activeElement as HTMLElement)?.blur()` juste avant `modal.open()`. Le focus retombe sur le `body` d'Obsidian qui possède `instanceOf`.
+**Solution obligatoire :** appeler `(document.activeElement as HTMLElement)?.blur()` juste avant `modal.open()`.
 
 **Restauration du focus :** monkey-patcher `modal.onClose` pour rappeler `iframe.focus()` après fermeture, sinon l'utilisateur perd le focus sur l'éditeur.
 
@@ -132,3 +154,33 @@ case 'change-formatter-config':
 ```
 
 Le même pattern s'applique pour `change-theme`, `change-language`, etc.
+
+---
+
+## Raccourcis vers des actions Obsidian natives
+
+Monaco capture tous les événements clavier dans l'iframe — les raccourcis globaux d'Obsidian (comme `Ctrl+,` pour les settings) ne passent pas au parent. Pour les réactiver, il faut les intercepter dans Monaco et les relayer via `postMessage`.
+
+### Exemple — `Ctrl+,` pour ouvrir les Settings Obsidian
+
+**Dans `monacoEditor.html`** — intercepter le raccourci avant Monaco :
+
+```javascript
+editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma, function() {
+    window.parent.postMessage({ type: 'open-settings', context: context }, '*');
+});
+```
+
+**Dans `mountCodeEditor.ts`** — handler côté parent :
+
+```typescript
+case 'open-settings': {
+    if (data.context === codeContext) {
+        (document.activeElement as HTMLElement)?.blur();
+        plugin.app.setting.open();
+    }
+    break;
+}
+```
+
+> **Note :** la fenêtre Settings d'Obsidian n'est pas un modal Obsidian classique, mais le `blur()` reste nécessaire — Obsidian capture `document.activeElement` à l'ouverture et crashe à la fermeture si l'élément actif appartient à l'iframe (problème `instanceOf`). Pas besoin de monkey-patcher `onClose` en revanche, car Settings gère son propre cycle de vie.

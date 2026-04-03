@@ -23,7 +23,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 		const previewSelected = (): void => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const chooser = (this as any).chooser as { values?: string[]; selectedItem?: number };
+			const chooser = this.chooser as { values?: string[]; selectedItem?: number };
 			const theme = chooser?.values?.[chooser?.selectedItem ?? -1];
 			if (theme) this.applyTheme(theme);
 		};
@@ -43,7 +43,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 			const items = this.resultContainerEl.querySelectorAll('.suggestion-item');
 			const idx = Array.from(items).indexOf(item as HTMLElement);
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const chooser = (this as any).chooser as { values?: string[]; setSelectedItem?: (i: number, e: MouseEvent) => void };
+			const chooser = this.chooser as { values?: string[]; setSelectedItem?: (i: number, e: MouseEvent) => void };
 			if (idx === -1 || !chooser?.values?.[idx]) return;
 			chooser.setSelectedItem?.(idx, e);
 			this.applyTheme(chooser.values[idx]);

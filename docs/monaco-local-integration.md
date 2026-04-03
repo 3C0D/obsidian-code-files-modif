@@ -325,6 +325,42 @@ Le changement de thème à la volée (via le menu contextuel Monaco) suit le mê
 
 ---
 
+---
+
+## Problème 12 — Icônes Codicons manquantes (barre de recherche, menus)
+
+**Symptôme :** les icônes de l'UI interne de Monaco (boutons de la barre Ctrl+F, icônes du menu contextuel, etc.) s'affichent comme des carrés vides.
+
+**Cause :** Monaco utilise la police **Codicons** (la police d'icônes de VS Code) déclarée via `@font-face` dans `editor.main.css`. Dans le package `monaco-editor/min`, cette police est encodée en base64 directement dans le CSS. La CSP d'Obsidian bloque `data:` pour les polices dans les frames enfants — la police ne se charge jamais.
+
+De plus, le dossier `monaco-editor/min/vs` (copié au build) ne contient pas de fichier `.ttf` séparé — la police est uniquement inline dans le CSS.
+
+**Solution en deux parties :**
+
+1. **Copier le TTF au build** — le fichier `codicon.ttf` existe dans `monaco-editor/esm/`. On l'ajoute dans le script de build pour le copier dans `vs/editor/` :
+
+```typescript
+// Dans esbuild.config.ts, après le cp de Monaco
+const codiconSrc = path.join(pluginDir, 'node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.ttf');
+const codiconTarget = path.join(buildPath, 'vs/editor/codicon.ttf');
+await copyFile(codiconSrc, codiconTarget);
+```
+
+2. **Patcher l'URL dans le CSS** — au lieu de supprimer les `@font-face`, on remplace l'URL base64 par l'URL `app://` absolue vers le TTF copié :
+
+```typescript
+// Dans mountCodeEditor.ts, à la place du replace @font-face
+const codiconFontUrl = `${vsBase}/editor/codicon.ttf`;
+cssText = cssText.replace(
+    /(@font-face\s*\{[^}]*src:[^;]*)(url\([^)]+\)\s*format\(["']truetype["']\))/g,
+    `$1url('${codiconFontUrl}') format('truetype')`
+);
+```
+
+`app://` est autorisé par `default-src` dans la CSP de l'iframe, donc la police se charge sans erreur.
+
+---
+
 ## Ce qu'il faut retenir
 
 La contrainte principale est la **CSP d'Obsidian** qui s'applique à toutes les frames enfants et qu'on ne peut pas surcharger. Elle autorise `app:` et `'self'` mais bloque `data:` et `blob:` pour les polices, et les stylesheets externes.

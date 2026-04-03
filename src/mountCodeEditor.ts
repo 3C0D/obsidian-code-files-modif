@@ -211,6 +211,13 @@ Element.prototype.appendChild = function(node) {
 				}
 				break;
 			}
+			case 'open-settings': {
+				if (data.context === codeContext) {
+					(document.activeElement as HTMLElement)?.blur();
+					plugin.app.setting.open();
+				}
+				break;
+			}
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
