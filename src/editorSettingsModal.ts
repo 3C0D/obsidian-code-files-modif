@@ -141,7 +141,10 @@ export class EditorSettingsModal extends Modal {
 		const debouncedSave = debounce(async () => {
 			if (!this.codeEditor) return;
 			const value = this.codeEditor.getValue().trim();
-			if (this.applyFormatterValue(value)) await this.plugin.saveSettings();
+			if (this.applyFormatterValue(value)) {
+				await this.plugin.saveSettings();
+				this.plugin.broadcastFormatterConfig(this.extension);
+			}
 		}, 600, true);
 
 		this.codeEditor = await mountCodeEditor(

@@ -6,7 +6,7 @@ import manifest from '../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from './getLanguage.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
-import { FormatterConfigModal } from './formatterConfigModal.ts';
+import { EditorSettingsModal } from './editorSettingsModal.ts';
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
  *  Returns a control object to get/set the editor value and manage its lifecycle.
@@ -180,7 +180,7 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
 					const ext = codeContext.split('.').pop() ?? '';
-					const modal = new FormatterConfigModal(plugin, ext, (config) => {
+					const modal = new EditorSettingsModal(plugin, ext, () => plugin.broadcastOptions(), (config) => {
 						send('change-formatter-config', { config });
 					});
 					const origOnClose = modal.onClose.bind(modal);

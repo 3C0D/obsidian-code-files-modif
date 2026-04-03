@@ -328,17 +328,17 @@
 									minimap: { enabled: data.minimap },
 									folding: data.folding
 								});
-								if (typeof data.semanticValidation === 'boolean') {
+								if (typeof data.noSemanticValidation === 'boolean') {
 									monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
 										{
-											noSemanticValidation: data.semanticValidation,
-											noSyntaxValidation: data.syntaxValidation
+											noSemanticValidation: data.noSemanticValidation,
+											noSyntaxValidation: data.noSyntaxValidation
 										}
 									);
 									monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
 										{
-											noSemanticValidation: data.semanticValidation,
-											noSyntaxValidation: data.syntaxValidation
+											noSemanticValidation: data.noSemanticValidation,
+											noSyntaxValidation: data.noSyntaxValidation
 										}
 									);
 								}

@@ -49,12 +49,19 @@ export class CodeEditorView extends TextFileView {
 		await super.save(clear);
 	}
 
-	async onClose(): Promise<void> {
-		await super.onClose();
+	private cleanup(): void {
 		this.codeEditor?.destroy();
 		this.gearAction?.remove();
 		this.themeAction?.remove();
 		this.renameAction?.remove();
+		this.gearAction = null;
+		this.themeAction = null;
+		this.renameAction = null;
+	}
+
+	async onClose(): Promise<void> {
+		await super.onClose();
+		this.cleanup();
 	}
 
 	private setDirty(isDirtyBadge: boolean): void {
@@ -168,13 +175,7 @@ export class CodeEditorView extends TextFileView {
 
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
-		this.codeEditor?.destroy();
-		this.gearAction?.remove();
-		this.themeAction?.remove();
-		this.renameAction?.remove();
-		this.gearAction = null;
-		this.themeAction = null;
-		this.renameAction = null;
+		this.cleanup();
 	}
 
 	clear(): void {

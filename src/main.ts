@@ -6,7 +6,7 @@ import { FenceEditModal } from './fenceEditModal.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
 import { ChooseCssFileModal } from './chooseCssFileModal.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
-import { FormatterConfigModal } from './formatterConfigModal.ts';
+import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { DEFAULT_SETTINGS, viewType, DEFAULT_FORMATTER_CONFIG, type MyPluginSettings } from './types.ts';
 import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts';
 
@@ -106,7 +106,7 @@ export default class CodeFilesPlugin extends Plugin {
 				if (!isCodeFile) return false;
 				if (!checking) {
 					(document.activeElement as HTMLElement)?.blur();
-					new FormatterConfigModal(this, file.extension).open();
+					new EditorSettingsModal(this, file.extension, () => this.broadcastOptions(), (config) => this.broadcastFormatterConfig(file.extension)).open();
 				}
 				return true;
 			}
@@ -327,8 +327,8 @@ export default class CodeFilesPlugin extends Plugin {
 				lineNumbers: this.settings.lineNumbers ? 'on' : 'off',
 				minimap: this.settings.minimap,
 				folding: this.settings.folding,
-				semanticValidation: !this.settings.semanticValidation,
-				syntaxValidation: !this.settings.syntaxValidation
+				noSemanticValidation: !this.settings.semanticValidation,
+				noSyntaxValidation: !this.settings.syntaxValidation
 			});
 		}
 	}
