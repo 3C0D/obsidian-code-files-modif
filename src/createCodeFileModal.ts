@@ -23,7 +23,7 @@ class ExtensionSuggest extends AbstractInputSuggest<string> {
 
 	protected getSuggestions(query: string): string[] {
 		const q = query.toLowerCase().replace(/^\./, '');
-		return this.plugin.settings.extensions.filter((ext) => ext.includes(q));
+		return this.plugin.getActiveExtensions().filter((ext) => ext.includes(q));
 	}
 
 	renderSuggestion(ext: string, el: HTMLElement): void {

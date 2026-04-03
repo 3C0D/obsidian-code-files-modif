@@ -252,13 +252,8 @@ export default class CodeFilesPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
-		// Migration: extraExtensions may not exist in older saved data
 		if (!this.settings.extraExtensions) {
 			this.settings.extraExtensions = [];
-		}
-		// Migration: if allExtensions was on, settings.extensions was polluted — reset to defaults
-		if (this.settings.allExtensions) {
-			this.settings.extensions = DEFAULT_SETTINGS.extensions;
 		}
 	}
 

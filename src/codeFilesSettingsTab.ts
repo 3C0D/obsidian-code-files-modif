@@ -2,7 +2,6 @@ import type { App } from 'obsidian';
 import { AbstractInputSuggest, debounce, PluginSettingTab, Setting, TextAreaComponent, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { getAllMonacoExtensions } from './getLanguage.ts';
 import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
@@ -47,130 +46,36 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.allExtensions)
 					.onChange(async (value) => {
 						this.plugin.settings.allExtensions = value;
+						if (!value) {
+							for (const ext of this.plugin.settings.extraExtensions) {
+								if (!this.plugin.settings.extensions.includes(ext))
+									this.plugin.settings.extensions.push(ext);
+							}
+							this.plugin.settings.extraExtensions = [];
+						}
 						await this.plugin.saveSettings();
 						await this.plugin.reregisterExtensions();
 						this.display();
 					})
 			);
 
-		if (this.plugin.settings.allExtensions) {
-			containerEl.createEl('p', {
-				text: 'Excluded extensions (will not open in Monaco):',
-				attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 4px;' }
+		new Setting(containerEl)
+			.setName('Manage extensions')
+			.setDesc(
+				'Extensions registered with Obsidian. ' +
+					'Adding an extension makes files with that extension open in Monaco. ' +
+					'Removing one hands them back to Obsidian.'
+			)
+			.addButton((btn) => {
+				btn.setButtonText('Add / Remove').onClick(() => {
+					new ChooseExtensionModal(this.plugin, () => this.display()).open();
+				});
 			});
 
-			const excluded = this.plugin.settings.excludedExtensions;
-
-			const tagContainer = containerEl.createDiv({
-				attr: { style: 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;' }
-			});
-			for (const ext of [...excluded].sort()) {
-				const tag = tagContainer.createEl('span', {
-					attr: {
-						style:
-							'background: var(--background-modifier-border); ' +
-							'border-radius: 4px; padding: 2px 8px; font-size: 0.85em; ' +
-							'cursor: pointer; display: flex; align-items: center; gap: 4px;'
-					}
-				});
-				tag.createSpan({ text: ext });
-				const removeBtn = tag.createEl('span', {
-					text: 'x',
-					attr: { style: 'font-weight: bold; margin-left: 4px;' }
-				});
-				removeBtn.addEventListener('click', async () => {
-					this.plugin.settings.excludedExtensions = excluded.filter((e) => e !== ext);
-					await this.plugin.saveSettings();
-					await this.plugin.reregisterExtensions();
-					this.display();
-				});
-			}
-
-			let addInput = '';
-			new Setting(containerEl)
-				.setName('Add exclusion')
-				.setDesc('Extension to exclude from Monaco (without dot). Press Enter or click Add.')
-				.addText((text) => {
-					text.setPlaceholder('e.g. svg');
-					text.onChange((v) => { addInput = v; });
-					text.inputEl.addEventListener('keydown', async (e) => {
-						if (e.key === 'Enter') {
-							const val = addInput.trim().toLowerCase().replace(/^\./, '');
-							if (val && !excluded.includes(val)) {
-								this.plugin.settings.excludedExtensions.push(val);
-								await this.plugin.saveSettings();
-								await this.plugin.reregisterExtensions();
-								this.display();
-							}
-						}
-					});
-				})
-				.addButton((btn) =>
-					btn.setButtonText('Add').onClick(async () => {
-						const val = addInput.trim().toLowerCase().replace(/^\./, '');
-						if (val && !excluded.includes(val)) {
-							this.plugin.settings.excludedExtensions.push(val);
-							await this.plugin.saveSettings();
-							await this.plugin.reregisterExtensions();
-							this.display();
-						}
-					})
-				);
-
-			containerEl.createEl('p', {
-				text: `Active: ${getAllMonacoExtensions(excluded).length} extensions registered`,
-				attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
-			});
-
-			if (this.plugin.settings.extraExtensions.length > 0) {
-				containerEl.createEl('p', {
-					text: 'Extra extensions (added manually in all-extensions mode):',
-					attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 4px;' }
-				});
-				const extraContainer = containerEl.createDiv({
-					attr: { style: 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;' }
-				});
-				for (const ext of [...this.plugin.settings.extraExtensions].sort()) {
-					const tag = extraContainer.createEl('span', {
-						attr: {
-							style:
-								'background: var(--background-modifier-border); ' +
-								'border-radius: 4px; padding: 2px 8px; font-size: 0.85em; ' +
-								'cursor: pointer; display: flex; align-items: center; gap: 4px;'
-						}
-					});
-					tag.createSpan({ text: ext });
-					const removeBtn = tag.createEl('span', {
-						text: 'x',
-						attr: { style: 'font-weight: bold; margin-left: 4px;' }
-					});
-					removeBtn.addEventListener('click', async () => {
-						this.plugin.removeExtension(ext);
-						this.plugin.unregisterExtension(ext);
-						await this.plugin.saveSettings();
-						this.display();
-					});
-				}
-			}
-		} else {
-			new Setting(containerEl)
-				.setName('Manage extensions')
-				.setDesc(
-					'Extensions registered with Obsidian. ' +
-						'Adding an extension makes files with that extension open in Monaco. ' +
-						'Removing one hands them back to Obsidian.'
-				)
-				.addButton((btn) => {
-					btn.setButtonText('Add / Remove').onClick(() => {
-						new ChooseExtensionModal(this.plugin, () => this.display()).open();
-					});
-				});
-
-			containerEl.createEl('p', {
-				text: `Active: ${this.plugin.settings.extensions.join(', ') || 'none'}`,
-				attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
-			});
-		}
+		containerEl.createEl('p', {
+			text: this.plugin.getActiveExtensions().join(', ') || 'none',
+			attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
+		});
 
 		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Formatter Config' });
