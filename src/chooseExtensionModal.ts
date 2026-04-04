@@ -47,12 +47,14 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 			this.plugin.registerExtension(item.ext);
 			new Notice(`Added ".${item.ext}"`);
 			await this.plugin.saveSettings();
+			this.plugin.syncRegisteredExts();
 			this.onUpdate(item.ext);
 		} else {
 			this.plugin.removeExtension(item.ext);
 			this.plugin.unregisterExtension(item.ext);
 			new Notice(`Removed ".${item.ext}"`);
 			await this.plugin.saveSettings();
+			this.plugin.syncRegisteredExts();
 			this.onUpdate();
 		}
 	}

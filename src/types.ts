@@ -1,10 +1,6 @@
 export interface MyPluginSettings {
 	/** File extensions registered with Obsidian to open in Monaco */
 	extensions: string[];
-	/** Allows collapsing/expanding code blocks for better navigation */
-	folding: boolean;
-	lineNumbers: boolean;
-	minimap: boolean;
 	/** Advanced type checking and IntelliSense features for JS/TS */
 	semanticValidation: boolean;
 	/** Basic syntax error checking for JS/TS */
@@ -121,9 +117,6 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 		'cpp',
 		'c'
 	],
-	folding: true,
-	lineNumbers: true,
-	minimap: true,
 	semanticValidation: true,
 	syntaxValidation: true,
 	theme: 'tomorrow-night',

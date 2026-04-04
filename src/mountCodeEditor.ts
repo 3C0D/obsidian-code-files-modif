@@ -72,10 +72,7 @@ export const mountCodeEditor = async (
 		context: codeContext,
 		lang: language,
 		theme: theme.replace(/[^a-z0-9\-]/gi, '-'),
-		folding: plugin.settings.folding,
-		lineNumbers: plugin.settings.lineNumbers ? 'on' : 'off',
-		minimap: plugin.settings.minimap,
-		wordWrap: plugin.settings.wordWrap,
+			wordWrap: plugin.settings.wordWrap,
 		javascriptDefaults: 'true',
 		typescriptDefaults: 'true',
 		// Validation checks use negation (_No): if validation is disabled, send 'true'

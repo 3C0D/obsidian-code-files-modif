@@ -248,10 +248,22 @@ export default class CodeFilesPlugin extends Plugin {
 		}
 	}
 
+	/** Syncs _registeredExts snapshot with the current active extensions.
+	 *  Must be called after any direct add/remove that bypasses reregisterExtensions. */
+	syncRegisteredExts(): void {
+		this._registeredExts = new Set(this.getActiveExtensions());
+	}
+
 	/** Unregisters a single extension from Obsidian's view registry at runtime. */
 	unregisterExtension(ext: string): void {
 		try {
 			this.app.viewRegistry.unregisterExtensions([ext]);
+			// Close any open Monaco views for this extension — keeping them open
+			// after unregistration would leave stale editors with no save path.
+			this.app.workspace.getLeavesOfType(viewType).forEach((leaf) => {
+				const view = leaf.view as CodeEditorView;
+				if (view.file?.extension === ext) leaf.detach();
+			});
 		} catch (e) {
 			console.log(`code-files: could not unregister extension "${ext}":`, e);
 		}
