@@ -167,3 +167,5 @@ export interface CodeEditorInstance {
 	/** Removes the iframe, revokes the blob URL, and cleans up the message listener */
 	destroy: () => void;
 }
+
+export type MenuItems = { title: string; icon: string; action: () => void };

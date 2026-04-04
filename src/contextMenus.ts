@@ -4,14 +4,12 @@ import { CreateCodeFileModal } from './createCodeFileModal.ts';
 import { FenceEditModal } from './fenceEditModal.ts';
 import { FenceEditContext } from './fenceEditContext.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
+import type { MenuItems } from './types.ts';
 
 export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	plugin.registerEvent(
-		plugin.app.workspace.on('file-menu', (menu, abstractFile, _source) => {
-			const isFolder = abstractFile instanceof TFolder;
-			const isFile = abstractFile instanceof TFile;
-
-			if (isFolder) {
+		plugin.app.workspace.on('file-menu', (menu, abstractFile, source) => {
+			if (abstractFile instanceof TFolder) {
 				menu.addItem((i) =>
 					i
 						.setTitle('Create Code File')
@@ -23,41 +21,35 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 				return;
 			}
 
-			// On a file — Rename Extension on all files in explorer and tab header
-			if (isFile) {
-				menu.addItem((i) =>
-					i
-						.setTitle('Rename Extension')
-						.setIcon('pencil')
-						.onClick(() =>
-							new RenameExtensionModal(plugin, abstractFile as TFile).open()
-						)
-				);
+			// Rename Extension on all files in explorer and tab header
+			if (abstractFile instanceof TFile) {
+				menu.addItem((i) => {
+					if (source === 'file-explorer-context-menu') {
+						i
+							.setTitle('Rename Extension')
+							.setIcon('pencil')
+							.onClick(() =>
+								new RenameExtensionModal(plugin, abstractFile).open()
+							);
+					} else {
+						const items = getItems(plugin);
+						i.setTitle('Code Files').setIcon('file-json');
+						const sub = i.setSubmenu();
+						for (const it of items) {
+							sub.addItem((subItem) =>
+								subItem.setTitle(it.title).setIcon(it.icon).onClick(it.action)
+							);
+						}
+					}
+				});
 			}
 		})
 	);
 
+
 	plugin.registerEvent(
 		plugin.app.workspace.on('editor-menu', (menu, editor) => {
 			const fenceContext = FenceEditContext.create(plugin, editor);
-			const activeFile = plugin.app.workspace.getActiveFile();
-
-			type MenuItem = { title: string; icon: string; action: () => void };
-			const items: MenuItem[] = [];
-
-			items.push({
-				title: 'Create Code File',
-				icon: 'file-plus',
-				action: () => new CreateCodeFileModal(plugin).open()
-			});
-			// Always show Rename Extension if there's an active file
-			if (activeFile) {
-				items.push({
-					title: 'Rename Extension',
-					icon: 'pencil',
-					action: () => new RenameExtensionModal(plugin, activeFile).open()
-				});
-			}
 
 			menu.addItem((item) => {
 				if (fenceContext) {
@@ -65,15 +57,39 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 						.setIcon('code')
 						.onClick(() => FenceEditModal.openOnCurrentCode(plugin, editor));
 				} else {
+					const items = getItems(plugin);
 					item.setTitle('Code Files').setIcon('file-json');
 					const sub = item.setSubmenu();
 					for (const it of items) {
-						sub.addItem((i) =>
-							i.setTitle(it.title).setIcon(it.icon).onClick(it.action)
+						sub.addItem((subItem) =>
+							subItem.setTitle(it.title).setIcon(it.icon).onClick(it.action)
 						);
 					}
 				}
 			});
 		})
 	);
+}
+
+/** get items */
+function getItems(plugin: CodeFilesPlugin): MenuItems[] {
+	const activeFile = plugin.app.workspace.getActiveFile();
+
+	const items: MenuItems[] = [];
+
+	items.push({
+		title: 'Create Code File',
+		icon: 'file-plus',
+		action: () => new CreateCodeFileModal(plugin).open()
+	});
+	// Always show Rename Extension if there's an active file
+	if (activeFile) {
+		items.push({
+			title: 'Rename Extension',
+			icon: 'pencil',
+			action: () => new RenameExtensionModal(plugin, activeFile).open()
+		});
+	}
+
+	return items;
 }
