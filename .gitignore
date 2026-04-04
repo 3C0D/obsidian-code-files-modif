@@ -41,4 +41,6 @@ vs/
 # symlink
 my-obsidian-repos
 
+#LLM
 .amazonq/*
+tsconfig.tsbuildinfo

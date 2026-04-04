@@ -7,6 +7,7 @@ import {
 } from '../types.ts';
 import type { CodeEditorInstance } from '../types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
+import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -80,6 +81,12 @@ export class EditorSettingsModal extends Modal {
 				t.setValue(this.plugin.settings.autoSave).onChange(async (v) => {
 					this.plugin.settings.autoSave = v;
 					await this.plugin.saveSettings();
+					if (v) {
+						for (const view of getCodeEditorViews(this.app)) {
+							view.requestSave();
+							view.clearDirty();
+						}
+					}
 					this.onSettingsChanged();
 				})
 			);

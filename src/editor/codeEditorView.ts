@@ -71,18 +71,26 @@ export class CodeEditorView extends TextFileView {
 		this.cleanup();
 	}
 
+	/** Clears the dirty badge (marks the view as saved). */
+	clearDirty(): void {
+		this.setDirty(false);
+	}
+
+	/** Updates the dirty badge styling to show/hide the unsaved indicator in the header. */
 	private setDirty(isDirtyBadge: boolean): void {
 		const badge = this.containerEl.querySelector('.code-files-dirty-badge');
 		if (!badge) return;
 		badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
 	}
 
+	/** Updates the saving badge styling to show/hide the saving indicator in the header. */
 	private setSaving(isSaving: boolean): void {
 		const badge = this.containerEl.querySelector('.code-files-dirty-badge');
 		if (!badge) return;
 		badge.toggleClass('code-files-dirty-saving', isSaving);
 	}
 
+	/** Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled. */
 	private updateExtBadge(file: TFile): void {
 		const titleContainer = this.containerEl.querySelector(
 			'.view-header-title-container'
@@ -101,6 +109,7 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
+	/** Adds three header actions: rename extension, change theme, and open editor settings. */
 	private injectGearIcon(file: TFile): void {
 		this.gearAction?.remove();
 		this.themeAction?.remove();
@@ -133,6 +142,7 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
+	/** Creates the Monaco editor instance with callbacks for content changes (dirty + requestSave) and manual saves (Ctrl+S). */
 	private async mountEditor(file: TFile): Promise<void> {
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
@@ -164,15 +174,18 @@ export class CodeEditorView extends TextFileView {
 		this.injectGearIcon(file);
 	}
 
+	/** Cleans up Monaco when the file is unloaded from the view. */
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
 		this.cleanup();
 	}
 
+	/** Clears the Monaco editor content. */
 	clear(): void {
 		this.codeEditor?.clear();
 	}
 
+	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
 		this.codeEditor?.destroy();
@@ -183,6 +196,7 @@ export class CodeEditorView extends TextFileView {
 		this.injectGearIcon(file);
 	}
 
+	/** Returns the current Monaco editor content for Obsidian to persist to disk. */
 	getViewData(): string {
 		return this.codeEditor.getValue();
 	}
