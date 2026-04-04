@@ -43,7 +43,13 @@ export function parseEditorConfig(str: string): unknown {
 	);
 }
 
-/** Default Monaco editor options applied when no per-extension config exists */
+/**
+ * Default Monaco editor options applied when no per-extension config exists.
+ *
+ * Convention:
+ * - Uncommented = values we explicitly chose (may differ from Monaco's own defaults)
+ * - Commented = uncommenting will override the default behavior
+ */
 export const DEFAULT_EDITOR_CONFIG = `{
     // Options here override global settings for this extension (like VSCode workspace settings).
     // --- Indentation ---
@@ -55,18 +61,17 @@ export const DEFAULT_EDITOR_CONFIG = `{
     "formatOnType": false,
     "trimAutoWhitespace": true,
 
-    // --- Guides ---
-    // "rulers": [80, 120],
-    // "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
-
-    // --- Display ---
-    // "fontSize": 14,
-    // "bracketPairColorization.enabled": true,
-    // "minimap": { "enabled": false },
-    // "wordWrap": "wordWrapColumn",
-	// "wordWrapColumn": 80,
+    // --- Display (decommenting disables) ---
     // "folding": false,
     // "lineNumbers": "off",
+    // "minimap": { "enabled": false },
+    // "wordWrap": "on",
+
+    // --- Optional ---
+    // "rulers": [80, 120],
+    // "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
+    // "fontSize": 14,
+    // "bracketPairColorization.enabled": true,
 }`;
 
 /** Default per-extension config — empty override, only add what differs from global */
