@@ -107,6 +107,7 @@ export const mountCodeEditor = async (
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
 	iframe.style.height = '100%';
+	iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
 
 	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
 	// before using the URL as a base for relative paths inside the HTML

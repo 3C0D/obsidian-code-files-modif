@@ -17,6 +17,8 @@ export interface MyPluginSettings {
 	recentThemes: string[];
 	/** If false, Obsidian's auto-save is blocked in Monaco views — only Ctrl+S saves */
 	autoSave: boolean;
+	/** Monaco editor brightness filter (0.2 – 2.0, default 1) */
+	editorBrightness: number;
 	/** Word wrap mode for the Monaco editor */
 	wordWrap: 'on' | 'off';
 	/** Per-extension formatter config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
@@ -80,6 +82,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	showRibbonIcon: true,
 	recentThemes: [],
 	autoSave: false,
+	editorBrightness: 1,
 	wordWrap: 'off',
 	formatterConfigs: {},
 	allExtensions: false,

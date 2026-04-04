@@ -326,6 +326,18 @@ export default class CodeFilesPlugin extends Plugin {
 		}
 	}
 
+	/** Applies brightness filter to all open code-editor iframes. */
+	broadcastBrightness(): void {
+		const views = this.app.workspace
+			.getLeavesOfType(viewType)
+			.map((l) => l.view as CodeEditorView);
+		for (const view of views) {
+			if (view.codeEditor?.iframe) {
+				view.codeEditor.iframe.style.filter = `brightness(${this.settings.editorBrightness})`;
+			}
+		}
+	}
+
 	/** Sends updated formatter config to all open code-editor iframes matching the extension. */
 	broadcastFormatterConfig(ext: string): void {
 		const config = this.settings.formatterConfigs[ext] ?? DEFAULT_FORMATTER_CONFIG;

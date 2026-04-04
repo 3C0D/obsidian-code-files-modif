@@ -34,9 +34,26 @@ export class EditorSettingsModal extends Modal {
 
 	async onOpen(): Promise<void> {
 		super.onOpen();
+		setTimeout(() => {
+			const bg = document.querySelector<HTMLElement>('.modal-bg');
+			if (bg) bg.style.opacity = '0';
+		}, 0);
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
 		this.modalEl.style.height = '600px';
+		this.modalEl.style.position = 'fixed';
+		setTimeout(() => {
+			const { innerWidth } = window;
+			const { offsetWidth } = this.modalEl;
+			const desiredLeft = innerWidth * 0.65;
+			if (desiredLeft + offsetWidth / 2 > innerWidth - 10) {
+				this.modalEl.style.left = '50%';
+			} else {
+				this.modalEl.style.left = '65%';
+			}
+			this.modalEl.style.top = '10%';
+			this.modalEl.style.transform = 'translateX(-50%)';
+		}, 0);
 
 		const { contentEl } = this;
 		contentEl.style.display = 'flex';
@@ -117,6 +134,20 @@ export class EditorSettingsModal extends Modal {
 				})
 			);
 
+		new Setting(toggleSection)
+			.setName('Editor Brightness')
+			.setDesc('Adjust Monaco editor brightness (0.2 – 2.0)')
+			.addSlider((s) =>
+				s.setLimits(0.2, 2, 0.1)
+				 .setValue(this.plugin.settings.editorBrightness)
+				 .setDynamicTooltip()
+				 .onChange(async (v) => {
+						this.plugin.settings.editorBrightness = v;
+						await this.plugin.saveSettings();
+						this.plugin.broadcastBrightness();
+					})
+			);
+
 		// ── Formatter Config ──────────────────────────────────────────────────
 		const formatterSection = contentEl.createEl('div', {
 			cls: 'code-files-formatter-section'
@@ -161,6 +192,8 @@ export class EditorSettingsModal extends Modal {
 
 	onClose(): void {
 		super.onClose();
+		const bg = document.querySelector<HTMLElement>('.modal-bg');
+		if (bg) bg.style.opacity = '';
 		if (this.codeEditor) {
 			const value = this.codeEditor.getValue().trim();
 			if (this.applyFormatterValue(value)) {

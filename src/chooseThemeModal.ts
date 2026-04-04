@@ -21,19 +21,16 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.setPlaceholder('Choose a theme');
 		this.modalEl.style.width = '300px';
 
-		const previewSelected = (): void => {
-			const chooser = this.chooser as { values?: string[]; selectedItem?: number };
-			const theme = chooser?.values?.[chooser?.selectedItem ?? -1];
-			if (theme) this.applyTheme(theme);
+		const adjustBrightness = (delta: number): void => {
+			const next = Math.round(
+				Math.min(2, Math.max(0.2, plugin.settings.editorBrightness + delta)) * 10
+			) / 10;
+			plugin.settings.editorBrightness = next;
+			void plugin.saveSettings();
+			plugin.broadcastBrightness();
 		};
-		this.scope.register([], 'ArrowDown', () => {
-			setTimeout(previewSelected, 0);
-			return true;
-		});
-		this.scope.register([], 'ArrowUp', () => {
-			setTimeout(previewSelected, 0);
-			return true;
-		});
+		this.scope.register([], 'ArrowRight', () => { adjustBrightness(0.1); return true; });
+		this.scope.register([], 'ArrowLeft',  () => { adjustBrightness(-0.1); return true; });
 	}
 
 	onOpen(): void {
@@ -43,8 +40,24 @@ export class ChooseThemeModal extends SuggestModal<string> {
 			if (bg) bg.style.opacity = '0';
 		}, 0);
 		this.modalEl.style.position = 'fixed';
-		this.modalEl.style.left = '50%';
-		this.modalEl.style.top = '10%';
+		this.modalEl.style.background = 'var(--background-primary)';
+		setTimeout(() => {
+			const { innerWidth } = window;
+			const { offsetWidth } = this.modalEl;
+			const desiredLeft = innerWidth * 0.75;
+			if (desiredLeft + offsetWidth / 2 > innerWidth - 10) {
+				this.modalEl.style.left = '50%';
+				this.modalEl.style.transform = 'translateX(-50%)';
+			} else {
+				this.modalEl.style.left = '75%';
+				this.modalEl.style.transform = 'translateX(-50%)';
+			}
+			this.modalEl.style.top = '10%';
+		}, 0);
+
+		const footer = this.modalEl.createEl('div', { cls: 'code-files-theme-footer' });
+		footer.style.cssText = 'padding: 6px 12px; font-size: 0.78em; color: var(--text-muted); border-top: 1px solid var(--background-modifier-border); text-align: center;';
+		footer.setText('hover to preview · ← → adjust brightness');
 
 		this.resultContainerEl.addEventListener('mousemove', (e) => {
 			const item = (e.target as HTMLElement).closest('.suggestion-item');
