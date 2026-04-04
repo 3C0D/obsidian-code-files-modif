@@ -1,10 +1,10 @@
 import { ButtonComponent, Modal, Notice, TextComponent } from 'obsidian';
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
+import { ExtensionSuggest } from './extensionSuggest.ts';
+import { confirmation } from './confirmation.ts';
+import { isCodeFilesExtension, getCodeEditorViews } from './extensionUtils.ts';
 
-/** Modal to rename the extension of an existing file.
- *  Shows the current path and updates it live as the user types.
- *  After renaming, reopens the file if it was already open. */
 export class RenameExtensionModal extends Modal {
 	private newExt: string;
 
@@ -19,10 +19,8 @@ export class RenameExtensionModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
-
 		this.modalEl.style.width = '360px';
 
-		// Live path preview
 		const pathDisplay = contentEl.createEl('p', {
 			text: this.getNewPath(),
 			attr: {
@@ -34,21 +32,31 @@ export class RenameExtensionModal extends Modal {
 			attr: { style: 'display: flex; gap: 8px; align-items: center;' }
 		});
 
-		const input = new TextComponent(row).setValue(this.newExt).onChange((value) => {
+		const input = new TextComponent(row);
+		input.setPlaceholder('ext — unknown extensions will be registered');
+		input.setValue(this.newExt);
+		input.inputEl.style.flexGrow = '1';
+		input.onChange((value) => {
 			this.newExt = value.replace(/^\./, '');
 			pathDisplay.textContent = this.getNewPath();
 		});
-
-		input.inputEl.style.flexGrow = '1';
 		input.inputEl.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') this.save();
+			if (e.key === 'Enter') void this.save();
 			if (e.key === 'Escape') this.close();
 		});
 
-		new ButtonComponent(row)
-			.setButtonText('Rename')
-			.setCta()
-			.onClick(() => this.save());
+		new ExtensionSuggest(
+			this.plugin,
+			input.inputEl,
+			(ext) => {
+				input.setValue(ext);
+				this.newExt = ext;
+				pathDisplay.textContent = this.getNewPath();
+			},
+			() => Object.keys(this.plugin.app.viewRegistry.typeByExtension)
+		);
+
+		new ButtonComponent(row).setButtonText('Rename').setCta().onClick(() => void this.save());
 
 		input.inputEl.focus();
 		input.inputEl.select();
@@ -59,12 +67,14 @@ export class RenameExtensionModal extends Modal {
 	}
 
 	private getNewPath(): string {
-		let base = this.file.path;
-		if (this.file.extension) {
-			base = base.slice(0, base.length - this.file.extension.length - 1);
-		}
+		const base = this.getBasePath();
 		const cleanExt = this.newExt.replace(/^\./, '').trim();
 		return cleanExt ? `${base}.${cleanExt}` : base;
+	}
+
+	private getBasePath(): string {
+		const { path, extension } = this.file;
+		return extension ? path.slice(0, path.length - extension.length - 1) : path;
 	}
 
 	private async save(): Promise<void> {
@@ -75,20 +85,28 @@ export class RenameExtensionModal extends Modal {
 			return;
 		}
 
-		let base = this.file.path;
-		if (this.file.extension) {
-			base = base.slice(0, base.length - this.file.extension.length - 1);
-		}
-		// Also prevent double extension if user accidentally typed the existing extension suffix
-		const newPath = `${base}.${ext}`;
-
+		const newPath = `${this.getBasePath()}.${ext}`;
 		if (newPath === this.file.path) {
 			this.close();
 			return;
 		}
 
-		// Close the modal immediately so UI is responsive and doesn't get blocked
-		// by any errors or delays triggered by onRename handlers across the app.
+		// Register with CodeFiles if unknown to both CodeFiles and Obsidian
+		const isKnown = isCodeFilesExtension(this.app, ext)
+			|| !!this.plugin.app.viewRegistry.typeByExtension[ext];
+		if (!isKnown) {
+			const ok = await confirmation(
+				this.app,
+				`".${ext}" is not a registered extension. Register it with Code Files?`
+			);
+			if (!ok) return;
+			this.plugin.addExtension(ext);
+			this.plugin.registerExtension(ext);
+			await this.plugin.saveSettings();
+			this.plugin.syncRegisteredExts();
+			new Notice(`".${ext}" registered with Code Files`);
+		}
+
 		this.close();
 
 		try {
@@ -96,6 +114,23 @@ export class RenameExtensionModal extends Modal {
 		} catch (e) {
 			new Notice('Failed to rename file');
 			console.error(e);
+			return;
 		}
+
+		// Reload the leaf so the correct view opens for the new extension
+		const renamedFile = this.plugin.app.vault.getFileByPath(newPath);
+		if (!renamedFile) return;
+		
+		// Find the leaf that has this file open (any view type)
+		const leaves = this.plugin.app.workspace.getLeavesOfType('markdown')
+			.concat(this.plugin.app.workspace.getLeavesOfType('empty'))
+			.concat(getCodeEditorViews(this.app).map(v => v.leaf));
+		const leaf = leaves.find(l => {
+			const view = l.view;
+			if ('file' in view && view.file) return view.file.path === newPath;
+			return false;
+		}) ?? this.plugin.app.workspace.getMostRecentLeaf();
+		
+		if (leaf) await leaf.openFile(renamedFile);
 	}
 }
