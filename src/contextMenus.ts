@@ -16,7 +16,9 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 					i
 						.setTitle('Create Code File')
 						.setIcon('file-plus')
-						.onClick(() => new CreateCodeFileModal(plugin, abstractFile).open())
+						.onClick(() =>
+							new CreateCodeFileModal(plugin, abstractFile).open()
+						)
 				);
 				return;
 			}
@@ -27,7 +29,9 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 					i
 						.setTitle('Rename Extension')
 						.setIcon('pencil')
-						.onClick(() => new RenameExtensionModal(plugin, abstractFile as TFile).open())
+						.onClick(() =>
+							new RenameExtensionModal(plugin, abstractFile as TFile).open()
+						)
 				);
 			}
 		})
@@ -36,26 +40,16 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	plugin.registerEvent(
 		plugin.app.workspace.on('editor-menu', (menu, editor) => {
 			const fenceContext = FenceEditContext.create(plugin, editor);
-			const activeFile = plugin.app.workspace.activeEditor?.file;
+			const activeFile = plugin.app.workspace.getActiveFile();
 
 			type MenuItem = { title: string; icon: string; action: () => void };
 			const items: MenuItem[] = [];
 
-			if (fenceContext) {
-				items.push({
-					title: 'Edit Code Block in Monaco Editor',
-					icon: 'code',
-					action: () => FenceEditModal.openOnCurrentCode(plugin, editor)
-				});
-			}
-
-			// Always show Create Code File
 			items.push({
 				title: 'Create Code File',
 				icon: 'file-plus',
 				action: () => new CreateCodeFileModal(plugin).open()
 			});
-
 			// Always show Rename Extension if there's an active file
 			if (activeFile) {
 				items.push({
@@ -65,14 +59,19 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 				});
 			}
 
-			if (items.length === 0) return;
-
-			// Always use submenu for consistency
 			menu.addItem((item) => {
-				item.setTitle('Code Files').setIcon('file-json');
-				const sub = item.setSubmenu();
-				for (const it of items) {
-					sub.addItem((i) => i.setTitle(it.title).setIcon(it.icon).onClick(it.action));
+				if (fenceContext) {
+					item.setTitle('Edit Code Block in Monaco Editor')
+						.setIcon('code')
+						.onClick(() => FenceEditModal.openOnCurrentCode(plugin, editor));
+				} else {
+					item.setTitle('Code Files').setIcon('file-json');
+					const sub = item.setSubmenu();
+					for (const it of items) {
+						sub.addItem((i) =>
+							i.setTitle(it.title).setIcon(it.icon).onClick(it.action)
+						);
+					}
 				}
 			});
 		})
