@@ -39,6 +39,7 @@
 				var editor;
 				var context;
 				var formatOnSave = false;
+				var editorDefaults = {};
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
 
@@ -49,13 +50,18 @@
 					if (Object.keys(modelOpts).length) editor.getModel().updateOptions(modelOpts);
 					formatOnSave = !!cfg.formatOnSave;
 					var { tabSize, insertSpaces, formatOnSave: _fs, ...editorOpts } = cfg;
-					editor.updateOptions(editorOpts);
+					editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
 				}
 
 				function applyParams(params) {
 					if (initialized) return;
 					initialized = true;
 					context = params.context;
+					editorDefaults = {
+						folding: params.folding !== false,
+						lineNumbers: params.lineNumbers !== false ? 'on' : 'off',
+						minimap: { enabled: params.minimap !== false }
+					};
 
 					if (params.themeData) {
 						try {
@@ -71,11 +77,8 @@
 					var opts = {
 						language: params.lang || 'plaintext',
 						theme: params.theme || 'vs-dark',
-						folding: params.folding !== false,
-						lineNumbers: params.lineNumbers || 'on',
-						minimap: { enabled: params.minimap !== false },
+						...editorDefaults,
 						wordWrap: params.wordWrap || 'off',
-						// automaticLayout recomputes editor size when the container resizes
 						automaticLayout: true
 					};
 
@@ -90,28 +93,14 @@
 						trailingCommas: 'ignore'
 					});
 
-					if (params.javascriptDefaults === 'true') {
-						monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
-							{
-								noSemanticValidation:
-									params.javascriptDefaultsNoSemanticValidation ===
-									'true',
-								noSyntaxValidation:
-									params.javascriptDefaultsNoSyntaxValidation === 'true'
-							}
-						);
-					}
-					if (params.typescriptDefaults === 'true') {
-						monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
-							{
-								noSemanticValidation:
-									params.typescriptDefaultsNoSemanticValidation ===
-									'true',
-								noSyntaxValidation:
-									params.typescriptDefaultsNoSyntaxValidation === 'true'
-							}
-						);
-					}
+					monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+						noSemanticValidation: params.noSemanticValidation === true,
+						noSyntaxValidation: params.noSyntaxValidation === true
+					});
+					monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+						noSemanticValidation: params.noSemanticValidation === true,
+						noSyntaxValidation: params.noSyntaxValidation === true
+					});
 
 					editor = monaco.editor.create(document.getElementById('container'), opts);
 

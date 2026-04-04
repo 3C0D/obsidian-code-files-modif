@@ -72,22 +72,12 @@ export const mountCodeEditor = async (
 		context: codeContext,
 		lang: language,
 		theme: theme.replace(/[^a-z0-9\-]/gi, '-'),
-			wordWrap: plugin.settings.wordWrap,
-		javascriptDefaults: 'true',
-		typescriptDefaults: 'true',
-		// Validation checks use negation (_No): if validation is disabled, send 'true'
-		javascriptDefaultsNoSemanticValidation: !plugin.settings.semanticValidation
-			? 'true'
-			: 'false',
-		typescriptDefaultsNoSemanticValidation: !plugin.settings.semanticValidation
-			? 'true'
-			: 'false',
-		javascriptDefaultsNoSyntaxValidation: !plugin.settings.syntaxValidation
-			? 'true'
-			: 'false',
-		typescriptDefaultsNoSyntaxValidation: !plugin.settings.syntaxValidation
-			? 'true'
-			: 'false'
+		wordWrap: plugin.settings.wordWrap,
+		folding: plugin.settings.folding,
+		lineNumbers: plugin.settings.lineNumbers,
+		minimap: plugin.settings.minimap,
+		noSemanticValidation: !plugin.settings.semanticValidation,
+		noSyntaxValidation: !plugin.settings.syntaxValidation
 	};
 	if (!['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'].includes(theme)) {
 		const resolved = await resolveThemeParams(plugin, theme);

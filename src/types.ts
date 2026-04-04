@@ -17,6 +17,13 @@ export interface MyPluginSettings {
 	editorBrightness: number;
 	/** Word wrap mode for the Monaco editor */
 	wordWrap: 'on' | 'off';
+	/** Enable code block folding in the editor */
+	folding: boolean;
+	/** Show line numbers in the editor */
+	lineNumbers: boolean;
+	/** Show the minimap on the right side */
+	minimap: boolean;
+
 	/** Per-extension editor config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
 	editorConfigs: Record<string, string>;
 	/** When true, all Monaco-supported extensions are registered (minus excludedExtensions) */
@@ -55,8 +62,9 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // --- Display ---
     // "fontSize": 14,
     // "bracketPairColorization.enabled": true,
-    "minimap": { "enabled": true },
-    // "wordWrap": "on",
+    // "minimap": { "enabled": false },
+    // "wordWrap": "wordWrapColumn",
+	// "wordWrapColumn": 80,
     // "folding": false,
     // "lineNumbers": "off",
 }`;
@@ -66,7 +74,6 @@ export const DEFAULT_EXTENSION_CONFIG = `{
     // Override global config for this extension only.
     // Example:
     // "tabSize": 2,
-    // "wordWrap": "on",
 }`;
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
@@ -126,6 +133,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	autoSave: false,
 	editorBrightness: 1,
 	wordWrap: 'off',
+	folding: true,
+	lineNumbers: true,
+	minimap: true,
 	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
 	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
