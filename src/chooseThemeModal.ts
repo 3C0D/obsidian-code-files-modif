@@ -38,6 +38,10 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	onOpen(): void {
 		super.onOpen();
+		setTimeout(() => {
+			const bg = document.querySelector<HTMLElement>('.modal-bg');
+			if (bg) bg.style.opacity = '0';
+		}, 0);
 		this.modalEl.style.position = 'fixed';
 		this.modalEl.style.left = '50%';
 		this.modalEl.style.top = '10%';
@@ -88,6 +92,8 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	onClose(): void {
 		super.onClose();
+		const bg = document.querySelector<HTMLElement>('.modal-bg');
+		if (bg) bg.style.opacity = '';
 		if (!this.confirmed) {
 			this.applyTheme(this.originalTheme);
 		}
