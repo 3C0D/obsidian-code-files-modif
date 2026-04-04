@@ -21,8 +21,8 @@ export interface MyPluginSettings {
 	editorBrightness: number;
 	/** Word wrap mode for the Monaco editor */
 	wordWrap: 'on' | 'off';
-	/** Per-extension formatter config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
-	formatterConfigs: Record<string, string>;
+	/** Per-extension editor config as JSON strings, keyed by extension (e.g. 'json', 'ts') */
+	editorConfigs: Record<string, string>;
 	/** When true, all Monaco-supported extensions are registered (minus excludedExtensions) */
 	allExtensions: boolean;
 	/** Extensions excluded from auto-registration when allExtensions is true */
@@ -31,8 +31,8 @@ export interface MyPluginSettings {
 	extraExtensions: string[];
 }
 
-/** Default Monaco formatter options applied when no per-extension config exists */
-const DEFAULT_FORMATTER_CONFIG = JSON.stringify(
+/** Default Monaco editor options applied when no per-extension config exists */
+const DEFAULT_EDITOR_CONFIG = JSON.stringify(
 	{
 		tabSize: 4,
 		insertSpaces: true,
@@ -42,7 +42,7 @@ const DEFAULT_FORMATTER_CONFIG = JSON.stringify(
 	null,
 	2
 );
-export { DEFAULT_FORMATTER_CONFIG };
+export { DEFAULT_EDITOR_CONFIG };
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
 export const OBSIDIAN_NATIVE_EXTENSIONS = [
@@ -84,7 +84,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	autoSave: false,
 	editorBrightness: 1,
 	wordWrap: 'off',
-	formatterConfigs: {},
+	editorConfigs: {},
 	allExtensions: false,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
 	extraExtensions: []

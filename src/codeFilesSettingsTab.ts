@@ -2,7 +2,7 @@ import type { App } from 'obsidian';
 import { debounce, PluginSettingTab, Setting, TextAreaComponent, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG } from './types.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
@@ -78,9 +78,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		});
 
 		// -- Formatter Config -------------------------------------------------
-		containerEl.createEl('h3', { text: 'Formatter Config' });
+		containerEl.createEl('h3', { text: 'Editor Config' });
 		containerEl.createEl('p', {
-			text: 'Per-extension formatter options (tabSize, insertSpaces, formatOnSave, formatOnType).',
+			text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions).',
 			attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
 		});
 
@@ -95,7 +95,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		const extLabel = containerEl.createEl('p', {
 			attr: { style: 'font-size: 0.85em; color: var(--text-muted); margin-bottom: 4px;' }
 		});
-		extLabel.setText('Formatter - select an extension above');
+		extLabel.setText('Editor Config - select an extension above');
 
 		const textarea = new TextAreaComponent(containerEl);
 		textarea.inputEl.style.width = '100%';
@@ -103,18 +103,18 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		textarea.inputEl.style.fontFamily = 'monospace';
 		textarea.inputEl.style.fontSize = '0.85em';
 		textarea.inputEl.style.opacity = '0.6';
-		textarea.setValue(DEFAULT_FORMATTER_CONFIG);
+		textarea.setValue(DEFAULT_EDITOR_CONFIG);
 		textarea.inputEl.disabled = true;
 
 		const updateLabel = (ext: string): void => {
-			extLabel.setText(`Formatter - .${ext}`);
+			extLabel.setText(`Editor Config - .${ext}`);
 		};
 
 		const showExt = (ext: string): void => {
 			selectedExt = ext;
-			const existing = this.plugin.settings.formatterConfigs?.[ext];
+			const existing = this.plugin.settings.editorConfigs?.[ext];
 			updateLabel(ext);
-			textarea.setValue(existing ?? DEFAULT_FORMATTER_CONFIG);
+			textarea.setValue(existing ?? DEFAULT_EDITOR_CONFIG);
 			textarea.inputEl.disabled = false;
 			textarea.inputEl.style.opacity = '1';
 		};
@@ -126,13 +126,13 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			const val = textarea.getValue().trim();
 			try {
 				JSON.parse(val);
-				if (val === DEFAULT_FORMATTER_CONFIG.trim()) {
-					delete this.plugin.settings.formatterConfigs[selectedExt];
+				if (val === DEFAULT_EDITOR_CONFIG.trim()) {
+					delete this.plugin.settings.editorConfigs[selectedExt];
 				} else {
-					this.plugin.settings.formatterConfigs[selectedExt] = val;
+					this.plugin.settings.editorConfigs[selectedExt] = val;
 				}
 				await this.plugin.saveSettings();
-				this.plugin.broadcastFormatterConfig(selectedExt);
+				this.plugin.broadcastEditorConfig(selectedExt);
 				updateLabel(selectedExt);
 			} catch {
 				// invalid JSON - wait for valid input

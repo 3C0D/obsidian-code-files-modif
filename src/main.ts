@@ -7,7 +7,7 @@ import { FenceEditContext } from './fenceEditContext.ts';
 import { ChooseCssFileModal } from './chooseCssFileModal.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
-import { DEFAULT_SETTINGS, viewType, DEFAULT_FORMATTER_CONFIG, type MyPluginSettings } from './types.ts';
+import { DEFAULT_SETTINGS, viewType, DEFAULT_EDITOR_CONFIG, type MyPluginSettings } from './types.ts';
 import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts';
 
 export default class CodeFilesPlugin extends Plugin {
@@ -101,7 +101,7 @@ export default class CodeFilesPlugin extends Plugin {
 				if (!isCodeFile) return false;
 				if (!checking) {
 					(document.activeElement as HTMLElement)?.blur();
-					new EditorSettingsModal(this, file.extension, () => this.broadcastOptions(), (config) => this.broadcastFormatterConfig(file.extension)).open();
+					new EditorSettingsModal(this, file.extension, () => this.broadcastOptions(), (config) => this.broadcastEditorConfig(file.extension)).open();
 				}
 				return true;
 			}
@@ -338,15 +338,15 @@ export default class CodeFilesPlugin extends Plugin {
 		}
 	}
 
-	/** Sends updated formatter config to all open code-editor iframes matching the extension. */
-	broadcastFormatterConfig(ext: string): void {
-		const config = this.settings.formatterConfigs[ext] ?? DEFAULT_FORMATTER_CONFIG;
+	/** Sends updated editor config to all open code-editor iframes matching the extension. */
+	broadcastEditorConfig(ext: string): void {
+		const config = this.settings.editorConfigs[ext] ?? DEFAULT_EDITOR_CONFIG;
 		const views = this.app.workspace
 			.getLeavesOfType(viewType)
 			.map((l) => l.view as CodeEditorView)
 			.filter((v) => v.file?.extension === ext);
 		for (const view of views) {
-			view.codeEditor?.send('change-formatter-config', { config });
+			view.codeEditor?.send('change-editor-config', { config });
 		}
 	}
 }

@@ -1,7 +1,7 @@
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
-import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG } from './types.ts';
 import manifest from '../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from './getLanguage.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
@@ -102,7 +102,7 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	initParams.formatterConfig = plugin.settings.formatterConfigs?.[extension] ?? DEFAULT_FORMATTER_CONFIG;
+	initParams.formatterConfig = plugin.settings.editorConfigs?.[extension] ?? DEFAULT_EDITOR_CONFIG;
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
@@ -176,7 +176,7 @@ Element.prototype.appendChild = function(node) {
 					(document.activeElement as HTMLElement)?.blur();
 					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
 					const modal = new EditorSettingsModal(plugin, ext, () => plugin.broadcastOptions(), (config) => {
-						send('change-formatter-config', { config });
+						send('change-editor-config', { config });
 					});
 					const origOnClose = modal.onClose.bind(modal);
 					modal.onClose = () => {

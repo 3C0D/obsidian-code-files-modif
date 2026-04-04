@@ -1,6 +1,6 @@
 import { Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
-import { DEFAULT_FORMATTER_CONFIG } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG } from './types.ts';
 import type { CodeEditorInstance } from './types.ts';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 
@@ -21,10 +21,10 @@ export class EditorSettingsModal extends Modal {
 	private applyFormatterValue(value: string): boolean {
 		try {
 			JSON.parse(value);
-			if (value === DEFAULT_FORMATTER_CONFIG.trim()) {
-				delete this.plugin.settings.formatterConfigs[this.extension];
+			if (value === DEFAULT_EDITOR_CONFIG.trim()) {
+				delete this.plugin.settings.editorConfigs[this.extension];
 			} else {
-				this.plugin.settings.formatterConfigs[this.extension] = value;
+				this.plugin.settings.editorConfigs[this.extension] = value;
 			}
 			return true;
 		} catch {
@@ -150,31 +150,31 @@ export class EditorSettingsModal extends Modal {
 
 		// ── Formatter Config ──────────────────────────────────────────────────
 		const formatterSection = contentEl.createEl('div', {
-			cls: 'code-files-formatter-section'
+			cls: 'code-files-editor-config-section'
 		});
 		formatterSection.style.marginTop = '1rem';
 		formatterSection.createEl('div', {
-			text: `Formatter — .${this.extension}`,
-			cls: 'code-files-formatter-title'
+			text: `Editor Config — .${this.extension}`,
+			cls: 'code-files-editor-config-title'
 		});
 
 		const editorContainer = formatterSection.createEl('div', {
-			cls: 'code-files-formatter-editor'
+			cls: 'code-files-editor-config-editor'
 		});
 		editorContainer.style.border = '1px solid var(--background-modifier-border)';
 		editorContainer.style.marginTop = '8px';
 		editorContainer.style.borderRadius = '4px';
 		editorContainer.style.overflow = 'hidden';
 
-		const existing = this.plugin.settings.formatterConfigs[this.extension];
-		const initialValue = existing ?? DEFAULT_FORMATTER_CONFIG;
+		const existing = this.plugin.settings.editorConfigs[this.extension];
+		const initialValue = existing ?? DEFAULT_EDITOR_CONFIG;
 
 		const debouncedSave = debounce(async () => {
 			if (!this.codeEditor) return;
 			const value = this.codeEditor.getValue().trim();
 			if (this.applyFormatterValue(value)) {
 				await this.plugin.saveSettings();
-				this.plugin.broadcastFormatterConfig(this.extension);
+				this.plugin.broadcastEditorConfig(this.extension);
 			}
 		}, 600, true);
 

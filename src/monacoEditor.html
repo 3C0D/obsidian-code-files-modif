@@ -42,6 +42,16 @@
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
 
+				function applyFormatterConfig(cfg) {
+					var modelOpts = {};
+					if (cfg.tabSize !== undefined) modelOpts.tabSize = cfg.tabSize;
+					if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
+					if (Object.keys(modelOpts).length) editor.getModel().updateOptions(modelOpts);
+					formatOnSave = !!cfg.formatOnSave;
+					var { tabSize, insertSpaces, formatOnSave: _fs, ...editorOpts } = cfg;
+					editor.updateOptions(editorOpts);
+				}
+
 				function applyParams(params) {
 					if (initialized) return;
 					initialized = true;
@@ -102,23 +112,9 @@
 						opts
 					);
 
-					// Apply per-extension formatter config if provided
 					if (params.formatterConfig) {
-						try {
-							var cfg = JSON.parse(params.formatterConfig);
-							editor.getModel().updateOptions({
-								tabSize: cfg.tabSize ?? 2,
-								insertSpaces: cfg.insertSpaces !== false
-							});
-							if (cfg.formatOnType) {
-								editor.updateOptions({ formatOnType: true });
-							}
-							if (cfg.formatOnSave) {
-								formatOnSave = true;
-							}
-						} catch (e) {
-							console.warn('code-files: invalid formatterConfig JSON', e);
-						}
+						try { applyFormatterConfig(JSON.parse(params.formatterConfig)); }
+						catch (e) { console.warn('code-files: invalid formatterConfig JSON', e); }
 					}
 
 					// Alt+Z toggles word wrap and persists the setting
@@ -298,24 +294,10 @@
 								monaco.editor.setTheme(data.theme);
 							}
 							break;
-						case 'change-formatter-config':
+						case 'change-editor-config':
 							if (editor) {
-								try {
-									var cfg = JSON.parse(data.config);
-									editor.getModel().updateOptions({
-										tabSize: cfg.tabSize ?? 2,
-										insertSpaces: cfg.insertSpaces !== false
-									});
-									editor.updateOptions({
-										formatOnType: !!cfg.formatOnType
-									});
-									formatOnSave = !!cfg.formatOnSave;
-								} catch (e) {
-									console.warn(
-										'code-files: invalid formatterConfig JSON',
-										e
-									);
-								}
+								try { applyFormatterConfig(JSON.parse(data.config)); }
+								catch (e) { console.warn('code-files: invalid formatterConfig JSON', e); }
 							}
 							break;
 						case 'change-options':
