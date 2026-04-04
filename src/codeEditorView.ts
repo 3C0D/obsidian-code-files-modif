@@ -197,13 +197,10 @@ export class CodeEditorView extends TextFileView {
 	/** Static helper method to open a file in a new CodeEditorView. This abstracts away the details of creating the view and loading the file, providing a simple interface for other parts of the plugin to open files in the code editor. */
 	static openFile(file: TFile, plugin: CodeFilesPlugin): void {
 		const leaf = plugin.app.workspace.getLeaf(true);
-		if (plugin.getActiveExtensions().includes(file.extension)) {
+		if (plugin.getActiveExtensions().includes(file.extension) && plugin.app.vault.getAbstractFileByPath(file.path)) {
 			void leaf.openFile(file);
 		} else {
-			// Extension not registered (e.g. .md, CSS snippets) — force Monaco by bypassing
-			// Obsidian's view lifecycle. Warning: leaf.open() may trigger onload() internally,
-			// causing potential side effects. A cleaner alternative via leaf.setViewState
-			// with a forced viewType has not been explored yet.
+			// Extension not registered or file outside vault (e.g. CSS snippets) — bypass Obsidian's file registry
 			const view = new CodeEditorView(leaf, plugin);
 			view.file = file;
 			leaf.open(view);
