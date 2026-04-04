@@ -104,6 +104,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 		'jsx',
 		'py',
 		'json',
+		'jsonc',
 		'css',
 		'html',
 		'sh',
