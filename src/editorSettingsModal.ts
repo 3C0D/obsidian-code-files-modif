@@ -36,6 +36,7 @@ export class EditorSettingsModal extends Modal {
 		super.onOpen();
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
+		this.modalEl.style.height = '600px';
 
 		const { contentEl } = this;
 		contentEl.style.display = 'flex';
@@ -129,7 +130,6 @@ export class EditorSettingsModal extends Modal {
 		const editorContainer = formatterSection.createEl('div', {
 			cls: 'code-files-formatter-editor'
 		});
-		editorContainer.style.height = '200px';
 		editorContainer.style.border = '1px solid var(--background-modifier-border)';
 		editorContainer.style.marginTop = '8px';
 		editorContainer.style.borderRadius = '4px';

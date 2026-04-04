@@ -45,8 +45,8 @@ export class CodeEditorView extends TextFileView {
 
 	async save(clear?: boolean): Promise<void> {
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
-		this.forceSave = false;
 		await super.save(clear);
+		this.forceSave = false;
 	}
 
 	private cleanup(): void {
@@ -200,7 +200,10 @@ export class CodeEditorView extends TextFileView {
 		if (plugin.getActiveExtensions().includes(file.extension)) {
 			void leaf.openFile(file);
 		} else {
-			// Extension not registered (e.g. .md, CSS snippets) — force Monaco
+			// Extension not registered (e.g. .md, CSS snippets) — force Monaco by bypassing
+			// Obsidian's view lifecycle. Warning: leaf.open() may trigger onload() internally,
+			// causing potential side effects. A cleaner alternative via leaf.setViewState
+			// with a forced viewType has not been explored yet.
 			const view = new CodeEditorView(leaf, plugin);
 			view.file = file;
 			leaf.open(view);
