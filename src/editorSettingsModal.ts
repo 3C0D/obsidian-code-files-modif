@@ -1,6 +1,6 @@
-import { Modal, Setting, debounce } from 'obsidian';
+import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
-import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG, parseEditorConfig } from './types.ts';
 import type { CodeEditorInstance } from './types.ts';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 
@@ -21,9 +21,10 @@ export class EditorSettingsModal extends Modal {
 
 	private applyFormatterValue(value: string): boolean {
 		const key = this.isGlobal ? '*' : this.extension;
+		const defaultForKey = this.isGlobal ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
 		try {
 			parseEditorConfig(value);
-			if (value === DEFAULT_EDITOR_CONFIG.trim()) {
+			if (value === defaultForKey.trim()) {
 				delete this.plugin.settings.editorConfigs[key];
 			} else {
 				this.plugin.settings.editorConfigs[key] = value;
@@ -127,19 +128,35 @@ export class EditorSettingsModal extends Modal {
 
 		formatterSection.createEl('hr', { attr: { style: 'margin: 0 0 0.5rem 0; border: none; border-top: 1px solid var(--background-modifier-border);' } });
 
-		const configTitle = new Setting(formatterSection)
-			.setName(`Editor Config — .${this.extension}`)
-			.setDesc('Applied to this extension only')
-			.addToggle((t) =>
-				t.setValue(this.isGlobal).onChange((v) => {
-					this.isGlobal = v;
-					const key = v ? '*' : this.extension;
-					configTitle.setName(v ? 'Editor Config — *' : `Editor Config — .${this.extension}`);
-					configTitle.setDesc(v ? 'Applied to all extensions' : 'Applied to this extension only');
-					const cfg = this.plugin.settings.editorConfigs?.[key];
-					this.codeEditor.setValue(cfg ?? DEFAULT_EDITOR_CONFIG);
-				})
-			);
+		const scopeRow = formatterSection.createEl('div', {
+			attr: { style: 'display: flex; gap: 8px; margin-bottom: 6px;' }
+		});
+		const btnGlobal = new ButtonComponent(scopeRow).setButtonText('Global (*)');
+		const btnExt = new ButtonComponent(scopeRow).setButtonText(`.${this.extension}`);
+
+		const configTitle = formatterSection.createEl('div', {
+			text: `Editor Config — .${this.extension}`,
+			cls: 'code-files-editor-config-title'
+		});
+
+		const switchScope = (global: boolean): void => {
+			this.isGlobal = global;
+			if (global) {
+				btnGlobal.setCta();
+				btnExt.buttonEl.removeClass('mod-cta');
+				configTitle.setText('Editor Config — *');
+			} else {
+				btnExt.setCta();
+				btnGlobal.buttonEl.removeClass('mod-cta');
+				configTitle.setText(`Editor Config — .${this.extension}`);
+			}
+			const cfg = this.plugin.settings.editorConfigs?.[global ? '*' : this.extension];
+			if (this.codeEditor) this.codeEditor.setValue(cfg ?? (global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG));
+		};
+
+		btnGlobal.onClick(() => switchScope(true));
+		btnExt.onClick(() => switchScope(false));
+		switchScope(false);
 
 		const editorContainer = formatterSection.createEl('div', {
 			cls: 'code-files-editor-config-editor'
@@ -151,7 +168,7 @@ export class EditorSettingsModal extends Modal {
 		editorContainer.style.flex = '1';
 
 		const existing = this.plugin.settings.editorConfigs[this.extension];
-		const initialValue = existing ?? DEFAULT_EDITOR_CONFIG;
+		const initialValue = existing ?? DEFAULT_EXTENSION_CONFIG;
 
 		const debouncedSave = debounce(
 			async () => {
@@ -159,7 +176,7 @@ export class EditorSettingsModal extends Modal {
 				const value = this.codeEditor.getValue().trim();
 				if (this.applyFormatterValue(value)) {
 					await this.plugin.saveSettings();
-					this.plugin.broadcastEditorConfig(this.extension);
+					this.plugin.broadcastEditorConfig(this.isGlobal ? '*' : this.extension);
 				}
 			},
 			600,

@@ -8,7 +8,7 @@ import {
 } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG, parseEditorConfig } from './types.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
@@ -129,8 +129,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		const showExt = (ext: string): void => {
 			selectedExt = ext;
 			const existing = this.plugin.settings.editorConfigs?.[ext];
+			const defaultForExt = ext === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
 			updateLabel(ext);
-			textarea.setValue(existing ?? DEFAULT_EDITOR_CONFIG);
+			textarea.setValue(existing ?? defaultForExt);
 			textarea.inputEl.disabled = false;
 			textarea.inputEl.style.opacity = '1';
 		};

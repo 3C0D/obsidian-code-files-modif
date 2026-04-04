@@ -2,15 +2,6 @@ import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import type { CodeEditorInstance } from './types.ts';
 import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from './types.ts';
-
-function parseEditorConfigTS(str: string): Record<string, unknown> {
-	return JSON.parse(
-		str
-			.replace(/\/\/[^\n]*/g, '')
-			.replace(/\/\*[\s\S]*?\*\//g, '')
-			.replace(/,(\s*[}\]])/g, '$1')
-	);
-}
 import manifest from '../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from './getLanguage.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
@@ -111,8 +102,8 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	const globalCfg = parseEditorConfigTS(plugin.settings.editorConfigs?.['*'] ?? DEFAULT_EDITOR_CONFIG);
-	const extCfg = extension ? parseEditorConfigTS(plugin.settings.editorConfigs?.[extension] ?? '{}') : {};
+	const globalCfg = parseEditorConfig(plugin.settings.editorConfigs?.['*'] ?? DEFAULT_EDITOR_CONFIG) as Record<string, unknown>;
+	const extCfg = extension ? parseEditorConfig(plugin.settings.editorConfigs?.[extension] ?? '{}') as Record<string, unknown> : {};
 	initParams.formatterConfig = JSON.stringify({ ...globalCfg, ...extCfg });
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');

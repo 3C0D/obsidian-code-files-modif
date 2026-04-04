@@ -11,6 +11,7 @@ import {
 	DEFAULT_SETTINGS,
 	viewType,
 	DEFAULT_EDITOR_CONFIG,
+	parseEditorConfig,
 	type MyPluginSettings
 } from './types.ts';
 import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts';
@@ -347,14 +348,20 @@ export default class CodeFilesPlugin extends Plugin {
 		}
 	}
 
-	/** Sends updated editor config to all open code-editor iframes matching the extension. */
+	/** Sends updated editor config to all open code-editor iframes matching the extension.
+	 *  If ext is '*', rebroadcasts the merged config to all open views. */
 	broadcastEditorConfig(ext: string): void {
-		const config = this.settings.editorConfigs[ext] ?? DEFAULT_EDITOR_CONFIG;
+		const globalCfg = parseEditorConfig(this.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG) as Record<string, unknown>;
 		const views = this.app.workspace
 			.getLeavesOfType(viewType)
-			.map((l) => l.view as CodeEditorView)
-			.filter((v) => v.file?.extension === ext);
-		for (const view of views) {
+			.map((l) => l.view as CodeEditorView);
+		const targets = ext === '*'
+			? views
+			: views.filter((v) => v.file?.extension === ext);
+		for (const view of targets) {
+			const fileExt = view.file?.extension ?? '';
+			const extCfg = parseEditorConfig(this.settings.editorConfigs[fileExt] ?? '{}') as Record<string, unknown>;
+			const config = JSON.stringify({ ...globalCfg, ...extCfg });
 			view.codeEditor?.send('change-editor-config', { config });
 		}
 	}

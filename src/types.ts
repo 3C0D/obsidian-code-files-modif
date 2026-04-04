@@ -65,6 +65,14 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // "lineNumbers": "off",
 }`;
 
+/** Default per-extension config — empty override, only add what differs from global */
+export const DEFAULT_EXTENSION_CONFIG = `{
+    // Override global config for this extension only.
+    // Example:
+    // "tabSize": 2,
+    // "wordWrap": "on",
+}`;
+
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
 export const OBSIDIAN_NATIVE_EXTENSIONS = [
 	'md',
