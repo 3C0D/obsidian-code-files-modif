@@ -16,19 +16,8 @@ export class CodeEditorView extends TextFileView {
 	private themeAction: { remove: () => void } | null = null;
 	private renameAction: { remove: () => void } | null = null;
 
-	constructor(
-		leaf: WorkspaceLeaf,
-		private plugin: CodeFilesPlugin
-	) {
+	constructor(leaf: WorkspaceLeaf, private plugin: CodeFilesPlugin) {
 		super(leaf);
-		// Intercept the parent class's requestSave to disable Obsidian's automatic save triggers.
-		// Only allow saves when autoSave is enabled; manual saves (Ctrl+S) bypass this via forceSave.
-		const originalRequestSave = this.requestSave;
-		this.requestSave = () => {
-			if (this.plugin.settings.autoSave) {
-				originalRequestSave.call(this);
-			}
-		};
 	}
 
 	getDisplayText(): string {
@@ -52,7 +41,7 @@ export class CodeEditorView extends TextFileView {
 	 * - `forceSave` is true, set explicitly by the Ctrl+S handler in Monaco before calling this method
 	 *
 	 * `forceSave` is a private flag defined on the class. It is set to `true` by the Ctrl+S callback
-	 * in `mountEditor`, which calls `this.save()` directly (bypassing the `requestSave` intercept),
+	 * in `mountEditor`, which calls `this.save()` directly (bypassing `requestSave`'s debounce),
 	 * then reset to `false` here after the save completes.
 	 *
 	 * @param clear - Forwarded to the parent: if true, marks the view as clean (non-dirty) after saving.
