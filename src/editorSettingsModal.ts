@@ -8,6 +8,7 @@ import { mountCodeEditor } from './mountCodeEditor.ts';
  *  Opened via the gear icon in the tab header of code-editor views. */
 export class EditorSettingsModal extends Modal {
 	private codeEditor!: CodeEditorInstance;
+	private isGlobal = false;
 
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -19,12 +20,13 @@ export class EditorSettingsModal extends Modal {
 	}
 
 	private applyFormatterValue(value: string): boolean {
+		const key = this.isGlobal ? '*' : this.extension;
 		try {
 			parseEditorConfig(value);
 			if (value === DEFAULT_EDITOR_CONFIG.trim()) {
-				delete this.plugin.settings.editorConfigs[this.extension];
+				delete this.plugin.settings.editorConfigs[key];
 			} else {
-				this.plugin.settings.editorConfigs[this.extension] = value;
+				this.plugin.settings.editorConfigs[key] = value;
 			}
 			return true;
 		} catch {
@@ -122,10 +124,22 @@ export class EditorSettingsModal extends Modal {
 		formatterSection.style.flex = '1';
 		formatterSection.style.display = 'flex';
 		formatterSection.style.flexDirection = 'column';
-		formatterSection.createEl('div', {
-			text: `Editor Config — .${this.extension}`,
-			cls: 'code-files-editor-config-title'
-		});
+
+		formatterSection.createEl('hr', { attr: { style: 'margin: 0 0 0.5rem 0; border: none; border-top: 1px solid var(--background-modifier-border);' } });
+
+		const configTitle = new Setting(formatterSection)
+			.setName(`Editor Config — .${this.extension}`)
+			.setDesc('Applied to this extension only')
+			.addToggle((t) =>
+				t.setValue(this.isGlobal).onChange((v) => {
+					this.isGlobal = v;
+					const key = v ? '*' : this.extension;
+					configTitle.setName(v ? 'Editor Config — *' : `Editor Config — .${this.extension}`);
+					configTitle.setDesc(v ? 'Applied to all extensions' : 'Applied to this extension only');
+					const cfg = this.plugin.settings.editorConfigs?.[key];
+					this.codeEditor.setValue(cfg ?? DEFAULT_EDITOR_CONFIG);
+				})
+			);
 
 		const editorContainer = formatterSection.createEl('div', {
 			cls: 'code-files-editor-config-editor'

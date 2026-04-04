@@ -92,7 +92,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Editor Config' });
 		containerEl.createEl('p', {
-			text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions).',
+			text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions). Type * for global config.',
 			attr: {
 				style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
 			}
