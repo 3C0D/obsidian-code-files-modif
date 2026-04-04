@@ -154,7 +154,10 @@ Element.prototype.appendChild = function(node) {
 		iframe.contentWindow?.postMessage({ type, ...payload }, '*');
 	};
 
-	const onMessage = async ({ data }: MessageEvent): Promise<void> => {
+	const onMessage = async ({ data, source }: MessageEvent): Promise<void> => {
+		// Reject messages not originating from this specific iframe — guards against
+		// other Monaco instances or third-party postMessage calls hitting this handler.
+		if (source !== iframe.contentWindow) return;
 		switch (data.type) {
 			case 'ready': {
 				// Monaco is loaded — send config, request language map, then set initial content.

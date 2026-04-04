@@ -85,10 +85,11 @@ export class FenceEditModal extends Modal {
 
 	onClose(): void {
 		super.onClose();
-		// getValue() is called here rather than in onOpen() because the user may have
-		// edited the content after opening — we want the final state at close time
-		if (this.codeEditor) this.onSave(this.codeEditor.getValue());
-		this.codeEditor?.destroy();
+		if (this.codeEditor) {
+			const current = this.codeEditor.getValue();
+			if (current !== this.code) this.onSave(current);
+			this.codeEditor.destroy();
+		}
 	}
 
 	/** Opens a Monaco Editor modal pre-filled with the content of the code fence under the cursor. Does nothing if the cursor is not inside a valid code block. */

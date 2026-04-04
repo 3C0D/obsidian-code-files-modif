@@ -132,7 +132,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	],
 	semanticValidation: true,
 	syntaxValidation: true,
-	theme: 'tomorrow-night',
+	theme: 'Tomorrow-Night',
 	showRibbonIcon: true,
 	recentThemes: [],
 	autoSave: false,
