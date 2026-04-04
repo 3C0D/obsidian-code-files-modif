@@ -31,18 +31,35 @@ export interface MyPluginSettings {
 	extraExtensions: string[];
 }
 
+export function parseEditorConfig(str: string): unknown {
+	return JSON.parse(
+		str
+			.replace(/\/\/[^\n]*/g, '')
+			.replace(/\/\*[\s\S]*?\*\//g, '')
+			.replace(/,(\s*[}\]])/g, '$1')
+	);
+}
+
 /** Default Monaco editor options applied when no per-extension config exists */
-const DEFAULT_EDITOR_CONFIG = JSON.stringify(
-	{
-		tabSize: 4,
-		insertSpaces: true,
-		formatOnSave: true,
-		formatOnType: false
-	},
-	null,
-	2
-);
-export { DEFAULT_EDITOR_CONFIG };
+export const DEFAULT_EDITOR_CONFIG = `{
+    // --- Indentation ---
+    "tabSize": 4,
+    "insertSpaces": true,
+
+    // --- On Save / On Type ---
+    "formatOnSave": true,
+    "formatOnType": false,
+    // "trimAutoWhitespace": true,
+
+    // --- Guides ---
+    // "rulers": [80, 120],
+    // "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
+
+    // --- Display ---
+    // "fontSize": 14,
+    // "bracketPairColorization.enabled": true,
+    // "minimap": { "enabled": false },
+}`;
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
 export const OBSIDIAN_NATIVE_EXTENSIONS = [
@@ -72,7 +89,26 @@ export const OBSIDIAN_NATIVE_EXTENSIONS = [
 
 /** Plugin default settings applied on first install */
 export const DEFAULT_SETTINGS: MyPluginSettings = {
-	extensions: ['ts', 'tsx', 'js', 'jsx', 'py', 'json', 'css', 'html', 'sh', 'yaml', 'sql', 'php', 'cs', 'java', 'go', 'rs', 'cpp', 'c'],
+	extensions: [
+		'ts',
+		'tsx',
+		'js',
+		'jsx',
+		'py',
+		'json',
+		'css',
+		'html',
+		'sh',
+		'yaml',
+		'sql',
+		'php',
+		'cs',
+		'java',
+		'go',
+		'rs',
+		'cpp',
+		'c'
+	],
 	folding: true,
 	lineNumbers: true,
 	minimap: true,

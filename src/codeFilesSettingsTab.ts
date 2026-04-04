@@ -1,8 +1,14 @@
 import type { App } from 'obsidian';
-import { debounce, PluginSettingTab, Setting, TextAreaComponent, TextComponent } from 'obsidian';
+import {
+	debounce,
+	PluginSettingTab,
+	Setting,
+	TextAreaComponent,
+	TextComponent
+} from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { DEFAULT_EDITOR_CONFIG } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from './types.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
@@ -41,7 +47,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Use extended extensions list')
-			.setDesc('Register a broad curated list of extensions. Each mode (manual/extended) keeps its own independent list when toggling.')
+			.setDesc(
+				'Register a broad curated list of extensions. Each mode (manual/extended) keeps its own independent list when toggling.'
+			)
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.allExtensions)
@@ -73,15 +81,21 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			});
 
 		containerEl.createEl('p', {
-			text: 'Active: ' + (this.plugin.getActiveExtensions().sort().join(', ') || 'none'),
-			attr: { style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;' }
+			text:
+				'Active: ' +
+				(this.plugin.getActiveExtensions().sort().join(', ') || 'none'),
+			attr: {
+				style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;'
+			}
 		});
 
 		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Editor Config' });
 		containerEl.createEl('p', {
 			text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions).',
-			attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
+			attr: {
+				style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
+			}
 		});
 
 		const extensions = this.plugin.getActiveExtensions();
@@ -93,7 +107,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		extInput.inputEl.style.marginBottom = '8px';
 
 		const extLabel = containerEl.createEl('p', {
-			attr: { style: 'font-size: 0.85em; color: var(--text-muted); margin-bottom: 4px;' }
+			attr: {
+				style: 'font-size: 0.85em; color: var(--text-muted); margin-bottom: 4px;'
+			}
 		});
 		extLabel.setText('Editor Config - select an extension above');
 
@@ -121,23 +137,27 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		new ExtensionSuggest(this.plugin, extInput.inputEl, showExt, () => extensions);
 
-		const debouncedSave = debounce(async () => {
-			if (!selectedExt) return;
-			const val = textarea.getValue().trim();
-			try {
-				JSON.parse(val);
-				if (val === DEFAULT_EDITOR_CONFIG.trim()) {
-					delete this.plugin.settings.editorConfigs[selectedExt];
-				} else {
-					this.plugin.settings.editorConfigs[selectedExt] = val;
+		const debouncedSave = debounce(
+			async () => {
+				if (!selectedExt) return;
+				const val = textarea.getValue().trim();
+				try {
+					parseEditorConfig(val);
+					if (val === DEFAULT_EDITOR_CONFIG.trim()) {
+						delete this.plugin.settings.editorConfigs[selectedExt];
+					} else {
+						this.plugin.settings.editorConfigs[selectedExt] = val;
+					}
+					await this.plugin.saveSettings();
+					this.plugin.broadcastEditorConfig(selectedExt);
+					updateLabel(selectedExt);
+				} catch {
+					// invalid JSON - wait for valid input
 				}
-				await this.plugin.saveSettings();
-				this.plugin.broadcastEditorConfig(selectedExt);
-				updateLabel(selectedExt);
-			} catch {
-				// invalid JSON - wait for valid input
-			}
-		}, 600, true);
+			},
+			600,
+			true
+		);
 
 		textarea.inputEl.addEventListener('input', () => debouncedSave());
 	}

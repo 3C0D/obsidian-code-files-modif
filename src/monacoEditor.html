@@ -113,7 +113,7 @@
 					);
 
 					if (params.formatterConfig) {
-						try { applyFormatterConfig(JSON.parse(params.formatterConfig)); }
+						try { applyFormatterConfig(parseEditorConfig(params.formatterConfig)); }
 						catch (e) { console.warn('code-files: invalid formatterConfig JSON', e); }
 					}
 
@@ -296,7 +296,7 @@
 							break;
 						case 'change-editor-config':
 							if (editor) {
-								try { applyFormatterConfig(JSON.parse(data.config)); }
+								try { applyFormatterConfig(parseEditorConfig(data.config)); }
 								catch (e) { console.warn('code-files: invalid formatterConfig JSON', e); }
 							}
 							break;

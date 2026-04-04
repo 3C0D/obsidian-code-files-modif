@@ -22,15 +22,23 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.modalEl.style.width = '300px';
 
 		const adjustBrightness = (delta: number): void => {
-			const next = Math.round(
-				Math.min(2, Math.max(0.2, plugin.settings.editorBrightness + delta)) * 10
-			) / 10;
+			const next =
+				Math.round(
+					Math.min(2, Math.max(0.2, plugin.settings.editorBrightness + delta)) *
+						10
+				) / 10;
 			plugin.settings.editorBrightness = next;
 			void plugin.saveSettings();
 			plugin.broadcastBrightness();
 		};
-		this.scope.register([], 'ArrowRight', () => { adjustBrightness(0.1); return true; });
-		this.scope.register([], 'ArrowLeft',  () => { adjustBrightness(-0.1); return true; });
+		this.scope.register([], 'ArrowRight', () => {
+			adjustBrightness(0.1);
+			return true;
+		});
+		this.scope.register([], 'ArrowLeft', () => {
+			adjustBrightness(-0.1);
+			return true;
+		});
 	}
 
 	onOpen(): void {
@@ -56,7 +64,8 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		}, 0);
 
 		const footer = this.modalEl.createEl('div', { cls: 'code-files-theme-footer' });
-		footer.style.cssText = 'padding: 6px 12px; font-size: 0.78em; color: var(--text-muted); border-top: 1px solid var(--background-modifier-border); text-align: center;';
+		footer.style.cssText =
+			'padding: 6px 12px; font-size: 0.78em; color: var(--text-muted); border-top: 1px solid var(--background-modifier-border); text-align: center;';
 		footer.setText('hover to preview · ← → adjust brightness');
 
 		this.resultContainerEl.addEventListener('mousemove', (e) => {

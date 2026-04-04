@@ -7,7 +7,12 @@ import { FenceEditContext } from './fenceEditContext.ts';
 import { ChooseCssFileModal } from './chooseCssFileModal.ts';
 import { RenameExtensionModal } from './renameExtensionModal.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
-import { DEFAULT_SETTINGS, viewType, DEFAULT_EDITOR_CONFIG, type MyPluginSettings } from './types.ts';
+import {
+	DEFAULT_SETTINGS,
+	viewType,
+	DEFAULT_EDITOR_CONFIG,
+	type MyPluginSettings
+} from './types.ts';
 import { getAllMonacoExtensions, loadPersistedLanguages } from './getLanguage.ts';
 
 export default class CodeFilesPlugin extends Plugin {
@@ -33,7 +38,9 @@ export default class CodeFilesPlugin extends Plugin {
 			this._registeredExts = new Set(activeExts);
 		} catch (e) {
 			console.log('code-files plugin error:', e);
-			new Notice(`Code Files: could not register extensions ${activeExts.join(', ')}`);
+			new Notice(
+				`Code Files: could not register extensions ${activeExts.join(', ')}`
+			);
 		}
 
 		this.updateRibbonIcon();
@@ -101,7 +108,12 @@ export default class CodeFilesPlugin extends Plugin {
 				if (!isCodeFile) return false;
 				if (!checking) {
 					(document.activeElement as HTMLElement)?.blur();
-					new EditorSettingsModal(this, file.extension, () => this.broadcastOptions(), (config) => this.broadcastEditorConfig(file.extension)).open();
+					new EditorSettingsModal(
+						this,
+						file.extension,
+						() => this.broadcastOptions(),
+						(config) => this.broadcastEditorConfig(file.extension)
+					).open();
 				}
 				return true;
 			}
@@ -157,7 +169,8 @@ export default class CodeFilesPlugin extends Plugin {
 				const fenceContext = FenceEditContext.create(this, editor);
 				const activeFile = this.app.workspace.activeEditor?.file;
 				const isRegistered =
-					activeFile && this.getActiveExtensions().includes(activeFile.extension);
+					activeFile &&
+					this.getActiveExtensions().includes(activeFile.extension);
 
 				// Build the list of applicable items
 				type MenuItem = { title: string; icon: string; action: () => void };

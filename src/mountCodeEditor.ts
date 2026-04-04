@@ -102,7 +102,8 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	initParams.formatterConfig = plugin.settings.editorConfigs?.[extension] ?? DEFAULT_EDITOR_CONFIG;
+	initParams.formatterConfig =
+		plugin.settings.editorConfigs?.[extension] ?? DEFAULT_EDITOR_CONFIG;
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
@@ -137,7 +138,17 @@ export const mountCodeEditor = async (
 	// Without this, Monaco tries to inject a <link rel="stylesheet"> which the parent CSP blocks.
 	html = html.replace(
 		'</head>',
-		`<style>${cssText}</style>
+		`<script>
+function parseEditorConfig(str) {
+    return JSON.parse(
+        str
+            .replace(/\\/\\/[^\\n]*/g, '')
+            .replace(/\\/\\*[\\s\\S]*?\\*\\//g, '')
+            .replace(/,(\\s*[}\\]])/g, '$1')
+    );
+}
+</script>
+<style>${cssText}</style>
 <script>
 const _orig = Element.prototype.appendChild;
 Element.prototype.appendChild = function(node) {
@@ -175,9 +186,14 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
 					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
-					const modal = new EditorSettingsModal(plugin, ext, () => plugin.broadcastOptions(), (config) => {
-						send('change-editor-config', { config });
-					});
+					const modal = new EditorSettingsModal(
+						plugin,
+						ext,
+						() => plugin.broadcastOptions(),
+						(config) => {
+							send('change-editor-config', { config });
+						}
+					);
 					const origOnClose = modal.onClose.bind(modal);
 					modal.onClose = () => {
 						origOnClose();

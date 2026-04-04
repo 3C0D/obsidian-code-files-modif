@@ -1,6 +1,6 @@
 import { Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from './main.ts';
-import { DEFAULT_EDITOR_CONFIG } from './types.ts';
+import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from './types.ts';
 import type { CodeEditorInstance } from './types.ts';
 import { mountCodeEditor } from './mountCodeEditor.ts';
 
@@ -20,7 +20,7 @@ export class EditorSettingsModal extends Modal {
 
 	private applyFormatterValue(value: string): boolean {
 		try {
-			JSON.parse(value);
+			parseEditorConfig(value);
 			if (value === DEFAULT_EDITOR_CONFIG.trim()) {
 				delete this.plugin.settings.editorConfigs[this.extension];
 			} else {
@@ -138,10 +138,11 @@ export class EditorSettingsModal extends Modal {
 			.setName('Editor Brightness')
 			.setDesc('Adjust Monaco editor brightness (0.2 – 2.0)')
 			.addSlider((s) =>
-				s.setLimits(0.2, 2, 0.1)
-				 .setValue(this.plugin.settings.editorBrightness)
-				 .setDynamicTooltip()
-				 .onChange(async (v) => {
+				s
+					.setLimits(0.2, 2, 0.1)
+					.setValue(this.plugin.settings.editorBrightness)
+					.setDynamicTooltip()
+					.onChange(async (v) => {
 						this.plugin.settings.editorBrightness = v;
 						await this.plugin.saveSettings();
 						this.plugin.broadcastBrightness();
@@ -169,18 +170,22 @@ export class EditorSettingsModal extends Modal {
 		const existing = this.plugin.settings.editorConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_EDITOR_CONFIG;
 
-		const debouncedSave = debounce(async () => {
-			if (!this.codeEditor) return;
-			const value = this.codeEditor.getValue().trim();
-			if (this.applyFormatterValue(value)) {
-				await this.plugin.saveSettings();
-				this.plugin.broadcastEditorConfig(this.extension);
-			}
-		}, 600, true);
+		const debouncedSave = debounce(
+			async () => {
+				if (!this.codeEditor) return;
+				const value = this.codeEditor.getValue().trim();
+				if (this.applyFormatterValue(value)) {
+					await this.plugin.saveSettings();
+					this.plugin.broadcastEditorConfig(this.extension);
+				}
+			},
+			600,
+			true
+		);
 
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
-			'json',
+			'jsonc',
 			initialValue,
 			`editor-settings-formatter-${this.extension}`,
 			() => debouncedSave()
