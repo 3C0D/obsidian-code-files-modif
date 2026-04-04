@@ -21,6 +21,8 @@ export class CodeEditorView extends TextFileView {
 		private plugin: CodeFilesPlugin
 	) {
 		super(leaf);
+		// Intercept the parent class's requestSave to disable Obsidian's automatic save triggers.
+		// Only allow saves when autoSave is enabled; manual saves (Ctrl+S) bypass this via forceSave.
 		const originalRequestSave = this.requestSave;
 		this.requestSave = () => {
 			if (this.plugin.settings.autoSave) {
@@ -42,6 +44,23 @@ export class CodeEditorView extends TextFileView {
 		return file?.path ?? this.file?.path ?? '';
 	}
 
+	/**
+	 * Overrides the parent save to enforce manual-save-only behavior when autoSave is disabled.
+	 *
+	 * Two conditions allow the save to proceed:
+	 * - `autoSave` is enabled in settings (Obsidian's normal flow)
+	 * - `forceSave` is true, set explicitly by the Ctrl+S handler in Monaco before calling this method
+	 *
+	 * `forceSave` is a private flag defined on the class. It is set to `true` by the Ctrl+S callback
+	 * in `mountEditor`, which calls `this.save()` directly (bypassing the `requestSave` intercept),
+	 * then reset to `false` here after the save completes.
+	 *
+	 * @param clear - Forwarded to the parent: if true, marks the view as clean (non-dirty) after saving.
+	 *                Never passed explicitly in this plugin (always undefined in practice) — the dirty
+	 *                state is managed manually via `setDirty()` and `setSaving()`, which drive the
+	 *                custom `.code-files-dirty-badge` element. Using `clear` here may be redundant
+	 *                and could be simplified in the future.
+	 */
 	async save(clear?: boolean): Promise<void> {
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
 		await super.save(clear);
