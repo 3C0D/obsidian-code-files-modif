@@ -11,7 +11,6 @@ import { RenameExtensionModal } from './renameExtensionModal.ts';
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {
 	codeEditor!: CodeEditorInstance;
-	private isDirty = false;
 	private forceSave = false;
 	private gearAction: { remove: () => void } | null = null;
 	private themeAction: { remove: () => void } | null = null;
@@ -65,7 +64,6 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	private setDirty(isDirtyBadge: boolean): void {
-		this.isDirty = isDirtyBadge;
 		const badge = this.containerEl.querySelector('.code-files-dirty-badge');
 		if (!badge) return;
 		badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
@@ -183,7 +181,7 @@ export class CodeEditorView extends TextFileView {
 
 	/** Called by Obsidian when the file content is ready to be displayed. Syncs the inherited `data` property and the Monaco editor instance.
 	 *  The optional chaining on codeEditor handles the case where setViewData is called before onLoadFile completes. */
-	setViewData(data: string, clear: boolean): void {
+	setViewData(data: string, _clear: boolean): void {
 		this.data = data;
 		if (this.codeEditor) {
 			// Protect Monaco's undo/redo history!

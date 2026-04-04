@@ -113,7 +113,7 @@ export default class CodeFilesPlugin extends Plugin {
 						this,
 						file.extension,
 						() => this.broadcastOptions(),
-						(config) => this.broadcastEditorConfig(file.extension)
+						() => this.broadcastEditorConfig(file.extension)
 					).open();
 				}
 				return true;
