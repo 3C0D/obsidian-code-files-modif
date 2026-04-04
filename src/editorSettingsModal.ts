@@ -40,7 +40,7 @@ export class EditorSettingsModal extends Modal {
 		}, 0);
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
-		this.modalEl.style.height = '600px';
+		this.modalEl.style.height = '700px';
 		this.modalEl.style.position = 'fixed';
 		setTimeout(() => {
 			const { innerWidth } = window;
@@ -74,41 +74,6 @@ export class EditorSettingsModal extends Modal {
 					this.onSettingsChanged();
 				})
 			);
-
-		new Setting(toggleSection)
-			.setName('Word Wrap')
-			.setDesc('(Alt+Z)')
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.wordWrap === 'on').onChange(async (v) => {
-					this.plugin.settings.wordWrap = v ? 'on' : 'off';
-					await this.plugin.saveSettings();
-					this.onSettingsChanged();
-				})
-			);
-
-		new Setting(toggleSection).setName('Folding').addToggle((t) =>
-			t.setValue(this.plugin.settings.folding).onChange(async (v) => {
-				this.plugin.settings.folding = v;
-				await this.plugin.saveSettings();
-				this.onSettingsChanged();
-			})
-		);
-
-		new Setting(toggleSection).setName('Line Numbers').addToggle((t) =>
-			t.setValue(this.plugin.settings.lineNumbers).onChange(async (v) => {
-				this.plugin.settings.lineNumbers = v;
-				await this.plugin.saveSettings();
-				this.onSettingsChanged();
-			})
-		);
-
-		new Setting(toggleSection).setName('Minimap').addToggle((t) =>
-			t.setValue(this.plugin.settings.minimap).onChange(async (v) => {
-				this.plugin.settings.minimap = v;
-				await this.plugin.saveSettings();
-				this.onSettingsChanged();
-			})
-		);
 
 		new Setting(toggleSection)
 			.setName('Semantic Validation')
@@ -154,6 +119,9 @@ export class EditorSettingsModal extends Modal {
 			cls: 'code-files-editor-config-section'
 		});
 		formatterSection.style.marginTop = '1rem';
+		formatterSection.style.flex = '1';
+		formatterSection.style.display = 'flex';
+		formatterSection.style.flexDirection = 'column';
 		formatterSection.createEl('div', {
 			text: `Editor Config — .${this.extension}`,
 			cls: 'code-files-editor-config-title'
@@ -166,6 +134,7 @@ export class EditorSettingsModal extends Modal {
 		editorContainer.style.marginTop = '8px';
 		editorContainer.style.borderRadius = '4px';
 		editorContainer.style.overflow = 'hidden';
+		editorContainer.style.flex = '1';
 
 		const existing = this.plugin.settings.editorConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_EDITOR_CONFIG;

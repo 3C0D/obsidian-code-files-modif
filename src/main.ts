@@ -329,10 +329,6 @@ export default class CodeFilesPlugin extends Plugin {
 			.map((l) => l.view as CodeEditorView);
 		for (const view of views) {
 			view.codeEditor?.send('change-options', {
-				wordWrap: this.settings.wordWrap,
-				lineNumbers: this.settings.lineNumbers ? 'on' : 'off',
-				minimap: this.settings.minimap,
-				folding: this.settings.folding,
 				noSemanticValidation: !this.settings.semanticValidation,
 				noSyntaxValidation: !this.settings.syntaxValidation
 			});

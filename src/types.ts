@@ -42,6 +42,7 @@ export function parseEditorConfig(str: string): unknown {
 
 /** Default Monaco editor options applied when no per-extension config exists */
 export const DEFAULT_EDITOR_CONFIG = `{
+    // Options here override global settings for this extension (like VSCode workspace settings).
     // --- Indentation ---
     "tabSize": 4,
     "insertSpaces": true,
@@ -49,7 +50,7 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // --- On Save / On Type ---
     "formatOnSave": true,
     "formatOnType": false,
-    // "trimAutoWhitespace": true,
+    "trimAutoWhitespace": true,
 
     // --- Guides ---
     // "rulers": [80, 120],
@@ -58,7 +59,10 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // --- Display ---
     // "fontSize": 14,
     // "bracketPairColorization.enabled": true,
-    // "minimap": { "enabled": false },
+    "minimap": { "enabled": true },
+    // "wordWrap": "on",
+    // "folding": false,
+    // "lineNumbers": "off",
 }`;
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */

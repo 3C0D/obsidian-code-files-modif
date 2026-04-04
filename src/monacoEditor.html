@@ -301,27 +301,19 @@
 							}
 							break;
 						case 'change-options':
-							if (editor) {
-								editor.updateOptions({
-									wordWrap: data.wordWrap,
-									lineNumbers: data.lineNumbers,
-									minimap: { enabled: data.minimap },
-									folding: data.folding
-								});
-								if (typeof data.noSemanticValidation === 'boolean') {
-									monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
-										{
-											noSemanticValidation: data.noSemanticValidation,
-											noSyntaxValidation: data.noSyntaxValidation
-										}
-									);
-									monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
-										{
-											noSemanticValidation: data.noSemanticValidation,
-											noSyntaxValidation: data.noSyntaxValidation
-										}
-									);
-								}
+							if (editor && typeof data.noSemanticValidation === 'boolean') {
+								monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
+									{
+										noSemanticValidation: data.noSemanticValidation,
+										noSyntaxValidation: data.noSyntaxValidation
+									}
+								);
+								monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
+									{
+										noSemanticValidation: data.noSemanticValidation,
+										noSyntaxValidation: data.noSyntaxValidation
+									}
+								);
 							}
 							break;
 						case 'change-word-wrap':
