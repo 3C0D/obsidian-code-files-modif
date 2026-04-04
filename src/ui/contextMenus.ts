@@ -1,10 +1,10 @@
 import { TFile, TFolder } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
-import { CreateCodeFileModal } from './createCodeFileModal.ts';
-import { FenceEditModal } from './fenceEditModal.ts';
-import { FenceEditContext } from './fenceEditContext.ts';
-import { RenameExtensionModal } from './renameExtensionModal.ts';
-import type { MenuItems } from './types.ts';
+import type CodeFilesPlugin from '../main.ts';
+import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
+import { FenceEditModal } from '../modals/fenceEditModal.ts';
+import { FenceEditContext } from '../utils/fenceEditContext.ts';
+import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
+import type { MenuItems } from '../types.ts';
 
 export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	plugin.registerEvent(
@@ -25,8 +25,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 			if (abstractFile instanceof TFile) {
 				menu.addItem((i) => {
 					if (source === 'file-explorer-context-menu') {
-						i
-							.setTitle('Rename Extension')
+						i.setTitle('Rename Extension')
 							.setIcon('pencil')
 							.onClick(() =>
 								new RenameExtensionModal(plugin, abstractFile).open()
@@ -37,7 +36,10 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 						const sub = i.setSubmenu();
 						for (const it of items) {
 							sub.addItem((subItem) =>
-								subItem.setTitle(it.title).setIcon(it.icon).onClick(it.action)
+								subItem
+									.setTitle(it.title)
+									.setIcon(it.icon)
+									.onClick(it.action)
 							);
 						}
 					}
@@ -45,7 +47,6 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 			}
 		})
 	);
-
 
 	plugin.registerEvent(
 		plugin.app.workspace.on('editor-menu', (menu, editor) => {
@@ -71,7 +72,6 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	);
 }
 
-/** get items */
 function getItems(plugin: CodeFilesPlugin): MenuItems[] {
 	const activeFile = plugin.app.workspace.getActiveFile();
 

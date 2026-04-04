@@ -1,8 +1,8 @@
 import { Modal, Notice, setIcon, type Editor } from 'obsidian';
-import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
-import type CodeFilesPlugin from './main.ts';
-import { FenceEditContext } from './fenceEditContext.ts';
-import type { CodeEditorInstance } from './types.ts';
+import { mountCodeEditor, resolveThemeParams } from '../editor/mountCodeEditor.ts';
+import type CodeFilesPlugin from '../main.ts';
+import { FenceEditContext } from '../utils/fenceEditContext.ts';
+import type { CodeEditorInstance } from '../types.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
 

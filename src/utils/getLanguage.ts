@@ -1,4 +1,4 @@
-import type CodeFilesPlugin from './main.ts';
+import type CodeFilesPlugin from '../main.ts';
 
 // Static fallback map used before Monaco has loaded (e.g. on Obsidian restart with files already open).
 // dynamicMap takes priority once populated, but this ensures syntax highlighting works immediately.

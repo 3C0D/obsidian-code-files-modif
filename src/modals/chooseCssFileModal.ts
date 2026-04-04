@@ -1,7 +1,7 @@
 import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
-import { CodeEditorView } from './codeEditorView.ts';
-import type CodeFilesPlugin from './main.ts';
-import type { CssSuggestion } from './types.ts';
+import { CodeEditorView } from '../editor/codeEditorView.ts';
+import type CodeFilesPlugin from '../main.ts';
+import type { CssSuggestion } from '../types.ts';
 
 /** Modal for choosing an existing CSS file or creating a new one */
 export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {

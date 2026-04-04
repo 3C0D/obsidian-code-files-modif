@@ -1,6 +1,6 @@
 import { SuggestModal } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
-import { themes } from './themes.ts';
+import type CodeFilesPlugin from '../main.ts';
+import { themes } from '../utils/themes.ts';
 
 const ALL_THEMES = ['default', ...themes];
 

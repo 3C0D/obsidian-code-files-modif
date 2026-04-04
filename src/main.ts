@@ -1,6 +1,6 @@
 import { Notice, Plugin, addIcon } from 'obsidian';
-import { CodeEditorView } from './codeEditorView.ts';
-import { CodeFilesSettingsTab } from './codeFilesSettingsTab.ts';
+import { CodeEditorView } from './editor/codeEditorView.ts';
+import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import {
 	DEFAULT_SETTINGS,
 	viewType,
@@ -8,11 +8,16 @@ import {
 	parseEditorConfig,
 	type MyPluginSettings
 } from './types.ts';
-import { loadPersistedLanguages } from './getLanguage.ts';
-import { getActiveExtensions, addExtension, removeExtension, getCodeEditorViews } from './extensionUtils.ts';
-import { registerCommands } from './commands.ts';
-import { registerContextMenus } from './contextMenus.ts';
-import { CreateCodeFileModal } from './createCodeFileModal.ts';
+import { loadPersistedLanguages } from './utils/getLanguage.ts';
+import {
+	getActiveExtensions,
+	addExtension,
+	removeExtension,
+	getCodeEditorViews
+} from './utils/extensionUtils.ts';
+import { registerCommands } from './ui/commands.ts';
+import { registerContextMenus } from './ui/contextMenus.ts';
+import { CreateCodeFileModal } from './modals/createCodeFileModal.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
@@ -169,12 +174,17 @@ export default class CodeFilesPlugin extends Plugin {
 	/** Sends updated editor config to all open code-editor iframes matching the extension.
 	 *  If ext is '*', rebroadcasts the merged config to all open views. */
 	broadcastEditorConfig(ext: string): void {
-		const globalCfg = parseEditorConfig(this.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG) as Record<string, unknown>;
+		const globalCfg = parseEditorConfig(
+			this.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
+		) as Record<string, unknown>;
 		const views = getCodeEditorViews(this.app);
-		const targets = ext === '*' ? views : views.filter((v) => v.file?.extension === ext);
+		const targets =
+			ext === '*' ? views : views.filter((v) => v.file?.extension === ext);
 		for (const view of targets) {
 			const fileExt = view.file?.extension ?? '';
-			const extCfg = parseEditorConfig(this.settings.editorConfigs[fileExt] ?? '{}') as Record<string, unknown>;
+			const extCfg = parseEditorConfig(
+				this.settings.editorConfigs[fileExt] ?? '{}'
+			) as Record<string, unknown>;
 			const config = JSON.stringify({ ...globalCfg, ...extCfg });
 			view.codeEditor?.send('change-editor-config', { config });
 		}

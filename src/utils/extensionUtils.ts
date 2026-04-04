@@ -1,8 +1,8 @@
 import type { App } from 'obsidian';
-import type { MyPluginSettings } from './types.ts';
-import { viewType } from './types.ts';
+import type { MyPluginSettings } from '../types.ts';
+import { viewType } from '../types.ts';
 import { getAllMonacoExtensions } from './getLanguage.ts';
-import type { CodeEditorView } from './codeEditorView.ts';
+import type { CodeEditorView } from '../editor/codeEditorView.ts';
 
 export function getActiveExtensions(settings: MyPluginSettings): string[] {
 	if (settings.allExtensions) {

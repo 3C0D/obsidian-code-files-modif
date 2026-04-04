@@ -1,8 +1,12 @@
 import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
-import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG, parseEditorConfig } from './types.ts';
-import type { CodeEditorInstance } from './types.ts';
-import { mountCodeEditor } from './mountCodeEditor.ts';
+import type CodeFilesPlugin from '../main.ts';
+import {
+	DEFAULT_EDITOR_CONFIG,
+	DEFAULT_EXTENSION_CONFIG,
+	parseEditorConfig
+} from '../types.ts';
+import type { CodeEditorInstance } from '../types.ts';
+import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -21,7 +25,9 @@ export class EditorSettingsModal extends Modal {
 
 	private applyFormatterValue(value: string): boolean {
 		const key = this.isGlobal ? '*' : this.extension;
-		const defaultForKey = this.isGlobal ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
+		const defaultForKey = this.isGlobal
+			? DEFAULT_EDITOR_CONFIG
+			: DEFAULT_EXTENSION_CONFIG;
 		try {
 			parseEditorConfig(value);
 			if (value === defaultForKey.trim()) {
@@ -126,7 +132,11 @@ export class EditorSettingsModal extends Modal {
 		formatterSection.style.display = 'flex';
 		formatterSection.style.flexDirection = 'column';
 
-		formatterSection.createEl('hr', { attr: { style: 'margin: 0 0 0.5rem 0; border: none; border-top: 1px solid var(--background-modifier-border);' } });
+		formatterSection.createEl('hr', {
+			attr: {
+				style: 'margin: 0 0 0.5rem 0; border: none; border-top: 1px solid var(--background-modifier-border);'
+			}
+		});
 
 		const scopeRow = formatterSection.createEl('div', {
 			attr: { style: 'display: flex; gap: 8px; margin-bottom: 6px;' }
@@ -150,8 +160,12 @@ export class EditorSettingsModal extends Modal {
 				btnGlobal.buttonEl.removeClass('mod-cta');
 				configTitle.setText(`Editor Config — .${this.extension}`);
 			}
-			const cfg = this.plugin.settings.editorConfigs?.[global ? '*' : this.extension];
-			if (this.codeEditor) this.codeEditor.setValue(cfg ?? (global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG));
+			const cfg =
+				this.plugin.settings.editorConfigs?.[global ? '*' : this.extension];
+			if (this.codeEditor)
+				this.codeEditor.setValue(
+					cfg ?? (global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG)
+				);
 		};
 
 		btnGlobal.onClick(() => switchScope(true));
@@ -176,7 +190,9 @@ export class EditorSettingsModal extends Modal {
 				const value = this.codeEditor.getValue().trim();
 				if (this.applyFormatterValue(value)) {
 					await this.plugin.saveSettings();
-					this.plugin.broadcastEditorConfig(this.isGlobal ? '*' : this.extension);
+					this.plugin.broadcastEditorConfig(
+						this.isGlobal ? '*' : this.extension
+					);
 				}
 			},
 			600,

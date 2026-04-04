@@ -1,11 +1,11 @@
-import type CodeFilesPlugin from './main.ts';
-import { CodeEditorView } from './codeEditorView.ts';
-import { CreateCodeFileModal } from './createCodeFileModal.ts';
-import { FenceEditModal } from './fenceEditModal.ts';
-import { FenceEditContext } from './fenceEditContext.ts';
-import { ChooseCssFileModal } from './chooseCssFileModal.ts';
-import { RenameExtensionModal } from './renameExtensionModal.ts';
-import { EditorSettingsModal } from './editorSettingsModal.ts';
+import type CodeFilesPlugin from '../main.ts';
+import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
+import { FenceEditModal } from '../modals/fenceEditModal.ts';
+import { FenceEditContext } from '../utils/fenceEditContext.ts';
+import { ChooseCssFileModal } from '../modals/chooseCssFileModal.ts';
+import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
+import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 
 export function registerCommands(plugin: CodeFilesPlugin): void {
 	plugin.addCommand({
@@ -49,7 +49,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 		name: 'Rename extension of current file',
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
-		if (!file) return false;
+			if (!file) return false;
 			if (!checking) new RenameExtensionModal(plugin, file).open();
 			return true;
 		}

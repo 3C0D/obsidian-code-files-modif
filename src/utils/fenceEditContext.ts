@@ -1,5 +1,5 @@
 import type { Editor } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
+import type CodeFilesPlugin from '../main.ts';
 import { getLanguage } from './getLanguage.ts';
 
 /** Helper class to manage the context of a code fence in the editor, including extracting the content and language of the fence and replacing its content when the user saves changes from the FenceEditModal. It is designed to be created based on the current cursor position in the editor, and it provides methods to interact with the code fence without needing to manually parse the editor content each time. */

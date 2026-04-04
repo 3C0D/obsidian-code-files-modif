@@ -1,12 +1,12 @@
 import type { TFile, WorkspaceLeaf } from 'obsidian';
 import { TextFileView } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
+import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
-import { getLanguage } from './getLanguage.ts';
-import { viewType, type CodeEditorInstance } from './types.ts';
-import { EditorSettingsModal } from './editorSettingsModal.ts';
-import { ChooseThemeModal } from './chooseThemeModal.ts';
-import { RenameExtensionModal } from './renameExtensionModal.ts';
+import { getLanguage } from '../utils/getLanguage.ts';
+import { viewType, type CodeEditorInstance } from '../types.ts';
+import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
+import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
+import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 
 /** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
 export class CodeEditorView extends TextFileView {

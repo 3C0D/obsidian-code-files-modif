@@ -226,7 +226,7 @@ async function createBuildContext(
 						'node_modules/monaco-editor/min/vs'
 					);
 					const monacoTarget = path.join(buildPath, 'vs');
-					const htmlSrc = path.join(pluginDir, 'src/monacoEditor.html');
+					const htmlSrc = path.join(pluginDir, 'src/editor/monacoEditor.html');
 					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
 					const themesSrc = path.join(
 						pluginDir,

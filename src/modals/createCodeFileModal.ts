@@ -7,9 +7,9 @@ import {
 	TextComponent,
 	TFile
 } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
+import type CodeFilesPlugin from '../main.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
-import { ExtensionSuggest } from './extensionSuggest.ts';
+import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {

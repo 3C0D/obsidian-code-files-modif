@@ -1,12 +1,12 @@
 import type { TFile } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
-import type { CodeEditorInstance } from './types.ts';
-import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from './types.ts';
-import manifest from '../manifest.json' with { type: 'json' };
-import { registerAndPersistLanguages } from './getLanguage.ts';
-import { ChooseThemeModal } from './chooseThemeModal.ts';
-import { RenameExtensionModal } from './renameExtensionModal.ts';
-import { EditorSettingsModal } from './editorSettingsModal.ts';
+import type CodeFilesPlugin from '../main.ts';
+import type { CodeEditorInstance } from '../types.ts';
+import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from '../types.ts';
+import manifest from '../../manifest.json' with { type: 'json' };
+import { registerAndPersistLanguages } from '../utils/getLanguage.ts';
+import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
+import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
+import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
  *  Returns a control object to get/set the editor value and manage its lifecycle.
@@ -89,8 +89,14 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	const globalCfg = parseEditorConfig(plugin.settings.editorConfigs?.['*'] ?? DEFAULT_EDITOR_CONFIG) as Record<string, unknown>;
-	const extCfg = extension ? parseEditorConfig(plugin.settings.editorConfigs?.[extension] ?? '{}') as Record<string, unknown> : {};
+	const globalCfg = parseEditorConfig(
+		plugin.settings.editorConfigs?.['*'] ?? DEFAULT_EDITOR_CONFIG
+	) as Record<string, unknown>;
+	const extCfg = extension
+		? (parseEditorConfig(
+				plugin.settings.editorConfigs?.[extension] ?? '{}'
+			) as Record<string, unknown>)
+		: {};
 	initParams.formatterConfig = JSON.stringify({ ...globalCfg, ...extCfg });
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');

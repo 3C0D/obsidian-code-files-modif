@@ -1,9 +1,9 @@
 import { ButtonComponent, Modal, Notice, TextComponent } from 'obsidian';
 import type { TFile } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
-import { ExtensionSuggest } from './extensionSuggest.ts';
+import type CodeFilesPlugin from '../main.ts';
+import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import { confirmation } from './confirmation.ts';
-import { isCodeFilesExtension, getCodeEditorViews } from './extensionUtils.ts';
+import { isCodeFilesExtension, getCodeEditorViews } from '../utils/extensionUtils.ts';
 
 export class RenameExtensionModal extends Modal {
 	private newExt: string;
@@ -56,7 +56,10 @@ export class RenameExtensionModal extends Modal {
 			() => Object.keys(this.plugin.app.viewRegistry.typeByExtension)
 		);
 
-		new ButtonComponent(row).setButtonText('Rename').setCta().onClick(() => void this.save());
+		new ButtonComponent(row)
+			.setButtonText('Rename')
+			.setCta()
+			.onClick(() => void this.save());
 
 		input.inputEl.focus();
 		input.inputEl.select();
@@ -92,8 +95,9 @@ export class RenameExtensionModal extends Modal {
 		}
 
 		// Register with CodeFiles if unknown to both CodeFiles and Obsidian
-		const isKnown = isCodeFilesExtension(this.app, ext)
-			|| !!this.plugin.app.viewRegistry.typeByExtension[ext];
+		const isKnown =
+			isCodeFilesExtension(this.app, ext) ||
+			!!this.plugin.app.viewRegistry.typeByExtension[ext];
 		if (!isKnown) {
 			const ok = await confirmation(
 				this.app,
@@ -120,17 +124,19 @@ export class RenameExtensionModal extends Modal {
 		// Reload the leaf so the correct view opens for the new extension
 		const renamedFile = this.plugin.app.vault.getFileByPath(newPath);
 		if (!renamedFile) return;
-		
+
 		// Find the leaf that has this file open (any view type)
-		const leaves = this.plugin.app.workspace.getLeavesOfType('markdown')
+		const leaves = this.plugin.app.workspace
+			.getLeavesOfType('markdown')
 			.concat(this.plugin.app.workspace.getLeavesOfType('empty'))
-			.concat(getCodeEditorViews(this.app).map(v => v.leaf));
-		const leaf = leaves.find(l => {
-			const view = l.view;
-			if ('file' in view && view.file) return view.file.path === newPath;
-			return false;
-		}) ?? this.plugin.app.workspace.getMostRecentLeaf();
-		
+			.concat(getCodeEditorViews(this.app).map((v) => v.leaf));
+		const leaf =
+			leaves.find((l) => {
+				const view = l.view;
+				if ('file' in view && view.file) return view.file.path === newPath;
+				return false;
+			}) ?? this.plugin.app.workspace.getMostRecentLeaf();
+
 		if (leaf) await leaf.openFile(renamedFile);
 	}
 }

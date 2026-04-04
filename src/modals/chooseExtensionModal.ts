@@ -1,5 +1,5 @@
 import { SuggestModal, Notice } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
+import type CodeFilesPlugin from '../main.ts';
 
 type ExtensionSuggestion = { kind: 'add' | 'remove'; ext: string };
 
