@@ -84,6 +84,13 @@
 						document.documentElement.style.background = 'transparent';
 					}
 
+					// Allow comments and trailing commas in all JSON models (needed for .jsonc config files)
+					monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+						validate: true,
+						allowComments: true,
+						trailingCommas: 'ignore'
+					});
+
 					if (params.javascriptDefaults === 'true') {
 						monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
 							{
@@ -107,10 +114,7 @@
 						);
 					}
 
-					editor = monaco.editor.create(
-						document.getElementById('container'),
-						opts
-					);
+					editor = monaco.editor.create(document.getElementById('container'), opts);
 
 					if (params.formatterConfig) {
 						try { applyFormatterConfig(parseEditorConfig(params.formatterConfig)); }

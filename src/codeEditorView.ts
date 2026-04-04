@@ -119,7 +119,7 @@ export class CodeEditorView extends TextFileView {
 				file.extension,
 				() => this.plugin.broadcastOptions(),
 				(config) => {
-					this.codeEditor?.send('change-formatter-config', { config });
+					this.codeEditor?.send('change-editor-config', { config });
 				}
 			).open();
 		});

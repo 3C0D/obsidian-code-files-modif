@@ -185,20 +185,12 @@ export class EditorSettingsModal extends Modal {
 
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
-			'jsonc',
+			'json',
 			initialValue,
 			`editor-settings-config.jsonc`,
 			() => debouncedSave()
 		);
 		editorContainer.append(this.codeEditor.iframe);
-
-		this.modalEl.addEventListener('keydown', (e) => {
-			if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-				e.preventDefault();
-				e.stopPropagation();
-				this.codeEditor?.send('trigger-action', { actionId: 'editor.action.commentLine' });
-			}
-		}, true);
 
 		// Save button removed - config is saved on close
 	}

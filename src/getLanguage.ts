@@ -13,7 +13,7 @@ const staticMap: Record<string, string> = {
 	cts: 'typescript',
 	mts: 'typescript',
 	json: 'json',
-	jsonc: 'jsonc',
+	jsonc: 'json',
 	py: 'python',
 	gyp: 'python',
 	gypi: 'python',

@@ -258,7 +258,17 @@ export default class CodeFilesPlugin extends Plugin {
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+		const loaded = await this.loadData();
+		this.settings = {
+			...DEFAULT_SETTINGS,
+			...loaded,
+			// editorConfigs needs a deep merge: a plain spread would overwrite the entire object,
+			// losing DEFAULT_EDITOR_CONFIG['*'] if the saved data has no '*' key.
+			editorConfigs: {
+				'*': DEFAULT_EDITOR_CONFIG,
+				...(loaded?.editorConfigs ?? {})
+			}
+		};
 		if (!this.settings.extraExtensions) {
 			this.settings.extraExtensions = [];
 		}

@@ -133,7 +133,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	editorBrightness: 1,
 	wordWrap: 'off',
 	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
-	allExtensions: false,
+	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
 	extraExtensions: []
 };

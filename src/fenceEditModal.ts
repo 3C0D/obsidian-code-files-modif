@@ -61,7 +61,7 @@ export class FenceEditModal extends Modal {
 				this.plugin,
 				this.langKey,
 				() => this.plugin.broadcastOptions(),
-				(config) => this.codeEditor?.send('change-formatter-config', { config })
+				(config) => this.codeEditor?.send('change-editor-config', { config })
 			).open();
 		});
 		this.titleEl.appendChild(gearEl);
