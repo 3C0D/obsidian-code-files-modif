@@ -8,7 +8,12 @@ import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 
-/** View class that wraps a Monaco Editor instance in an Obsidian TextFileView, allowing us to leverage Obsidian's file handling and workspace management while providing a powerful code editing experience. */
+/**
+ * Wraps a Monaco editor iframe in an Obsidian
+ * TextFileView, bridging Obsidian's file lifecycle
+ * (load/save/rename/close) with the iframe's
+ * postMessage-based API.
+ */
 export class CodeEditorView extends TextFileView {
 	codeEditor!: CodeEditorInstance;
 	private forceSave = false;
@@ -180,7 +185,6 @@ export class CodeEditorView extends TextFileView {
 		this.cleanup();
 	}
 
-	/** Clears the Monaco editor content. */
 	clear(): void {
 		this.codeEditor?.clear();
 	}
@@ -196,7 +200,6 @@ export class CodeEditorView extends TextFileView {
 		this.injectGearIcon(file);
 	}
 
-	/** Returns the current Monaco editor content for Obsidian to persist to disk. */
 	getViewData(): string {
 		return this.codeEditor.getValue();
 	}
@@ -214,7 +217,13 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Static helper method to open a file in a new CodeEditorView. This abstracts away the details of creating the view and loading the file, providing a simple interface for other parts of the plugin to open files in the code editor. */
+	/**
+	 * Opens a file in a new CodeEditorView leaf.
+	 * Falls back to manual construction when the
+	 * extension is not registered or the file is
+	 * outside the vault (e.g. CSS snippets in
+	 * .obsidian/snippets/).
+	 */
 	static openFile(file: TFile, plugin: CodeFilesPlugin): void {
 		const leaf = plugin.app.workspace.getLeaf(true);
 		if (

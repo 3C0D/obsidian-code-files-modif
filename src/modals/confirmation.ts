@@ -4,7 +4,12 @@ import { Modal, Scope, Setting } from 'obsidian';
 type ConfirmCallback = (confirmed: boolean) => void;
 
 class ConfirmModal extends Modal {
+	private resolved = false;
+
+	/** Guards against double-resolve (Enter + click race). */
 	private confirm(confirmed: boolean): void {
+		if (this.resolved) return;
+		this.resolved = true;
 		this.callback(confirmed);
 		this.close();
 	}

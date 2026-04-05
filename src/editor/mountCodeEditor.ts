@@ -89,7 +89,7 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	initParams.formatterConfig =
+	initParams.editorConfig =
 		buildMergedConfig(plugin, extension);
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');

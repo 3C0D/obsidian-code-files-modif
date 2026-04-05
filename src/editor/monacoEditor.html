@@ -43,7 +43,7 @@
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
 
-				function applyFormatterConfig(cfg) {
+				function applyEditorConfig(cfg) {
 					var modelOpts = {};
 					if (cfg.tabSize !== undefined) modelOpts.tabSize = cfg.tabSize;
 					if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
@@ -104,9 +104,9 @@
 
 					editor = monaco.editor.create(document.getElementById('container'), opts);
 
-					if (params.formatterConfig) {
-						try { applyFormatterConfig(parseEditorConfig(params.formatterConfig)); }
-						catch (e) { console.warn('code-files: invalid formatterConfig JSON', e); }
+					if (params.editorConfig) {
+						try { applyEditorConfig(parseEditorConfig(params.editorConfig)); }
+						catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
 					}
 
 					// Alt+Z toggles word wrap and persists the setting
@@ -288,8 +288,8 @@
 							break;
 						case 'change-editor-config':
 							if (editor) {
-								try { applyFormatterConfig(parseEditorConfig(data.config)); }
-								catch (e) { console.warn('code-files: invalid formatterConfig JSON', e); }
+								try { applyEditorConfig(parseEditorConfig(data.config)); }
+								catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
 							}
 							break;
 						case 'change-options':

@@ -146,9 +146,20 @@ export function getLanguage(extension: string): string {
 	return dynamicMap.get(extension) ?? staticMap[extension] ?? 'plaintext';
 }
 
-/** Returns all extensions known to Monaco, minus the provided exclusions.
- *  Uses staticMap as the source — covers all practical code extensions. */
-export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
+/**
+ * Returns all known code extensions, minus exclusions.
+ * Uses dynamicMap (from Monaco, ~200 entries) when
+ * available, falling back to staticMap (~98 entries)
+ * before the first iframe has loaded.
+ */
+export function getAllMonacoExtensions(
+	excludedExtensions: string[]
+): string[] {
 	const excluded = new Set(excludedExtensions);
-	return Object.keys(staticMap).filter((ext) => !excluded.has(ext));
+	const source = dynamicMap.size > 0
+		? [...dynamicMap.keys()]
+		: Object.keys(staticMap);
+	return source.filter(
+		(ext) => !excluded.has(ext)
+	);
 }

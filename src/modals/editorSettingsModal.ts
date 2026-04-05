@@ -20,7 +20,7 @@ export class EditorSettingsModal extends Modal {
 		private plugin: CodeFilesPlugin,
 		private extension: string,
 		private onSettingsChanged: () => void,
-		private onFormatterSaved: (config: string) => void
+		private onConfigApplied: (config: string) => void
 	) {
 		super(plugin.app);
 	}
@@ -242,7 +242,7 @@ export class EditorSettingsModal extends Modal {
 				// (global + ext) so the iframe
 				// keeps inherited settings like
 				// formatOnSave.
-				this.onFormatterSaved(
+				this.onConfigApplied(
 					buildMergedConfig(
 						this.plugin,
 						this.extension

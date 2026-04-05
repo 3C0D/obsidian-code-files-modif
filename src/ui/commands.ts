@@ -56,18 +56,25 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: 'formatter-config',
-		name: 'Edit formatter config for current file',
+		id: 'editor-config',
+		name: 'Edit editor config for current file',
 		checkCallback: (checking) => {
-			const view = plugin.app.workspace.getActiveViewOfType(CodeEditorView);
+			const view = plugin.app.workspace
+				.getActiveViewOfType(CodeEditorView);
 			if (!view?.file) return false;
 			if (!checking) {
-				(document.activeElement as HTMLElement)?.blur();
+				(document.activeElement as HTMLElement)
+					?.blur();
+				// onConfigApplied broadcasts to
+				// all matching iframes because
+				// the palette isn't tied to one.
 				new EditorSettingsModal(
 					plugin,
 					view.file.extension,
 					() => plugin.broadcastOptions(),
-					() => plugin.broadcastEditorConfig(view.file!.extension)
+					() => plugin.broadcastEditorConfig(
+						view.file!.extension
+					)
 				).open();
 			}
 			return true;

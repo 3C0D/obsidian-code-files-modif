@@ -6,6 +6,17 @@ import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import type { MenuItems } from '../types.ts';
 
+/**
+ * Registers two context menus:
+ * 1. file-menu — shown in the file explorer and
+ *    tab headers. Folders get "Create Code File";
+ *    files get a submenu with plugin actions.
+ *    Explorer shows a flat "Rename Extension".
+ * 2. editor-menu — right-click in the Markdown
+ *    editor. If the cursor is inside a code fence,
+ *    offers to edit it in Monaco; otherwise shows
+ *    the same submenu.
+ */
 export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	plugin.registerEvent(
 		plugin.app.workspace.on('file-menu', (menu, abstractFile, source) => {
@@ -72,6 +83,9 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	);
 }
 
+/** Builds the submenu items shown both in the tab
+ *  header file-menu and the markdown editor-menu.
+ */
 function getItems(plugin: CodeFilesPlugin): MenuItems[] {
 	const activeFile = plugin.app.workspace.getActiveFile();
 

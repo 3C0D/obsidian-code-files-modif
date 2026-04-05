@@ -19,6 +19,13 @@ import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
 import { registerContextMenus } from './ui/contextMenus.ts';
 
+/**
+ * Obsidian plugin entry point.
+ *
+ * Facade pattern: all public methods delegate to
+ * utility modules in `utils/` and `ui/`. This keeps
+ * the plugin class thin and testable.
+ */
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
 	ribbonIconEl: HTMLElement | null = null;
@@ -28,16 +35,29 @@ export default class CodeFilesPlugin extends Plugin {
 		await loadSettings(this);
 		await loadPersistedLanguages(this);
 
-		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
+		this.registerView(
+			viewType,
+			(leaf) => new CodeEditorView(leaf, this)
+		);
 		initExtensions(this);
 		updateRibbonIcon(this);
 		registerCommands(this);
 		registerContextMenus(this);
-		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));
+		this.addSettingTab(
+			new CodeFilesSettingsTab(this.app, this)
+		);
 	}
 
-	async loadSettings(): Promise<void> { await loadSettings(this); }
-	async saveSettings(): Promise<void> { await saveSettings(this); }
+	onunload(): void {
+		this.ribbonIconEl?.remove();
+	}
+
+	async loadSettings(): Promise<void> {
+		await loadSettings(this);
+	}
+	async saveSettings(): Promise<void> {
+		await saveSettings(this);
+	}
 
 	getActiveExtensions(): string[] { return getActiveExtensions(this.settings); }
 	addExtension(ext: string): void { addExtension(this.settings, ext); }

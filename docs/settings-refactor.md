@@ -29,8 +29,9 @@ Tout est à plat dans un seul objet — **on garde cette structure** (pas de mig
   "autoSave": true,
   "wordWrap": "off",
 
-  "formatterConfigs": {
-    "ts": "{\n  \"tabSize\": 4,\n  \"insertSpaces\": true,\n  \"formatOnSave\": false,\n  \"formatOnType\": false\n}"
+  "editorConfigs": {
+    "*": "{...global config...}",
+    "ts": "{\n  \"tabSize\": 4\n}"
   }
 }
 ```
@@ -63,13 +64,12 @@ Un seul modal avec deux sections :
 - Semantic Validation — toggle
 - Syntax Validation — toggle
 
-**Section basse — éditeur JSON Monaco** (formatter config, contextuel à l'extension du fichier actif) :
-- Titre : `Formatter — .ts` (extension du fichier courant)
-- Même éditeur Monaco embarqué que l'actuel `FormatterConfigModal`
-- Sauvegarde dans `formatterConfigs[ext]`
-- Envoie `change-formatter-config` à l'iframe à chaud
-
-Le modal `FormatterConfigModal` existant peut être supprimé une fois la migration faite, et l'entrée "Formatter Config" retirée du menu contextuel Monaco.
+**Section basse — éditeur JSON Monaco** (editor config, contextuel à l'extension du fichier actif) :
+- Titre : `Editor Config — .ts` (extension du fichier courant)
+- Éditeur Monaco embarqué (JSONC avec commentaires)
+- Sauvegarde dans `editorConfigs[ext]`
+- Envoie `change-editor-config` à l'iframe à chaud
+- La config envoyée est toujours le merge `editorConfigs['*']` + `editorConfigs[ext]` via `buildMergedConfig()`
 
 ---
 
@@ -89,7 +89,7 @@ Si autoSave est réactivé, Obsidian reprend son comportement normal : sauvegard
 
 ## WordWrap — comportement
 
-`Alt+Z` et le toggle dans la roue crantée mettent à jour le setting persisté (pas juste pour la session). L'iframe reçoit `change-formatter-config` ou un message dédié `change-word-wrap` pour appliquer à chaud.
+`Alt+Z` et le toggle dans la roue crantée mettent à jour le setting persisté (pas juste pour la session). L'iframe reçoit `change-editor-config` ou un message dédié `word-wrap-toggled` pour appliquer à chaud.
 
 ---
 
