@@ -29,11 +29,6 @@ export default class CodeFilesPlugin extends Plugin {
 		await this.loadSettings();
 		await loadPersistedLanguages(this);
 
-		addIcon(
-			'code-files-settings',
-			'<rect x="5" y="5" width="90" height="90" rx="15" fill="none" stroke="currentColor" stroke-width="8"/><circle cx="50" cy="50" r="25" fill="currentColor"/>'
-		);
-
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 
 		const activeExts = this.getActiveExtensions();
