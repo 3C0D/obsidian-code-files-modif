@@ -1,4 +1,4 @@
-import { ButtonComponent, Modal, Notice, TextComponent } from 'obsidian';
+import { ButtonComponent, FileView, Modal, Notice, TextComponent } from 'obsidian';
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
@@ -40,9 +40,11 @@ export class RenameExtensionModal extends Modal {
 			this.newExt = value.replace(/^\./, '');
 			pathDisplay.textContent = this.getNewPath();
 		});
-		input.inputEl.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') void this.save();
-			if (e.key === 'Escape') this.close();
+
+		this.scope.register([], 'Enter', (e) => {
+			e.preventDefault();
+			void this.save();
+			return false;
 		});
 
 		new ExtensionSuggest(
@@ -96,11 +98,11 @@ export class RenameExtensionModal extends Modal {
 
 		// Register with CodeFiles if unknown to both CodeFiles and Obsidian
 		const isKnown =
-			isCodeFilesExtension(this.app, ext) ||
+			isCodeFilesExtension(this.plugin.app, ext) ||
 			!!this.plugin.app.viewRegistry.typeByExtension[ext];
 		if (!isKnown) {
 			const ok = await confirmation(
-				this.app,
+				this.plugin.app,
 				`".${ext}" is not a registered extension. Register it with Code Files?`
 			);
 			if (!ok) return;
@@ -114,7 +116,7 @@ export class RenameExtensionModal extends Modal {
 		this.close();
 
 		try {
-			await this.app.vault.rename(this.file, newPath);
+			await this.plugin.app.vault.rename(this.file, newPath);
 		} catch (e) {
 			new Notice('Failed to rename file');
 			console.error(e);
@@ -133,7 +135,7 @@ export class RenameExtensionModal extends Modal {
 		const leaf =
 			leaves.find((l) => {
 				const view = l.view;
-				if ('file' in view && view.file) return view.file.path === newPath;
+				if (view instanceof FileView && view.file) return view.file.path === newPath;
 				return false;
 			}) ?? this.plugin.app.workspace.getMostRecentLeaf();
 

@@ -1,5 +1,5 @@
 import { AbstractInputSuggest } from 'obsidian';
-import type CodeFilesPlugin from './main.ts';
+import type CodeFilesPlugin from '../main.ts';
 
 /** Reusable autocomplete suggester for registered extensions, attached to a text input. */
 export class ExtensionSuggest extends AbstractInputSuggest<string> {
