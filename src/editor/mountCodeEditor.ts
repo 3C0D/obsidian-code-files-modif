@@ -1,4 +1,4 @@
-import type { TFile } from 'obsidian';
+import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
@@ -7,6 +7,7 @@ import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
+import { CodeEditorView } from './codeEditorView.ts';
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
  *  Returns a control object to get/set the editor value and manage its lifecycle.
@@ -89,8 +90,7 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	initParams.editorConfig =
-		buildMergedConfig(plugin, extension);
+	initParams.editorConfig = buildMergedConfig(plugin, extension);
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
@@ -215,6 +215,23 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					(document.activeElement as HTMLElement)?.blur();
 					plugin.app.setting.open();
+				}
+				break;
+			}
+			case 'delete-file': {
+				if (data.context === codeContext) {
+					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
+					if (file instanceof TFile) {
+						const leaf = plugin.app.workspace
+							.getLeavesOfType('code-editor')
+							.find(
+								(l) =>
+									l.view instanceof CodeEditorView &&
+									l.view.file?.path === codeContext
+							);
+						leaf?.detach();
+						await plugin.app.vault.trash(file, true);
+					}
 				}
 				break;
 			}

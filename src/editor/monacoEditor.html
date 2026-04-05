@@ -225,6 +225,20 @@
 						}
 					});
 
+					editor.addAction({
+						id: 'code-files-delete-file',
+						label: '🗑️ Delete File (Ctrl+Delete)',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 4,
+						keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Delete],
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'delete-file', context: context },
+								'*'
+							);
+						}
+					});
+
 					// Ctrl+P opens Obsidian command palette
 					editor.addCommand(
 						monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP,
@@ -246,6 +260,8 @@
 							);
 						}
 					);
+
+
 				}
 
 				// Signal that Monaco is fully loaded and ready to receive 'init'.
