@@ -8,6 +8,7 @@ import {
 import type { CodeEditorInstance } from '../types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
+import { buildMergedConfig } from '../utils/settingsUtils.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -31,10 +32,17 @@ export class EditorSettingsModal extends Modal {
 			: DEFAULT_EXTENSION_CONFIG;
 		try {
 			parseEditorConfig(value);
-			if (value === defaultForKey.trim()) {
-				delete this.plugin.settings.editorConfigs[key];
+			if (
+				key !== '*' &&
+				value === defaultForKey.trim()
+			) {
+				// Only delete overrides, never
+				// the global '*' key.
+				delete this.plugin.settings
+					.editorConfigs[key];
 			} else {
-				this.plugin.settings.editorConfigs[key] = value;
+				this.plugin.settings
+					.editorConfigs[key] = value;
 			}
 			return true;
 		} catch {
@@ -220,13 +228,26 @@ export class EditorSettingsModal extends Modal {
 
 	onClose(): void {
 		super.onClose();
-		const bg = document.querySelector<HTMLElement>('.modal-bg');
+		const bg = document.querySelector<HTMLElement>(
+			'.modal-bg'
+		);
 		if (bg) bg.style.opacity = '';
 		if (this.codeEditor) {
-			const value = this.codeEditor.getValue().trim();
-			if (this.applyFormatterValue(value)) {
+			const raw = this.codeEditor
+				.getValue()
+				.trim();
+			if (this.applyFormatterValue(raw)) {
 				void this.plugin.saveSettings();
-				this.onFormatterSaved(value);
+				// Send the MERGED config
+				// (global + ext) so the iframe
+				// keeps inherited settings like
+				// formatOnSave.
+				this.onFormatterSaved(
+					buildMergedConfig(
+						this.plugin,
+						this.extension
+					)
+				);
 			}
 			this.codeEditor.destroy();
 		}

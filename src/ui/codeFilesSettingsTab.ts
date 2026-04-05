@@ -147,18 +147,29 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			async () => {
 				if (!selectedExt) return;
 				const val = textarea.getValue().trim();
+				const defaultForExt =
+					selectedExt === '*'
+						? DEFAULT_EDITOR_CONFIG
+						: DEFAULT_EXTENSION_CONFIG;
 				try {
 					parseEditorConfig(val);
-					if (val === DEFAULT_EDITOR_CONFIG.trim()) {
-						delete this.plugin.settings.editorConfigs[selectedExt];
+					if (
+						selectedExt !== '*' &&
+						val === defaultForExt.trim()
+					) {
+						delete this.plugin.settings
+							.editorConfigs[selectedExt];
 					} else {
-						this.plugin.settings.editorConfigs[selectedExt] = val;
+						this.plugin.settings
+							.editorConfigs[selectedExt] = val;
 					}
 					await this.plugin.saveSettings();
-					this.plugin.broadcastEditorConfig(selectedExt);
+					this.plugin.broadcastEditorConfig(
+						selectedExt
+					);
 					updateLabel(selectedExt);
 				} catch {
-					// invalid JSON - wait for valid input
+					// invalid JSON — wait for valid input
 				}
 			},
 			600,

@@ -1,4 +1,3 @@
-import { Notice } from 'obsidian';
 import type { App } from 'obsidian';
 import type { MyPluginSettings } from '../types.ts';
 import { viewType } from '../types.ts';
@@ -99,13 +98,18 @@ export async function reregisterExtensions(plugin: CodeFilesPlugin): Promise<voi
 	await plugin.saveSettings();
 }
 
-export function initExtensions(plugin: CodeFilesPlugin): void {
+/**
+ * Registers all active extensions with Obsidian on startup.
+ * Uses per-extension registration to avoid all-or-nothing
+ * failure when a single extension is already claimed by
+ * another plugin.
+ */
+export function initExtensions(
+	plugin: CodeFilesPlugin
+): void {
 	const activeExts = getActiveExtensions(plugin.settings);
-	try {
-		plugin.registerExtensions(activeExts, viewType);
-		plugin._registeredExts = new Set(activeExts);
-	} catch (e) {
-		console.log('code-files plugin error:', e);
-		new Notice(`Code Files: could not register extensions ${activeExts.join(', ')}`);
+	for (const ext of activeExts) {
+		registerExtension(plugin, ext);
 	}
+	plugin._registeredExts = new Set(activeExts);
 }

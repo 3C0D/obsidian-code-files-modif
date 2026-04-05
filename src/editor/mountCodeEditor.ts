@@ -1,9 +1,9 @@
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types.ts';
-import { DEFAULT_EDITOR_CONFIG, parseEditorConfig } from '../types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from '../utils/getLanguage.ts';
+import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
@@ -89,15 +89,8 @@ export const mountCodeEditor = async (
 	}
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	const globalCfg = parseEditorConfig(
-		plugin.settings.editorConfigs?.['*'] ?? DEFAULT_EDITOR_CONFIG
-	) as Record<string, unknown>;
-	const extCfg = extension
-		? (parseEditorConfig(
-				plugin.settings.editorConfigs?.[extension] ?? '{}'
-			) as Record<string, unknown>)
-		: {};
-	initParams.formatterConfig = JSON.stringify({ ...globalCfg, ...extCfg });
+	initParams.formatterConfig =
+		buildMergedConfig(plugin, extension);
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
 	iframe.style.width = '100%';
