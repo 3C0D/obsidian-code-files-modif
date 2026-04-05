@@ -38,9 +38,6 @@ export class CreateCodeFileModal extends Modal {
 		fileNameInput.inputEl.style.width = '200px';
 		fileNameInput.inputEl.style.marginRight = '10px';
 		fileNameInput.setValue(this.fileName);
-		fileNameInput.inputEl.addEventListener('keypress', (e) => {
-			if (e.key === 'Enter') this.complete();
-		});
 		fileNameInput.onChange((value) => {
 			this.fileName = value;
 		});
@@ -55,9 +52,6 @@ export class CreateCodeFileModal extends Modal {
 		extInput.inputEl.style.marginRight = '4px';
 		extInput.onChange((value) => {
 			this.fileExtension = value.replace(/^\./, '');
-		});
-		extInput.inputEl.addEventListener('keypress', (e) => {
-			if (e.key === 'Enter') this.complete();
 		});
 
 		// Attach autocomplete — selecting a suggestion fills the input and updates fileExtension
@@ -85,6 +79,11 @@ export class CreateCodeFileModal extends Modal {
 		submitButton.setCta();
 		submitButton.setButtonText('Create');
 		submitButton.onClick(() => this.complete());
+
+		this.scope.register([], 'Enter', () => {
+			void this.complete();
+			return false;
+		});
 
 		fileNameInput.inputEl.focus();
 	}

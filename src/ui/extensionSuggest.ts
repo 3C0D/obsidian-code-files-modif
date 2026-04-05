@@ -14,7 +14,14 @@ export class ExtensionSuggest extends AbstractInputSuggest<string> {
 
 	protected getSuggestions(query: string): string[] {
 		const q = query.toLowerCase().replace(/^\./, '');
-		return this.getExtensions().filter((ext) => ext.includes(q));
+		return this.getExtensions()
+			.filter((ext) => ext.includes(q))
+			.sort((a, b) => {
+				const aStarts = a.startsWith(q);
+				const bStarts = b.startsWith(q);
+				if (aStarts !== bStarts) return aStarts ? -1 : 1;
+				return a.localeCompare(b);
+			});
 	}
 
 	renderSuggestion(ext: string, el: HTMLElement): void {
