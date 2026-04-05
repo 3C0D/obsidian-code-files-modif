@@ -8,6 +8,7 @@ import {
 	TFile
 } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
+import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 
@@ -119,14 +120,12 @@ export class CreateCodeFileModal extends Modal {
 		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');
-			const leaf = this.app.workspace.getLeaf(true);
-			leaf.openFile(existingFile);
+			void CodeEditorView.openVaultFile(existingFile, this.plugin);
 			return;
 		}
 
 		const newFile = await this.app.vault.create(newPath, '');
-		const leaf = this.app.workspace.getLeaf(true);
-		leaf.openFile(newFile);
+		void CodeEditorView.openVaultFile(newFile, this.plugin);
 	}
 
 	onClose(): void {

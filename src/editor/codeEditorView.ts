@@ -171,6 +171,8 @@ export class CodeEditorView extends TextFileView {
 
 	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
 	async onLoadFile(file: TFile): Promise<void> {
+		// For external files, leaf.open() doesn't trigger this automatically.
+		// Reads the file content into this.data and calls setViewData().
 		await super.onLoadFile(file);
 		await this.mountEditor(file);
 		this.contentEl.style.overflow = 'hidden';
@@ -244,16 +246,11 @@ export class CodeEditorView extends TextFileView {
 		plugin: CodeFilesPlugin
 	): void {
 		const leaf = plugin.app.workspace.getLeaf(true);
-		// Manual mount — required for non-vault paths.
-		// leaf.open() sets the active view on the leaf;
-		// view.load() initialises the view's DOM;
-		// onLoadFile() triggers the Monaco editor setup.
 		const view = new CodeEditorView(leaf, plugin);
 		view.file = file;
 		leaf.open(view);
-		view.load();
+		// Load file content into Monaco editor.
 		void view.onLoadFile(file);
-		plugin.app.workspace.revealLeaf(leaf);
 	}
 
 	/**

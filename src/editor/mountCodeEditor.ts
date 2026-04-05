@@ -164,6 +164,7 @@ Element.prototype.appendChild = function(node) {
 				send('init', initParams);
 				send('get-languages', {});
 				send('change-value', { value });
+				send('focus', {});
 				break;
 			}
 			case 'languages': {
