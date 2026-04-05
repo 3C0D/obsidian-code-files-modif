@@ -218,27 +218,57 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/**
-	 * Opens a file in a new CodeEditorView leaf.
-	 * Falls back to manual construction when the
-	 * extension is not registered or the file is
-	 * outside the vault (e.g. CSS snippets in
-	 * .obsidian/snippets/).
+	 * Opens a vault file in a new tab using Obsidian's
+	 * standard leaf.openFile() API.
+	 */
+	static async openVaultFile(
+		file: TFile,
+		plugin: CodeFilesPlugin
+	): Promise<void> {
+		const leaf = plugin.app.workspace.getLeaf(true);
+		await leaf.openFile(file);
+		plugin.app.workspace.revealLeaf(leaf);
+	}
+
+	/**
+	 * Opens a file that is outside the vault (e.g. CSS
+	 * snippets in .obsidian/snippets/) by reading it
+	 * directly via the adapter and mounting a view manually.
+	 *
+	 * This bypasses Obsidian's file registry intentionally —
+	 * vault.create() cannot index files outside the vault
+	 * root, but adapter.read() can access them.
+	 */
+	static openExternalFile(
+		file: TFile,
+		plugin: CodeFilesPlugin
+	): void {
+		const leaf = plugin.app.workspace.getLeaf(true);
+		// Manual mount — required for non-vault paths.
+		// leaf.open() sets the active view on the leaf;
+		// view.load() initialises the view's DOM;
+		// onLoadFile() triggers the Monaco editor setup.
+		const view = new CodeEditorView(leaf, plugin);
+		view.file = file;
+		leaf.open(view);
+		view.load();
+		void view.onLoadFile(file);
+		plugin.app.workspace.revealLeaf(leaf);
+	}
+
+	/**
+	 * Opens any file: uses the standard API for vault files,
+	 * falls back to manual mount for external files (e.g.
+	 * CSS snippets).
 	 */
 	static openFile(file: TFile, plugin: CodeFilesPlugin): void {
-		const leaf = plugin.app.workspace.getLeaf(true);
 		if (
 			plugin.getActiveExtensions().includes(file.extension) &&
 			plugin.app.vault.getAbstractFileByPath(file.path)
 		) {
-			void leaf.openFile(file);
+			void CodeEditorView.openVaultFile(file, plugin);
 		} else {
-			// Extension not registered or file outside vault (e.g. CSS snippets) — bypass Obsidian's file registry
-			const view = new CodeEditorView(leaf, plugin);
-			view.file = file;
-			leaf.open(view);
-			view.load();
-			void view.onLoadFile(file);
+			CodeEditorView.openExternalFile(file, plugin);
 		}
-		plugin.app.workspace.revealLeaf(leaf);
 	}
 }
