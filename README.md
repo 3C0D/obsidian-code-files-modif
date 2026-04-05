@@ -118,6 +118,7 @@ The main settings panel (`Ctrl+,` → Code Files) covers options that are less f
 | `F1` | Monaco command palette (all editor actions + Code Files actions) |
 | `Ctrl+P` | Obsidian command palette (intercepted from inside Monaco) |
 | `Ctrl+,` | Obsidian settings (intercepted from inside Monaco) |
+| `Ctrl+Delete` | Delete the current file |
 
 ---
 

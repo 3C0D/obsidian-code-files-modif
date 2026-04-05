@@ -1,13 +1,13 @@
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import type { CodeEditorInstance } from '../types.ts';
+import { viewType, type CodeEditorInstance } from '../types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 import { registerAndPersistLanguages } from '../utils/getLanguage.ts';
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
-import { CodeEditorView } from './codeEditorView.ts';
+import type { CodeEditorView } from './codeEditorView.ts';
 
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
  *  Returns a control object to get/set the editor value and manage its lifecycle.
@@ -223,11 +223,10 @@ Element.prototype.appendChild = function(node) {
 					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
 					if (file instanceof TFile) {
 						const leaf = plugin.app.workspace
-							.getLeavesOfType('code-editor')
+							.getLeavesOfType(viewType)
 							.find(
 								(l) =>
-									l.view instanceof CodeEditorView &&
-									l.view.file?.path === codeContext
+									(l.view as CodeEditorView).file?.path === codeContext
 							);
 						leaf?.detach();
 						await plugin.app.vault.trash(file, true);
