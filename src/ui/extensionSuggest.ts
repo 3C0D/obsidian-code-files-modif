@@ -14,7 +14,7 @@ export class ExtensionSuggest extends AbstractInputSuggest<string> {
 
 	protected getSuggestions(query: string): string[] {
 		const q = query.toLowerCase().replace(/^\./, '');
-		if (!q) return [];
+		// if (!q) return [];
 		return this.getExtensions()
 			.filter((ext) => ext.includes(q))
 			.sort((a, b) => {
