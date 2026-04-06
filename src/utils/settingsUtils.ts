@@ -24,9 +24,10 @@ export async function loadSettings(
 			...(loaded?.editorConfigs ?? {})
 		}
 	};
-	if (!plugin.settings.extraExtensions) {
-		plugin.settings.extraExtensions = [];
-	}
+	// check if it works before deleting this!!!!!!!!
+	// if (!plugin.settings.extraExtensions) {
+	// 	plugin.settings.extraExtensions = [];
+	// }
 }
 
 export async function saveSettings(
