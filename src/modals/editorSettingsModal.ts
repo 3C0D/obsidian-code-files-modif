@@ -9,7 +9,6 @@ import type { CodeEditorInstance } from '../types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -86,7 +85,9 @@ export class EditorSettingsModal extends Modal {
 					this.plugin.settings.autoSave = v;
 					await this.plugin.saveSettings();
 					for (const view of getCodeEditorViews(this.app)) {
-						if (!(view instanceof CodeEditorView)) continue;
+						// Duck typing avoids the circular import between editorSettingsModal and codeEditorView,
+						// which esbuild resolves in the wrong order and leaves the class undefined at runtime.
+						if (!('clearDirty' in view)) continue;
 						if (v) {
 							view.clearDirty();
 						}
