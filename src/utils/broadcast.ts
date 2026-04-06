@@ -10,15 +10,11 @@ import { buildMergedConfig } from './settingsUtils.ts';
  * contexts and don't share state, so each must
  * be notified individually.
  */
-export function broadcastOptions(
-	plugin: CodeFilesPlugin
-): void {
+export function broadcastOptions(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
 		view.codeEditor?.send('change-options', {
-			noSemanticValidation:
-				!plugin.settings.semanticValidation,
-			noSyntaxValidation:
-				!plugin.settings.syntaxValidation
+			noSemanticValidation: !plugin.settings.semanticValidation,
+			noSyntaxValidation: !plugin.settings.syntaxValidation
 		});
 	}
 }
@@ -30,13 +26,10 @@ export function broadcastOptions(
  * on the iframe itself is the only way to
  * dim/brighten the editor.
  */
-export function broadcastBrightness(
-	plugin: CodeFilesPlugin
-): void {
+export function broadcastBrightness(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
 		if (view.codeEditor?.iframe) {
-			view.codeEditor.iframe.style.filter =
-				`brightness(${plugin.settings.editorBrightness})`;
+			view.codeEditor.iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
 		}
 	}
 }
@@ -49,26 +42,12 @@ export function broadcastBrightness(
  * Otherwise only views whose file extension matches
  * are targeted.
  */
-export function broadcastEditorConfig(
-	plugin: CodeFilesPlugin,
-	ext: string
-): void {
+export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
 	const views = getCodeEditorViews(plugin.app);
-	const targets = ext === '*'
-		? views
-		: views.filter(
-				(v) => v.file?.extension === ext
-			);
+	const targets = ext === '*' ? views : views.filter((v) => v.file?.extension === ext);
 	for (const view of targets) {
 		const fileExt = view.file?.extension ?? '';
-		const config = buildMergedConfig(
-			plugin,
-			fileExt
-		);
-		view.codeEditor?.send(
-			'change-editor-config',
-			{ config }
-		);
+		const config = buildMergedConfig(plugin, fileExt);
+		view.codeEditor?.send('change-editor-config', { config });
 	}
 }
-

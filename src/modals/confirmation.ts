@@ -32,7 +32,9 @@ class ConfirmModal extends Modal {
 		contentEl.createEl('p').setText(this.message);
 		new Setting(this.contentEl)
 			.addButton((b) => {
-				b.setIcon('checkmark').setCta().onClick((): void => this.confirm(true));
+				b.setIcon('checkmark')
+					.setCta()
+					.onClick((): void => this.confirm(true));
 			})
 			.addExtraButton((b) =>
 				b.setIcon('cross').onClick((): void => this.confirm(false))

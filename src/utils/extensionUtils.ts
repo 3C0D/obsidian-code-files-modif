@@ -12,14 +12,10 @@ import type CodeFilesPlugin from '../main.ts';
  * - Extended: all Monaco extensions minus excluded,
  *   plus any extras the user added.
  */
-export function getActiveExtensions(
-	settings: MyPluginSettings
-): string[] {
+export function getActiveExtensions(settings: MyPluginSettings): string[] {
 	if (settings.allExtensions) {
 		return [
-			...getAllMonacoExtensions(
-				settings.excludedExtensions
-			),
+			...getAllMonacoExtensions(settings.excludedExtensions),
 			...settings.extraExtensions
 		];
 	}
@@ -30,16 +26,11 @@ export function getActiveExtensions(
  * Adds an extension to the correct list depending
  * on the active mode (manual vs extended).
  */
-export function addExtension(
-	settings: MyPluginSettings,
-	ext: string
-): void {
+export function addExtension(settings: MyPluginSettings, ext: string): void {
 	if (settings.allExtensions) {
-		if (!settings.extraExtensions.includes(ext))
-			settings.extraExtensions.push(ext);
+		if (!settings.extraExtensions.includes(ext)) settings.extraExtensions.push(ext);
 	} else {
-		if (!settings.extensions.includes(ext))
-			settings.extensions.push(ext);
+		if (!settings.extensions.includes(ext)) settings.extensions.push(ext);
 	}
 }
 
@@ -48,23 +39,17 @@ export function addExtension(
  * means either dropping it from extras or adding it
  * to the excluded list.
  */
-export function removeExtension(
-	settings: MyPluginSettings,
-	ext: string
-): void {
+export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	if (settings.allExtensions) {
 		const idx = settings.extraExtensions.indexOf(ext);
 		if (idx !== -1) {
 			settings.extraExtensions.splice(idx, 1);
-		} else if (
-			!settings.excludedExtensions.includes(ext)
-		) {
+		} else if (!settings.excludedExtensions.includes(ext)) {
 			settings.excludedExtensions.push(ext);
 		}
 	} else {
 		const idx = settings.extensions.indexOf(ext);
-		if (idx !== -1)
-			settings.extensions.splice(idx, 1);
+		if (idx !== -1) settings.extensions.splice(idx, 1);
 	}
 }
 
@@ -135,9 +120,7 @@ export async function reregisterExtensions(plugin: CodeFilesPlugin): Promise<voi
  * failure when a single extension is already claimed by
  * another plugin.
  */
-export function initExtensions(
-	plugin: CodeFilesPlugin
-): void {
+export function initExtensions(plugin: CodeFilesPlugin): void {
 	const activeExts = getActiveExtensions(plugin.settings);
 	for (const ext of activeExts) {
 		registerExtension(plugin, ext);

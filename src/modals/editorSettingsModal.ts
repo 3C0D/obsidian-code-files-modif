@@ -50,7 +50,7 @@ export class EditorSettingsModal extends Modal {
 		setTimeout(() => {
 			// Remove all semi-transparent overlays so the editor remains fully visible
 			const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
-			backgrounds.forEach(bg => bg.style.opacity = '0');
+			backgrounds.forEach((bg) => (bg.style.opacity = '0'));
 		}, 0);
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
@@ -119,11 +119,13 @@ export class EditorSettingsModal extends Modal {
 				.setName('Syntax Validation')
 				.setDesc('Syntax errors for JS/TS.')
 				.addToggle((t) =>
-					t.setValue(this.plugin.settings.syntaxValidation).onChange(async (v) => {
-						this.plugin.settings.syntaxValidation = v;
-						await this.plugin.saveSettings();
-						this.onSettingsChanged();
-					})
+					t
+						.setValue(this.plugin.settings.syntaxValidation)
+						.onChange(async (v) => {
+							this.plugin.settings.syntaxValidation = v;
+							await this.plugin.saveSettings();
+							this.onSettingsChanged();
+						})
 				);
 		}
 
@@ -234,7 +236,7 @@ export class EditorSettingsModal extends Modal {
 	onClose(): void {
 		super.onClose();
 		const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
-		backgrounds.forEach(bg => bg.style.opacity = '');
+		backgrounds.forEach((bg) => (bg.style.opacity = ''));
 		if (this.codeEditor) {
 			const raw = this.codeEditor.getValue().trim();
 			if (this.applyFormatterValue(raw)) {

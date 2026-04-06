@@ -335,21 +335,6 @@
 						case 'focus':
 							if (editor) editor.focus();
 							break;
-						case 'get-languages':
-							// Return all Monaco language registrations as [extension, languageId] pairs.
-							// Extensions come with a leading dot (.js) which is stripped here.
-							var langs = monaco.languages
-								.getLanguages()
-								.flatMap(function (lang) {
-									return (lang.extensions || []).map(function (ext) {
-										return [ext.replace('.', ''), lang.id];
-									});
-								});
-							window.parent.postMessage(
-								{ type: 'languages', langs: langs },
-								'*'
-							);
-							break;
 					}
 				});
 			});

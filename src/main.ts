@@ -2,7 +2,7 @@ import { Plugin } from 'obsidian';
 import { CodeEditorView } from './editor/codeEditorView.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import { viewType, type MyPluginSettings } from './types.ts';
-import { loadPersistedLanguages } from './utils/getLanguage.ts';
+
 import {
 	getActiveExtensions,
 	addExtension,
@@ -13,7 +13,11 @@ import {
 	syncRegisteredExts,
 	reregisterExtensions
 } from './utils/extensionUtils.ts';
-import { broadcastOptions, broadcastBrightness, broadcastEditorConfig } from './utils/broadcast.ts';
+import {
+	broadcastOptions,
+	broadcastBrightness,
+	broadcastEditorConfig
+} from './utils/broadcast.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
@@ -33,19 +37,13 @@ export default class CodeFilesPlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await loadSettings(this);
-		await loadPersistedLanguages(this);
 
-		this.registerView(
-			viewType,
-			(leaf) => new CodeEditorView(leaf, this)
-		);
+		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 		initExtensions(this);
 		updateRibbonIcon(this);
 		registerCommands(this);
 		registerContextMenus(this);
-		this.addSettingTab(
-			new CodeFilesSettingsTab(this.app, this)
-		);
+		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));
 	}
 
 	onunload(): void {
@@ -59,17 +57,39 @@ export default class CodeFilesPlugin extends Plugin {
 		await saveSettings(this);
 	}
 
-	getActiveExtensions(): string[] { return getActiveExtensions(this.settings); }
-	addExtension(ext: string): void { addExtension(this.settings, ext); }
-	removeExtension(ext: string): void { removeExtension(this.settings, ext); }
+	getActiveExtensions(): string[] {
+		return getActiveExtensions(this.settings);
+	}
+	addExtension(ext: string): void {
+		addExtension(this.settings, ext);
+	}
+	removeExtension(ext: string): void {
+		removeExtension(this.settings, ext);
+	}
 
-	registerExtension(ext: string): void { registerExtension(this, ext); }
-	unregisterExtension(ext: string): void { unregisterExtension(this, ext); }
-	syncRegisteredExts(): void { syncRegisteredExts(this); }
-	async reregisterExtensions(): Promise<void> { await reregisterExtensions(this); }
-	updateRibbonIcon(): void { updateRibbonIcon(this); }
+	registerExtension(ext: string): void {
+		registerExtension(this, ext);
+	}
+	unregisterExtension(ext: string): void {
+		unregisterExtension(this, ext);
+	}
+	syncRegisteredExts(): void {
+		syncRegisteredExts(this);
+	}
+	async reregisterExtensions(): Promise<void> {
+		await reregisterExtensions(this);
+	}
+	updateRibbonIcon(): void {
+		updateRibbonIcon(this);
+	}
 
-	broadcastOptions(): void { broadcastOptions(this); }
-	broadcastBrightness(): void { broadcastBrightness(this); }
-	broadcastEditorConfig(ext: string): void { broadcastEditorConfig(this, ext); }
+	broadcastOptions(): void {
+		broadcastOptions(this);
+	}
+	broadcastBrightness(): void {
+		broadcastBrightness(this);
+	}
+	broadcastEditorConfig(ext: string): void {
+		broadcastEditorConfig(this, ext);
+	}
 }

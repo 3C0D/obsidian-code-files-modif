@@ -1,9 +1,5 @@
 import type CodeFilesPlugin from '../main.ts';
-import {
-	DEFAULT_SETTINGS,
-	DEFAULT_EDITOR_CONFIG,
-	parseEditorConfig
-} from '../types.ts';
+import { DEFAULT_SETTINGS, DEFAULT_EDITOR_CONFIG, parseEditorConfig } from '../types.ts';
 
 /**
  * Merges persisted data on top of DEFAULT_SETTINGS.
@@ -12,9 +8,7 @@ import {
  * losing `DEFAULT_EDITOR_CONFIG['*']` if the saved
  * data has no `'*'` key.
  */
-export async function loadSettings(
-	plugin: CodeFilesPlugin
-): Promise<void> {
+export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
 	const loaded = await plugin.loadData();
 	plugin.settings = {
 		...DEFAULT_SETTINGS,
@@ -30,9 +24,7 @@ export async function loadSettings(
 	// }
 }
 
-export async function saveSettings(
-	plugin: CodeFilesPlugin
-): Promise<void> {
+export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 	await plugin.saveData(plugin.settings);
 }
 
@@ -43,19 +35,15 @@ export async function saveSettings(
  * This is the single source of truth for the
  * cascade: default → global → extension.
  */
-export function buildMergedConfig(
-	plugin: CodeFilesPlugin,
-	ext: string
-): string {
+export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string {
 	const globalCfg = parseEditorConfig(
-		plugin.settings.editorConfigs['*']
-			?? DEFAULT_EDITOR_CONFIG
+		plugin.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
 	) as Record<string, unknown>;
 	const extCfg = ext
-		? (parseEditorConfig(
-				plugin.settings.editorConfigs[ext]
-					?? '{}'
-			) as Record<string, unknown>)
+		? (parseEditorConfig(plugin.settings.editorConfigs[ext] ?? '{}') as Record<
+				string,
+				unknown
+			>)
 		: {};
 	return JSON.stringify({ ...globalCfg, ...extCfg });
 }

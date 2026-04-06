@@ -21,7 +21,10 @@ export class CodeEditorView extends TextFileView {
 	private themeAction: { remove: () => void } | null = null;
 	private renameAction: { remove: () => void } | null = null;
 
-	constructor(leaf: WorkspaceLeaf, private plugin: CodeFilesPlugin) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private plugin: CodeFilesPlugin
+	) {
 		super(leaf);
 	}
 
@@ -238,10 +241,7 @@ export class CodeEditorView extends TextFileView {
 	 * Opens a vault file in a new tab using Obsidian's
 	 * standard leaf.openFile() API.
 	 */
-	static async openVaultFile(
-		file: TFile,
-		plugin: CodeFilesPlugin
-	): Promise<void> {
+	static async openVaultFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
 		const leaf = plugin.app.workspace.getLeaf(true);
 		await leaf.openFile(file);
 		plugin.app.workspace.revealLeaf(leaf);
@@ -256,10 +256,7 @@ export class CodeEditorView extends TextFileView {
 	 * vault.create() cannot index files outside the vault
 	 * root, but adapter.read() can access them.
 	 */
-	static openExternalFile(
-		file: TFile,
-		plugin: CodeFilesPlugin
-	): void {
+	static openExternalFile(file: TFile, plugin: CodeFilesPlugin): void {
 		const leaf = plugin.app.workspace.getLeaf(true);
 		const view = new CodeEditorView(leaf, plugin);
 		view.file = file;

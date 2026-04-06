@@ -1,7 +1,4 @@
-import type CodeFilesPlugin from '../main.ts';
-
-// Static fallback map used before Monaco has loaded (e.g. on Obsidian restart with files already open).
-// dynamicMap takes priority once populated, but this ensures syntax highlighting works immediately.
+// Static map of file extensions to Monaco language IDs.
 const staticMap: Record<string, string> = {
 	js: 'javascript',
 	es6: 'javascript',
@@ -27,6 +24,8 @@ const staticMap: Record<string, string> = {
 	asp: 'html',
 	aspx: 'html',
 	vue: 'html',
+	svelte: 'html',
+	astro: 'html',
 	cpp: 'cpp',
 	cc: 'cpp',
 	cxx: 'cpp',
@@ -50,6 +49,7 @@ const staticMap: Record<string, string> = {
 	sql: 'sql',
 	yaml: 'yaml',
 	yml: 'yaml',
+	lock: 'yaml',
 	xml: 'xml',
 	xsd: 'xml',
 	dtd: 'xml',
@@ -61,6 +61,9 @@ const staticMap: Record<string, string> = {
 	markdown: 'markdown',
 	sh: 'shell',
 	bash: 'shell',
+	fish: 'shell',
+	zsh: 'shell',
+	csh: 'shell',
 	ps1: 'powershell',
 	psm1: 'powershell',
 	psd1: 'powershell',
@@ -77,6 +80,8 @@ const staticMap: Record<string, string> = {
 	tfvars: 'hcl',
 	ini: 'ini',
 	properties: 'ini',
+	nginx: 'ini',
+	env: 'ini',
 	toml: 'toml',
 	dockerfile: 'dockerfile',
 	graphql: 'graphql',
@@ -95,71 +100,19 @@ const staticMap: Record<string, string> = {
 	jade: 'pug',
 	rst: 'restructuredtext',
 	proto: 'proto',
-	sol: 'sol'
+	sol: 'sol',
+	wasm: 'wat',
+	asm: 'asm',
+	prisma: 'prisma'
 };
 
-// Populated at runtime from monaco.languages.getLanguages() via postMessage.
-// Covers all Monaco languages including those not in staticMap, and stays up to date with Monaco versions.
-// Persisted in plugin data so it's available immediately on next restart.
-const dynamicMap = new Map<string, string>();
-
-/** Fills dynamicMap from a [extension, languageId] array received from the Monaco iframe. */
-export function registerLanguages(langs: [string, string][]): void {
-	for (const [ext, id] of langs) {
-		dynamicMap.set(ext, id);
-	}
-}
-
-/** Saves dynamicMap to plugin data so it survives restarts. */
-async function persistLanguages(plugin: CodeFilesPlugin): Promise<void> {
-	const data = await plugin.loadData();
-	await plugin.saveData({ ...data, languageMap: Object.fromEntries(dynamicMap) });
-}
-
-/**
- * Registers and persists the language map received from Monaco.
- * The guard on dynamicMap.size ensures this only runs once per session —
- * subsequent editors opening would otherwise trigger redundant saveData calls.
- */
-export async function registerAndPersistLanguages(
-	langs: [string, string][],
-	plugin: CodeFilesPlugin
-): Promise<void> {
-	if (dynamicMap.size > 0) return;
-	registerLanguages(langs);
-	await persistLanguages(plugin);
-}
-
-/** Restores the language map from plugin data on startup, before any Monaco iframe is open. */
-export async function loadPersistedLanguages(plugin: CodeFilesPlugin): Promise<void> {
-	const data = await plugin.loadData();
-	if (data?.languageMap) {
-		for (const [ext, id] of Object.entries(data.languageMap)) {
-			dynamicMap.set(ext, id as string);
-		}
-	}
-}
-
-/** Returns the Monaco language id for a given file extension.
- *  Priority: dynamicMap (from Monaco) > staticMap (fallback) > 'plaintext'. */
+/** Returns the Monaco language id for a given file extension. */
 export function getLanguage(extension: string): string {
-	return dynamicMap.get(extension) ?? staticMap[extension] ?? 'plaintext';
+	return staticMap[extension] ?? 'plaintext';
 }
 
-/**
- * Returns all known code extensions, minus exclusions.
- * Uses dynamicMap (from Monaco, ~200 entries) when
- * available, falling back to staticMap (~98 entries)
- * before the first iframe has loaded.
- */
-export function getAllMonacoExtensions(
-	excludedExtensions: string[]
-): string[] {
+/** Returns all known code extensions, minus exclusions. */
+export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
 	const excluded = new Set(excludedExtensions);
-	const source = dynamicMap.size > 0
-		? [...dynamicMap.keys()]
-		: Object.keys(staticMap);
-	return source.filter(
-		(ext) => !excluded.has(ext)
-	);
+	return Object.keys(staticMap).filter((ext) => !excluded.has(ext));
 }

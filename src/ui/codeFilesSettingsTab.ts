@@ -153,20 +153,13 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						: DEFAULT_EXTENSION_CONFIG;
 				try {
 					parseEditorConfig(val);
-					if (
-						selectedExt !== '*' &&
-						val === defaultForExt.trim()
-					) {
-						delete this.plugin.settings
-							.editorConfigs[selectedExt];
+					if (selectedExt !== '*' && val === defaultForExt.trim()) {
+						delete this.plugin.settings.editorConfigs[selectedExt];
 					} else {
-						this.plugin.settings
-							.editorConfigs[selectedExt] = val;
+						this.plugin.settings.editorConfigs[selectedExt] = val;
 					}
 					await this.plugin.saveSettings();
-					this.plugin.broadcastEditorConfig(
-						selectedExt
-					);
+					this.plugin.broadcastEditorConfig(selectedExt);
 					updateLabel(selectedExt);
 				} catch {
 					// invalid JSON — wait for valid input

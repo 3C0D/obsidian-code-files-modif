@@ -2,7 +2,7 @@ import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { type CodeEditorInstance } from '../types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
-import { registerAndPersistLanguages } from '../utils/getLanguage.ts';
+
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
@@ -76,7 +76,9 @@ export const mountCodeEditor = async (
 		wordWrap: plugin.settings.wordWrap,
 		folding: plugin.settings.folding,
 		lineNumbers: plugin.settings.lineNumbers,
-		minimap: codeContext.includes('editor-settings-config') ? false : plugin.settings.minimap,
+		minimap: codeContext.includes('editor-settings-config')
+			? false
+			: plugin.settings.minimap,
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation
 	};
@@ -159,18 +161,11 @@ Element.prototype.appendChild = function(node) {
 		if (source !== iframe.contentWindow) return;
 		switch (data.type) {
 			case 'ready': {
-				// Monaco is loaded — send config, request language map, then set initial content.
+				// Monaco is loaded — send config, then set initial content.
 				// Order matters: init must come before change-value so the editor exists when value arrives.
 				send('init', initParams);
-				send('get-languages', {});
 				send('change-value', { value });
 				send('focus', {});
-				break;
-			}
-			case 'languages': {
-				// Received the full Monaco language→extension map.
-				// registerAndPersistLanguages is a no-op after the first call (guards on dynamicMap.size).
-				await registerAndPersistLanguages(data.langs, plugin);
 				break;
 			}
 			case 'open-formatter-config': {
