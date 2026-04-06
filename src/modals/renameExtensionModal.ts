@@ -33,8 +33,7 @@ export class RenameExtensionModal extends Modal {
 		});
 
 		const input = new TextComponent(row);
-		input.setPlaceholder('ext — unknown extensions will be registered');
-		input.setValue(this.newExt);
+		input.setPlaceholder('ext. (registers if unknown after confirm)');
 		input.inputEl.style.flexGrow = '1';
 		input.onChange((value) => {
 			this.newExt = value.replace(/^\./, '');
@@ -64,7 +63,6 @@ export class RenameExtensionModal extends Modal {
 			.onClick(() => void this.save());
 
 		input.inputEl.focus();
-		input.inputEl.select();
 	}
 
 	onClose(): void {

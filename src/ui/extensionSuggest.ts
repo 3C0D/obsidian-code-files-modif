@@ -4,7 +4,7 @@ import type CodeFilesPlugin from '../main.ts';
 /** Reusable autocomplete suggester for registered extensions, attached to a text input. */
 export class ExtensionSuggest extends AbstractInputSuggest<string> {
 	constructor(
-		private plugin: CodeFilesPlugin,
+		plugin: CodeFilesPlugin,
 		inputEl: HTMLInputElement,
 		private onChoose: (ext: string) => void,
 		private getExtensions: () => string[] = () => plugin.getActiveExtensions()
@@ -14,6 +14,7 @@ export class ExtensionSuggest extends AbstractInputSuggest<string> {
 
 	protected getSuggestions(query: string): string[] {
 		const q = query.toLowerCase().replace(/^\./, '');
+		if (!q) return [];
 		return this.getExtensions()
 			.filter((ext) => ext.includes(q))
 			.sort((a, b) => {
