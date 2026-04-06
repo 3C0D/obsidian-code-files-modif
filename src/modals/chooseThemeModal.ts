@@ -1,8 +1,9 @@
 import { SuggestModal } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { themes } from '../utils/themes.ts';
+import { themes, loadThemes } from '../utils/themes.ts';
 
-const ALL_THEMES = ['default', ...themes];
+/** Cached list of all available themes, populated on first modal open. */
+let ALL_THEMES: string[] = [];
 
 /** SuggestModal to pick a Monaco editor theme with live preview.
  *  Navigating the list applies the theme instantly to the editor.
@@ -10,6 +11,8 @@ const ALL_THEMES = ['default', ...themes];
 export class ChooseThemeModal extends SuggestModal<string> {
 	private originalTheme: string;
 	private confirmed = false;
+	/** Tracks whether themes have been loaded from themelist.json to avoid redundant fetches. */
+	private themesLoaded = false;
 
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -21,6 +24,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.setPlaceholder('Choose a theme');
 		this.modalEl.style.width = '300px';
 
+		/** Adjusts editor brightness by delta, clamped between 0.2 and 2.0, rounded to 1 decimal. */
 		const adjustBrightness = (delta: number): void => {
 			const next =
 				Math.round(
@@ -31,6 +35,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 			void plugin.saveSettings();
 			plugin.broadcastBrightness();
 		};
+
 		this.scope.register([], 'ArrowRight', () => {
 			adjustBrightness(0.1);
 			return true;
@@ -41,14 +46,24 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		});
 	}
 
-	onOpen(): void {
+	/** Loads themes from themelist.json before opening the modal to ensure suggestions are available.
+	 *  Themes are loaded only once per session and cached in ALL_THEMES. */
+	async onOpen(): Promise<void> {
+		if (!this.themesLoaded) {
+			await loadThemes(this.plugin);
+			// Prepend 'default' which follows Obsidian's theme (light/dark)
+			ALL_THEMES = ['default', ...themes];
+			this.themesLoaded = true;
+		}
 		super.onOpen();
 		setTimeout(() => {
 			const bg = document.querySelector<HTMLElement>('.modal-bg');
+			// Hide the modal background to keep focus on the editor
 			if (bg) bg.style.opacity = '0';
 		}, 0);
 		this.modalEl.style.position = 'fixed';
 		this.modalEl.style.background = 'var(--background-primary)';
+		// Position modal at 75% of screen width (or centered if too close to edge)
 		setTimeout(() => {
 			const { innerWidth } = window;
 			const { offsetWidth } = this.modalEl;
@@ -68,11 +83,13 @@ export class ChooseThemeModal extends SuggestModal<string> {
 			'padding: 6px 12px; font-size: 0.78em; color: var(--text-muted); border-top: 1px solid var(--background-modifier-border); text-align: center;';
 		footer.setText('hover to preview · ← → adjust brightness');
 
+		// Apply theme on hover without selecting, for instant preview
 		this.resultContainerEl.addEventListener('mousemove', (e) => {
 			const item = (e.target as HTMLElement).closest('.suggestion-item');
 			if (!item) return;
 			const items = this.resultContainerEl.querySelectorAll('.suggestion-item');
 			const idx = Array.from(items).indexOf(item as HTMLElement);
+			// Access internal chooser API to get the theme name at the hovered index
 			const chooser = this.chooser as {
 				values?: string[];
 				setSelectedItem?: (i: number, e: MouseEvent) => void;
@@ -83,6 +100,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		});
 	}
 
+	/** Returns filtered themes, prioritizing current and recently used themes at the top. */
 	getSuggestions(query: string): string[] {
 		const q = query.toLowerCase();
 		const current = this.plugin.settings.theme;
@@ -99,9 +117,11 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		el.setText(theme);
 	}
 
+	/** Confirms the theme selection, saves it to settings, and updates recent themes list (max 5). */
 	onChooseSuggestion(theme: string | null): void {
 		if (!theme) return;
 		this.confirmed = true;
+		// Keep the 5 most recent themes, with the new selection at the top
 		const recent = [
 			theme,
 			...this.plugin.settings.recentThemes.filter((t) => t !== theme)
@@ -116,6 +136,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		super.onClose();
 		const bg = document.querySelector<HTMLElement>('.modal-bg');
 		if (bg) bg.style.opacity = '';
+		// Restore original theme if user cancelled (ESC or clicked outside)
 		if (!this.confirmed) {
 			this.applyTheme(this.originalTheme);
 		}

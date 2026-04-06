@@ -76,7 +76,7 @@ export const mountCodeEditor = async (
 		wordWrap: plugin.settings.wordWrap,
 		folding: plugin.settings.folding,
 		lineNumbers: plugin.settings.lineNumbers,
-		minimap: plugin.settings.minimap,
+		minimap: codeContext.includes('editor-settings-config') ? false : plugin.settings.minimap,
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation
 	};

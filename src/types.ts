@@ -34,6 +34,14 @@ export interface MyPluginSettings {
 	extraExtensions: string[];
 }
 
+/**
+ * Parses a JSON string that may contain JavaScript-style comments and trailing commas.
+ *
+ * Handles:
+ * - Single-line comments (`// ...`)
+ * - Multi-line block comments (`/* ... * /`)
+ * - Trailing commas before closing brackets/braces
+ */
 export function parseEditorConfig(str: string): unknown {
 	return JSON.parse(
 		str

@@ -53,7 +53,8 @@ export class EditorSettingsModal extends Modal {
 		}, 0);
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
-		this.modalEl.style.height = '700px';
+		this.modalEl.style.minHeight = '400px';
+		this.modalEl.style.maxHeight = '90vh';
 		this.modalEl.style.position = 'fixed';
 		setTimeout(() => {
 			const { innerWidth } = window;
@@ -97,29 +98,33 @@ export class EditorSettingsModal extends Modal {
 				})
 			);
 
-		new Setting(toggleSection)
-			.setName('Semantic Validation')
-			.setDesc('Type errors for JS/TS.')
-			.addToggle((t) =>
-				t
-					.setValue(this.plugin.settings.semanticValidation)
-					.onChange(async (v) => {
-						this.plugin.settings.semanticValidation = v;
+		const isJsTs = ['js', 'ts', 'jsx', 'tsx'].includes(this.extension);
+
+		if (isJsTs) {
+			new Setting(toggleSection)
+				.setName('Semantic Validation')
+				.setDesc('Type errors for JS/TS.')
+				.addToggle((t) =>
+					t
+						.setValue(this.plugin.settings.semanticValidation)
+						.onChange(async (v) => {
+							this.plugin.settings.semanticValidation = v;
+							await this.plugin.saveSettings();
+							this.onSettingsChanged();
+						})
+				);
+
+			new Setting(toggleSection)
+				.setName('Syntax Validation')
+				.setDesc('Syntax errors for JS/TS.')
+				.addToggle((t) =>
+					t.setValue(this.plugin.settings.syntaxValidation).onChange(async (v) => {
+						this.plugin.settings.syntaxValidation = v;
 						await this.plugin.saveSettings();
 						this.onSettingsChanged();
 					})
-			);
-
-		new Setting(toggleSection)
-			.setName('Syntax Validation')
-			.setDesc('Syntax errors for JS/TS.')
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.syntaxValidation).onChange(async (v) => {
-					this.plugin.settings.syntaxValidation = v;
-					await this.plugin.saveSettings();
-					this.onSettingsChanged();
-				})
-			);
+				);
+		}
 
 		new Setting(toggleSection)
 			.setName('Editor Brightness')
@@ -141,7 +146,6 @@ export class EditorSettingsModal extends Modal {
 			cls: 'code-files-editor-config-section'
 		});
 		formatterSection.style.marginTop = '1rem';
-		formatterSection.style.flex = '1';
 		formatterSection.style.display = 'flex';
 		formatterSection.style.flexDirection = 'column';
 
@@ -192,7 +196,9 @@ export class EditorSettingsModal extends Modal {
 		editorContainer.style.marginTop = '8px';
 		editorContainer.style.borderRadius = '4px';
 		editorContainer.style.overflow = 'hidden';
-		editorContainer.style.flex = '1';
+		editorContainer.style.flex = '0 0 auto';
+		editorContainer.style.height = 'auto';
+		editorContainer.style.minHeight = '200px';
 
 		const existing = this.plugin.settings.editorConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_EXTENSION_CONFIG;

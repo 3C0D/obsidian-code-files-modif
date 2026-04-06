@@ -8,19 +8,21 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Syntax highlighting** — automatic language detection from file extension
 - **50+ themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview
 - **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
-- **Create code files** — ribbon icon, right-click in the explorer, or command palette
+- **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
+- **Open any file in Monaco** — open any file type in the Monaco editor via command palette or context menu
 - **Edit CSS snippets** — open and edit Obsidian CSS snippets directly from the command palette
 - **Dynamic extension management** — add or remove file extensions at runtime, no restart needed
-- **Per-extension formatter config** — tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions
+- **Per-extension/global formatter config** — customize editor options (tabSize, insertSpaces, formatOnSave, formatOnType, etc.)
 
 ---
 
-## Opening a file
+## Opening any file in Monaco
 
 Files with registered extensions open automatically in Monaco. You can also:
 
 - Command palette → **"Open current file in Monaco Editor"**
 - Right-click a file → **"Open in Monaco Editor"**
+- Right-click in the editor → **"Open in Monaco Editor"**
 
 ---
 
@@ -63,7 +65,7 @@ When a code file is open, three icons appear in the tab header:
 | Icon | What it does |
 |------|-------------|
 | ✏️ **Pencil** | Rename the file's extension. Unknown extensions will prompt for registration. |
-| 🎨 **Palette** | Pick a theme with live preview |
+| 🎨 **Palette** | Pick a theme with live preview. Hover over themes to preview them in real-time, adjust brightness with left/right arrows. |
 | ⚙️ **Gear** | Open the Editor Settings panel |
 
 These actions are also available via **F1** or right-click inside Monaco.
@@ -76,7 +78,7 @@ These actions are also available via **F1** or right-click inside Monaco.
 
 - **Auto Save** — when off, only `Ctrl+S` saves. A circle in the tab shows unsaved state.
 - **Semantic / Syntax Validation** — error checking for JS/TS
-- **Editor Brightness** — dim or brighten Monaco independently of Obsidian's theme
+- **Editor Brightness** — dim or brighten Monaco independently of Obsidian's theme. Can also be adjusted directly in the theme picker modal using left/right arrow keys.
 
 ### Editor Config
 

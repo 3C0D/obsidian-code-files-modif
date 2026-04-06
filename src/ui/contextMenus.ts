@@ -5,6 +5,7 @@ import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import type { MenuItems } from '../types.ts';
+import { CodeEditorView } from '../editor/codeEditorView.ts';
 
 /**
  * Registers two context menus:
@@ -91,11 +92,13 @@ function getItems(plugin: CodeFilesPlugin): MenuItems[] {
 
 	const items: MenuItems[] = [];
 
-	items.push({
-		title: 'Create Code File',
-		icon: 'file-plus',
-		action: () => new CreateCodeFileModal(plugin).open()
-	});
+	if (activeFile) {
+		items.push({
+			title: 'Open in Monaco Editor',
+			icon: 'file-code',
+			action: () => CodeEditorView.openFile(activeFile, plugin)
+		});
+	}
 	// Always show Rename Extension if there's an active file
 	if (activeFile) {
 		items.push({
