@@ -57,9 +57,9 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		}
 		super.onOpen();
 		setTimeout(() => {
-			const bg = document.querySelector<HTMLElement>('.modal-bg');
-			// Hide the modal background to keep focus on the editor
-			if (bg) bg.style.opacity = '0';
+			// Remove all semi-transparent overlays so the editor remains fully visible while previewing themes
+			const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
+			backgrounds.forEach(bg => bg.style.opacity = '0');
 		}, 0);
 		this.modalEl.style.position = 'fixed';
 		this.modalEl.style.background = 'var(--background-primary)';
@@ -134,8 +134,8 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	onClose(): void {
 		super.onClose();
-		const bg = document.querySelector<HTMLElement>('.modal-bg');
-		if (bg) bg.style.opacity = '';
+		const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
+		backgrounds.forEach(bg => bg.style.opacity = '');
 		// Restore original theme if user cancelled (ESC or clicked outside)
 		if (!this.confirmed) {
 			this.applyTheme(this.originalTheme);

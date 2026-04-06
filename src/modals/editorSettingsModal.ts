@@ -48,8 +48,9 @@ export class EditorSettingsModal extends Modal {
 	async onOpen(): Promise<void> {
 		super.onOpen();
 		setTimeout(() => {
-			const bg = document.querySelector<HTMLElement>('.modal-bg');
-			if (bg) bg.style.opacity = '0';
+			// Remove all semi-transparent overlays so the editor remains fully visible
+			const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
+			backgrounds.forEach(bg => bg.style.opacity = '0');
 		}, 0);
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
@@ -232,8 +233,8 @@ export class EditorSettingsModal extends Modal {
 
 	onClose(): void {
 		super.onClose();
-		const bg = document.querySelector<HTMLElement>('.modal-bg');
-		if (bg) bg.style.opacity = '';
+		const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
+		backgrounds.forEach(bg => bg.style.opacity = '');
 		if (this.codeEditor) {
 			const raw = this.codeEditor.getValue().trim();
 			if (this.applyFormatterValue(raw)) {
