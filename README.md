@@ -17,7 +17,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 
 ## Opening a file
 
-Files with registered extensions open automatically in Monaco when you click them in the explorer. You can also force-open any file via:
+Files with registered extensions open automatically in Monaco. You can also:
 
 - Command palette → **"Open current file in Monaco Editor"**
 - Right-click a file → **"Open in Monaco Editor"**
@@ -26,61 +26,66 @@ Files with registered extensions open automatically in Monaco when you click the
 
 ## Creating a file
 
-Three entry points:
-
-- Click the **ribbon icon** (JSON file icon, left sidebar)
-- Right-click a **folder** in the explorer → **"Create Code File"**
+- Click the **ribbon icon** (left sidebar)
+- Right-click a folder in the explorer → **"Create Code File"**
 - Command palette → **"Create new Code File"**
 
-A small modal opens with a filename field, an extension dropdown (autocomplete from registered extensions), and a **+** button to register a new extension on the fly. Type a name, pick an extension, press **Create**.
+A modal opens with filename, extension dropdown, and a **+** button to register new extensions on the fly.
+
+---
+
+## Renaming file extensions
+
+- Click the **pencil icon** in the tab header
+- Right-click a file in the explorer → **"Rename Extension"**
+- Right-click the file in the editor → **"Rename Extension"**
+- Command palette → **"Rename file extension"**
+
+If the extension is unknown, you'll be prompted to register it.
 
 ---
 
 ## Editing a code block
 
-Place your cursor inside any code fence (` ```lang ... ``` `) and use:
+Place your cursor inside any code fence (` ```lang ... ``` `):
 
 - Right-click → **"Edit Code Block in Monaco Editor"**
 - Command palette → **"Open current code block in Monaco Editor"**
 
-The block opens in a full-screen Monaco modal. Closing the modal writes the content back to the note.
+The block opens in a full-screen Monaco modal. Changes are written back when you close it.
 
 ---
 
 ## The tab header bar
 
-When a code file is open, three icon buttons appear in the tab header, to the right of the filename:
+When a code file is open, three icons appear in the tab header:
 
 | Icon | What it does |
 |------|-------------|
-| ✏️ **Pencil** | Rename the file's extension on the fly |
-| 🎨 **Palette** | Pick a theme with live preview (hover to preview, ← → to adjust brightness) |
+| ✏️ **Pencil** | Rename the file's extension. Unknown extensions will prompt for registration. |
+| 🎨 **Palette** | Pick a theme with live preview |
 | ⚙️ **Gear** | Open the Editor Settings panel |
 
-These same actions are also available inside the Monaco editor via **F1** (Monaco command palette) or the right-click context menu.
+These actions are also available via **F1** or right-click inside Monaco.
 
 ---
 
 ## Editor Settings (gear icon)
 
-The gear panel is the main place to configure the editor. It is split into two parts.
+### Toggles
 
-### Toggles (top section)
+- **Auto Save** — when off, only `Ctrl+S` saves. A circle in the tab shows unsaved state.
+- **Semantic / Syntax Validation** — error checking for JS/TS
+- **Editor Brightness** — dim or brighten Monaco independently of Obsidian's theme
 
-Quick on/off switches for the most common options:
+### Editor Config
 
-- **Auto Save** — when off, only `Ctrl+S` saves. A small circle in the tab title shows unsaved state.
-- **Semantic / Syntax Validation** — error checking for JS/TS files
-- **Editor Brightness** — slider to dim or brighten the Monaco editor independently of Obsidian's theme
-
-### Editor Config (bottom section)
-
-A JSON editor (Monaco inside Monaco) for fine-grained formatting rules. Two scopes are available via buttons:
+JSON editor for formatting rules. Two scopes:
 
 - **Global (`*`)** — applies to all file types
-- **`.ext`** — overrides for the current file's extension only
+- **`.ext`** — overrides for the current extension
 
-The config accepts standard Monaco `IEditorOptions` plus a few extra keys:
+Accepts standard Monaco `IEditorOptions`:
 
 ```jsonc
 {
@@ -88,24 +93,21 @@ The config accepts standard Monaco `IEditorOptions` plus a few extra keys:
     "insertSpaces": true,
     "formatOnSave": true,
     "formatOnType": false,
-    // any Monaco IEditorOption key works here too:
     // "rulers": [80, 120],
     // "fontSize": 14,
 }
 ```
 
-Changes are saved automatically when the panel closes. The per-extension config is merged on top of the global config, so you only need to specify what differs.
+Changes save automatically when the panel closes. Per-extension config merges with global.
 
 ---
 
 ## Plugin Settings (Obsidian Settings → Code Files)
 
-The main settings panel (`Ctrl+,` → Code Files) covers options that are less frequently changed:
-
 - **Show ribbon icon** — toggle the sidebar icon
-- **Use extended extensions list** — register a broad curated list of extensions automatically (vs. managing them manually)
-- **Manage extensions** — add or remove extensions via a search modal; changes take effect immediately without restart
-- **Editor Config** — same JSON config editor as in the gear panel, but with an extension picker to edit any extension's config without having a file open
+- **Use extended extensions list** — auto-register a broad curated list vs. manual management
+- **Manage extensions** — add or remove extensions; changes take effect immediately
+- **Editor Config** — same JSON editor as the gear panel, with extension picker
 
 ---
 
@@ -124,14 +126,14 @@ The main settings panel (`Ctrl+,` → Code Files) covers options that are less f
 
 ## Managing extensions
 
-Extensions control which file types open in Monaco instead of Obsidian's default viewer.
+Extensions control which file types open in Monaco.
 
-**Two modes** (toggled in Settings → Code Files):
+**Two modes:**
 
-- **Manual** — you maintain your own list. Use **Add / Remove** to add or remove extensions one by one.
-- **Extended** — a broad curated list is registered automatically. You can still exclude individual extensions or add extras.
+- **Manual** — maintain your own list
+- **Extended** — broad curated list auto-registered. You can still exclude or add extras.
 
-Extensions can also be added on the fly from the **Create Code File** modal (the **+** button next to the dropdown).
+Extensions can also be added on the fly from the **Create Code File** modal or **Rename Extension** dialog.
 
 ---
 
