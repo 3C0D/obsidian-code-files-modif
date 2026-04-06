@@ -72,14 +72,9 @@ export class RenameExtensionModal extends Modal {
 	}
 
 	private getNewPath(): string {
-		const base = this.getBasePath();
+		const base = this.file.basename;
 		const cleanExt = this.newExt.replace(/^\./, '').trim();
 		return cleanExt ? `${base}.${cleanExt}` : base;
-	}
-
-	private getBasePath(): string {
-		const { path, extension } = this.file;
-		return extension ? path.slice(0, path.length - extension.length - 1) : path;
 	}
 
 	private async save(): Promise<void> {
@@ -90,7 +85,7 @@ export class RenameExtensionModal extends Modal {
 			return;
 		}
 
-		const newPath = `${this.getBasePath()}.${ext}`;
+		const newPath = `${this.file.basename}.${ext}`;
 		if (newPath === this.file.path) {
 			this.close();
 			return;
