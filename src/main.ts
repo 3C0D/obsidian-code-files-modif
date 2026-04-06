@@ -22,6 +22,7 @@ import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
 import { registerContextMenus } from './ui/contextMenus.ts';
+import { patchModalClose } from './utils/modalPatch.ts';
 
 /**
  * Obsidian plugin entry point.
@@ -34,9 +35,11 @@ export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
 	ribbonIconEl: HTMLElement | null = null;
 	_registeredExts: Set<string> = new Set();
+	private _modalClosePatch: (() => void) | null = null;
 
 	async onload(): Promise<void> {
 		await loadSettings(this);
+		this._modalClosePatch = patchModalClose();
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 		initExtensions(this);
@@ -47,6 +50,8 @@ export default class CodeFilesPlugin extends Plugin {
 	}
 
 	onunload(): void {
+		this._modalClosePatch?.();
+		this._modalClosePatch = null;
 		this.ribbonIconEl?.remove();
 	}
 

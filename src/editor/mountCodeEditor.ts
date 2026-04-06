@@ -170,7 +170,6 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-formatter-config': {
 				if (data.context === codeContext) {
-					(document.activeElement as HTMLElement)?.blur();
 					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
 					const modal = new EditorSettingsModal(
 						plugin,
@@ -191,7 +190,6 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-theme-picker': {
 				if (data.context === codeContext) {
-					(document.activeElement as HTMLElement)?.blur();
 					const applyTheme = async (t: string): Promise<void> => {
 						const params = await resolveThemeParams(plugin, t);
 						send('change-theme', params);
@@ -208,7 +206,6 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-settings': {
 				if (data.context === codeContext) {
-					(document.activeElement as HTMLElement)?.blur();
 					plugin.app.setting.open();
 				}
 				break;
@@ -232,16 +229,15 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-obsidian-palette': {
 				if (data.context === codeContext) {
-					(document.activeElement as HTMLElement)?.blur();
 					plugin.app.commands.executeCommandById('command-palette:open');
 				}
 				break;
 			}
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
-					(document.activeElement as HTMLElement)?.blur();
 					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
-					if (file && 'extension' in file) {
+					// if (file && 'extension' in file) {
+					if (file) {
 						const modal = new RenameExtensionModal(plugin, file as TFile);
 						const origOnClose = modal.onClose.bind(modal);
 						modal.onClose = () => {
