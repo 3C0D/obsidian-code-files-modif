@@ -9,6 +9,7 @@ import type { CodeEditorInstance } from '../types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
+import { CodeEditorView } from '../editor/codeEditorView.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -32,17 +33,12 @@ export class EditorSettingsModal extends Modal {
 			: DEFAULT_EXTENSION_CONFIG;
 		try {
 			parseEditorConfig(value);
-			if (
-				key !== '*' &&
-				value === defaultForKey.trim()
-			) {
+			if (key !== '*' && value === defaultForKey.trim()) {
 				// Only delete overrides, never
 				// the global '*' key.
-				delete this.plugin.settings
-					.editorConfigs[key];
+				delete this.plugin.settings.editorConfigs[key];
 			} else {
-				this.plugin.settings
-					.editorConfigs[key] = value;
+				this.plugin.settings.editorConfigs[key] = value;
 			}
 			return true;
 		} catch {
@@ -89,11 +85,12 @@ export class EditorSettingsModal extends Modal {
 				t.setValue(this.plugin.settings.autoSave).onChange(async (v) => {
 					this.plugin.settings.autoSave = v;
 					await this.plugin.saveSettings();
-					if (v) {
-						for (const view of getCodeEditorViews(this.app)) {
-							view.requestSave();
+					for (const view of getCodeEditorViews(this.app)) {
+						if (!(view instanceof CodeEditorView)) continue;
+						if (v) {
 							view.clearDirty();
 						}
+						view.updateDirtyBadgeVisibility();
 					}
 					this.onSettingsChanged();
 				})
@@ -228,26 +225,17 @@ export class EditorSettingsModal extends Modal {
 
 	onClose(): void {
 		super.onClose();
-		const bg = document.querySelector<HTMLElement>(
-			'.modal-bg'
-		);
+		const bg = document.querySelector<HTMLElement>('.modal-bg');
 		if (bg) bg.style.opacity = '';
 		if (this.codeEditor) {
-			const raw = this.codeEditor
-				.getValue()
-				.trim();
+			const raw = this.codeEditor.getValue().trim();
 			if (this.applyFormatterValue(raw)) {
 				void this.plugin.saveSettings();
 				// Send the MERGED config
 				// (global + ext) so the iframe
 				// keeps inherited settings like
 				// formatOnSave.
-				this.onConfigApplied(
-					buildMergedConfig(
-						this.plugin,
-						this.extension
-					)
-				);
+				this.onConfigApplied(buildMergedConfig(this.plugin, this.extension));
 			}
 			this.codeEditor.destroy();
 		}

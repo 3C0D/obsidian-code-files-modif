@@ -114,6 +114,21 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
+	/** Updates the dirty badge visibility based on autoSave setting. */
+	public updateDirtyBadgeVisibility(): void {
+		const titleContainer = this.containerEl.querySelector(
+			'.view-header-title-container'
+		);
+		if (!titleContainer) return;
+		const existingBadge = titleContainer.querySelector('.code-files-dirty-badge');
+		if (this.plugin.settings.autoSave) {
+			existingBadge?.remove();
+		} else if (!existingBadge) {
+			const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
+			titleContainer.appendChild(dirtyBadge);
+		}
+	}
+
 	/** Adds three header actions: rename extension, change theme, and open editor settings. */
 	private injectGearIcon(file: TFile): void {
 		this.gearAction?.remove();
