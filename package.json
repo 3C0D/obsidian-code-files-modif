@@ -29,8 +29,6 @@
     "prettier:fix": "prettier --write '**/*.{ts,json}'"
   },
   "devDependencies": {
-    "@codemirror/state": "6.0.0",
-    "@codemirror/view": "6.0.0",
     "@types/eslint": "latest",
     "@types/node": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
