@@ -24,6 +24,8 @@ Files with registered extensions open automatically in Monaco. You can also:
 - Right-click a file → **"Open in Monaco Editor"**
 - Right-click in the editor → **"Open in Monaco Editor"**
 
+When opening a file with an unregistered extension in Monaco, a **return arrow icon** appears in the tab header to switch back to the default view.
+
 ---
 
 ## Creating a file
@@ -60,12 +62,13 @@ The block opens in a full-screen Monaco modal. Changes are written back when you
 
 ## The tab header bar
 
-When a code file is open, three icons appear in the tab header:
+When a code file is open, icons appear in the tab header:
 
 | Icon | What it does |
 |------|-------------|
 | ✏️ **Pencil** | Rename the file's extension. Unknown extensions will prompt for registration. |
 | 🎨 **Palette** | Pick a theme with live preview. Hover over themes to preview them in real-time, adjust brightness with left/right arrows. |
+| ⬅️ **Arrow** | Return to default view (only for files with unregistered extensions opened in Monaco). |
 | ⚙️ **Gear** | Open the Editor Settings panel |
 
 These actions are also available via **F1** or right-click inside Monaco.

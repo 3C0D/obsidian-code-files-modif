@@ -6,7 +6,6 @@ import { getLanguage } from '../utils/getLanguage.ts';
 import { viewType, type CodeEditorInstance } from '../types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
-import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { snippetExists, isSnippetEnabled } from '../utils/snippetUtils.ts';
 
 /**
@@ -20,9 +19,9 @@ export class CodeEditorView extends TextFileView {
 	private forceSave = false;
 	private gearAction: { remove: () => void } | null = null;
 	private themeAction: { remove: () => void } | null = null;
-	private renameAction: { remove: () => void } | null = null;
 	private snippetFolderAction: { remove: () => void } | null = null;
 	private snippetToggleAction: { remove: () => void } | null = null;
+	private returnAction: { remove: () => void } | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -71,14 +70,14 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.destroy();
 		this.gearAction?.remove();
 		this.themeAction?.remove();
-		this.renameAction?.remove();
 		this.snippetFolderAction?.remove();
 		this.snippetToggleAction?.remove();
+		this.returnAction?.remove();
 		this.gearAction = null;
 		this.themeAction = null;
-		this.renameAction = null;
 		this.snippetFolderAction = null;
 		this.snippetToggleAction = null;
+		this.returnAction = null;
 	}
 
 	async onClose(): Promise<void> {
@@ -139,20 +138,13 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Adds header actions: rename extension (only for vault files), change theme, snippet controls (only for CSS snippets), and open editor settings. */
+	/** Adds header actions: return to default view (only for unregistered extensions), change theme, snippet controls (only for CSS snippets), and open editor settings. */
 	private injectGearIcon(file: TFile): void {
 		this.gearAction?.remove();
 		this.themeAction?.remove();
-		this.renameAction?.remove();
 		this.snippetFolderAction?.remove();
 		this.snippetToggleAction?.remove();
-
-		const isExternal = !this.plugin.app.vault.getAbstractFileByPath(file.path);
-		if (!isExternal) {
-			this.renameAction = this.addAction('pencil', 'Rename Extension', () => {
-				new RenameExtensionModal(this.plugin, file).open();
-			});
-		}
+		this.returnAction?.remove();
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
 			const applyTheme = async (theme: string): Promise<void> => {
@@ -172,6 +164,14 @@ export class CodeEditorView extends TextFileView {
 				}
 			).open();
 		});
+
+		const isUnregistered = !this.plugin.getActiveExtensions().includes(file.extension);
+		if (isUnregistered) {
+			this.returnAction = this.addAction('undo-2', 'Return to default view', async () => {
+				await this.leaf.setViewState({ type: 'empty', state: {} });
+				await this.leaf.openFile(file);
+			});
+		}
 
 		// Add snippet controls ONLY when editing a CSS snippet file
 		// Added LAST so they appear on the LEFT
