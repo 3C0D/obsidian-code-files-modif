@@ -242,9 +242,8 @@ Element.prototype.appendChild = function(node) {
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
 					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
-					// if (file && 'extension' in file) {
-					if (file) {
-						const modal = new RenameExtensionModal(plugin, file as TFile);
+					if (file instanceof TFile) {
+						const modal = new RenameExtensionModal(plugin, file);
 						const origOnClose = modal.onClose.bind(modal);
 						modal.onClose = () => {
 							origOnClose();

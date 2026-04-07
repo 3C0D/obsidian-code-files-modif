@@ -132,15 +132,18 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Adds three header actions: rename extension, change theme, and open editor settings. */
+	/** Adds header actions: rename extension (only for vault files), change theme, and open editor settings. */
 	private injectGearIcon(file: TFile): void {
 		this.gearAction?.remove();
 		this.themeAction?.remove();
 		this.renameAction?.remove();
 
-		this.renameAction = this.addAction('pencil', 'Rename Extension', () => {
-			new RenameExtensionModal(this.plugin, file).open();
-		});
+		const isExternal = !this.plugin.app.vault.getAbstractFileByPath(file.path);
+		if (!isExternal) {
+			this.renameAction = this.addAction('pencil', 'Rename Extension', () => {
+				new RenameExtensionModal(this.plugin, file).open();
+			});
+		}
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
 			const applyTheme = async (theme: string): Promise<void> => {
