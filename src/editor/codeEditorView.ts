@@ -175,22 +175,36 @@ export class CodeEditorView extends TextFileView {
 
 		// Add snippet controls ONLY when editing a CSS snippet file
 		// Added LAST so they appear on the LEFT
-		const isSnippetFile = file.path.includes('.obsidian/snippets') && file.extension === 'css';
+		const isSnippetFile =
+			file.path.includes('.obsidian/snippets') && file.extension === 'css';
 		if (isSnippetFile) {
 			const snippetName = file.basename;
 			const exists = snippetExists(this.plugin.app, snippetName);
 
-			this.snippetFolderAction = this.addAction('folder', 'Open snippets folder', () => {
-				this.plugin.app.openWithDefaultApp(normalizePath('.obsidian/snippets'));
-			});
+			this.snippetFolderAction = this.addAction(
+				'folder',
+				'Open snippets folder',
+				() => {
+					this.plugin.app.openWithDefaultApp(
+						normalizePath('.obsidian/snippets')
+					);
+				}
+			);
 
 			if (exists) {
 				const isOn = isSnippetEnabled(this.plugin.app, snippetName);
-				const toggleEl = this.addAction('square', `Toggle ${snippetName}.css snippet`, () => {
-					const newState = !isSnippetEnabled(this.plugin.app, snippetName);
-					this.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
-					track.toggleClass('is-on', newState);
-				});
+				const toggleEl = this.addAction(
+					'square',
+					`Toggle ${snippetName}.css snippet`,
+					() => {
+						const newState = !isSnippetEnabled(this.plugin.app, snippetName);
+						this.plugin.app.customCss.setCssEnabledStatus(
+							snippetName,
+							newState
+						);
+						track.toggleClass('is-on', newState);
+					}
+				);
 				// Inject custom toggle switch
 				toggleEl.empty();
 				toggleEl.addClass('code-files-snippet-toggle-action');
