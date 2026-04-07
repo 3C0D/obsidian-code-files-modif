@@ -31,7 +31,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 		name: 'Open current file in Monaco Editor',
 		editorCheckCallback: (checking, _editor, ctx) => {
 			if (!ctx.file) return false;
-			if (!checking) CodeEditorView.openFile(ctx.file, plugin);
+			if (!checking) void CodeEditorView.openFile(ctx.file, plugin);
 			return true;
 		}
 	});

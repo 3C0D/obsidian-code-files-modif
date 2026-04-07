@@ -84,6 +84,12 @@ export const mountCodeEditor = async (
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation
 	};
+	// Check if this is an unregistered extension
+	const extMatch = codeContext.match(/\.([^.]+)$/);
+	const extension = extMatch ? extMatch[1] : '';
+	if (extension && !plugin.getActiveExtensions().includes(extension)) {
+		initParams.isUnregisteredExtension = true;
+	}
 	if (!['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'].includes(theme)) {
 		const resolved = await resolveThemeParams(plugin, theme);
 		if (resolved.themeData) initParams.themeData = resolved.themeData;
@@ -92,8 +98,6 @@ export const mountCodeEditor = async (
 	if (plugin.settings.theme === 'default') {
 		initParams.background = 'transparent';
 	}
-	const extMatch = codeContext.match(/\.([^.]+)$/);
-	const extension = extMatch ? extMatch[1] : '';
 	initParams.editorConfig = buildMergedConfig(plugin, extension);
 
 	const iframe: HTMLIFrameElement = document.createElement('iframe');
@@ -247,6 +251,24 @@ Element.prototype.appendChild = function(node) {
 							iframe.focus();
 						};
 						modal.open();
+					}
+				}
+				break;
+			}
+			case 'return-to-default-view': {
+				if (data.context === codeContext) {
+					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
+					if (file instanceof TFile) {
+						const leaf = plugin.app.workspace
+							.getLeavesOfType('code-editor')
+							.find(
+								(l) =>
+									l.view instanceof CodeEditorView &&
+									l.view.file?.path === codeContext
+							);
+						if (leaf) {
+							await leaf.openFile(file);
+						}
 					}
 				}
 				break;

@@ -109,6 +109,22 @@
 						catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
 					}
 
+					// Add "Return to Default View" action if this is an unregistered extension
+					if (params.isUnregisteredExtension) {
+						editor.addAction({
+							id: 'code-files-return-to-default-view',
+							label: '↩️ Return to Default View',
+							contextMenuGroupId: 'code-files',
+							contextMenuOrder: 0,
+							run: function () {
+								window.parent.postMessage(
+									{ type: 'return-to-default-view', context: context },
+									'*'
+								);
+							}
+						});
+					}
+
 					// Alt+Z toggles word wrap and persists the setting
 					editor.addCommand(
 						monaco.KeyMod.Alt | monaco.KeyCode.KeyZ,

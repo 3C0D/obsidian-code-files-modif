@@ -96,7 +96,7 @@ function getItems(plugin: CodeFilesPlugin): MenuItems[] {
 		items.push({
 			title: 'Open in Monaco Editor',
 			icon: 'file-code',
-			action: () => CodeEditorView.openFile(activeFile, plugin)
+			action: async () => await CodeEditorView.openFile(activeFile, plugin)
 		});
 	}
 	// Always show Rename Extension if there's an active file

@@ -234,47 +234,34 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/**
-	 * Opens a vault file in a new tab using Obsidian's
-	 * standard leaf.openFile() API.
-	 */
+	/** Opens a vault file in the current leaf. */
 	static async openVaultFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
-		const leaf = plugin.app.workspace.getLeaf(true);
-		await leaf.openFile(file);
-		plugin.app.workspace.revealLeaf(leaf);
+		const leaf = plugin.app.workspace.getLeaf(false);
+		await leaf.setViewState({
+			type: viewType,
+			state: { file: file.path },
+			active: true
+		});
 	}
 
-	/**
-	 * Opens a file that is outside the vault (e.g. CSS
-	 * snippets in .obsidian/snippets/) by reading it
-	 * directly via the adapter and mounting a view manually.
-	 *
-	 * This bypasses Obsidian's file registry intentionally —
-	 * vault.create() cannot index files outside the vault
-	 * root, but adapter.read() can access them.
-	 */
-	static openExternalFile(file: TFile, plugin: CodeFilesPlugin): void {
+	/** Opens external files (CSS snippets) in a new leaf. */
+	static async openExternalFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
 		const leaf = plugin.app.workspace.getLeaf(true);
 		const view = new CodeEditorView(leaf, plugin);
 		view.file = file;
-		leaf.open(view);
-		// Load file content into Monaco editor.
-		void view.onLoadFile(file);
+		await leaf.open(view);
+		// to load the content and initialize Monaco.
+		await view.onLoadFile(file);
+		// Update the tab header to show the correct file name
+		leaf.updateHeader();
 	}
 
-	/**
-	 * Opens any file: uses the standard API for vault files,
-	 * falls back to manual mount for external files (e.g.
-	 * CSS snippets).
-	 */
-	static openFile(file: TFile, plugin: CodeFilesPlugin): void {
-		if (
-			plugin.getActiveExtensions().includes(file.extension) &&
-			plugin.app.vault.getAbstractFileByPath(file.path)
-		) {
-			void CodeEditorView.openVaultFile(file, plugin);
+	/** Opens any file in Monaco. */
+	static async openFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
+		if (plugin.app.vault.getAbstractFileByPath(file.path)) {
+			await CodeEditorView.openVaultFile(file, plugin);
 		} else {
-			CodeEditorView.openExternalFile(file, plugin);
+			await CodeEditorView.openExternalFile(file, plugin);
 		}
 	}
 }

@@ -43,7 +43,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 		// path is not indexed in the vault.
 		// @ts-expect-error: TFile constructor is internal API
 		const pseudoFile = new TFile(this.plugin.app.vault, path);
-		CodeEditorView.openExternalFile(pseudoFile, this.plugin);
+		await CodeEditorView.openExternalFile(pseudoFile, this.plugin);
 	}
 
 	renderSuggestion(item: CssSuggestion, el: HTMLElement): void {
