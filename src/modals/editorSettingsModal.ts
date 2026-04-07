@@ -132,17 +132,22 @@ export class EditorSettingsModal extends Modal {
 		new Setting(toggleSection)
 			.setName('Editor Brightness')
 			.setDesc('Adjust Monaco editor brightness (0.2 – 2.0)')
-			.addSlider((s) =>
-				s
-					.setLimits(0.2, 2, 0.1)
+			.addSlider((s) => {
+				s.setLimits(0.2, 2, 0.1)
 					.setValue(this.plugin.settings.editorBrightness)
 					.setDynamicTooltip()
 					.onChange(async (v) => {
-						this.plugin.settings.editorBrightness = v;
+						// this.plugin.settings.editorBrightness = v; — moved to input listener
 						await this.plugin.saveSettings();
-						this.plugin.broadcastBrightness();
-					})
-			);
+						// this.plugin.broadcastBrightness(); — moved to input listener
+					});
+				// Apply brightness in real-time while dragging
+				s.sliderEl.addEventListener('input', () => {
+					const value = parseFloat(s.sliderEl.value);
+					this.plugin.settings.editorBrightness = value;
+					this.plugin.broadcastBrightness();
+				});
+			});
 
 		// ── Formatter Config ──────────────────────────────────────────────────
 		const formatterSection = contentEl.createEl('div', {
