@@ -1,5 +1,5 @@
 import type { TFile, WorkspaceLeaf } from 'obsidian';
-import { TextFileView } from 'obsidian';
+import { normalizePath, TextFileView } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import { getLanguage } from '../utils/getLanguage.ts';
@@ -7,6 +7,7 @@ import { viewType, type CodeEditorInstance } from '../types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
+import { snippetExists, isSnippetEnabled } from '../utils/snippetUtils.ts';
 
 /**
  * Wraps a Monaco editor iframe in an Obsidian
@@ -20,6 +21,8 @@ export class CodeEditorView extends TextFileView {
 	private gearAction: { remove: () => void } | null = null;
 	private themeAction: { remove: () => void } | null = null;
 	private renameAction: { remove: () => void } | null = null;
+	private snippetFolderAction: { remove: () => void } | null = null;
+	private snippetToggleAction: { remove: () => void } | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -69,9 +72,13 @@ export class CodeEditorView extends TextFileView {
 		this.gearAction?.remove();
 		this.themeAction?.remove();
 		this.renameAction?.remove();
+		this.snippetFolderAction?.remove();
+		this.snippetToggleAction?.remove();
 		this.gearAction = null;
 		this.themeAction = null;
 		this.renameAction = null;
+		this.snippetFolderAction = null;
+		this.snippetToggleAction = null;
 	}
 
 	async onClose(): Promise<void> {
@@ -132,11 +139,13 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Adds header actions: rename extension (only for vault files), change theme, and open editor settings. */
+	/** Adds header actions: rename extension (only for vault files), change theme, snippet controls (only for CSS snippets), and open editor settings. */
 	private injectGearIcon(file: TFile): void {
 		this.gearAction?.remove();
 		this.themeAction?.remove();
 		this.renameAction?.remove();
+		this.snippetFolderAction?.remove();
+		this.snippetToggleAction?.remove();
 
 		const isExternal = !this.plugin.app.vault.getAbstractFileByPath(file.path);
 		if (!isExternal) {
@@ -163,6 +172,34 @@ export class CodeEditorView extends TextFileView {
 				}
 			).open();
 		});
+
+		// Add snippet controls ONLY when editing a CSS snippet file
+		// Added LAST so they appear on the LEFT
+		const isSnippetFile = file.path.includes('.obsidian/snippets') && file.extension === 'css';
+		if (isSnippetFile) {
+			const snippetName = file.basename;
+			const exists = snippetExists(this.plugin.app, snippetName);
+
+			this.snippetFolderAction = this.addAction('folder', 'Open snippets folder', () => {
+				this.plugin.app.openWithDefaultApp(normalizePath('.obsidian/snippets'));
+			});
+
+			if (exists) {
+				const isOn = isSnippetEnabled(this.plugin.app, snippetName);
+				const toggleEl = this.addAction('square', `Toggle ${snippetName}.css snippet`, () => {
+					const newState = !isSnippetEnabled(this.plugin.app, snippetName);
+					this.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
+					track.toggleClass('is-on', newState);
+				});
+				// Inject custom toggle switch
+				toggleEl.empty();
+				toggleEl.addClass('code-files-snippet-toggle-action');
+				const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
+				if (isOn) track.addClass('is-on');
+				track.createDiv({ cls: 'code-files-toggle-thumb' });
+				this.snippetToggleAction = toggleEl;
+			}
+		}
 	}
 
 	/** Creates the Monaco editor instance with callbacks for content changes (dirty + requestSave) and manual saves (Ctrl+S). */

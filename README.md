@@ -70,6 +70,17 @@ When a code file is open, three icons appear in the tab header:
 
 These actions are also available via **F1** or right-click inside Monaco.
 
+### CSS Snippet Controls
+
+When editing a CSS snippet file (`.obsidian/snippets/*.css`), two additional controls appear:
+
+| Icon | What it does |
+|------|-------------|
+| 📁 **Folder** | Open the snippets folder in your system file explorer |
+| 🔘 **Toggle** | Enable or disable the current snippet in Obsidian without leaving the editor |
+
+The toggle switch shows the current state (on/off) and updates instantly when clicked.
+
 ---
 
 ## Editor Settings (gear icon)

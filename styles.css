@@ -54,3 +54,40 @@
 .code-files-settings-toggles {
   flex-shrink: 0;
 }
+
+/* Snippet toggle switch */
+.code-files-snippet-toggle-action {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+}
+
+.code-files-toggle-track {
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--background-modifier-border);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.code-files-toggle-track.is-on {
+  background: var(--interactive-accent);
+}
+
+.code-files-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.code-files-toggle-track.is-on .code-files-toggle-thumb {
+  transform: translateX(12px);
+}
