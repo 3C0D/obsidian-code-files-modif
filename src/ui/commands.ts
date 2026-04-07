@@ -12,7 +12,6 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 		id: 'create',
 		name: 'Create new Code File',
 		callback: () => {
-			(document.activeElement as HTMLElement)?.blur();
 			new CreateCodeFileModal(plugin).open();
 		}
 	});
@@ -62,7 +61,6 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 			const view = plugin.app.workspace.getActiveViewOfType(CodeEditorView);
 			if (!view?.file) return false;
 			if (!checking) {
-				(document.activeElement as HTMLElement)?.blur();
 				// onConfigApplied broadcasts to
 				// all matching iframes because
 				// the palette isn't tied to one.

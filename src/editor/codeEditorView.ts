@@ -139,12 +139,10 @@ export class CodeEditorView extends TextFileView {
 		this.renameAction?.remove();
 
 		this.renameAction = this.addAction('pencil', 'Rename Extension', () => {
-			(document.activeElement as HTMLElement)?.blur();
 			new RenameExtensionModal(this.plugin, file).open();
 		});
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
-			(document.activeElement as HTMLElement)?.blur();
 			const applyTheme = async (theme: string): Promise<void> => {
 				const params = await resolveThemeParams(this.plugin, theme);
 				this.codeEditor?.send('change-theme', params);
@@ -153,7 +151,6 @@ export class CodeEditorView extends TextFileView {
 		});
 
 		this.gearAction = this.addAction('settings', 'Editor Settings', () => {
-			(document.activeElement as HTMLElement)?.blur();
 			new EditorSettingsModal(
 				this.plugin,
 				file.extension,

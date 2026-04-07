@@ -35,28 +35,12 @@ export class FenceEditModal extends Modal {
 		});
 		this.titleEl.appendChild(badgeEl);
 
-		const paletteEl = createEl('div', {
-			cls: 'code-files-fence-gear',
-			attr: { 'aria-label': 'Change Theme' }
-		});
-		setIcon(paletteEl, 'palette');
-		paletteEl.addEventListener('click', () => {
-			(document.activeElement as HTMLElement)?.blur();
-			const applyTheme = async (theme: string): Promise<void> => {
-				const params = await resolveThemeParams(this.plugin, theme);
-				this.codeEditor?.send('change-theme', params);
-			};
-			new ChooseThemeModal(this.plugin, applyTheme, applyTheme).open();
-		});
-		this.titleEl.appendChild(paletteEl);
-
 		const gearEl = createEl('div', {
 			cls: 'code-files-fence-gear',
 			attr: { 'aria-label': 'Editor Settings' }
 		});
 		setIcon(gearEl, 'settings');
 		gearEl.addEventListener('click', () => {
-			(document.activeElement as HTMLElement)?.blur();
 			new EditorSettingsModal(
 				this.plugin,
 				this.langKey,
@@ -65,6 +49,20 @@ export class FenceEditModal extends Modal {
 			).open();
 		});
 		this.titleEl.appendChild(gearEl);
+
+		const paletteEl = createEl('div', {
+			cls: 'code-files-fence-gear',
+			attr: { 'aria-label': 'Change Theme' }
+		});
+		setIcon(paletteEl, 'palette');
+		paletteEl.addEventListener('click', () => {
+			const applyTheme = async (theme: string): Promise<void> => {
+				const params = await resolveThemeParams(this.plugin, theme);
+				this.codeEditor?.send('change-theme', params);
+			};
+			new ChooseThemeModal(this.plugin, applyTheme, applyTheme).open();
+		});
+		this.titleEl.appendChild(paletteEl);
 
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
