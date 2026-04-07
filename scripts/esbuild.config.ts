@@ -242,6 +242,14 @@ async function createBuildContext(
 					);
 					const codiconTarget = path.join(buildPath, 'vs/editor/codicon.ttf');
 					await copyFile(codiconSrc, codiconTarget);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/standalone.js'),
+						path.join(buildPath, 'prettier-standalone.js')
+					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/markdown.js'),
+						path.join(buildPath, 'prettier-markdown.js')
+					);
 					await copyFile(htmlSrc, htmlTarget);
 					await cp(themesSrc, themesTarget, { recursive: true });
 					// if real or build

@@ -69,6 +69,21 @@ export const mountCodeEditor = async (
 
 	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 
+	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
+	// before using the URL as a base for relative paths inside the HTML
+	const htmlUrl = plugin.app.vault.adapter.getResourcePath(
+		`${pluginBase}/monacoEditor.html`
+	);
+	const vsBase = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/vs`)
+		.replace(/\?.*$/, '');
+	const prettierBase = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-standalone.js`)
+		.replace(/\?.*$/, '');
+	const prettierMarkdownUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-markdown.js`)
+		.replace(/\?.*$/, '');
+
 	const initParams: Record<string, string | boolean> = {
 		context: codeContext,
 		lang: language,
@@ -107,13 +122,6 @@ export const mountCodeEditor = async (
 
 	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
 	// before using the URL as a base for relative paths inside the HTML
-	const htmlUrl = plugin.app.vault.adapter.getResourcePath(
-		`${pluginBase}/monacoEditor.html`
-	);
-	const vsBase = plugin.app.vault.adapter
-		.getResourcePath(`${pluginBase}/vs`)
-		.replace(/\?.*$/, '');
-
 	let html = await (await fetch(htmlUrl)).text();
 	// Patch relative ./vs paths to absolute app:// URLs so Monaco can load its workers and modules
 	html = html
@@ -143,6 +151,8 @@ function parseEditorConfig(str) {
     );
 }
 </script>
+<script src="${prettierBase}"></script>
+<script src="${prettierMarkdownUrl}"></script>
 <style>${cssText}</style>
 <script>
 const _orig = Element.prototype.appendChild;

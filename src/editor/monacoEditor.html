@@ -104,6 +104,23 @@
 
 					editor = monaco.editor.create(document.getElementById('container'), opts);
 
+					monaco.languages.registerDocumentFormattingEditProvider('markdown', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var formatted = await prettier.format(model.getValue(), {
+									parser: 'markdown',
+									plugins: [prettierPlugins.markdown],
+									proseWrap: 'always',
+									printWidth: 80
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier format failed', e);
+								return [];
+							}
+						}
+					});
+
 					if (params.editorConfig) {
 						try { applyEditorConfig(parseEditorConfig(params.editorConfig)); }
 						catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
@@ -179,6 +196,21 @@
 						);
 					});
 
+					// Add "Format Document" action for markdown files
+					if (params.lang === 'markdown') {
+						editor.addAction({
+							id: 'code-files-format-markdown',
+							label: '📝 Format Document',
+							contextMenuGroupId: 'code-files',
+							contextMenuOrder: 0.5,
+							keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
+							run: function () {
+								var formatAction = editor.getAction('editor.action.formatDocument');
+								if (formatAction) formatAction.run();
+							}
+						});
+					}
+
 					// Add a context menu action in Monaco to open the formatter config for this file
 					editor.addAction({
 						id: 'code-files-rename-extension',
@@ -243,7 +275,7 @@
 
 					editor.addAction({
 						id: 'code-files-delete-file',
-						label: '🗑️ Delete File (Ctrl+Delete)',
+						label: '🗑️ Delete File',
 						contextMenuGroupId: 'code-files',
 						contextMenuOrder: 4,
 						keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Delete],
