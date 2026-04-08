@@ -14,7 +14,7 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 	protected getSuggestions(query: string): TFolder[] {
 		const folders: TFolder[] = [];
 		const allFiles = this.plugin.app.vault.getAllLoadedFiles();
-		
+
 		for (const file of allFiles) {
 			if (file instanceof TFolder) {
 				folders.push(file);

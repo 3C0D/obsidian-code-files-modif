@@ -81,8 +81,13 @@ export const mountCodeEditor = async (
 			if (!file.path.startsWith(root + '/')) continue;
 			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
 			try {
-				files.push({ path: file.path, content: await plugin.app.vault.cachedRead(file) });
-			} catch { /* skip unreadable files */ }
+				files.push({
+					path: file.path,
+					content: await plugin.app.vault.cachedRead(file)
+				});
+			} catch {
+				/* skip unreadable files */
+			}
 		}
 		send('load-project-files', { files });
 	}
@@ -378,20 +383,44 @@ Element.prototype.appendChild = function(node) {
 			case 'open-file': {
 				if (data.context !== codeContext) break;
 				const vaultPath = data.path as string;
-				const position = data.position as { lineNumber: number; column: number } | null;
+				const position = data.position as {
+					lineNumber: number;
+					column: number;
+				} | null;
 				const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
-				if (file instanceof TFile) {
-					const leaf = plugin.app.workspace.getLeaf('tab');
-					await leaf.openFile(file);
-					// If the opened view is a CodeEditorView, scroll to position
-					if (position && leaf.view instanceof CodeEditorView) {
-						// Wait a bit for Monaco to be ready
-						setTimeout(() => {
+				if (!(file instanceof TFile)) break;
+
+				// Look for an existing leaf in the main editor area (no sidebars, no popout windows)
+				const existingLeaf = plugin.app.workspace
+					.getLeavesOfType('code-editor')
+					.find((l) => {
+						// Must be in the main window
+						if (l.view.containerEl.win !== window) return false;
+						// Must be in the root split (editor area), not left/right sidebar
+						const root = plugin.app.workspace.rootSplit;
+						let el: Element | null = l.containerEl;
+						while (el && el !== root.containerEl) el = el.parentElement;
+						if (!el) return false;
+						// File must match
+						return (
+							l.view instanceof CodeEditorView &&
+							l.view.file?.path === vaultPath
+						);
+					});
+
+				const leaf = existingLeaf ?? plugin.app.workspace.getLeaf('tab');
+				if (!existingLeaf) await leaf.openFile(file);
+				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+
+				if (position) {
+					setTimeout(
+						() => {
 							if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
 								leaf.view.editor.send('scroll-to-position', { position });
 							}
-						}, 100);
-					}
+						},
+						existingLeaf ? 0 : 150
+					);
 				}
 				break;
 			}

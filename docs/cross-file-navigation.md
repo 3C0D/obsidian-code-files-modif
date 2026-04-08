@@ -159,21 +159,41 @@ case 'open-file': {
     const vaultPath = data.path as string;
     const position = data.position as { lineNumber: number; column: number } | null;
     const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
-    if (file instanceof TFile) {
-        const leaf = plugin.app.workspace.getLeaf('tab');
-        await leaf.openFile(file);
-        // Scroll vers la position si c'est une CodeEditorView
-        if (position && leaf.view instanceof CodeEditorView) {
-            setTimeout(() => {
-                if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-                    leaf.view.editor.send('scroll-to-position', { position });
-                }
-            }, 100);
-        }
+    if (!(file instanceof TFile)) break;
+
+    // Look for an existing leaf in the main editor area (no sidebars, no popout windows)
+    const existingLeaf = plugin.app.workspace.getLeavesOfType('code-editor').find((l) => {
+        // Must be in the main window
+        if (l.view.containerEl.win !== window) return false;
+        // Must be in the root split (editor area), not left/right sidebar
+        const root = plugin.app.workspace.rootSplit;
+        let el: Element | null = l.containerEl;
+        while (el && el !== root.containerEl) el = el.parentElement;
+        if (!el) return false;
+        // File must match
+        return l.view instanceof CodeEditorView && l.view.file?.path === vaultPath;
+    });
+
+    const leaf = existingLeaf ?? plugin.app.workspace.getLeaf('tab');
+    if (!existingLeaf) await leaf.openFile(file);
+    plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+
+    if (position) {
+        setTimeout(() => {
+            if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+                leaf.view.editor.send('scroll-to-position', { position });
+            }
+        }, existingLeaf ? 0 : 150);
     }
     break;
 }
 ```
+
+**Réutilisation des tabs existants :**
+- Cherche d'abord si le fichier est déjà ouvert dans un tab de l'éditeur principal
+- Exclut les sidebars et les fenêtres popout
+- Si le fichier est déjà ouvert, réutilise le tab existant au lieu d'en créer un nouveau
+- Le délai pour le scroll est de 0ms si le tab existait déjà (Monaco prêt), 150ms pour un nouveau fichier
 
 **Handler `scroll-to-position` dans l'iframe :**
 ```javascript
@@ -239,6 +259,15 @@ Pour vérifier que les URIs sont correctement configurés :
 - Vérifier que `registerEditorOpener` est appelé après `monaco.editor.create`
 - Vérifier dans la console que le postMessage `open-file` est envoyé
 - Vérifier que le handler `open-file` dans `mountCodeEditor.ts` est bien déclenché
+
+### Plusieurs tabs s'ouvrent pour le même fichier
+
+**Cause :** La logique de réutilisation des tabs ne trouve pas le tab existant.
+
+**Solution :**
+- Vérifier que le fichier est bien ouvert dans l'éditeur principal (pas dans une sidebar ou popout)
+- Le check remonte l'arbre DOM jusqu'à `rootSplit.containerEl` pour exclure les sidebars
+- Si la structure interne d'Obsidian change dans une future version, ce check peut nécessiter un ajustement
 
 ### Le scroll vers la position ne fonctionne pas
 

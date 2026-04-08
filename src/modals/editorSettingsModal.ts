@@ -154,8 +154,7 @@ export class EditorSettingsModal extends Modal {
 			.setName('Project Root Folder')
 			.setDesc('Base folder for inter-file navigation and imports resolution')
 			.addText((text) => {
-				text
-					.setPlaceholder('e.g., my-project')
+				text.setPlaceholder('e.g., my-project')
 					.setValue(this.plugin.settings.projectRootFolder)
 					.onChange(async (value) => {
 						this.plugin.settings.projectRootFolder = value.trim();

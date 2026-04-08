@@ -7,15 +7,14 @@ import type {
 
 const configs: Linter.Config[] = [
   {
-    ignores: ["eslint.config.mts"]
+    ignores: ["eslint.config.mts", "templates/**"]
   },
   {
     files: ["**/*.ts"],
     ignores: [
       "dist/**",
       "node_modules/**",
-      "main.js",
-      "templates/**"
+      "main.js"
     ],
     languageOptions: {
       parser: typescriptEslintParser,

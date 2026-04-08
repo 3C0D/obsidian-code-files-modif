@@ -68,6 +68,7 @@ Navigate between TypeScript and JavaScript files in your project:
 - **Ctrl+Click** on imports, function calls, or class names to jump to their definitions
 - **Go to Definition** (F12) shows a peek window with the definition location
 - Works with relative imports (`./utils`, `../service`) and supports both `.ts`, `.tsx`, `.js`, `.jsx` files
+- **Smart tab reuse** — if the target file is already open in the editor, it reuses that tab instead of creating a new one
 
 ### Setup
 
