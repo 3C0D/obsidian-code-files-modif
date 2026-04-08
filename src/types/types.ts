@@ -177,3 +177,10 @@ export interface CodeEditorInstance {
 }
 
 export type MenuItems = { title: string; icon: string; action: () => void };
+
+// ===== Monaco HTML Configuration Constants =====
+// These values are used in TypeScript code (not in the HTML iframe)
+// For HTML iframe config, see src/types/monacoHtml.js
+
+/** Duration (ms) the diff button stays visible in tab header after formatting */
+export const DIFF_BUTTON_DISPLAY_DURATION = 10000;

@@ -7,6 +7,7 @@ import { viewType, type CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { snippetExists, isSnippetEnabled } from '../utils/snippetUtils.ts';
+import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
 
 /**
  * Wraps a Monaco editor iframe in an Obsidian
@@ -273,7 +274,7 @@ export class CodeEditorView extends TextFileView {
 			console.log('[codeEditorView] diff button timeout - removing');
 			this.diffAction?.remove();
 			this.diffAction = null;
-		}, 10000);
+		}, DIFF_BUTTON_DISPLAY_DURATION);
 	}
 
 	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
