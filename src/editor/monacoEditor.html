@@ -198,7 +198,55 @@
 						noSyntaxValidation: params.noSyntaxValidation === true
 					});
 
+					// Configure TypeScript compiler options for inter-file navigation
+					if (params.projectRootFolder) {
+						var compilerOptions = {
+							baseUrl: 'file:///' + params.projectRootFolder,
+							moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+							allowNonTsExtensions: true,
+							target: monaco.languages.typescript.ScriptTarget.ESNext,
+							module: monaco.languages.typescript.ModuleKind.ESNext,
+							allowJs: true,
+							checkJs: false,
+							paths: {}
+						};
+						monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
+						monaco.languages.typescript.javascriptDefaults.setCompilerOptions(compilerOptions);
+					}
+
+					// Create model with file:/// URI for proper TypeScript resolution
+					var modelUri = monaco.Uri.parse('file:///' + context);
+					var existingModel = monaco.editor.getModel(modelUri);
+					var model = existingModel || monaco.editor.createModel('', params.lang || 'plaintext', modelUri);
+					opts.model = model;
+
 					editor = monaco.editor.create(document.getElementById('container'), opts);
+
+					// Intercept cross-file navigation (Ctrl+Click on imports)
+					monaco.editor.registerEditorOpener({
+						openCodeEditor: function(_source, resource, selectionOrPosition) {
+							// resource.path = '/my-project/utils.ts' (without 'file://')
+							var position = null;
+							if (selectionOrPosition && 'startLineNumber' in selectionOrPosition) {
+								position = {
+									lineNumber: selectionOrPosition.startLineNumber,
+									column: selectionOrPosition.startColumn
+								};
+							} else if (selectionOrPosition && 'lineNumber' in selectionOrPosition) {
+								position = {
+									lineNumber: selectionOrPosition.lineNumber,
+									column: selectionOrPosition.column
+								};
+							}
+							window.parent.postMessage({
+								type: 'open-file',
+								path: resource.path.replace(/^\//, ''), // vault-relative path
+								position: position,
+								context: context
+							}, '*');
+							return true; // "handled, don't open inline"
+						}
+					});
 
 					// Register Mermaid as a custom language if not already registered
 					if (!monaco.languages.getLanguages().some(function(lang) { return lang.id === 'mermaid'; })) {
@@ -596,6 +644,20 @@
 					switch (data.type) {
 						case 'init':
 							applyParams(data);
+							window._initialized = true;
+							if (window._pendingProjectFiles) {
+								var files = window._pendingProjectFiles;
+								for (var i = 0; i < files.length; i++) {
+									var file = files[i];
+									var uri = monaco.Uri.parse('file:///' + file.path);
+									monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri.toString());
+									monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri.toString());
+									if (!monaco.editor.getModel(uri)) {
+										monaco.editor.createModel(file.content, undefined, uri);
+									}
+								}
+								window._pendingProjectFiles = null;
+							}
 							break;
 						case 'change-value':
 							if (editor) editor.setValue(data.value || '');
@@ -655,9 +717,30 @@
 						case 'focus':
 							if (editor) editor.focus();
 							break;
+						case 'scroll-to-position':
+							if (editor && data.position) {
+								editor.setPosition(data.position);
+								editor.revealPositionInCenter(data.position);
+							}
+							break;
 						case 'trigger-show-diff':
 							if (lastFormatOriginal && lastFormatFormatted) {
 								openDiffModal(lastFormatOriginal, lastFormatFormatted);
+							}
+							break;
+						case 'load-project-files':
+							if (!window._initialized) {
+								window._pendingProjectFiles = data.files;
+							} else {
+								for (var i = 0; i < data.files.length; i++) {
+									var file = data.files[i];
+									var uri = monaco.Uri.parse('file:///' + file.path);
+									monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri.toString());
+									monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri.toString());
+									if (!monaco.editor.getModel(uri)) {
+										monaco.editor.createModel(file.content, undefined, uri);
+									}
+								}
 							}
 							break;
 					}

@@ -32,6 +32,8 @@ export interface MyPluginSettings {
 	excludedExtensions: string[];
 	/** Extra extensions added manually while allExtensions is true */
 	extraExtensions: string[];
+	/** Project root folder for inter-file navigation and imports resolution */
+	projectRootFolder: string;
 }
 
 /**
@@ -157,7 +159,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
 	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
-	extraExtensions: []
+	extraExtensions: [],
+	projectRootFolder: ''
 };
 
 /** Obsidian view type identifier for the Monaco editor */

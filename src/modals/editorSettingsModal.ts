@@ -9,6 +9,7 @@ import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
+import { FolderSuggest } from '../ui/folderSuggest.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -146,6 +147,23 @@ export class EditorSettingsModal extends Modal {
 					const value = parseFloat(s.sliderEl.value);
 					this.plugin.settings.editorBrightness = value;
 					this.plugin.broadcastBrightness();
+				});
+			});
+
+		new Setting(toggleSection)
+			.setName('Project Root Folder')
+			.setDesc('Base folder for inter-file navigation and imports resolution')
+			.addText((text) => {
+				text
+					.setPlaceholder('e.g., my-project')
+					.setValue(this.plugin.settings.projectRootFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.projectRootFolder = value.trim();
+						await this.plugin.saveSettings();
+					});
+				new FolderSuggest(this.plugin, text.inputEl, (folder) => {
+					this.plugin.settings.projectRootFolder = folder.path;
+					void this.plugin.saveSettings();
 				});
 			});
 

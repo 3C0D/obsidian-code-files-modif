@@ -70,6 +70,23 @@ export const mountCodeEditor = async (
 
 	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 
+	async function loadProjectFiles(
+		send: (type: string, payload: Record<string, unknown>) => void
+	): Promise<void> {
+		const root = plugin.settings.projectRootFolder;
+		if (!root) return;
+
+		const files: { path: string; content: string }[] = [];
+		for (const file of plugin.app.vault.getFiles()) {
+			if (!file.path.startsWith(root + '/')) continue;
+			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
+			try {
+				files.push({ path: file.path, content: await plugin.app.vault.cachedRead(file) });
+			} catch { /* skip unreadable files */ }
+		}
+		send('load-project-files', { files });
+	}
+
 	// getResourcePath returns app://...?timestamp — the timestamp must be stripped
 	// before using the URL as a base for relative paths inside the HTML
 	const htmlUrl = plugin.app.vault.adapter.getResourcePath(
@@ -128,7 +145,8 @@ export const mountCodeEditor = async (
 				? false
 				: plugin.settings.minimap,
 		noSemanticValidation: !plugin.settings.semanticValidation,
-		noSyntaxValidation: !plugin.settings.syntaxValidation
+		noSyntaxValidation: !plugin.settings.syntaxValidation,
+		projectRootFolder: plugin.settings.projectRootFolder
 	};
 	// Check if this is an unregistered extension
 	const extMatch = codeContext.match(/\.([^.]+)$/);
@@ -226,6 +244,7 @@ Element.prototype.appendChild = function(node) {
 				send('init', initParams);
 				send('change-value', { value });
 				send('focus', {});
+				void loadProjectFiles(send);
 				break;
 			}
 			case 'open-formatter-config': {
@@ -353,6 +372,26 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					plugin.settings.wordWrap = data.wordWrap as 'on' | 'off';
 					await plugin.saveSettings();
+				}
+				break;
+			}
+			case 'open-file': {
+				if (data.context !== codeContext) break;
+				const vaultPath = data.path as string;
+				const position = data.position as { lineNumber: number; column: number } | null;
+				const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
+				if (file instanceof TFile) {
+					const leaf = plugin.app.workspace.getLeaf('tab');
+					await leaf.openFile(file);
+					// If the opened view is a CodeEditorView, scroll to position
+					if (position && leaf.view instanceof CodeEditorView) {
+						// Wait a bit for Monaco to be ready
+						setTimeout(() => {
+							if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+								leaf.view.editor.send('scroll-to-position', { position });
+							}
+						}, 100);
+					}
 				}
 				break;
 			}

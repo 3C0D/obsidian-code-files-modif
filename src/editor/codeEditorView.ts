@@ -33,6 +33,11 @@ export class CodeEditorView extends TextFileView {
 		super(leaf);
 	}
 
+	/** Public getter for editor instance (used by mountCodeEditor for scroll-to-position) */
+	get editor(): CodeEditorInstance | undefined {
+		return this.codeEditor;
+	}
+
 	getDisplayText(): string {
 		return this.file?.basename ?? 'Code Editor';
 	}
