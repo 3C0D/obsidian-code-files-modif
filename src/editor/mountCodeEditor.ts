@@ -96,6 +96,21 @@ export const mountCodeEditor = async (
 	const prettierTypescriptUrl = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/prettier-typescript.js`)
 		.replace(/\?.*$/, '');
+	const prettierBabelUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-babel.js`)
+		.replace(/\?.*$/, '');
+	const prettierPostcssUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-postcss.js`)
+		.replace(/\?.*$/, '');
+	const prettierHtmlUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-html.js`)
+		.replace(/\?.*$/, '');
+	const prettierYamlUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-yaml.js`)
+		.replace(/\?.*$/, '');
+	const prettierGraphqlUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-graphql.js`)
+		.replace(/\?.*$/, '');
 	const mermaidFormatterUrl = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/mermaid-formatter.js`)
 		.replace(/\?.*$/, '');
@@ -174,6 +189,11 @@ function parseEditorConfig(str) {
 <script src="${prettierMarkdownUrl}"></script>
 <script src="${prettierEstreeUrl}"></script>
 <script src="${prettierTypescriptUrl}"></script>
+<script src="${prettierBabelUrl}"></script>
+<script src="${prettierPostcssUrl}"></script>
+<script src="${prettierHtmlUrl}"></script>
+<script src="${prettierYamlUrl}"></script>
+<script src="${prettierGraphqlUrl}"></script>
 <script src="${mermaidFormatterUrl}"></script>
 <script src="${configJsUrl}"></script>
 <style>${cssText}</style>

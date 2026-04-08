@@ -265,6 +265,26 @@ async function createBuildContext(
 						),
 						path.join(buildPath, 'prettier-typescript.js')
 					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/babel.js'),
+						path.join(buildPath, 'prettier-babel.js')
+					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/postcss.js'),
+						path.join(buildPath, 'prettier-postcss.js')
+					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/html.js'),
+						path.join(buildPath, 'prettier-html.js')
+					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/yaml.js'),
+						path.join(buildPath, 'prettier-yaml.js')
+					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/graphql.js'),
+						path.join(buildPath, 'prettier-graphql.js')
+					);
 					// Bundle mermaid-formatter for browser
 					await esbuild.build({
 						entryPoints: [

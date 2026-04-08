@@ -200,6 +200,11 @@
 
 					editor = monaco.editor.create(document.getElementById('container'), opts);
 
+					// Register Mermaid as a custom language if not already registered
+					if (!monaco.languages.getLanguages().some(function(lang) { return lang.id === 'mermaid'; })) {
+						monaco.languages.register({ id: 'mermaid' });
+					}
+
 					monaco.languages.registerDocumentFormattingEditProvider('markdown', {
 						provideDocumentFormattingEdits: async function(model) {
 							try {
@@ -231,6 +236,14 @@
 								}
 								var original = model.getValue();
 								var formatted = window.mermaidFormatter.formatMermaid(original);
+								if (formatted !== original) {
+									lastFormatOriginal = original;
+									lastFormatFormatted = formatted;
+									window.parent.postMessage(
+										{ type: 'format-diff-available', context: context },
+										'*'
+									);
+								}
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
 								console.warn('code-files: mermaid format failed', e);
@@ -261,13 +274,106 @@
 							try {
 								var original = model.getValue();
 								var formatted = await prettier.format(original, {
-									parser: 'typescript',
-									plugins: [prettierPlugins.estree, prettierPlugins.typescript],
+									parser: 'babel',
+									plugins: [prettierPlugins.babel, prettierPlugins.estree],
 									printWidth: PRETTIER_PRINT_WIDTH
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
 								console.warn('code-files: prettier javascript format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: CSS / SCSS / Less ───────────────────────────────────────────
+					['css', 'scss', 'less'].forEach(function(lang) {
+						monaco.languages.registerDocumentFormattingEditProvider(lang, {
+							provideDocumentFormattingEdits: async function(model) {
+								try {
+									var original = model.getValue();
+									var formatted = await prettier.format(original, {
+										parser: lang,
+										plugins: [prettierPlugins.postcss],
+										printWidth: PRETTIER_PRINT_WIDTH
+									});
+									return [{ range: model.getFullModelRange(), text: formatted }];
+								} catch(e) {
+									console.warn('code-files: prettier ' + lang + ' format failed', e);
+									return [];
+								}
+							}
+						});
+					});
+
+					// ── Prettier: HTML ────────────────────────────────────────────────────────
+					monaco.languages.registerDocumentFormattingEditProvider('html', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'html',
+									plugins: [prettierPlugins.html],
+									printWidth: PRETTIER_PRINT_WIDTH
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier html format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: JSON ────────────────────────────────────────────────────────
+					// Overrides Monaco's native JSON formatter for consistency with other languages
+					monaco.languages.registerDocumentFormattingEditProvider('json', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'json',
+									plugins: [prettierPlugins.babel, prettierPlugins.estree],
+									printWidth: PRETTIER_PRINT_WIDTH
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier json format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: YAML ────────────────────────────────────────────────────────
+					monaco.languages.registerDocumentFormattingEditProvider('yaml', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'yaml',
+									plugins: [prettierPlugins.yaml],
+									printWidth: PRETTIER_PRINT_WIDTH
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier yaml format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: GraphQL ─────────────────────────────────────────────────────
+					monaco.languages.registerDocumentFormattingEditProvider('graphql', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'graphql',
+									plugins: [prettierPlugins.graphql],
+									printWidth: PRETTIER_PRINT_WIDTH
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier graphql format failed', e);
 								return [];
 							}
 						}

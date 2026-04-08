@@ -1,0 +1,12 @@
+// SCSS sample with formatting issues
+$primary-color:#007bff;$secondary-color:#6c757d;$font-stack:Arial,sans-serif;
+
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);padding:20px;
+.card-header{font-size:1.5rem;font-weight:bold;color:$primary-color;margin-bottom:10px;}
+.card-body{font-size:1rem;color:#333;line-height:1.6;}
+.card-footer{margin-top:15px;padding-top:15px;border-top:1px solid #eee;
+a{color:$primary-color;text-decoration:none;&:hover{text-decoration:underline;}}}}
+
+@mixin flex-center{display:flex;justify-content:center;align-items:center;}
+
+.centered-content{@include flex-center;height:100vh;}

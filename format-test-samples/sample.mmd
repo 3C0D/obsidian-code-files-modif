@@ -1,0 +1,30 @@
+graph LR
+A[User]-->B{Authentication}
+B-->|Success|C[Dashboard]
+B-->|Failure|D[Login Page]
+C-->E[Profile]
+C-->F[Settings]
+C-->G[Logout]
+E-->H[Edit Profile]
+F-->I[Change Password]
+F-->J[Preferences]
+G-->D
+H-->E
+I-->F
+J-->F
+
+subgraph "User Flow"
+A
+B
+D
+end
+
+subgraph "Authenticated Area"
+C
+E
+F
+G
+H
+I
+J
+end

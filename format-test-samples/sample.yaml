@@ -1,0 +1,18 @@
+# YAML sample with formatting issues
+name: sample-application
+version: 1.0.0
+description: A sample application configuration file
+environment: production
+server: {host: localhost,port: 8080,ssl: true}
+database: {type: postgresql,host: db.example.com,port: 5432,name: mydb,credentials: {username: admin,password: secret123}}
+features: [authentication,authorization,logging,monitoring]
+services:
+  - name: api-service
+    port: 3000
+    replicas: 3
+    resources: {cpu: 500m,memory: 512Mi}
+  - name: worker-service
+    port: 3001
+    replicas: 2
+    resources: {cpu: 250m,memory: 256Mi}
+logging: {level: info,format: json,output: stdout}

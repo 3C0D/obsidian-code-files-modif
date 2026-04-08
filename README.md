@@ -9,6 +9,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **50+ themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview
 - **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave), with diff viewer for all formatted files
 - **Mermaid formatting** — format Mermaid diagram files with mermaid-formatter (Shift+Alt+F or formatOnSave). Also formats ` ```mermaid ` code blocks inside markdown files.
+- **Multi-language formatting** — format JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, and GraphQL files with Prettier (Shift+Alt+F or formatOnSave)
 - **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
 - **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
 - **Open any file in Monaco** — open any file type in the Monaco editor via command palette or context menu
@@ -22,9 +23,28 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 
 Format your code with Monaco's built-in formatters:
 
-- **Keyboard shortcut**: `Shift+Alt+F` (markdown and Mermaid files)
+- **Keyboard shortcut**: `Shift+Alt+F` (all supported languages)
 - **Automatic**: Enable `formatOnSave` in Editor Config
-- **Context menu**: Right-click → "📝 Format Document" (markdown and Mermaid files)
+- **Context menu**: Right-click → "📝 Format Document" (all supported languages)
+
+### Supported Languages
+
+Prettier formatting is available for:
+- **JavaScript** (parser: babel) — supports JSX
+- **TypeScript** (parser: typescript) — supports TSX
+- **CSS** (parser: css)
+- **SCSS** (parser: scss)
+- **Less** (parser: less)
+- **HTML** (parser: html)
+- **JSON** (parser: json)
+- **YAML** (parser: yaml)
+- **GraphQL** (parser: graphql)
+- **Markdown** (parser: markdown) — with Mermaid block formatting
+- **Mermaid** (mermaid-formatter) — standalone .mmd files
+
+### Test Samples
+
+The `format-test-samples/` folder contains example files with intentional formatting errors to test the formatter. Copy this folder to your vault to try formatting on different file types.
 
 ### Format Diff Viewer
 
@@ -34,7 +54,7 @@ After formatting any file, you can view the changes:
 - Click it to open a side-by-side comparison (original vs formatted)
 - The diff viewer is also available in the context menu: **"⟷ Show Format Diff"**
 - Shows exactly what changed during the last format operation
-- Works for all file types that support formatting (JavaScript, TypeScript, JSON, CSS, HTML, markdown, Mermaid, etc.)
+- Works for all file types that support formatting (JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown, Mermaid)
 
 The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with syntax highlighting and inline diff markers.
 
@@ -139,7 +159,7 @@ Accepts standard Monaco `IEditorOptions`:
 }
 ```
 
-**Note:** `printWidth` only affects Prettier-based formatters (markdown and mermaid). For other languages (TypeScript, JavaScript, etc.), Monaco uses native formatters that don't respect this setting. Use `rulers` for visual line length guides.
+**Note:** `printWidth` affects Prettier-based formatters (Markdown, Mermaid, JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL). Use `rulers` for visual line length guides.
 
 Changes save automatically when the panel closes. Per-extension config merges with global.
 
@@ -159,7 +179,7 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+S` | Save (formats first if formatOnSave is on) |
-| `Shift+Alt+F` | Format document (markdown and Mermaid files) |
+| `Shift+Alt+F` | Format document (all supported languages) |
 | `Alt+Z` | Toggle word wrap |
 | `F1` | Monaco command palette (all editor actions + Code Files actions) |
 | `Ctrl+P` | Obsidian command palette (intercepted from inside Monaco) |
