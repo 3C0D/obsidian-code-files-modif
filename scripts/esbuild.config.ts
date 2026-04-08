@@ -259,12 +259,17 @@ async function createBuildContext(
 						path.join(buildPath, 'prettier-estree.js')
 					);
 					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/typescript.js'),
+						path.join(
+							pluginDir,
+							'node_modules/prettier/plugins/typescript.js'
+						),
 						path.join(buildPath, 'prettier-typescript.js')
 					);
 					// Bundle mermaid-formatter for browser
 					await esbuild.build({
-						entryPoints: [path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')],
+						entryPoints: [
+							path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')
+						],
 						bundle: true,
 						format: 'iife',
 						outfile: path.join(buildPath, 'mermaid-formatter.js'),

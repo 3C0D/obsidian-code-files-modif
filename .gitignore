@@ -30,6 +30,16 @@ vs/
 /monacoEditor.html
 /monaco-themes/
 
+# Prettier plugins (generated at build time)
+/prettier-*.js
+
+# Monaco HTML config (generated at build time)
+/monacoHtml.css
+/monacoHtml.js
+
+# Mermaid formatter (generated at build time)
+/mermaid-formatter.js
+
 # VSCode - keep settings.json for yarn protection
 .vscode/*
 !.vscode/settings.json
