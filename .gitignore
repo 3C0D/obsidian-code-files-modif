@@ -40,6 +40,10 @@ vs/
 # Mermaid formatter (generated at build time)
 /mermaid-formatter.js
 
+# Test files (use templates/ folder instead)
+/test-*.md
+/test-*.mmd
+
 # VSCode - keep settings.json for yarn protection
 .vscode/*
 !.vscode/settings.json
