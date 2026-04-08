@@ -21,6 +21,8 @@ Ce dossier contient des fichiers de test pour vérifier le formatage Prettier da
 - **sample.graphql** - GraphQL avec erreurs de formatage
 - **sample.md** - Markdown avec erreurs de formatage et blocs Mermaid
 - **sample.mmd** - Mermaid standalone avec erreurs de formatage
+- **sample.c** - C avec erreurs de formatage (Monaco formatter natif, pas Prettier)
+- **sample.cpp** - C++ avec erreurs de formatage (Monaco formatter natif, pas Prettier)
 
 ## Langages supportés par Prettier
 

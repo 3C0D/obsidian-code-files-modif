@@ -242,3 +242,7 @@ See `docs/monaco-local-integration.md` for the full story of how Monaco is loade
 See `docs/prettier-markdown-formatting.md` for details on how Prettier markdown formatting is implemented.
 
 See `docs/mermaid-formatting.md` for details on how Mermaid diagram formatting is implemented.
+
+### Future Formatter Considerations
+
+**Biome Integration** — Consider integrating [Biome](https://biomejs.dev/) as a replacement for Prettier once it supports more languages. Biome is a Rust-based formatter and linter that aims to cover more languages than Prettier. Currently supports JavaScript, TypeScript, JSON, and JSX/TSX, but is actively expanding language support. Once Biome covers additional languages not supported by Prettier (C, C++, Go, Rust, Python, etc.), the integration would follow the same pattern as Prettier using `monaco.languages.registerDocumentFormattingEditProvider`. A settings option could be added to switch between formatters.

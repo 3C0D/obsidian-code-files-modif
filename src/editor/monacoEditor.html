@@ -346,6 +346,10 @@
 					// ── Prettier: YAML ────────────────────────────────────────────────────────
 					monaco.languages.registerDocumentFormattingEditProvider('yaml', {
 						provideDocumentFormattingEdits: async function(model) {
+							// Skip formatting for .lock files (yarn.lock, package-lock.json, etc.)
+							if (context && /\.lock$/i.test(context)) {
+								return [];
+							}
 							try {
 								var original = model.getValue();
 								var formatted = await prettier.format(original, {
