@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
-import type { MyPluginSettings } from '../types.ts';
-import { viewType } from '../types.ts';
+import type { MyPluginSettings } from '../types/types.ts';
+import { viewType } from '../types/types.ts';
 import { getAllMonacoExtensions } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';

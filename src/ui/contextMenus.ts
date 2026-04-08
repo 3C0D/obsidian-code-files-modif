@@ -4,7 +4,7 @@ import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
-import type { MenuItems } from '../types.ts';
+import type { MenuItems } from '../types/types.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 
 /**

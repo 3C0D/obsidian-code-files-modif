@@ -12,7 +12,7 @@ import {
 	DEFAULT_EDITOR_CONFIG,
 	DEFAULT_EXTENSION_CONFIG,
 	parseEditorConfig
-} from '../types.ts';
+} from '../types/types.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {

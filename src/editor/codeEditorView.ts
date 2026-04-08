@@ -3,7 +3,7 @@ import { normalizePath, TextFileView } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import { getLanguage } from '../utils/getLanguage.ts';
-import { viewType, type CodeEditorInstance } from '../types.ts';
+import { viewType, type CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { snippetExists, isSnippetEnabled } from '../utils/snippetUtils.ts';
@@ -22,6 +22,8 @@ export class CodeEditorView extends TextFileView {
 	private snippetFolderAction: { remove: () => void } | null = null;
 	private snippetToggleAction: { remove: () => void } | null = null;
 	private returnAction: { remove: () => void } | null = null;
+	private diffAction: { remove: () => void } | null = null;
+	private diffTimer: NodeJS.Timeout | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -73,11 +75,15 @@ export class CodeEditorView extends TextFileView {
 		this.snippetFolderAction?.remove();
 		this.snippetToggleAction?.remove();
 		this.returnAction?.remove();
+		this.diffAction?.remove();
+		if (this.diffTimer) clearTimeout(this.diffTimer);
 		this.gearAction = null;
 		this.themeAction = null;
 		this.snippetFolderAction = null;
 		this.snippetToggleAction = null;
 		this.returnAction = null;
+		this.diffAction = null;
+		this.diffTimer = null;
 	}
 
 	async onClose(): Promise<void> {
@@ -145,6 +151,7 @@ export class CodeEditorView extends TextFileView {
 		this.snippetFolderAction?.remove();
 		this.snippetToggleAction?.remove();
 		this.returnAction?.remove();
+		this.diffAction?.remove();
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
 			const applyTheme = async (theme: string): Promise<void> => {
@@ -165,12 +172,18 @@ export class CodeEditorView extends TextFileView {
 			).open();
 		});
 
-		const isUnregistered = !this.plugin.getActiveExtensions().includes(file.extension);
+		const isUnregistered = !this.plugin
+			.getActiveExtensions()
+			.includes(file.extension);
 		if (isUnregistered) {
-			this.returnAction = this.addAction('undo-2', 'Return to default view', async () => {
-				await this.leaf.setViewState({ type: 'empty', state: {} });
-				await this.leaf.openFile(file);
-			});
+			this.returnAction = this.addAction(
+				'undo-2',
+				'Return to default view',
+				async () => {
+					await this.leaf.setViewState({ type: 'empty', state: {} });
+					await this.leaf.openFile(file);
+				}
+			);
 		}
 
 		// Add snippet controls ONLY when editing a CSS snippet file
@@ -234,8 +247,33 @@ export class CodeEditorView extends TextFileView {
 					this.setDirty(false);
 					this.setSaving(false);
 				});
+			},
+			() => {
+				this.showDiffAction();
 			}
 		);
+	}
+
+	/** Shows the diff action in the header for 10 seconds after a format */
+	private showDiffAction(): void {
+		console.log('[codeEditorView] showDiffAction called');
+		if (this.diffTimer) clearTimeout(this.diffTimer);
+		this.diffAction?.remove();
+
+		this.diffAction = this.addAction('diff', 'Show Format Diff', () => {
+			console.log('[codeEditorView] diff button clicked');
+			// Trigger the Monaco action via iframe
+			this.codeEditor?.iframe.contentWindow?.postMessage(
+				{ type: 'trigger-show-diff' },
+				'*'
+			);
+		});
+
+		this.diffTimer = setTimeout(() => {
+			console.log('[codeEditorView] diff button timeout - removing');
+			this.diffAction?.remove();
+			this.diffAction = null;
+		}, 10000);
 	}
 
 	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */

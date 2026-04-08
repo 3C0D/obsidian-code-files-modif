@@ -1,5 +1,9 @@
 import type CodeFilesPlugin from '../main.ts';
-import { DEFAULT_SETTINGS, DEFAULT_EDITOR_CONFIG, parseEditorConfig } from '../types.ts';
+import {
+	DEFAULT_SETTINGS,
+	DEFAULT_EDITOR_CONFIG,
+	parseEditorConfig
+} from '../types/types.ts';
 
 /**
  * Merges persisted data on top of DEFAULT_SETTINGS.

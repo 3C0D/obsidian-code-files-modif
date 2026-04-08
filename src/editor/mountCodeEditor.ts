@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { type CodeEditorInstance } from '../types.ts';
+import { type CodeEditorInstance } from '../types/types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
@@ -57,7 +57,8 @@ export const mountCodeEditor = async (
 	initialValue: string,
 	codeContext: string,
 	onChange?: () => void,
-	onSave?: () => void
+	onSave?: () => void,
+	onFormatDiff?: () => void
 ): Promise<CodeEditorInstance> => {
 	let value = initialValue;
 	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
@@ -76,6 +77,12 @@ export const mountCodeEditor = async (
 	);
 	const vsBase = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/vs`)
+		.replace(/\?.*$/, '');
+	const configJsUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/monacoHtml.js`)
+		.replace(/\?.*$/, '');
+	const configCssUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/monacoHtml.css`)
 		.replace(/\?.*$/, '');
 	const prettierBase = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/prettier-standalone.js`)
@@ -126,8 +133,9 @@ export const mountCodeEditor = async (
 	// Patch relative ./vs paths to absolute app:// URLs so Monaco can load its workers and modules
 	html = html
 		.replace("'./vs'", `'${vsBase}'`)
-		.replace('"./vs/loader.js"', `"${vsBase}/loader.js"`);
-
+		.replace('"./vs/loader.js"', `"${vsBase}/loader.js"`)
+		.replace('"./monacoHtml.js"', `"${configJsUrl}"`)
+		.replace('<link rel="stylesheet" href="./monacoHtml.css" />', '');
 	const cssUrl = `${vsBase}/editor/editor.main.css`;
 	let cssText = await (await fetch(cssUrl)).text();
 	// Replace the base64-encoded font source in @font-face with an absolute app:// URL.
@@ -137,6 +145,8 @@ export const mountCodeEditor = async (
 		/(@font-face\s*\{[^}]*src:[^;]*)(url\([^)]+\)\s*format\(["']truetype["']\))/g,
 		`$1url('${codiconFontUrl}') format('truetype')`
 	);
+	// Fetch and inline the monacoHtml.css config
+	const configCssText = await (await fetch(configCssUrl)).text();
 	// Inject CSS inline and intercept dynamic <link> insertions Monaco attempts at runtime.
 	// Without this, Monaco tries to inject a <link rel="stylesheet"> which the parent CSP blocks.
 	html = html.replace(
@@ -153,7 +163,9 @@ function parseEditorConfig(str) {
 </script>
 <script src="${prettierBase}"></script>
 <script src="${prettierMarkdownUrl}"></script>
+<script src="${configJsUrl}"></script>
 <style>${cssText}</style>
+<style>${configCssText}</style>
 <script>
 const _orig = Element.prototype.appendChild;
 Element.prototype.appendChild = function(node) {
@@ -279,6 +291,13 @@ Element.prototype.appendChild = function(node) {
 							await leaf.openFile(file);
 						}
 					}
+				}
+				break;
+			}
+			case 'format-diff-available': {
+				if (data.context === codeContext) {
+					console.log('[mountCodeEditor] format-diff-available received');
+					onFormatDiff?.();
 				}
 				break;
 			}

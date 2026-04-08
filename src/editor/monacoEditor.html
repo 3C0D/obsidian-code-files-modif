@@ -12,6 +12,7 @@
 			http-equiv="Content-Security-Policy"
 			content="default-src 'self' app:; script-src 'self' 'unsafe-eval' 'unsafe-inline' app:; style-src 'self' 'unsafe-inline' app:; img-src 'self' app: data:; worker-src blob:;"
 		/>
+		<link rel="stylesheet" href="./monacoHtml.css" />
 		<style>
 			html,
 			body,
@@ -34,14 +35,55 @@
 			var require = { paths: { vs: './vs' } };
 		</script>
 		<script src="./vs/loader.js"></script>
+		<script src="./monacoHtml.js"></script>
 		<script>
 			require(['vs/editor/editor.main'], function () {
 				var editor;
 				var context;
 				var formatOnSave = false;
 				var editorDefaults = {};
+				var lastFormatOriginal = null;
+				var lastFormatFormatted = null;
+				var currentLang = 'plaintext';
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
+
+				function openDiffModal(original, formatted) {
+					var overlay = document.createElement('div');
+					overlay.className = 'diff-overlay';
+
+					var toolbar = document.createElement('div');
+					toolbar.className = 'diff-toolbar';
+					var closeBtn = document.createElement('button');
+					closeBtn.textContent = '✕ Close';
+					closeBtn.className = 'diff-close-btn';
+					var diffEditor;
+					closeBtn.onclick = function() { 
+						overlay.remove(); 
+						if (diffEditor) diffEditor.dispose();
+					};
+					toolbar.appendChild(closeBtn);
+
+					var container = document.createElement('div');
+					container.className = 'diff-container';
+
+					overlay.appendChild(toolbar);
+					overlay.appendChild(container);
+					document.body.appendChild(overlay);
+
+					diffEditor = monaco.editor.createDiffEditor(container, DIFF_EDITOR_OPTIONS);
+					diffEditor.setModel({
+						original: monaco.editor.createModel(original, currentLang),
+						modified: monaco.editor.createModel(formatted, currentLang)
+					});
+
+					requestAnimationFrame(function() {
+						diffEditor.layout({
+							width: container.clientWidth,
+							height: container.clientHeight
+						});
+					});
+				}
 
 				function applyEditorConfig(cfg) {
 					var modelOpts = {};
@@ -53,10 +95,47 @@
 					editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
 				}
 
+				function runFormatWithDiff() {
+					var formatAction = editor.getAction('editor.action.formatDocument');
+					console.log('[diff] formatAction:', formatAction);
+					console.log('[diff] isSupported:', formatAction && formatAction.isSupported());
+					if (!formatAction || !formatAction.isSupported()) return Promise.resolve();
+					var original = editor.getValue();
+					console.log('[diff] original length:', original.length);
+
+					return new Promise(function (resolve) {
+						var disposable = editor.onDidChangeModelContent(function () {
+							console.log('[diff] onDidChangeModelContent fired');
+							disposable.dispose();
+							clearTimeout(fallback);
+							var formatted = editor.getValue();
+							console.log('[diff] formatted length:', formatted.length, 'same:', formatted === original);
+							if (formatted !== original) {
+								lastFormatOriginal = original;
+								lastFormatFormatted = formatted;
+								window.parent.postMessage(
+									{ type: 'format-diff-available', context: context },
+									'*'
+								);
+							}
+							resolve();
+						});
+
+						var fallback = setTimeout(function () {
+							console.log('[diff] fallback timeout — no change event fired');
+							disposable.dispose();
+							resolve();
+						}, FORMAT_CHANGE_TIMEOUT);
+
+						formatAction.run();
+					});
+				}
+
 				function applyParams(params) {
 					if (initialized) return;
 					initialized = true;
 					context = params.context;
+					currentLang = params.lang || 'plaintext';
 					editorDefaults = {
 						folding: params.folding !== false,
 						lineNumbers: params.lineNumbers !== false ? 'on' : 'off',
@@ -107,12 +186,21 @@
 					monaco.languages.registerDocumentFormattingEditProvider('markdown', {
 						provideDocumentFormattingEdits: async function(model) {
 							try {
-								var formatted = await prettier.format(model.getValue(), {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
 									parser: 'markdown',
 									plugins: [prettierPlugins.markdown],
-									proseWrap: 'always',
-									printWidth: 80
+									proseWrap: PRETTIER_PROSE_WRAP,
+									printWidth: PRETTIER_PRINT_WIDTH
 								});
+								if (formatted !== original) {
+									lastFormatOriginal = original;
+									lastFormatFormatted = formatted;
+									window.parent.postMessage(
+										{ type: 'format-diff-available', context: context },
+										'*'
+									);
+								}
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
 								console.warn('code-files: prettier format failed', e);
@@ -168,7 +256,7 @@
 							if (formatOnSave) {
 								var formatAction = editor.getAction('editor.action.formatDocument');
 								if (formatAction && formatAction.isSupported()) {
-									formatAction.run().then(function () {
+									runFormatWithDiff().then(function () {
 										window.parent.postMessage(
 											{ type: 'save-document', context: context },
 											'*'
@@ -196,20 +284,30 @@
 						);
 					});
 
-					// Add "Format Document" action for markdown files
-					if (params.lang === 'markdown') {
-						editor.addAction({
-							id: 'code-files-format-markdown',
-							label: '📝 Format Document',
-							contextMenuGroupId: 'code-files',
-							contextMenuOrder: 0.5,
-							keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
-							run: function () {
-								var formatAction = editor.getAction('editor.action.formatDocument');
-								if (formatAction) formatAction.run();
+					// Add "Format Document" action for all file types
+					editor.addAction({
+						id: 'code-files-format-document',
+						label: '📝 Format Document',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 0.5,
+						keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
+						run: function () {
+							runFormatWithDiff();
+						}
+					});
+
+					// Add "Show Format Diff" action for all file types
+					editor.addAction({
+						id: 'code-files-show-format-diff-global',
+						label: '⟷ Show Format Diff',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 0.6,
+						run: function () {
+							if (lastFormatOriginal && lastFormatFormatted) {
+								openDiffModal(lastFormatOriginal, lastFormatFormatted);
 							}
-						});
-					}
+						}
+					});
 
 					// Add a context menu action in Monaco to open the formatter config for this file
 					editor.addAction({
@@ -382,6 +480,13 @@
 							break;
 						case 'focus':
 							if (editor) editor.focus();
+							break;
+						case 'trigger-show-diff':
+							console.log('[diff] trigger-show-diff received, lastFormatOriginal:', !!lastFormatOriginal, 'lastFormatFormatted:', !!lastFormatFormatted);
+							if (lastFormatOriginal && lastFormatFormatted) {
+								console.log('[diff] opening diff modal');
+								openDiffModal(lastFormatOriginal, lastFormatFormatted);
+							}
 							break;
 					}
 				});

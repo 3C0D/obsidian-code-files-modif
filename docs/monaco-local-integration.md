@@ -361,6 +361,75 @@ cssText = cssText.replace(
 
 ---
 
+## Adding external configuration files for Monaco HTML
+
+**Context:** To keep Monaco HTML configuration maintainable, CSS styles and JavaScript variables can be externalized into separate files instead of being hardcoded in `monacoEditor.html`.
+
+**Files created:**
+- `src/types/monacoHtml.css` — CSS styles for diff modal (overlay, toolbar, buttons, container)
+- `src/types/monacoHtml.js` — JavaScript configuration variables (diff editor options, timeouts, Prettier settings)
+
+**Build process (esbuild.config.ts):**
+
+These files must be copied to the build directory alongside Monaco files:
+
+```typescript
+const configJsSrc = path.join(pluginDir, 'src/types/monacoHtml.js');
+const configJsTarget = path.join(buildPath, 'monacoHtml.js');
+const configCssSrc = path.join(pluginDir, 'src/types/monacoHtml.css');
+const configCssTarget = path.join(buildPath, 'monacoHtml.css');
+
+await copyFile(configJsSrc, configJsTarget);
+await copyFile(configCssSrc, configCssTarget);
+```
+
+**Loading process (mountCodeEditor.ts):**
+
+1. **JavaScript config** — loaded as external `<script src>` (allowed by CSP):
+
+```typescript
+const configJsUrl = plugin.app.vault.adapter
+    .getResourcePath(`${pluginBase}/monacoHtml.js`)
+    .replace(/\?.*$/, '');
+
+// Patch the HTML to use absolute app:// URL
+html = html.replace('"./monacoHtml.js"', `"${configJsUrl}"`);
+
+// Inject as script tag in HTML head
+html = html.replace('</head>', `<script src="${configJsUrl}"></script>\n</head>`);
+```
+
+2. **CSS config** — must be inlined (external stylesheets blocked by CSP):
+
+```typescript
+const configCssUrl = plugin.app.vault.adapter
+    .getResourcePath(`${pluginBase}/monacoHtml.css`)
+    .replace(/\?.*$/, '');
+
+// Fetch and inline the CSS
+const configCssText = await (await fetch(configCssUrl)).text();
+
+// Remove the <link> tag from HTML
+html = html.replace('<link rel="stylesheet" href="./monacoHtml.css" />', '');
+
+// Inject as inline <style> in HTML head
+html = html.replace('</head>', `<style>${configCssText}</style>\n</head>`);
+```
+
+**Why this approach:**
+- JavaScript files can be loaded externally via `<script src>` (CSP allows `app://` URLs)
+- CSS files must be inlined because Obsidian's CSP blocks external `<link rel="stylesheet">` in child frames
+- Both files remain in `src/types/` for easy editing and version control
+- The build process automatically copies and patches them
+
+**To add more external config files:**
+1. Create the file in `src/types/`
+2. Add copy command in `esbuild.config.ts` (in the `copy-to-plugins-folder` plugin)
+3. For JS: patch the path in `mountCodeEditor.ts` and inject as `<script src>`
+4. For CSS: fetch, inline, and inject as `<style>` in `mountCodeEditor.ts`
+
+---
+
 ## Ce qu'il faut retenir
 
 La contrainte principale est la **CSP d'Obsidian** qui s'applique à toutes les frames enfants et qu'on ne peut pas surcharger. Elle autorise `app:` et `'self'` mais bloque `data:` et `blob:` pour les polices, et les stylesheets externes.

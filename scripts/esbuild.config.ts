@@ -228,6 +228,10 @@ async function createBuildContext(
 					const monacoTarget = path.join(buildPath, 'vs');
 					const htmlSrc = path.join(pluginDir, 'src/editor/monacoEditor.html');
 					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
+					const configJsSrc = path.join(pluginDir, 'src/types/monacoHtml.js');
+					const configJsTarget = path.join(buildPath, 'monacoHtml.js');
+					const configCssSrc = path.join(pluginDir, 'src/types/monacoHtml.css');
+					const configCssTarget = path.join(buildPath, 'monacoHtml.css');
 					const themesSrc = path.join(
 						pluginDir,
 						'node_modules/monaco-themes/themes'
@@ -251,6 +255,8 @@ async function createBuildContext(
 						path.join(buildPath, 'prettier-markdown.js')
 					);
 					await copyFile(htmlSrc, htmlTarget);
+					await copyFile(configJsSrc, configJsTarget);
+					await copyFile(configCssSrc, configCssTarget);
 					await cp(themesSrc, themesTarget, { recursive: true });
 					// if real or build
 					if (isProd) {

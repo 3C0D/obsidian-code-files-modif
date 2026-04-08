@@ -4,8 +4,8 @@ import {
 	DEFAULT_EDITOR_CONFIG,
 	DEFAULT_EXTENSION_CONFIG,
 	parseEditorConfig
-} from '../types.ts';
-import type { CodeEditorInstance } from '../types.ts';
+} from '../types/types.ts';
+import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig } from '../utils/settingsUtils.ts';

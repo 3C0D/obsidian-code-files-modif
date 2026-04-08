@@ -39,7 +39,6 @@
     "esbuild": "latest",
     "eslint": "latest",
     "eslint-import-resolver-typescript": "latest",
-
     "jiti": "latest",
     "monaco-editor": "^0.55.1",
     "obsidian": "*",

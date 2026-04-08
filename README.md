@@ -7,13 +7,35 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Monaco Editor** — full VS Code editor embedded in Obsidian, loaded locally (no external dependency)
 - **Syntax highlighting** — automatic language detection from file extension
 - **50+ themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview
-- **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave)
+- **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave), with diff viewer for all formatted files
 - **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
 - **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
 - **Open any file in Monaco** — open any file type in the Monaco editor via command palette or context menu
 - **Edit CSS snippets** — open and edit Obsidian CSS snippets directly from the command palette
 - **Dynamic extension management** — add or remove file extensions at runtime, no restart needed
 - **Per-extension/global formatter config** — customize editor options (tabSize, insertSpaces, formatOnSave, formatOnType, etc.)
+
+---
+
+## Document Formatting
+
+Format your code with Monaco's built-in formatters:
+
+- **Keyboard shortcut**: `Shift+Alt+F` (markdown files)
+- **Automatic**: Enable `formatOnSave` in Editor Config
+- **Context menu**: Right-click → "📝 Format Document" (markdown files)
+
+### Format Diff Viewer
+
+After formatting any file, you can view the changes:
+
+- A **diff icon** appears in the tab header for 10 seconds
+- Click it to open a side-by-side comparison (original vs formatted)
+- The diff viewer is also available in the context menu: **"⟷ Show Format Diff"**
+- Shows exactly what changed during the last format operation
+- Works for all file types that support formatting (JavaScript, TypeScript, JSON, CSS, HTML, markdown, etc.)
+
+The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with syntax highlighting and inline diff markers.
 
 ---
 
