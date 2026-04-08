@@ -14,7 +14,8 @@ const configs: Linter.Config[] = [
     ignores: [
       "dist/**",
       "node_modules/**",
-      "main.js"
+      "main.js",
+      "templates/**"
     ],
     languageOptions: {
       parser: typescriptEslintParser,

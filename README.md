@@ -10,6 +10,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave), with diff viewer for all formatted files
 - **Mermaid formatting** — format Mermaid diagram files with mermaid-formatter (Shift+Alt+F or formatOnSave). Also formats ` ```mermaid ` code blocks inside markdown files.
 - **Multi-language formatting** — format JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, and GraphQL files with Prettier (Shift+Alt+F or formatOnSave)
+- **Cross-file navigation** — Ctrl+Click on TypeScript/JavaScript imports to jump to definitions in other files
 - **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
 - **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
 - **Open any file in Monaco** — open any file type in the Monaco editor via command palette or context menu
@@ -60,7 +61,25 @@ The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with
 
 ---
 
-## Opening any file in Monaco
+## Cross-File Navigation (TypeScript/JavaScript)
+
+Navigate between TypeScript and JavaScript files in your project:
+
+- **Ctrl+Click** on imports, function calls, or class names to jump to their definitions
+- **Go to Definition** (F12) shows a peek window with the definition location
+- Works with relative imports (`./utils`, `../service`) and supports both `.ts`, `.tsx`, `.js`, `.jsx` files
+
+### Setup
+
+1. Open Editor Settings (⚙️ gear icon in tab header)
+2. Set **Project Root Folder** to your TypeScript/JavaScript project folder
+3. Monaco will load all TS/JS files from that folder for IntelliSense and navigation
+
+**Example:** If your project is in `templates/my-project/`, set Project Root Folder to `templates/my-project`. Now you can Ctrl+Click on any import to open the source file at the exact definition.
+
+See `docs/cross-file-navigation.md` for implementation details and troubleshooting.
+
+---
 
 Files with registered extensions open automatically in Monaco. You can also:
 
@@ -137,6 +156,7 @@ The toggle switch shows the current state (on/off) and updates instantly when cl
 - **Auto Save** — when off, only `Ctrl+S` saves. A circle in the tab shows unsaved state.
 - **Semantic / Syntax Validation** — error checking for JS/TS
 - **Editor Brightness** — dim or brighten Monaco independently of Obsidian's theme. Can also be adjusted directly in the theme picker modal using left/right arrow keys.
+- **Project Root Folder** — set the root folder for TypeScript/JavaScript cross-file navigation (enables Ctrl+Click on imports)
 
 ### Editor Config
 
@@ -242,6 +262,8 @@ See `docs/monaco-local-integration.md` for the full story of how Monaco is loade
 See `docs/prettier-markdown-formatting.md` for details on how Prettier markdown formatting is implemented.
 
 See `docs/mermaid-formatting.md` for details on how Mermaid diagram formatting is implemented.
+
+See `docs/cross-file-navigation.md` for details on how TypeScript/JavaScript cross-file navigation is implemented.
 
 ### Future Formatter Considerations
 
