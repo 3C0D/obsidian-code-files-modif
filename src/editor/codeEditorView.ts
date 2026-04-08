@@ -272,6 +272,7 @@ export class CodeEditorView extends TextFileView {
 				'*'
 			);
 		});
+		(this.diffAction as unknown as HTMLElement).addClass('code-files-diff-action');
 
 		this.diffTimer = setTimeout(() => {
 			this.diffAction?.remove();

@@ -91,3 +91,14 @@
 .code-files-toggle-track.is-on .code-files-toggle-thumb {
   transform: translateX(12px);
 }
+
+/* Diff action icon - highlighted to draw attention after formatting */
+.code-files-diff-action {
+  color: var(--code-files-diff-icon-color, #ff4848);
+  animation: code-files-diff-flash 2s ease-in-out;
+}
+
+@keyframes code-files-diff-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
