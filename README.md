@@ -72,11 +72,15 @@ Navigate between TypeScript and JavaScript files in your project:
 
 ### Setup
 
+**IMPORTANT:** Cross-file navigation requires configuring the Project Root Folder.
+
 1. Open Editor Settings (⚙️ gear icon in tab header)
 2. Set **Project Root Folder** to your TypeScript/JavaScript project folder
 3. Monaco will load all TS/JS files from that folder for IntelliSense and navigation
 
 **Example:** If your project is in `templates/my-project/`, set Project Root Folder to `templates/my-project`. Now you can Ctrl+Click on any import to open the source file at the exact definition.
+
+**Note:** Without setting the Project Root Folder, cross-file navigation (Ctrl+Click on imports) will not work.
 
 See `docs/cross-file-navigation.md` for implementation details and troubleshooting.
 
@@ -203,9 +207,11 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 | `Shift+Alt+F` | Format document (all supported languages) |
 | `Alt+Z` | Toggle word wrap |
 | `F1` | Monaco command palette (all editor actions + Code Files actions) |
-| `Ctrl+P` | Obsidian command palette (intercepted from inside Monaco) |
-| `Ctrl+,` | Obsidian settings (intercepted from inside Monaco) |
+| `Ctrl+P` | Obsidian command palette (remains accessible from inside Monaco) |
+| `Ctrl+,` | Obsidian settings (remains accessible from inside Monaco) |
 | `Ctrl+Delete` | Delete the current file |
+
+**Note:** While editing in Monaco, you can still access Obsidian's command palette (`Ctrl+P`) and settings (`Ctrl+,`). The Monaco-specific command palette is accessed with `F1`. Editor settings are available via the gear icon (⚙️) in the tab header.
 
 ---
 

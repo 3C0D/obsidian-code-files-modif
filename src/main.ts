@@ -97,4 +97,22 @@ export default class CodeFilesPlugin extends Plugin {
 	broadcastEditorConfig(ext: string): void {
 		broadcastEditorConfig(this, ext);
 	}
+
+	async broadcastProjectFiles(): Promise<void> {
+		const root = this.settings.projectRootFolder;
+		if (!root) return;
+		const files: { path: string; content: string }[] = [];
+		for (const file of this.app.vault.getFiles()) {
+			if (!file.path.startsWith(root + '/')) continue;
+			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
+			try {
+				files.push({ path: file.path, content: await this.app.vault.cachedRead(file) });
+			} catch { /* skip */ }
+		}
+		for (const leaf of this.app.workspace.getLeavesOfType('code-editor')) {
+			if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+				leaf.view.editor.send('load-project-files', { files });
+			}
+		}
+	}
 }

@@ -159,10 +159,12 @@ export class EditorSettingsModal extends Modal {
 					.onChange(async (value) => {
 						this.plugin.settings.projectRootFolder = value.trim();
 						await this.plugin.saveSettings();
+						await this.plugin.broadcastProjectFiles();
 					});
-				new FolderSuggest(this.plugin, text.inputEl, (folder) => {
+				new FolderSuggest(this.plugin, text.inputEl, async (folder) => {
 					this.plugin.settings.projectRootFolder = folder.path;
-					void this.plugin.saveSettings();
+					await this.plugin.saveSettings();
+					await this.plugin.broadcastProjectFiles();
 				});
 			});
 
