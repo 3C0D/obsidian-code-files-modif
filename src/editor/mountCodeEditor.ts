@@ -90,6 +90,9 @@ export const mountCodeEditor = async (
 	const prettierMarkdownUrl = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/prettier-markdown.js`)
 		.replace(/\?.*$/, '');
+	const mermaidFormatterUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/mermaid-formatter.js`)
+		.replace(/\?.*$/, '');
 
 	const initParams: Record<string, string | boolean> = {
 		context: codeContext,
@@ -163,6 +166,7 @@ function parseEditorConfig(str) {
 </script>
 <script src="${prettierBase}"></script>
 <script src="${prettierMarkdownUrl}"></script>
+<script src="${mermaidFormatterUrl}"></script>
 <script src="${configJsUrl}"></script>
 <style>${cssText}</style>
 <style>${configCssText}</style>

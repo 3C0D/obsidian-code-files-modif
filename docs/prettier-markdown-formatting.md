@@ -140,11 +140,21 @@ This delegates to Monaco's built-in format action, which calls our registered pr
 
 ## Configuration
 
-Prettier options are hardcoded in the provider:
-- `proseWrap: 'always'` — wrap prose at printWidth
-- `printWidth: 80` — line length limit
+Prettier options can be configured via Editor Config:
 
-These could be made configurable via `editorConfig` in the future.
+- `printWidth` — line length limit (default: 80)
+- `proseWrap` — currently hardcoded to `'always'` (wraps prose at printWidth)
+
+To customize `printWidth` for markdown files, add it to your `.md` config in Editor Settings:
+
+```jsonc
+{
+    "printWidth": 100,  // Wrap markdown at 100 characters instead of 80
+    "formatOnSave": true
+}
+```
+
+The `proseWrap` option could be made configurable in the future.
 
 ## formatOnSave Integration
 

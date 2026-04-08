@@ -2482,6 +2482,11 @@ math-intrinsics@^1.1.0:
   resolved "https://registry.yarnpkg.com/math-intrinsics/-/math-intrinsics-1.1.0.tgz#a0dd74be81e2aa5c2f27e65ce283605ee4e2b7f9"
   integrity sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==
 
+mermaid-formatter@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/mermaid-formatter/-/mermaid-formatter-0.3.0.tgz#7104cdc305eefe5640bfa02b502b659bd5b54d4b"
+  integrity sha512-PrIZBNt0Aba9/w14GQUWDKLHy1skO+AwuRWHtIBR8duk9460LM0/djX+yj8KUU4Jh6P42lvs1Te2jSxC6tIQig==
+
 mermaid@11.4.1:
   version "11.4.1"
   resolved "https://registry.yarnpkg.com/mermaid/-/mermaid-11.4.1.tgz#577fad5c31a01a06d9f793e298d411f1379eecc8"

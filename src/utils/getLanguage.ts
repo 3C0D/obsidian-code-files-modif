@@ -59,6 +59,8 @@ const staticMap: Record<string, string> = {
 	md: 'markdown',
 	mdx: 'markdown',
 	markdown: 'markdown',
+	mmd: 'mermaid',
+	mermaid: 'mermaid',
 	sh: 'shell',
 	bash: 'shell',
 	fish: 'shell',

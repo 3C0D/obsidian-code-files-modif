@@ -8,6 +8,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Syntax highlighting** — automatic language detection from file extension
 - **50+ themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview
 - **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave), with diff viewer for all formatted files
+- **Mermaid formatting** — format Mermaid diagram files with mermaid-formatter (Shift+Alt+F or formatOnSave). Also formats ` ```mermaid ` code blocks inside markdown files.
 - **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
 - **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
 - **Open any file in Monaco** — open any file type in the Monaco editor via command palette or context menu
@@ -21,9 +22,9 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 
 Format your code with Monaco's built-in formatters:
 
-- **Keyboard shortcut**: `Shift+Alt+F` (markdown files)
+- **Keyboard shortcut**: `Shift+Alt+F` (markdown and Mermaid files)
 - **Automatic**: Enable `formatOnSave` in Editor Config
-- **Context menu**: Right-click → "📝 Format Document" (markdown files)
+- **Context menu**: Right-click → "📝 Format Document" (markdown and Mermaid files)
 
 ### Format Diff Viewer
 
@@ -33,7 +34,7 @@ After formatting any file, you can view the changes:
 - Click it to open a side-by-side comparison (original vs formatted)
 - The diff viewer is also available in the context menu: **"⟷ Show Format Diff"**
 - Shows exactly what changed during the last format operation
-- Works for all file types that support formatting (JavaScript, TypeScript, JSON, CSS, HTML, markdown, etc.)
+- Works for all file types that support formatting (JavaScript, TypeScript, JSON, CSS, HTML, markdown, Mermaid, etc.)
 
 The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with syntax highlighting and inline diff markers.
 
@@ -132,6 +133,7 @@ Accepts standard Monaco `IEditorOptions`:
     "insertSpaces": true,
     "formatOnSave": true,
     "formatOnType": false,
+    "printWidth": 80,  // Line length for Prettier (markdown, mermaid)
     // "rulers": [80, 120],
     // "fontSize": 14,
 }
@@ -155,7 +157,7 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+S` | Save (formats first if formatOnSave is on) |
-| `Shift+Alt+F` | Format document (markdown files only) |
+| `Shift+Alt+F` | Format document (markdown and Mermaid files) |
 | `Alt+Z` | Toggle word wrap |
 | `F1` | Monaco command palette (all editor actions + Code Files actions) |
 | `Ctrl+P` | Obsidian command palette (intercepted from inside Monaco) |
@@ -216,3 +218,5 @@ yarn real     # Build + install to REAL_VAULT
 See `docs/monaco-local-integration.md` for the full story of how Monaco is loaded locally inside Obsidian.
 
 See `docs/prettier-markdown-formatting.md` for details on how Prettier markdown formatting is implemented.
+
+See `docs/mermaid-formatting.md` for details on how Mermaid diagram formatting is implemented.

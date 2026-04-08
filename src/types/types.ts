@@ -76,6 +76,7 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // "wordWrap": "on",
 
     // --- Optional ---
+    // "printWidth": 80,  // Line length for formatters (Prettier, etc.)
     // "rulers": [80, 120],
     // "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
     // "fontSize": 14,
@@ -87,6 +88,7 @@ export const DEFAULT_EXTENSION_CONFIG = `{
     // Override global config for this extension only.
     // Example:
     // "tabSize": 2,
+    // "printWidth": 100,
 }`;
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */

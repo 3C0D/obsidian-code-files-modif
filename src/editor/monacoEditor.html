@@ -91,25 +91,24 @@
 					if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
 					if (Object.keys(modelOpts).length) editor.getModel().updateOptions(modelOpts);
 					formatOnSave = !!cfg.formatOnSave;
-					var { tabSize, insertSpaces, formatOnSave: _fs, ...editorOpts } = cfg;
+					// Update Prettier printWidth if specified
+					if (cfg.printWidth !== undefined) {
+						PRETTIER_PRINT_WIDTH = cfg.printWidth;
+					}
+					var { tabSize, insertSpaces, formatOnSave: _fs, printWidth, ...editorOpts } = cfg;
 					editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
 				}
 
 				function runFormatWithDiff() {
 					var formatAction = editor.getAction('editor.action.formatDocument');
-					console.log('[diff] formatAction:', formatAction);
-					console.log('[diff] isSupported:', formatAction && formatAction.isSupported());
 					if (!formatAction || !formatAction.isSupported()) return Promise.resolve();
 					var original = editor.getValue();
-					console.log('[diff] original length:', original.length);
 
 					return new Promise(function (resolve) {
 						var disposable = editor.onDidChangeModelContent(function () {
-							console.log('[diff] onDidChangeModelContent fired');
 							disposable.dispose();
 							clearTimeout(fallback);
 							var formatted = editor.getValue();
-							console.log('[diff] formatted length:', formatted.length, 'same:', formatted === original);
 							if (formatted !== original) {
 								lastFormatOriginal = original;
 								lastFormatFormatted = formatted;
@@ -122,7 +121,6 @@
 						});
 
 						var fallback = setTimeout(function () {
-							console.log('[diff] fallback timeout — no change event fired');
 							disposable.dispose();
 							resolve();
 						}, FORMAT_CHANGE_TIMEOUT);
@@ -193,17 +191,30 @@
 									proseWrap: PRETTIER_PROSE_WRAP,
 									printWidth: PRETTIER_PRINT_WIDTH
 								});
-								if (formatted !== original) {
-									lastFormatOriginal = original;
-									lastFormatFormatted = formatted;
-									window.parent.postMessage(
-										{ type: 'format-diff-available', context: context },
-										'*'
-									);
+								// Format mermaid blocks inside the markdown
+								if (window.mermaidFormatter && window.mermaidFormatter.formatMarkdownMermaidBlocks) {
+									formatted = window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted);
 								}
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
 								console.warn('code-files: prettier format failed', e);
+								return [];
+							}
+						}
+					});
+
+					monaco.languages.registerDocumentFormattingEditProvider('mermaid', {
+						provideDocumentFormattingEdits: function(model) {
+							try {
+								if (!window.mermaidFormatter || !window.mermaidFormatter.formatMermaid) {
+									console.warn('code-files: mermaid-formatter not loaded');
+									return [];
+								}
+								var original = model.getValue();
+								var formatted = window.mermaidFormatter.formatMermaid(original);
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: mermaid format failed', e);
 								return [];
 							}
 						}
@@ -482,9 +493,7 @@
 							if (editor) editor.focus();
 							break;
 						case 'trigger-show-diff':
-							console.log('[diff] trigger-show-diff received, lastFormatOriginal:', !!lastFormatOriginal, 'lastFormatFormatted:', !!lastFormatFormatted);
 							if (lastFormatOriginal && lastFormatFormatted) {
-								console.log('[diff] opening diff modal');
 								openDiffModal(lastFormatOriginal, lastFormatFormatted);
 							}
 							break;
