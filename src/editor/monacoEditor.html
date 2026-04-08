@@ -248,6 +248,13 @@
 						}
 					});
 
+					// Suppress Monaco's "Canceled" unhandled rejection when intercepting navigation
+					window.addEventListener('unhandledrejection', function(e) {
+						if (e.reason && (e.reason.name === 'Canceled' || e.reason.message === 'Canceled')) {
+							e.preventDefault();
+						}
+					});
+
 					// Register Mermaid as a custom language if not already registered
 					if (!monaco.languages.getLanguages().some(function(lang) { return lang.id === 'mermaid'; })) {
 						monaco.languages.register({ id: 'mermaid' });
