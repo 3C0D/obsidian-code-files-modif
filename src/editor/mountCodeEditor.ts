@@ -90,6 +90,12 @@ export const mountCodeEditor = async (
 	const prettierMarkdownUrl = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/prettier-markdown.js`)
 		.replace(/\?.*$/, '');
+	const prettierEstreeUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-estree.js`)
+		.replace(/\?.*$/, '');
+	const prettierTypescriptUrl = plugin.app.vault.adapter
+		.getResourcePath(`${pluginBase}/prettier-typescript.js`)
+		.replace(/\?.*$/, '');
 	const mermaidFormatterUrl = plugin.app.vault.adapter
 		.getResourcePath(`${pluginBase}/mermaid-formatter.js`)
 		.replace(/\?.*$/, '');
@@ -166,6 +172,8 @@ function parseEditorConfig(str) {
 </script>
 <script src="${prettierBase}"></script>
 <script src="${prettierMarkdownUrl}"></script>
+<script src="${prettierEstreeUrl}"></script>
+<script src="${prettierTypescriptUrl}"></script>
 <script src="${mermaidFormatterUrl}"></script>
 <script src="${configJsUrl}"></script>
 <style>${cssText}</style>
@@ -300,7 +308,6 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'format-diff-available': {
 				if (data.context === codeContext) {
-					console.log('[mountCodeEditor] format-diff-available received');
 					onFormatDiff?.();
 				}
 				break;

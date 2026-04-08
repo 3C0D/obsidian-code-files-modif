@@ -254,6 +254,14 @@ async function createBuildContext(
 						path.join(pluginDir, 'node_modules/prettier/plugins/markdown.js'),
 						path.join(buildPath, 'prettier-markdown.js')
 					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/estree.js'),
+						path.join(buildPath, 'prettier-estree.js')
+					);
+					await copyFile(
+						path.join(pluginDir, 'node_modules/prettier/plugins/typescript.js'),
+						path.join(buildPath, 'prettier-typescript.js')
+					);
 					// Bundle mermaid-formatter for browser
 					await esbuild.build({
 						entryPoints: [path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')],

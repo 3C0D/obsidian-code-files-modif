@@ -257,12 +257,10 @@ export class CodeEditorView extends TextFileView {
 
 	/** Shows the diff action in the header for 10 seconds after a format */
 	private showDiffAction(): void {
-		console.log('[codeEditorView] showDiffAction called');
 		if (this.diffTimer) clearTimeout(this.diffTimer);
 		this.diffAction?.remove();
 
 		this.diffAction = this.addAction('diff', 'Show Format Diff', () => {
-			console.log('[codeEditorView] diff button clicked');
 			// Trigger the Monaco action via iframe
 			this.codeEditor?.iframe.contentWindow?.postMessage(
 				{ type: 'trigger-show-diff' },
@@ -271,7 +269,6 @@ export class CodeEditorView extends TextFileView {
 		});
 
 		this.diffTimer = setTimeout(() => {
-			console.log('[codeEditorView] diff button timeout - removing');
 			this.diffAction?.remove();
 			this.diffAction = null;
 		}, DIFF_BUTTON_DISPLAY_DURATION);

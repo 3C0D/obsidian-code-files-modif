@@ -133,11 +133,13 @@ Accepts standard Monaco `IEditorOptions`:
     "insertSpaces": true,
     "formatOnSave": true,
     "formatOnType": false,
-    "printWidth": 80,  // Line length for Prettier (markdown, mermaid)
-    // "rulers": [80, 120],
+    "printWidth": 80,  // Line length for Prettier (markdown, mermaid only)
+    // "rulers": [80, 120],  // Visual line length guides (all languages)
     // "fontSize": 14,
 }
 ```
+
+**Note:** `printWidth` only affects Prettier-based formatters (markdown and mermaid). For other languages (TypeScript, JavaScript, etc.), Monaco uses native formatters that don't respect this setting. Use `rulers` for visual line length guides.
 
 Changes save automatically when the panel closes. Per-extension config merges with global.
 

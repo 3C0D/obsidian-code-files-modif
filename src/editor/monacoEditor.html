@@ -47,38 +47,57 @@
 				var currentLang = 'plaintext';
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
+				// Diff editor singleton - created once, reused
+				var diffEditorInstance = null;
+				var diffOverlayEl = null;
+
+				function closeDiffModal() {
+					if (diffOverlayEl) diffOverlayEl.style.display = 'none';
+				}
 
 				function openDiffModal(original, formatted) {
-					var overlay = document.createElement('div');
-					overlay.className = 'diff-overlay';
+					// Create overlay + diff editor once, reuse on subsequent calls
+					if (!diffOverlayEl) {
+						diffOverlayEl = document.createElement('div');
+						diffOverlayEl.className = 'diff-overlay';
 
-					var toolbar = document.createElement('div');
-					toolbar.className = 'diff-toolbar';
-					var closeBtn = document.createElement('button');
-					closeBtn.textContent = '✕ Close';
-					closeBtn.className = 'diff-close-btn';
-					var diffEditor;
-					closeBtn.onclick = function() { 
-						overlay.remove(); 
-						if (diffEditor) diffEditor.dispose();
-					};
-					toolbar.appendChild(closeBtn);
+						var toolbar = document.createElement('div');
+						toolbar.className = 'diff-toolbar';
+						var closeBtn = document.createElement('button');
+						closeBtn.textContent = '✕ Close';
+						closeBtn.className = 'diff-close-btn';
+						closeBtn.onclick = closeDiffModal;
+						toolbar.appendChild(closeBtn);
 
-					var container = document.createElement('div');
-					container.className = 'diff-container';
+						var container = document.createElement('div');
+						container.className = 'diff-container';
 
-					overlay.appendChild(toolbar);
-					overlay.appendChild(container);
-					document.body.appendChild(overlay);
+						diffOverlayEl.appendChild(toolbar);
+						diffOverlayEl.appendChild(container);
+						document.body.appendChild(diffOverlayEl);
 
-					diffEditor = monaco.editor.createDiffEditor(container, DIFF_EDITOR_OPTIONS);
-					diffEditor.setModel({
+						// Created once, never disposed
+						diffEditorInstance = monaco.editor.createDiffEditor(container, DIFF_EDITOR_OPTIONS);
+					}
+
+					diffOverlayEl.style.display = 'block';
+
+					// Detach models from the editor before disposing them
+					var oldModel = diffEditorInstance.getModel();
+					if (oldModel) {
+						diffEditorInstance.setModel(null);
+						oldModel.original?.dispose();
+						oldModel.modified?.dispose();
+					}
+
+					diffEditorInstance.setModel({
 						original: monaco.editor.createModel(original, currentLang),
 						modified: monaco.editor.createModel(formatted, currentLang)
 					});
 
 					requestAnimationFrame(function() {
-						diffEditor.layout({
+						var container = diffOverlayEl.querySelector('.diff-container');
+						diffEditorInstance.layout({
 							width: container.clientWidth,
 							height: container.clientHeight
 						});
@@ -215,6 +234,40 @@
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
 								console.warn('code-files: mermaid format failed', e);
+								return [];
+							}
+						}
+					});
+
+					monaco.languages.registerDocumentFormattingEditProvider('typescript', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'typescript',
+									plugins: [prettierPlugins.estree, prettierPlugins.typescript],
+									printWidth: PRETTIER_PRINT_WIDTH
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier typescript format failed', e);
+								return [];
+							}
+						}
+					});
+
+					monaco.languages.registerDocumentFormattingEditProvider('javascript', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'typescript',
+									plugins: [prettierPlugins.estree, prettierPlugins.typescript],
+									printWidth: PRETTIER_PRINT_WIDTH
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier javascript format failed', e);
 								return [];
 							}
 						}

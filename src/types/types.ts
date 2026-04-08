@@ -69,6 +69,9 @@ export const DEFAULT_EDITOR_CONFIG = `{
     "formatOnType": false,
     "trimAutoWhitespace": true,
 
+    // --- Formatting ---
+    "printWidth": 80,  // Line length for Prettier formatters (markdown, mermaid only)
+
     // --- Display (decommenting disables) ---
     // "folding": false,
     // "lineNumbers": "off",
@@ -76,8 +79,7 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // "wordWrap": "on",
 
     // --- Optional ---
-    // "printWidth": 80,  // Line length for formatters (Prettier, etc.)
-    // "rulers": [80, 120],
+    // "rulers": [80, 120],  // Visual guides for line length (all languages)
     // "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
     // "fontSize": 14,
     // "bracketPairColorization.enabled": true,

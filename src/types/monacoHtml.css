@@ -1,5 +1,6 @@
 /* Semi-transparent overlay that covers the entire screen when diff viewer is open */
 .diff-overlay {
+	display: none; /* Hidden by default, shown via JS */
 	position: fixed;
 	inset: 0; /* Equivalent to top:0; right:0; bottom:0; left:0 */
 	background: rgba(0, 0, 0, 0.7); /* Black background at 70% opacity */
