@@ -68,15 +68,15 @@ export const DEFAULT_EDITOR_CONFIG = `{
     "formatOnSave": true,
     "formatOnType": false,
     "trimAutoWhitespace": true,
+    "trimTrailingWhitespace": true,
 
     // --- Formatting ---
-    "printWidth": 80,  // Line length for Prettier formatters (markdown, mermaid only)
+    "printWidth": 100,  // Line length for Prettier formatters
 
     // --- Display (decommenting disables) ---
     // "folding": false,
     // "lineNumbers": "off",
     // "minimap": { "enabled": false },
-    // "wordWrap": "on",
 
     // --- Optional ---
     // "rulers": [80, 120],  // Visual guides for line length (all languages)
@@ -90,7 +90,8 @@ export const DEFAULT_EXTENSION_CONFIG = `{
     // Override global config for this extension only.
     // Example:
     // "tabSize": 2,
-    // "printWidth": 100,
+    // "printWidth": 80,
+    // "trimTrailingWhitespace": false,
 }`;
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
