@@ -205,6 +205,7 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 |----------|--------|
 | `Ctrl+S` | Save (formats first if formatOnSave is on) |
 | `Shift+Alt+F` | Format document (all supported languages) |
+| `Ctrl+/` | Toggle line comment |
 | `Alt+Z` | Toggle word wrap |
 | `F1` | Monaco command palette (all editor actions + Code Files actions) |
 | `Ctrl+P` | Obsidian command palette (remains accessible from inside Monaco) |

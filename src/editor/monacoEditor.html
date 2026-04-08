@@ -114,6 +114,13 @@
 					if (cfg.printWidth !== undefined) {
 						PRETTIER_PRINT_WIDTH = cfg.printWidth;
 					}
+					// Update Prettier tabWidth and useTabs from Monaco config
+					if (cfg.tabSize !== undefined) {
+						PRETTIER_TAB_WIDTH = cfg.tabSize;
+					}
+					if (cfg.insertSpaces !== undefined) {
+						PRETTIER_USE_TABS = !cfg.insertSpaces;
+					}
 					var { tabSize, insertSpaces, formatOnSave: _fs, printWidth, ...editorOpts } = cfg;
 					editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
 				}
@@ -268,7 +275,9 @@
 									parser: 'markdown',
 									plugins: [prettierPlugins.markdown],
 									proseWrap: PRETTIER_PROSE_WRAP,
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								// Format mermaid blocks inside the markdown
 								if (window.mermaidFormatter && window.mermaidFormatter.formatMarkdownMermaidBlocks) {
@@ -314,7 +323,9 @@
 								var formatted = await prettier.format(original, {
 									parser: 'typescript',
 									plugins: [prettierPlugins.estree, prettierPlugins.typescript],
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
@@ -331,7 +342,9 @@
 								var formatted = await prettier.format(original, {
 									parser: 'babel',
 									plugins: [prettierPlugins.babel, prettierPlugins.estree],
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
@@ -350,7 +363,9 @@
 									var formatted = await prettier.format(original, {
 										parser: lang,
 										plugins: [prettierPlugins.postcss],
-										printWidth: PRETTIER_PRINT_WIDTH
+										printWidth: PRETTIER_PRINT_WIDTH,
+										tabWidth: PRETTIER_TAB_WIDTH,
+										useTabs: PRETTIER_USE_TABS
 									});
 									return [{ range: model.getFullModelRange(), text: formatted }];
 								} catch(e) {
@@ -369,7 +384,9 @@
 								var formatted = await prettier.format(original, {
 									parser: 'html',
 									plugins: [prettierPlugins.html],
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
@@ -388,7 +405,9 @@
 								var formatted = await prettier.format(original, {
 									parser: 'json',
 									plugins: [prettierPlugins.babel, prettierPlugins.estree],
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
@@ -410,7 +429,9 @@
 								var formatted = await prettier.format(original, {
 									parser: 'yaml',
 									plugins: [prettierPlugins.yaml],
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {
@@ -428,7 +449,9 @@
 								var formatted = await prettier.format(original, {
 									parser: 'graphql',
 									plugins: [prettierPlugins.graphql],
-									printWidth: PRETTIER_PRINT_WIDTH
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
 								});
 								return [{ range: model.getFullModelRange(), text: formatted }];
 							} catch(e) {

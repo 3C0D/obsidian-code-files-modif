@@ -29,3 +29,9 @@ var PRETTIER_PROSE_WRAP = 'always';
 
 // Maximum line width for Prettier formatting
 var PRETTIER_PRINT_WIDTH = 80;
+
+// Tab width for Prettier formatting (synced with Monaco tabSize)
+var PRETTIER_TAB_WIDTH = 4;
+
+// Use tabs instead of spaces (synced with Monaco insertSpaces)
+var PRETTIER_USE_TABS = false;
