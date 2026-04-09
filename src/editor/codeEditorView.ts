@@ -97,6 +97,10 @@ export class CodeEditorView extends TextFileView {
 		this.cleanup();
 	}
 
+	onActive(): void {
+		this.codeEditor?.send('focus', {});
+	}
+
 	/** Clears the dirty badge (marks the view as saved). */
 	clearDirty(): void {
 		this.setDirty(false);
