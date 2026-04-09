@@ -116,6 +116,23 @@ A modal opens with filename, extension dropdown, and a **+** button to register 
 
 ---
 
+## Opening hidden files
+
+You can open any file in Monaco, even if it's not displayed in Obsidian's file explorer:
+
+- Right-click a folder in the explorer → **Code Files → Open Hidden Files in Code Files**
+- A suggester lists all files not shown in the explorer tree
+- Files are filtered by size (max 5MB) and exclude dangerous formats:
+  - Executables: `exe`, `dll`, `so`, `dylib`, `app`, `dmg`, `msi`
+  - Archives: `zip`, `rar`, `7z`, `tar`, `gz`, `bz2`, `xz`
+  - Databases: `db`, `sqlite`, `mdb`
+  - Binary Office formats: `doc`, `xls`, `ppt`
+  - Fonts: `ttf`, `otf`, `woff`, `woff2`, `eot`
+
+This is useful for editing configuration files like `.gitignore`, `.env`, `.dockerignore`, or any other hidden files in your vault.
+
+---
+
 ## Renaming file extensions
 
 - Click the **pencil icon** in the tab header

@@ -4,6 +4,7 @@ import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
+import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
 import type { MenuItems } from '../types/types.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 
@@ -96,6 +97,11 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			title: 'Create Code File',
 			icon: 'file-plus',
 			action: () => new CreateCodeFileModal(plugin, folder).open()
+		},
+		{
+			title: 'Open Hidden Files in Code Files',
+			icon: 'eye-off',
+			action: () => new ChooseHiddenFileModal(plugin, folder).open()
 		},
 		{
 			title: 'Define as Project Root Folder',
