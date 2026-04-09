@@ -91,7 +91,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 
 /** Builds the submenu items for folders in the file explorer. */
 function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
-	return [
+	const items: MenuItems[] = [
 		{
 			title: 'Create Code File',
 			icon: 'file-plus',
@@ -107,6 +107,21 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			}
 		}
 	];
+
+	// Add "Clear Project Root Folder" if this folder is currently set as project root
+	if (plugin.settings.projectRootFolder === folder.path) {
+		items.push({
+			title: 'Clear Project Root Folder',
+			icon: 'x',
+			action: async () => {
+				plugin.settings.projectRootFolder = '';
+				await plugin.saveSettings();
+				plugin.updateProjectFolderHighlight();
+			}
+		});
+	}
+
+	return items;
 }
 
 /** Builds the submenu items shown both in the tab

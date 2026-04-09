@@ -80,6 +80,7 @@ Navigate between TypeScript and JavaScript files in your project:
    - Right-click any folder in the file explorer
    - Select **Code Files → Define as Project Root Folder**
    - The folder name will be highlighted in green in the explorer
+   - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
 
 2. **Via Editor Settings**:
    - Open Editor Settings (⚙️ gear icon in tab header)
