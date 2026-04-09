@@ -74,11 +74,20 @@ Navigate between TypeScript and JavaScript files in your project:
 
 **IMPORTANT:** Cross-file navigation requires configuring the Project Root Folder.
 
-1. Open Editor Settings (⚙️ gear icon in tab header)
-2. Set **Project Root Folder** to your TypeScript/JavaScript project folder
-3. Monaco will load all TS/JS files from that folder for IntelliSense and navigation
+**Two ways to set the Project Root Folder:**
 
-**Example:** If your project is in `templates/my-project/`, set Project Root Folder to `templates/my-project`. Now you can Ctrl+Click on any import to open the source file at the exact definition.
+1. **Via context menu** (recommended):
+   - Right-click any folder in the file explorer
+   - Select **Code Files → Define as Project Root Folder**
+   - The folder name will be highlighted in green in the explorer
+
+2. **Via Editor Settings**:
+   - Open Editor Settings (⚙️ gear icon in tab header)
+   - Set **Project Root Folder** to your TypeScript/JavaScript project folder
+
+Monaco will load all TS/JS files from that folder for IntelliSense and navigation.
+
+**Example:** If your project is in `templates/my-project/`, set it as Project Root Folder. Now you can Ctrl+Click on any import to open the source file at the exact definition.
 
 **Note:** Without setting the Project Root Folder, cross-file navigation (Ctrl+Click on imports) will not work.
 
@@ -99,7 +108,7 @@ When opening a file with an unregistered extension in Monaco, a **return arrow i
 ## Creating a file
 
 - Click the **ribbon icon** (left sidebar)
-- Right-click a folder in the explorer → **"Create Code File"**
+- Right-click a folder in the explorer → **Code Files → Create Code File**
 - Command palette → **"Create new Code File"**
 
 A modal opens with filename, extension dropdown, and a **+** button to register new extensions on the fly.

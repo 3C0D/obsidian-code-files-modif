@@ -10,7 +10,7 @@ import { CodeEditorView } from '../editor/codeEditorView.ts';
 /**
  * Registers two context menus:
  * 1. file-menu — shown in the file explorer and
- *    tab headers. Folders get "Create Code File";
+ *    tab headers. Folders get a submenu with plugin actions;
  *    files get a submenu with plugin actions.
  *    Explorer shows a flat "Rename Extension".
  * 2. editor-menu — right-click in the Markdown
@@ -22,14 +22,19 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	plugin.registerEvent(
 		plugin.app.workspace.on('file-menu', (menu, abstractFile, source) => {
 			if (abstractFile instanceof TFolder) {
-				menu.addItem((i) =>
-					i
-						.setTitle('Create Code File')
-						.setIcon('file-plus')
-						.onClick(() =>
-							new CreateCodeFileModal(plugin, abstractFile).open()
-						)
-				);
+				const items = getFolderItems(plugin, abstractFile);
+				menu.addItem((i) => {
+					i.setTitle('Code Files').setIcon('file-json');
+					const sub = i.setSubmenu();
+					for (const it of items) {
+						sub.addItem((subItem) =>
+							subItem
+								.setTitle(it.title)
+								.setIcon(it.icon)
+								.onClick(it.action)
+						);
+					}
+				});
 				return;
 			}
 
@@ -43,7 +48,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 								new RenameExtensionModal(plugin, abstractFile).open()
 							);
 					} else {
-						const items = getItems(plugin);
+						const items = getFileItems(plugin);
 						i.setTitle('Code Files').setIcon('file-json');
 						const sub = i.setSubmenu();
 						for (const it of items) {
@@ -70,7 +75,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 						.setIcon('code')
 						.onClick(() => FenceEditModal.openOnCurrentCode(plugin, editor));
 				} else {
-					const items = getItems(plugin);
+					const items = getFileItems(plugin);
 					item.setTitle('Code Files').setIcon('file-json');
 					const sub = item.setSubmenu();
 					for (const it of items) {
@@ -84,10 +89,30 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 	);
 }
 
+/** Builds the submenu items for folders in the file explorer. */
+function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
+	return [
+		{
+			title: 'Create Code File',
+			icon: 'file-plus',
+			action: () => new CreateCodeFileModal(plugin, folder).open()
+		},
+		{
+			title: 'Define as Project Root Folder',
+			icon: 'folder-tree',
+			action: async () => {
+				plugin.settings.projectRootFolder = folder.path;
+				await plugin.saveSettings();
+				plugin.updateProjectFolderHighlight();
+			}
+		}
+	];
+}
+
 /** Builds the submenu items shown both in the tab
  *  header file-menu and the markdown editor-menu.
  */
-function getItems(plugin: CodeFilesPlugin): MenuItems[] {
+function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 	const activeFile = plugin.app.workspace.getActiveFile();
 
 	const items: MenuItems[] = [];

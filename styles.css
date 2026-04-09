@@ -102,3 +102,8 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+/* Project root folder highlight */
+.code-files-project-root-folder {
+  color: var(--color-green) !important;
+}

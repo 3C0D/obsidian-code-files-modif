@@ -23,6 +23,7 @@ import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
 import { registerContextMenus } from './ui/contextMenus.ts';
 import { patchModalClose } from './utils/modalPatch.ts';
+import { updateProjectFolderHighlight } from './utils/explorerUtils.ts';
 
 /**
  * Obsidian plugin entry point.
@@ -47,6 +48,10 @@ export default class CodeFilesPlugin extends Plugin {
 		registerCommands(this);
 		registerContextMenus(this);
 		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));
+
+		this.app.workspace.onLayoutReady(() => {
+			updateProjectFolderHighlight(this);
+		});
 	}
 
 	onunload(): void {
@@ -86,6 +91,10 @@ export default class CodeFilesPlugin extends Plugin {
 	}
 	updateRibbonIcon(): void {
 		updateRibbonIcon(this);
+	}
+
+	updateProjectFolderHighlight(): void {
+		updateProjectFolderHighlight(this);
 	}
 
 	broadcastOptions(): void {
