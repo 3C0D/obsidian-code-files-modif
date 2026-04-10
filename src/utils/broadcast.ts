@@ -1,4 +1,5 @@
 import type CodeFilesPlugin from '../main.ts';
+import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 
@@ -49,5 +50,48 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
 		const fileExt = view.file?.extension ?? '';
 		const config = buildMergedConfig(plugin, fileExt);
 		view.codeEditor?.send('change-editor-config', { config });
+	}
+}
+
+/**
+ * Loads all TypeScript/JavaScript files from the
+ * project root folder and broadcasts them to all
+ * open Monaco editors.
+ *
+ * Why load file contents?
+ * Monaco's TypeScript language service needs the actual
+ * source code to provide IntelliSense (autocomplete,
+ * type checking) and enable cross-file navigation
+ * (Ctrl+Click on imports). The content is added as
+ * "extra libraries" to Monaco's TypeScript compiler,
+ * allowing it to resolve imports and show definitions
+ * from other files in the project.
+ *
+ * How it works:
+ * 1. Reads all .ts/.tsx/.js/.jsx files from projectRootFolder
+ * 2. Sends {path, content} pairs to each Monaco iframe
+ * 3. Monaco calls addExtraLib() and createModel() to register
+ *    the files with its TypeScript language service
+ */
+export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<void> {
+	const root = plugin.settings.projectRootFolder;
+	if (!root) return;
+	const files: { path: string; content: string }[] = [];
+	for (const file of plugin.app.vault.getFiles()) {
+		if (!file.path.startsWith(root + '/')) continue;
+		if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
+		try {
+			files.push({
+				path: file.path,
+				content: await plugin.app.vault.cachedRead(file)
+			});
+		} catch {
+			/* skip */
+		}
+	}
+	for (const leaf of plugin.app.workspace.getLeavesOfType('code-editor')) {
+		if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+			leaf.view.editor.send('load-project-files', { files });
+		}
 	}
 }

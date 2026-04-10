@@ -5,6 +5,7 @@ import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
+import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItems } from '../types/types.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 
@@ -29,10 +30,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 					const sub = i.setSubmenu();
 					for (const it of items) {
 						sub.addItem((subItem) =>
-							subItem
-								.setTitle(it.title)
-								.setIcon(it.icon)
-								.onClick(it.action)
+							subItem.setTitle(it.title).setIcon(it.icon).onClick(it.action)
 						);
 					}
 				});
@@ -109,7 +107,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			action: async () => {
 				plugin.settings.projectRootFolder = folder.path;
 				await plugin.saveSettings();
-				plugin.updateProjectFolderHighlight();
+				updateProjectFolderHighlight(plugin);
 			}
 		}
 	];
@@ -122,7 +120,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			action: async () => {
 				plugin.settings.projectRootFolder = '';
 				await plugin.saveSettings();
-				plugin.updateProjectFolderHighlight();
+				updateProjectFolderHighlight(plugin);
 			}
 		});
 	}

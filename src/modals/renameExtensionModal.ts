@@ -3,7 +3,7 @@ import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import { confirmation } from './confirmation.ts';
-import { isCodeFilesExtension, getCodeEditorViews } from '../utils/extensionUtils.ts';
+import { isCodeFilesExtension, getCodeEditorViews, addExtension, registerExtension, syncRegisteredExts } from '../utils/extensionUtils.ts';
 
 export class RenameExtensionModal extends Modal {
 	private newExt: string;
@@ -99,10 +99,10 @@ export class RenameExtensionModal extends Modal {
 				`".${ext}" is not a registered extension. Register it with Code Files?`
 			);
 			if (!ok) return;
-			this.plugin.addExtension(ext);
-			this.plugin.registerExtension(ext);
+			addExtension(this.plugin.settings, ext);
+			registerExtension(this.plugin, ext);
 			await this.plugin.saveSettings();
-			this.plugin.syncRegisteredExts();
+			syncRegisteredExts(this.plugin);
 			new Notice(`".${ext}" registered with Code Files`);
 		}
 

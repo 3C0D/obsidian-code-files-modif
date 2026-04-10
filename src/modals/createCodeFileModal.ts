@@ -11,6 +11,7 @@ import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
+import { getActiveExtensions, addExtension, registerExtension } from '../utils/extensionUtils.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
@@ -99,9 +100,9 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		// If the extension is not registered yet, register it on the fly
-		if (!this.plugin.getActiveExtensions().includes(ext)) {
-			this.plugin.addExtension(ext);
-			this.plugin.registerExtension(ext);
+		if (!getActiveExtensions(this.plugin.settings).includes(ext)) {
+			addExtension(this.plugin.settings, ext);
+			registerExtension(this.plugin, ext);
 			await this.plugin.saveSettings();
 			new Notice(`Added ".${ext}" to registered extensions`);
 		}

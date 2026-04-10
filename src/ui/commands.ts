@@ -6,6 +6,7 @@ import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { ChooseCssFileModal } from '../modals/chooseCssFileModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
+import { broadcastOptions, broadcastEditorConfig } from '../utils/broadcast.ts';
 
 export function registerCommands(plugin: CodeFilesPlugin): void {
 	plugin.addCommand({
@@ -67,8 +68,8 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 				new EditorSettingsModal(
 					plugin,
 					view.file.extension,
-					() => plugin.broadcastOptions(),
-					() => plugin.broadcastEditorConfig(view.file!.extension)
+					() => broadcastOptions(plugin),
+					() => broadcastEditorConfig(plugin, view.file!.extension)
 				).open();
 			}
 			return true;

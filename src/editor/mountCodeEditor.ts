@@ -4,6 +4,8 @@ import { type CodeEditorInstance } from '../types/types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
+import { getActiveExtensions } from '../utils/extensionUtils.ts';
+import { broadcastOptions } from '../utils/broadcast.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
@@ -29,7 +31,9 @@ export const resolveThemeParams = async (
 	theme: string
 ): Promise<{ theme: string; themeData?: string }> => {
 	const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
-	const pluginBase = normalizePath(`${plugin.app.vault.configDir}/plugins/${manifest.id}`);
+	const pluginBase = normalizePath(
+		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
+	);
 	const resolvedTheme =
 		theme === 'default'
 			? document.body.classList.contains('theme-dark')
@@ -67,8 +71,13 @@ export const mountCodeEditor = async (
 	const theme =
 		plugin.settings.theme === 'default' ? defaultTheme : plugin.settings.theme;
 
-	const pluginBase = normalizePath(`${plugin.app.vault.configDir}/plugins/${manifest.id}`);
+	const pluginBase = normalizePath(
+		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
+	);
 
+	/** Loads TypeScript/JavaScript files from the project root and sends them to Monaco.
+	 *  Monaco needs the source code to provide IntelliSense and cross-file navigation.
+	 *  Called once when the editor initializes (on 'ready' message). */
 	async function loadProjectFiles(
 		send: (type: string, payload: Record<string, unknown>) => void
 	): Promise<void> {
@@ -95,7 +104,8 @@ export const mountCodeEditor = async (
 	const htmlPath = normalizePath(`${pluginBase}/monacoEditor.html`);
 	const htmlUrl = plugin.app.vault.adapter.getResourcePath(htmlPath);
 	const vsPath = normalizePath(`${pluginBase}/vs`);
-	const vsBase = plugin.app.vault.adapter.getResourcePath(vsPath);
+	// Strip timestamp from vsBase so sub-paths like /editor/editor.main.css work
+	const vsBase = plugin.app.vault.adapter.getResourcePath(vsPath).replace(/\?.*$/, '');
 	const configJsPath = normalizePath(`${pluginBase}/monacoHtml.js`);
 	const configJsUrl = plugin.app.vault.adapter.getResourcePath(configJsPath);
 	const configCssPath = normalizePath(`${pluginBase}/monacoHtml.css`);
@@ -103,23 +113,29 @@ export const mountCodeEditor = async (
 	const prettierPath = normalizePath(`${pluginBase}/prettier-standalone.js`);
 	const prettierBase = plugin.app.vault.adapter.getResourcePath(prettierPath);
 	const prettierMarkdownPath = normalizePath(`${pluginBase}/prettier-markdown.js`);
-	const prettierMarkdownUrl = plugin.app.vault.adapter.getResourcePath(prettierMarkdownPath);
+	const prettierMarkdownUrl =
+		plugin.app.vault.adapter.getResourcePath(prettierMarkdownPath);
 	const prettierEstreePath = normalizePath(`${pluginBase}/prettier-estree.js`);
-	const prettierEstreeUrl = plugin.app.vault.adapter.getResourcePath(prettierEstreePath);
+	const prettierEstreeUrl =
+		plugin.app.vault.adapter.getResourcePath(prettierEstreePath);
 	const prettierTypescriptPath = normalizePath(`${pluginBase}/prettier-typescript.js`);
-	const prettierTypescriptUrl = plugin.app.vault.adapter.getResourcePath(prettierTypescriptPath);
+	const prettierTypescriptUrl =
+		plugin.app.vault.adapter.getResourcePath(prettierTypescriptPath);
 	const prettierBabelPath = normalizePath(`${pluginBase}/prettier-babel.js`);
 	const prettierBabelUrl = plugin.app.vault.adapter.getResourcePath(prettierBabelPath);
 	const prettierPostcssPath = normalizePath(`${pluginBase}/prettier-postcss.js`);
-	const prettierPostcssUrl = plugin.app.vault.adapter.getResourcePath(prettierPostcssPath);
+	const prettierPostcssUrl =
+		plugin.app.vault.adapter.getResourcePath(prettierPostcssPath);
 	const prettierHtmlPath = normalizePath(`${pluginBase}/prettier-html.js`);
 	const prettierHtmlUrl = plugin.app.vault.adapter.getResourcePath(prettierHtmlPath);
 	const prettierYamlPath = normalizePath(`${pluginBase}/prettier-yaml.js`);
 	const prettierYamlUrl = plugin.app.vault.adapter.getResourcePath(prettierYamlPath);
 	const prettierGraphqlPath = normalizePath(`${pluginBase}/prettier-graphql.js`);
-	const prettierGraphqlUrl = plugin.app.vault.adapter.getResourcePath(prettierGraphqlPath);
+	const prettierGraphqlUrl =
+		plugin.app.vault.adapter.getResourcePath(prettierGraphqlPath);
 	const mermaidFormatterPath = normalizePath(`${pluginBase}/mermaid-formatter.js`);
-	const mermaidFormatterUrl = plugin.app.vault.adapter.getResourcePath(mermaidFormatterPath);
+	const mermaidFormatterUrl =
+		plugin.app.vault.adapter.getResourcePath(mermaidFormatterPath);
 
 	const initParams: Record<string, string | boolean> = {
 		context: codeContext,
@@ -140,7 +156,7 @@ export const mountCodeEditor = async (
 	// Check if this is an unregistered extension
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
-	if (extension && !plugin.getActiveExtensions().includes(extension)) {
+	if (extension && !getActiveExtensions(plugin.settings).includes(extension)) {
 		initParams.isUnregisteredExtension = true;
 	}
 	if (!['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'].includes(theme)) {
@@ -241,7 +257,7 @@ Element.prototype.appendChild = function(node) {
 					const modal = new EditorSettingsModal(
 						plugin,
 						ext,
-						() => plugin.broadcastOptions(),
+						() => broadcastOptions(plugin),
 						(config) => {
 							send('change-editor-config', { config });
 						}

@@ -8,15 +8,35 @@ import * as fs from 'fs';
 /** Extensions to exclude from hidden files list (binary executables, archives, and files that can't be opened as text) */
 const EXCLUDED_EXTENSIONS = [
 	// Executables and libraries
-	'exe', 'dll', 'so', 'dylib', 'app', 'dmg', 'msi',
+	'exe',
+	'dll',
+	'so',
+	'dylib',
+	'app',
+	'dmg',
+	'msi',
 	// Archives
-	'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+	'zip',
+	'rar',
+	'7z',
+	'tar',
+	'gz',
+	'bz2',
+	'xz',
 	// Database files
-	'db', 'sqlite', 'mdb',
+	'db',
+	'sqlite',
+	'mdb',
 	// Office binary formats
-	'doc', 'xls', 'ppt',
+	'doc',
+	'xls',
+	'ppt',
 	// Fonts
-	'ttf', 'otf', 'woff', 'woff2', 'eot'
+	'ttf',
+	'otf',
+	'woff',
+	'woff2',
+	'eot'
 ];
 
 /** Maximum file size in bytes (5MB) */
@@ -50,14 +70,17 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 	/** Builds the set of paths known to the file explorer tree. */
 	private getExplorerPaths(): Set<string> {
-		const explorerView = this.plugin.app.workspace
-			.getLeavesOfType('file-explorer')[0]?.view as FileExplorerView | undefined;
+		const explorerView = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0]
+			?.view as FileExplorerView | undefined;
 		if (!explorerView?.fileItems) return new Set();
 		return new Set<string>(Object.keys(explorerView.fileItems));
 	}
 
 	/** Recursively scans the folder for files not present in the explorer tree. */
-	private async scanFolder(folderPath: string, explorerPaths: Set<string>): Promise<void> {
+	private async scanFolder(
+		folderPath: string,
+		explorerPaths: Set<string>
+	): Promise<void> {
 		const listed = await this.plugin.app.vault.adapter.list(folderPath);
 
 		for (const filePath of listed.files) {
@@ -73,7 +96,11 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 			try {
 				const stat = await this.plugin.app.vault.adapter.stat(filePath);
 				if (!stat || stat.size > MAX_FILE_SIZE) continue;
-				this.hiddenFiles.push({ name: fileName, path: filePath, size: stat.size });
+				this.hiddenFiles.push({
+					name: fileName,
+					path: filePath,
+					size: stat.size
+				});
 			} catch {
 				continue;
 			}
@@ -95,7 +122,9 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 					try {
 						const abs = normalizePath(`${basePath}/${subFolder}`);
 						if (maybeLstat(abs).isSymbolicLink()) continue;
-					} catch { continue; }
+					} catch {
+						continue;
+					}
 				}
 			}
 			await this.scanFolder(subFolder, explorerPaths);

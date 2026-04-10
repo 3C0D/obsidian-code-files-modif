@@ -1,5 +1,13 @@
 import { SuggestModal, Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
+import {
+	getActiveExtensions,
+	addExtension,
+	removeExtension,
+	registerExtension,
+	unregisterExtension,
+	syncRegisteredExts
+} from '../utils/extensionUtils.ts';
 
 type ExtensionSuggestion = { kind: 'add' | 'remove'; ext: string };
 
@@ -22,7 +30,7 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 
 	getSuggestions(query: string): ExtensionSuggestion[] {
 		const q = query.toLowerCase().replace(/^\./, '').trim();
-		const current = this.plugin.getActiveExtensions();
+		const current = getActiveExtensions(this.plugin.settings);
 
 		// Filter existing extensions matching the query
 		const matches = current
@@ -43,18 +51,18 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 
 	async onChooseSuggestion(item: ExtensionSuggestion): Promise<void> {
 		if (item.kind === 'add') {
-			this.plugin.addExtension(item.ext);
-			this.plugin.registerExtension(item.ext);
+			addExtension(this.plugin.settings, item.ext);
+			registerExtension(this.plugin, item.ext);
 			new Notice(`Added ".${item.ext}"`);
 			await this.plugin.saveSettings();
-			this.plugin.syncRegisteredExts();
+			syncRegisteredExts(this.plugin);
 			this.onUpdate(item.ext);
 		} else {
-			this.plugin.removeExtension(item.ext);
-			this.plugin.unregisterExtension(item.ext);
+			removeExtension(this.plugin.settings, item.ext);
+			unregisterExtension(this.plugin, item.ext);
 			new Notice(`Removed ".${item.ext}"`);
 			await this.plugin.saveSettings();
-			this.plugin.syncRegisteredExts();
+			syncRegisteredExts(this.plugin);
 			this.onUpdate();
 		}
 	}

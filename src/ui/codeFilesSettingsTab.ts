@@ -13,6 +13,9 @@ import {
 	DEFAULT_EXTENSION_CONFIG,
 	parseEditorConfig
 } from '../types/types.ts';
+import { broadcastEditorConfig } from '../utils/broadcast.ts';
+import { getActiveExtensions, reregisterExtensions } from '../utils/extensionUtils.ts';
+import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
@@ -41,7 +44,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.showRibbonIcon)
 					.onChange(async (value) => {
 						this.plugin.settings.showRibbonIcon = value;
-						this.plugin.updateRibbonIcon();
+						updateRibbonIcon(this.plugin);
 						await this.plugin.saveSettings();
 					})
 			);
@@ -66,7 +69,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 							}
 							this.plugin.settings.extraExtensions = [];
 						}
-						await this.plugin.reregisterExtensions();
+						await reregisterExtensions(this.plugin);
 						this.display();
 					})
 			);
@@ -87,7 +90,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		containerEl.createEl('p', {
 			text:
 				'Active: ' +
-				(this.plugin.getActiveExtensions().sort().join(', ') || 'none'),
+				(getActiveExtensions(this.plugin.settings).sort().join(', ') || 'none'),
 			attr: {
 				style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;'
 			}
@@ -102,7 +105,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			}
 		});
 
-		const extensions = this.plugin.getActiveExtensions();
+		const extensions = getActiveExtensions(this.plugin.settings);
 		let selectedExt = '';
 
 		const extInput = new TextComponent(containerEl);
@@ -159,7 +162,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						this.plugin.settings.editorConfigs[selectedExt] = val;
 					}
 					await this.plugin.saveSettings();
-					this.plugin.broadcastEditorConfig(selectedExt);
+					broadcastEditorConfig(this.plugin, selectedExt);
 					updateLabel(selectedExt);
 				} catch {
 					// invalid JSON — wait for valid input

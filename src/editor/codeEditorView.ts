@@ -7,6 +7,8 @@ import { viewType, type CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { snippetExists, isSnippetEnabled } from '../utils/snippetUtils.ts';
+import { broadcastOptions } from '../utils/broadcast.ts';
+import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
 
 /**
@@ -175,16 +177,14 @@ export class CodeEditorView extends TextFileView {
 			new EditorSettingsModal(
 				this.plugin,
 				file.extension,
-				() => this.plugin.broadcastOptions(),
+				() => broadcastOptions(this.plugin),
 				(config) => {
 					this.codeEditor?.send('change-editor-config', { config });
 				}
 			).open();
 		});
 
-		const isUnregistered = !this.plugin
-			.getActiveExtensions()
-			.includes(file.extension);
+		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(file.extension);
 		if (isUnregistered) {
 			this.returnAction = this.addAction(
 				'undo-2',

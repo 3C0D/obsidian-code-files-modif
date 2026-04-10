@@ -9,6 +9,11 @@ import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
+import {
+	broadcastProjectFiles,
+	broadcastBrightness,
+	broadcastEditorConfig
+} from '../utils/broadcast.ts';
 import { FolderSuggest } from '../ui/folderSuggest.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
@@ -146,7 +151,7 @@ export class EditorSettingsModal extends Modal {
 				s.sliderEl.addEventListener('input', () => {
 					const value = parseFloat(s.sliderEl.value);
 					this.plugin.settings.editorBrightness = value;
-					this.plugin.broadcastBrightness();
+					broadcastBrightness(this.plugin);
 				});
 			});
 
@@ -159,12 +164,12 @@ export class EditorSettingsModal extends Modal {
 					.onChange(async (value) => {
 						this.plugin.settings.projectRootFolder = value.trim();
 						await this.plugin.saveSettings();
-						await this.plugin.broadcastProjectFiles();
+						await broadcastProjectFiles(this.plugin);
 					});
 				new FolderSuggest(this.plugin, text.inputEl, async (folder) => {
 					this.plugin.settings.projectRootFolder = folder.path;
 					await this.plugin.saveSettings();
-					await this.plugin.broadcastProjectFiles();
+					await broadcastProjectFiles(this.plugin);
 				});
 			});
 
@@ -236,7 +241,8 @@ export class EditorSettingsModal extends Modal {
 				const value = this.codeEditor.getValue().trim();
 				if (this.applyFormatterValue(value)) {
 					await this.plugin.saveSettings();
-					this.plugin.broadcastEditorConfig(
+					broadcastEditorConfig(
+						this.plugin,
 						this.isGlobal ? '*' : this.extension
 					);
 				}

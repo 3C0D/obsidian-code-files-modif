@@ -230,7 +230,10 @@ async function createBuildContext(
 					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
 					const configJsSrc = path.join(pluginDir, 'src/editor/monacoHtml.js');
 					const configJsTarget = path.join(buildPath, 'monacoHtml.js');
-					const configCssSrc = path.join(pluginDir, 'src/editor/monacoHtml.css');
+					const configCssSrc = path.join(
+						pluginDir,
+						'src/editor/monacoHtml.css'
+					);
 					const configCssTarget = path.join(buildPath, 'monacoHtml.css');
 					const themesSrc = path.join(
 						pluginDir,

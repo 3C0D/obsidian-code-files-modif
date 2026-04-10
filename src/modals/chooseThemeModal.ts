@@ -1,6 +1,7 @@
 import { SuggestModal } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { themes, loadThemes } from '../utils/themes.ts';
+import { broadcastBrightness } from '../utils/broadcast.ts';
 
 /** Cached list of all available themes, populated on first modal open. */
 let ALL_THEMES: string[] = [];
@@ -33,7 +34,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 				) / 10;
 			plugin.settings.editorBrightness = next;
 			void plugin.saveSettings();
-			plugin.broadcastBrightness();
+			broadcastBrightness(plugin);
 		};
 
 		this.scope.register([], 'ArrowRight', () => {

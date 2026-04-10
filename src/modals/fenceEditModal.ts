@@ -5,6 +5,7 @@ import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
+import { broadcastOptions } from '../utils/broadcast.ts';
 
 /** Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed. */
 export class FenceEditModal extends Modal {
@@ -44,7 +45,7 @@ export class FenceEditModal extends Modal {
 			new EditorSettingsModal(
 				this.plugin,
 				this.langKey,
-				() => this.plugin.broadcastOptions(),
+				() => broadcastOptions(this.plugin),
 				(config) => this.codeEditor?.send('change-editor-config', { config })
 			).open();
 		});

@@ -3,21 +3,7 @@ import { CodeEditorView } from './editor/codeEditorView.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import { viewType, type MyPluginSettings } from './types/types.ts';
 
-import {
-	getActiveExtensions,
-	addExtension,
-	removeExtension,
-	initExtensions,
-	registerExtension,
-	unregisterExtension,
-	syncRegisteredExts,
-	reregisterExtensions
-} from './utils/extensionUtils.ts';
-import {
-	broadcastOptions,
-	broadcastBrightness,
-	broadcastEditorConfig
-} from './utils/broadcast.ts';
+import { initExtensions } from './utils/extensionUtils.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
@@ -25,13 +11,6 @@ import { registerContextMenus } from './ui/contextMenus.ts';
 import { patchModalClose } from './utils/modalPatch.ts';
 import { updateProjectFolderHighlight } from './utils/explorerUtils.ts';
 
-/**
- * Obsidian plugin entry point.
- *
- * Facade pattern: all public methods delegate to
- * utility modules in `utils/` and `ui/`. This keeps
- * the plugin class thin and testable.
- */
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
 	ribbonIconEl: HTMLElement | null = null;
@@ -65,63 +44,5 @@ export default class CodeFilesPlugin extends Plugin {
 	}
 	async saveSettings(): Promise<void> {
 		await saveSettings(this);
-	}
-
-	getActiveExtensions(): string[] {
-		return getActiveExtensions(this.settings);
-	}
-	addExtension(ext: string): void {
-		addExtension(this.settings, ext);
-	}
-	removeExtension(ext: string): void {
-		removeExtension(this.settings, ext);
-	}
-
-	registerExtension(ext: string): void {
-		registerExtension(this, ext);
-	}
-	unregisterExtension(ext: string): void {
-		unregisterExtension(this, ext);
-	}
-	syncRegisteredExts(): void {
-		syncRegisteredExts(this);
-	}
-	async reregisterExtensions(): Promise<void> {
-		await reregisterExtensions(this);
-	}
-	updateRibbonIcon(): void {
-		updateRibbonIcon(this);
-	}
-
-	updateProjectFolderHighlight(): void {
-		updateProjectFolderHighlight(this);
-	}
-
-	broadcastOptions(): void {
-		broadcastOptions(this);
-	}
-	broadcastBrightness(): void {
-		broadcastBrightness(this);
-	}
-	broadcastEditorConfig(ext: string): void {
-		broadcastEditorConfig(this, ext);
-	}
-
-	async broadcastProjectFiles(): Promise<void> {
-		const root = this.settings.projectRootFolder;
-		if (!root) return;
-		const files: { path: string; content: string }[] = [];
-		for (const file of this.app.vault.getFiles()) {
-			if (!file.path.startsWith(root + '/')) continue;
-			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
-			try {
-				files.push({ path: file.path, content: await this.app.vault.cachedRead(file) });
-			} catch { /* skip */ }
-		}
-		for (const leaf of this.app.workspace.getLeavesOfType('code-editor')) {
-			if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-				leaf.view.editor.send('load-project-files', { files });
-			}
-		}
 	}
 }
