@@ -3,6 +3,7 @@ import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView } from 'obsidian-typings';
+import * as fs from 'fs';
 
 /** Extensions to exclude from hidden files list (binary executables, archives, and files that can't be opened as text) */
 const EXCLUDED_EXTENSIONS = [
@@ -79,6 +80,24 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 		}
 
 		for (const subFolder of listed.folders) {
+			const folderName = subFolder.split('/').pop() ?? '';
+			if (folderName.startsWith('.')) continue; // ignore hidden folders like .git, .obsidian
+
+			const stat = await this.plugin.app.vault.adapter.stat(subFolder);
+			if (!stat) continue;
+			// Check for symlinks on desktop only (fs.lstatSync not available on mobile)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const maybeLstat = (fs as any)?.lstatSync;
+			if (maybeLstat) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const basePath = (this.plugin.app.vault.adapter as any).basePath;
+				if (basePath) {
+					try {
+						const abs = basePath + '/' + subFolder;
+						if (maybeLstat(abs).isSymbolicLink()) continue;
+					} catch { continue; }
+				}
+			}
 			await this.scanFolder(subFolder, explorerPaths);
 		}
 	}
