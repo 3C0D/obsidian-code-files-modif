@@ -93,7 +93,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 				const basePath = (this.plugin.app.vault.adapter as any).basePath;
 				if (basePath) {
 					try {
-						const abs = basePath + '/' + subFolder;
+						const abs = normalizePath(`${basePath}/${subFolder}`);
 						if (maybeLstat(abs).isSymbolicLink()) continue;
 					} catch { continue; }
 				}

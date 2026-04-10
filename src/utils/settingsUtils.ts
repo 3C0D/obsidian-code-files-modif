@@ -22,10 +22,6 @@ export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
 			...(loaded?.editorConfigs ?? {})
 		}
 	};
-	// check if it works before deleting this!!!!!!!!
-	// if (!plugin.settings.extraExtensions) {
-	// 	plugin.settings.extraExtensions = [];
-	// }
 }
 
 export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {

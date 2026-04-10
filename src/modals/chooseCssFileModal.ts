@@ -28,7 +28,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 
 	/** Handles the user's selection by either opening the existing CSS file in the editor or creating a new one and then opening it */
 	async onChooseSuggestion(item: CssSuggestion): Promise<void> {
-		const snippetsDir = `${this.plugin.app.vault.configDir}/snippets`;
+		const snippetsDir = normalizePath(`${this.plugin.app.vault.configDir}/snippets`);
 		const path = normalizePath(`${snippetsDir}/${item.name}.css`);
 
 		if (item.kind === 'new') {
