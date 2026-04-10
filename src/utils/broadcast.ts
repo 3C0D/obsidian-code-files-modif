@@ -72,21 +72,24 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
  * 2. Sends {path, content} pairs to each Monaco iframe
  * 3. Monaco calls addExtraLib() and createModel() to register
  *    the files with its TypeScript language service
+ * 4. If no project root is set, sends an empty array to clear
+ *    previously loaded files
  */
 export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const root = plugin.settings.projectRootFolder;
-	if (!root) return;
 	const files: { path: string; content: string }[] = [];
-	for (const file of plugin.app.vault.getFiles()) {
-		if (!file.path.startsWith(root + '/')) continue;
-		if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
-		try {
-			files.push({
-				path: file.path,
-				content: await plugin.app.vault.cachedRead(file)
-			});
-		} catch {
-			/* skip */
+	if (root) {
+		for (const file of plugin.app.vault.getFiles()) {
+			if (!file.path.startsWith(root + '/')) continue;
+			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
+			try {
+				files.push({
+					path: file.path,
+					content: await plugin.app.vault.cachedRead(file)
+				});
+			} catch {
+				/* skip */
+			}
 		}
 	}
 	for (const leaf of plugin.app.workspace.getLeavesOfType('code-editor')) {

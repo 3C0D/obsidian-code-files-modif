@@ -759,16 +759,38 @@
 							}
 							break;
 						case 'load-project-files':
+							// Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
+							// If Monaco isn't initialized yet, queue the files for later.
 							if (!window._initialized) {
 								window._pendingProjectFiles = data.files;
 							} else {
-								for (var i = 0; i < data.files.length; i++) {
-									var file = data.files[i];
-									var uri = monaco.Uri.parse('file:///' + file.path);
-									monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri.toString());
-									monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri.toString());
-									if (!monaco.editor.getModel(uri)) {
-										monaco.editor.createModel(file.content, undefined, uri);
+								// Empty array = clear all project files (user cleared the project root folder)
+								if (data.files.length === 0) {
+									// Dispose all models except the current editor's model and diff editor models
+									// to free memory and remove stale project files from IntelliSense
+									var currentModel = editor ? editor.getModel() : null;
+									var allModels = monaco.editor.getModels();
+									for (var i = 0; i < allModels.length; i++) {
+										if (allModels[i] !== currentModel && allModels[i] !== diffEditorInstance?.getModel()?.original && allModels[i] !== diffEditorInstance?.getModel()?.modified) {
+											allModels[i].dispose();
+										}
+									}
+									// Clear extra libs to remove all project files from TypeScript language service
+									// This makes unresolved imports show red squiggles again
+									monaco.languages.typescript.typescriptDefaults.setExtraLibs([]);
+									monaco.languages.typescript.javascriptDefaults.setExtraLibs([]);
+								} else {
+									// Load new project files into Monaco's TypeScript language service
+									for (var i = 0; i < data.files.length; i++) {
+										var file = data.files[i];
+										var uri = monaco.Uri.parse('file:///' + file.path);
+										// addExtraLib registers the file content with TypeScript for IntelliSense
+										monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri.toString());
+										monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri.toString());
+										// createModel allows Ctrl+Click navigation to open the file
+										if (!monaco.editor.getModel(uri)) {
+											monaco.editor.createModel(file.content, undefined, uri);
+										}
 									}
 								}
 							}

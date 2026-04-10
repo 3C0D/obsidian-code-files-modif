@@ -8,6 +8,7 @@ import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItems } from '../types/types.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { broadcastProjectFiles } from '../utils/broadcast.ts';
 
 /**
  * Registers two context menus:
@@ -108,6 +109,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 				plugin.settings.projectRootFolder = folder.path;
 				await plugin.saveSettings();
 				updateProjectFolderHighlight(plugin);
+				await broadcastProjectFiles(plugin);
 			}
 		}
 	];
@@ -121,6 +123,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 				plugin.settings.projectRootFolder = '';
 				await plugin.saveSettings();
 				updateProjectFolderHighlight(plugin);
+				await broadcastProjectFiles(plugin);
 			}
 		});
 	}
