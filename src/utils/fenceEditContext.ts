@@ -58,8 +58,11 @@ export class FenceEditContext {
 			editorContent += `${this.editor.getLine(i)}\n`;
 		}
 
+		// Remove trailing newline
 		const content = editorContent.slice(0, editorContent.length - 1);
+		// Extract language name: remove ```, trim, take first word before space (ignores metadata like ```js title="file")
 		const langKey = this.editor.getLine(this.start).slice(3).trim().split(' ')[0];
+		// Convert to Monaco language ID
 		const language = getLanguage(langKey);
 
 		return { content, language, langKey };

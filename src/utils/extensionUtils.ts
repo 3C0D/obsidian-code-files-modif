@@ -11,46 +11,51 @@ import type CodeFilesPlugin from '../main.ts';
  * - Manual: user-curated `extensions[]`
  * - Extended: all Monaco extensions minus excluded,
  *   plus any extras the user added.
+ * Uses Set to guarantee uniqueness.
  */
 export function getActiveExtensions(settings: MyPluginSettings): string[] {
 	if (settings.allExtensions) {
-		return [
+		return [...new Set([
 			...getAllMonacoExtensions(settings.excludedExtensions),
 			...settings.extraExtensions
-		];
+		])];
 	}
-	return settings.extensions;
+	return [...new Set(settings.extensions)];
 }
 
 /**
- * Adds an extension to the correct list depending
- * on the active mode (manual vs extended).
+ * Adds an extension to all relevant lists to maintain consistency
+ * across manual and extended modes.
+ * Uses Set to prevent duplicates.
  */
 export function addExtension(settings: MyPluginSettings, ext: string): void {
-	if (settings.allExtensions) {
-		if (!settings.extraExtensions.includes(ext)) settings.extraExtensions.push(ext);
-	} else {
-		if (!settings.extensions.includes(ext)) settings.extensions.push(ext);
-	}
+	// Add to both main lists
+	settings.extensions = [...new Set([...settings.extensions, ext])];
+	settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
+	
+	// Remove from excluded if present
+	const excluded = new Set(settings.excludedExtensions);
+	excluded.delete(ext);
+	settings.excludedExtensions = [...excluded];
 }
 
 /**
- * Removes an extension. In extended mode, removing
- * means either dropping it from extras or adding it
- * to the excluded list.
+ * Removes an extension from all relevant lists to maintain consistency
+ * across manual and extended modes.
+ * Uses Set to prevent duplicates.
  */
 export function removeExtension(settings: MyPluginSettings, ext: string): void {
-	if (settings.allExtensions) {
-		const idx = settings.extraExtensions.indexOf(ext);
-		if (idx !== -1) {
-			settings.extraExtensions.splice(idx, 1);
-		} else if (!settings.excludedExtensions.includes(ext)) {
-			settings.excludedExtensions.push(ext);
-		}
-	} else {
-		const idx = settings.extensions.indexOf(ext);
-		if (idx !== -1) settings.extensions.splice(idx, 1);
-	}
+	// Remove from both main lists
+	const exts = new Set(settings.extensions);
+	exts.delete(ext);
+	settings.extensions = [...exts];
+	
+	const extras = new Set(settings.extraExtensions);
+	extras.delete(ext);
+	settings.extraExtensions = [...extras];
+	
+	// Add to excluded list (for extended mode)
+	settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
 }
 
 export function isCodeFilesExtension(app: App, ext: string): boolean {
