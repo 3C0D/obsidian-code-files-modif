@@ -13,7 +13,7 @@ import { buildMergedConfig } from './settingsUtils.ts';
  */
 export function broadcastOptions(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
-		view.codeEditor?.send('change-options', {
+		view.editor?.send('change-options', {
 			noSemanticValidation: !plugin.settings.semanticValidation,
 			noSyntaxValidation: !plugin.settings.syntaxValidation
 		});
@@ -29,8 +29,8 @@ export function broadcastOptions(plugin: CodeFilesPlugin): void {
  */
 export function broadcastBrightness(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
-		if (view.codeEditor?.iframe) {
-			view.codeEditor.iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
+		if (view.editor?.iframe) {
+			view.editor.iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
 		}
 	}
 }
@@ -49,7 +49,7 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
 	for (const view of targets) {
 		const fileExt = view.file?.extension ?? '';
 		const config = buildMergedConfig(plugin, fileExt);
-		view.codeEditor?.send('change-editor-config', { config });
+		view.editor?.send('change-editor-config', { config });
 	}
 }
 

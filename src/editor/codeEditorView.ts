@@ -18,7 +18,7 @@ import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
  * postMessage-based API.
  */
 export class CodeEditorView extends TextFileView {
-	codeEditor!: CodeEditorInstance;
+	private codeEditor!: CodeEditorInstance;
 	private forceSave = false;
 	private gearAction: { remove: () => void } | null = null;
 	private themeAction: { remove: () => void } | null = null;
