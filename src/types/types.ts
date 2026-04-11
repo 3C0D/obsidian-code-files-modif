@@ -41,23 +41,6 @@ export interface MyPluginSettings {
 }
 
 /**
- * Parses a JSON string that may contain JavaScript-style comments and trailing commas.
- *
- * Handles:
- * - Single-line comments (`// ...`)
- * - Multi-line block comments (`/* ... * /`)
- * - Trailing commas before closing brackets/braces
- */
-export function parseEditorConfig(str: string): unknown {
-	return JSON.parse(
-		str
-			.replace(/\/\/[^\n]*/g, '')
-			.replace(/\/\*[\s\S]*?\*\//g, '')
-			.replace(/,(\s*[}\]])/g, '$1')
-	);
-}
-
-/**
  * Default Monaco editor options applied when no per-extension config exists.
  *
  * Convention:

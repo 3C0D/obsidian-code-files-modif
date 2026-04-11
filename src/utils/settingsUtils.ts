@@ -2,9 +2,25 @@ import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_SETTINGS,
 	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG,
-	parseEditorConfig
+	DEFAULT_EXTENSION_CONFIG
 } from '../types/types.ts';
+
+/**
+ * Parses a JSON string that may contain JavaScript-style comments and trailing commas.
+ *
+ * Handles:
+ * - Single-line comments (`// ...`)
+ * - Multi-line block comments (`/* ... * /`)
+ * - Trailing commas before closing brackets/braces
+ */
+function parseEditorConfig(str: string): unknown {
+	return JSON.parse(
+		str
+			.replace(/\/\/[^\n]*/g, '')
+			.replace(/\/\*[\s\S]*?\*\//g, '')
+			.replace(/,(\s*[}\]])/g, '$1')
+	);
+}
 
 /**
  * Merges persisted data on top of DEFAULT_SETTINGS.
