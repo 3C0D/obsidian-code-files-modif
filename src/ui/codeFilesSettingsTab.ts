@@ -10,11 +10,11 @@ import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
 	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG,
-	parseEditorConfig
+	DEFAULT_EXTENSION_CONFIG
 } from '../types/types.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import { getActiveExtensions, reregisterExtensions } from '../utils/extensionUtils.ts';
+import { applyEditorConfig } from '../utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
@@ -118,7 +118,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		const extensions = getActiveExtensions(this.plugin.settings);
 		let selectedExt = this.plugin.settings.lastSelectedConfigExtension || '';
 		let isGlobal = !selectedExt;
-		const self = this;
 
 		// Scope buttons row
 		const scopeRow = containerEl.createEl('div', {
@@ -138,7 +137,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		btnExt.style.flex = '0 0 auto';
 		btnExt.disabled = true;
 
-		const _extInputLabel = scopeRow.createEl('span', {
+		scopeRow.createEl('span', {
 			text: 'Choose a specific ext:',
 			attr: { style: 'margin-left: auto; margin-right: 8px; color: var(--text-muted); font-size: 0.9em;' }
 		});
@@ -149,30 +148,15 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		// Monaco editor container
 		const editorContainer = containerEl.createEl('div', {
-			attr: { style: 'border: 1px solid var(--background-modifier-border); border-radius: 4px; overflow: hidden; height: 300px; margin-top: 8px;' }
+			attr: { style: 'border: 1px solid var(--background-modifier-border); border-radius: 4px; overflow: hidden; height: 190px; margin-top: 8px;' }
 		});
-
-		const applyFormatterValue = (value: string, ext: string): boolean => {
-			const defaultForKey = ext === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
-			try {
-				parseEditorConfig(value);
-				if (ext !== '*' && value === defaultForKey.trim()) {
-					delete this.plugin.settings.editorConfigs[ext];
-				} else {
-					this.plugin.settings.editorConfigs[ext] = value;
-				}
-				return true;
-			} catch {
-				return false;
-			}
-		};
 
 		const debouncedSave = debounce(
 			async () => {
-				if (!self.codeEditor) return;
-				const value = self.codeEditor.getValue().trim();
+				if (!this.codeEditor) return;
+				const value = this.codeEditor.getValue().trim();
 				const key = isGlobal ? '*' : selectedExt;
-				if (applyFormatterValue(value, key)) {
+				if (applyEditorConfig(this.plugin, key, value)) {
 					await this.plugin.saveSettings();
 					broadcastEditorConfig(this.plugin, key);
 					this.plugin.app.workspace.trigger('code-files:settings-changed');
@@ -210,8 +194,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			const key = global ? '*' : selectedExt;
 			const cfg = this.plugin.settings.editorConfigs?.[key];
 			const defaultCfg = global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
-			if (self.codeEditor) {
-				self.codeEditor.setValue(cfg ?? defaultCfg);
+			if (this.codeEditor) {
+				this.codeEditor.setValue(cfg ?? defaultCfg);
 			}
 		};
 
@@ -231,14 +215,14 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		// Initialize Monaco editor
 		void (async () => {
 			const { mountCodeEditor } = await import('../editor/mountCodeEditor.ts');
-			self.codeEditor = await mountCodeEditor(
+			this.codeEditor = await mountCodeEditor(
 				this.plugin,
 				'json',
 				DEFAULT_EDITOR_CONFIG,
 				'settings-editor-config.jsonc',
 				() => debouncedSave()
 			);
-			editorContainer.append(self.codeEditor.iframe);
+			editorContainer.append(this.codeEditor.iframe);
 			// Restore last selected extension or default to global
 			if (selectedExt && extensions.includes(selectedExt)) {
 				await switchScope(false, selectedExt);

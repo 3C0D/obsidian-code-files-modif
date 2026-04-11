@@ -2,6 +2,7 @@ import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_SETTINGS,
 	DEFAULT_EDITOR_CONFIG,
+	DEFAULT_EXTENSION_CONFIG,
 	parseEditorConfig
 } from '../types/types.ts';
 
@@ -26,6 +27,30 @@ export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
 
 export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 	await plugin.saveData(plugin.settings);
+}
+
+/**
+ * Saves a raw editor config string for the given key ('*' or extension).
+ * Deletes the override if it matches the default for that key.
+ * Returns false if the JSON is invalid.
+ */
+export function applyEditorConfig(
+	plugin: CodeFilesPlugin,
+	key: string,
+	value: string
+): boolean {
+	const defaultForKey = key === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
+	try {
+		parseEditorConfig(value);
+		if (key !== '*' && value === defaultForKey.trim()) {
+			delete plugin.settings.editorConfigs[key];
+		} else {
+			plugin.settings.editorConfigs[key] = value;
+		}
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 /**

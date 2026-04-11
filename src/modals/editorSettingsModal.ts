@@ -2,13 +2,12 @@ import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG,
-	parseEditorConfig
+	DEFAULT_EXTENSION_CONFIG
 } from '../types/types.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
-import { buildMergedConfig } from '../utils/settingsUtils.ts';
+import { buildMergedConfig, applyEditorConfig } from '../utils/settingsUtils.ts';
 import {
 	broadcastProjectFiles,
 	broadcastBrightness,
@@ -31,26 +30,6 @@ export class EditorSettingsModal extends Modal {
 		super(plugin.app);
 	}
 
-	private applyFormatterValue(value: string): boolean {
-		const key = this.isGlobal ? '*' : this.extension;
-		const defaultForKey = this.isGlobal
-			? DEFAULT_EDITOR_CONFIG
-			: DEFAULT_EXTENSION_CONFIG;
-		try {
-			parseEditorConfig(value);
-			if (key !== '*' && value === defaultForKey.trim()) {
-				// Only delete overrides, never
-				// the global '*' key.
-				delete this.plugin.settings.editorConfigs[key];
-			} else {
-				this.plugin.settings.editorConfigs[key] = value;
-			}
-			return true;
-		} catch {
-			return false;
-		}
-	}
-
 	async onOpen(): Promise<void> {
 		super.onOpen();
 		// Remove modal background overlay to keep editor fully visible
@@ -60,7 +39,7 @@ export class EditorSettingsModal extends Modal {
 		}, 0);
 		this.titleEl.setText('Editor Settings');
 		this.modalEl.style.width = '560px';
-		this.modalEl.style.minHeight = '400px';
+		this.modalEl.style.minHeight = '385px';
 		this.modalEl.style.maxHeight = '90vh';
 		this.modalEl.style.position = 'fixed';
 		// Position modal at 65% from left if there's space, otherwise center it
@@ -232,8 +211,7 @@ export class EditorSettingsModal extends Modal {
 		editorContainer.style.borderRadius = '4px';
 		editorContainer.style.overflow = 'hidden';
 		editorContainer.style.flex = '0 0 auto';
-		editorContainer.style.height = 'auto';
-		editorContainer.style.minHeight = '200px';
+		editorContainer.style.height = '190px';
 
 		const existing = this.plugin.settings.editorConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_EXTENSION_CONFIG;
@@ -242,11 +220,12 @@ export class EditorSettingsModal extends Modal {
 			async () => {
 				if (!this.codeEditor) return;
 				const value = this.codeEditor.getValue().trim();
-				if (this.applyFormatterValue(value)) {
+				const key = this.isGlobal ? '*' : this.extension;
+				if (applyEditorConfig(this.plugin, key, value)) {
 					await this.plugin.saveSettings();
 					broadcastEditorConfig(
 						this.plugin,
-						this.isGlobal ? '*' : this.extension
+						key
 					);
 					// Notify settings tab to refresh
 					this.plugin.app.workspace.trigger('code-files:settings-changed');
@@ -274,7 +253,8 @@ export class EditorSettingsModal extends Modal {
 		backgrounds.forEach((bg) => (bg.style.opacity = ''));
 		if (this.codeEditor) {
 			const raw = this.codeEditor.getValue().trim();
-			if (this.applyFormatterValue(raw)) {
+			const key = this.isGlobal ? '*' : this.extension;
+			if (applyEditorConfig(this.plugin, key, raw)) {
 				void this.plugin.saveSettings();
 				// Notify settings tab to refresh
 				this.plugin.app.workspace.trigger('code-files:settings-changed');

@@ -137,15 +137,24 @@ export const mountCodeEditor = async (
 	const mermaidFormatterUrl =
 		plugin.app.vault.adapter.getResourcePath(mermaidFormatterPath);
 
+	// Disable minimap and line numbers for config editors (modal + settings tab)
+	// - editor-settings-config: config editor in the gear icon modal
+	// - settings-editor-config: config editor in the plugin settings tab
+	// - modal-editor.*: code fence editor modals (keep line numbers, disable minimap only)
 	const initParams: Record<string, string | boolean> = {
 		context: codeContext,
 		lang: language,
 		theme: theme.replace(/[^a-z0-9\-]/gi, '-'),
 		wordWrap: plugin.settings.wordWrap,
 		folding: plugin.settings.folding,
-		lineNumbers: plugin.settings.lineNumbers,
+		lineNumbers:
+			codeContext.includes('editor-settings-config') ||
+			codeContext.includes('settings-editor-config')
+				? false
+				: plugin.settings.lineNumbers,
 		minimap:
 			codeContext.includes('editor-settings-config') ||
+			codeContext.includes('settings-editor-config') ||
 			codeContext.startsWith('modal-editor.')
 				? false
 				: plugin.settings.minimap,
