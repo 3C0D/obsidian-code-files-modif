@@ -57,7 +57,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 
 	plugin.addCommand({
 		id: 'editor-config',
-		name: 'Edit editor config for current file',
+		name: 'Open editor settings',
 		checkCallback: (checking) => {
 			const view = plugin.app.workspace.getActiveViewOfType(CodeEditorView);
 			if (!view?.file) return false;

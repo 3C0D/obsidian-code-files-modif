@@ -218,7 +218,7 @@ export class CodeEditorView extends TextFileView {
 				const isOn = isSnippetEnabled(this.plugin.app, snippetName);
 				const toggleEl = this.addAction(
 					'square',
-					`Toggle ${snippetName}.css snippet`,
+					`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
 					() => {
 						const newState = !isSnippetEnabled(this.plugin.app, snippetName);
 						this.plugin.app.customCss.setCssEnabledStatus(
@@ -226,6 +226,7 @@ export class CodeEditorView extends TextFileView {
 							newState
 						);
 						track.toggleClass('is-on', newState);
+						toggleEl.setAttr('aria-label', `${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`);
 					}
 				);
 				// Inject custom toggle switch

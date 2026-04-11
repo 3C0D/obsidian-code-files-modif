@@ -170,12 +170,12 @@ These actions are also available via **F1** or right-click inside Monaco.
 
 ### CSS Snippet Controls
 
-When editing a CSS snippet file (`.obsidian/snippets/*.css`), two additional controls appear:
+When editing a CSS snippet file (`.obsidian/snippets/*.css`), two additional controls appear in the tab header:
 
 | Icon | What it does |
 |------|-------------|
 | 📁 **Folder** | Open the snippets folder in your system file explorer |
-| 🔘 **Toggle** | Enable or disable the current snippet in Obsidian without leaving the editor |
+| 🔘 **Toggle** | Enable or disable the current snippet in Obsidian without leaving the editor. The tooltip updates dynamically to show "Enable" or "Disable" based on the current state. |
 
 The toggle switch shows the current state (on/off) and updates instantly when clicked.
 
