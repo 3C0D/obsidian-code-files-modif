@@ -53,8 +53,8 @@ export class EditorSettingsModal extends Modal {
 
 	async onOpen(): Promise<void> {
 		super.onOpen();
+		// Remove modal background overlay to keep editor fully visible
 		setTimeout(() => {
-			// Remove all semi-transparent overlays so the editor remains fully visible
 			const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
 			backgrounds.forEach((bg) => (bg.style.opacity = '0'));
 		}, 0);
@@ -63,6 +63,7 @@ export class EditorSettingsModal extends Modal {
 		this.modalEl.style.minHeight = '400px';
 		this.modalEl.style.maxHeight = '90vh';
 		this.modalEl.style.position = 'fixed';
+		// Position modal at 65% from left if there's space, otherwise center it
 		setTimeout(() => {
 			const { innerWidth } = window;
 			const { offsetWidth } = this.modalEl;
@@ -92,6 +93,7 @@ export class EditorSettingsModal extends Modal {
 				t.setValue(this.plugin.settings.autoSave).onChange(async (v) => {
 					this.plugin.settings.autoSave = v;
 					await this.plugin.saveSettings();
+					// Update all open code editor views to show/hide dirty badge
 					for (const view of getCodeEditorViews(this.app)) {
 						// Duck typing avoids the circular import between editorSettingsModal and codeEditorView,
 						// which esbuild resolves in the wrong order and leaves the class undefined at runtime.
@@ -142,10 +144,9 @@ export class EditorSettingsModal extends Modal {
 				s.setLimits(0.2, 2, 0.1)
 					.setValue(this.plugin.settings.editorBrightness)
 					.setDynamicTooltip()
-					.onChange(async (v) => {
-						// this.plugin.settings.editorBrightness = v; — moved to input listener
+					.onChange(async () => {
+						// Brightness is applied in real-time via input listener below
 						await this.plugin.saveSettings();
-						// this.plugin.broadcastBrightness(); — moved to input listener
 					});
 				// Apply brightness in real-time while dragging
 				s.sliderEl.addEventListener('input', () => {
@@ -200,6 +201,7 @@ export class EditorSettingsModal extends Modal {
 
 		const switchScope = (global: boolean): void => {
 			this.isGlobal = global;
+			// Update button states and title
 			if (global) {
 				btnGlobal.setCta();
 				btnExt.buttonEl.removeClass('mod-cta');
@@ -209,6 +211,7 @@ export class EditorSettingsModal extends Modal {
 				btnGlobal.buttonEl.removeClass('mod-cta');
 				configTitle.setText(`Editor Config — .${this.extension}`);
 			}
+			// Load the appropriate config (existing or default)
 			const cfg =
 				this.plugin.settings.editorConfigs?.[global ? '*' : this.extension];
 			if (this.codeEditor)
@@ -245,6 +248,8 @@ export class EditorSettingsModal extends Modal {
 						this.plugin,
 						this.isGlobal ? '*' : this.extension
 					);
+					// Notify settings tab to refresh
+					this.plugin.app.workspace.trigger('code-files:settings-changed');
 				}
 			},
 			600,
@@ -271,6 +276,8 @@ export class EditorSettingsModal extends Modal {
 			const raw = this.codeEditor.getValue().trim();
 			if (this.applyFormatterValue(raw)) {
 				void this.plugin.saveSettings();
+				// Notify settings tab to refresh
+				this.plugin.app.workspace.trigger('code-files:settings-changed');
 				// Send the MERGED config
 				// (global + ext) so the iframe
 				// keeps inherited settings like

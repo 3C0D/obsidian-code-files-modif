@@ -3,10 +3,10 @@ import {
 	debounce,
 	PluginSettingTab,
 	Setting,
-	TextAreaComponent,
 	TextComponent
 } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
+import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
 	DEFAULT_EDITOR_CONFIG,
@@ -20,6 +20,8 @@ import { ExtensionSuggest } from './extensionSuggest.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
+	private codeEditor: CodeEditorInstance | null = null;
+
 	constructor(
 		app: App,
 		public plugin: CodeFilesPlugin
@@ -29,6 +31,12 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
+
+		// Clean up previous Monaco editor if it exists
+		if (this.codeEditor) {
+			this.codeEditor.destroy();
+			this.codeEditor = null;
+		}
 
 		containerEl.empty();
 
@@ -63,6 +71,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.allExtensions)
 					.onChange(async (value) => {
 						this.plugin.settings.allExtensions = value;
+						// When switching from extended to manual mode, merge extraExtensions into extensions
 						if (!value) {
 							for (const ext of this.plugin.settings.extraExtensions) {
 								if (!this.plugin.settings.extensions.includes(ext))
@@ -100,91 +109,154 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Editor Config' });
 		containerEl.createEl('p', {
-			text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions). Type * for global config.',
+			text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions).',
 			attr: {
 				style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
 			}
 		});
 
 		const extensions = getActiveExtensions(this.plugin.settings);
-		let selectedExt = '';
+		let selectedExt = this.plugin.settings.lastSelectedConfigExtension || '';
+		let isGlobal = !selectedExt;
+		const self = this;
 
-		const extInput = new TextComponent(containerEl);
-		extInput.setPlaceholder('Type or select an extension...');
-		extInput.inputEl.style.width = '100%';
-		extInput.inputEl.style.marginBottom = '8px';
-
-		const extLabel = containerEl.createEl('p', {
-			attr: {
-				style: 'font-size: 0.85em; color: var(--text-muted); margin-bottom: 4px;'
-			}
+		// Scope buttons row
+		const scopeRow = containerEl.createEl('div', {
+			attr: { style: 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;' }
 		});
-		extLabel.setText('Editor Config - select an extension above');
 
-		const textarea = new TextAreaComponent(containerEl);
-		textarea.inputEl.style.width = '100%';
-		textarea.inputEl.style.height = '120px';
-		textarea.inputEl.style.fontFamily = 'monospace';
-		textarea.inputEl.style.fontSize = '0.85em';
-		textarea.inputEl.style.opacity = '0.6';
-		textarea.setValue(DEFAULT_EDITOR_CONFIG);
-		textarea.inputEl.disabled = true;
+		const btnGlobal = scopeRow.createEl('button', {
+			text: 'Global (*)',
+			cls: 'mod-cta'
+		});
+		btnGlobal.style.flex = '0 0 auto';
 
-		const updateLabel = (ext: string): void => {
-			extLabel.setText(`Editor Config - .${ext}`);
+		const btnExt = scopeRow.createEl('button', {
+			text: 'ext?',
+			cls: ''
+		});
+		btnExt.style.flex = '0 0 auto';
+		btnExt.disabled = true;
+
+		const _extInputLabel = scopeRow.createEl('span', {
+			text: 'Choose a specific ext:',
+			attr: { style: 'margin-left: auto; margin-right: 8px; color: var(--text-muted); font-size: 0.9em;' }
+		});
+
+		const extInput = new TextComponent(scopeRow);
+		extInput.setPlaceholder('Type extension...');
+		extInput.inputEl.style.width = '150px';
+
+		// Monaco editor container
+		const editorContainer = containerEl.createEl('div', {
+			attr: { style: 'border: 1px solid var(--background-modifier-border); border-radius: 4px; overflow: hidden; height: 300px; margin-top: 8px;' }
+		});
+
+		const applyFormatterValue = (value: string, ext: string): boolean => {
+			const defaultForKey = ext === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
+			try {
+				parseEditorConfig(value);
+				if (ext !== '*' && value === defaultForKey.trim()) {
+					delete this.plugin.settings.editorConfigs[ext];
+				} else {
+					this.plugin.settings.editorConfigs[ext] = value;
+				}
+				return true;
+			} catch {
+				return false;
+			}
 		};
-
-		const showExt = (ext: string): void => {
-			selectedExt = ext;
-			const existing = this.plugin.settings.editorConfigs?.[ext];
-			const defaultForExt =
-				ext === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
-			updateLabel(ext);
-			textarea.setValue(existing ?? defaultForExt);
-			textarea.inputEl.disabled = false;
-			textarea.inputEl.style.opacity = '1';
-		};
-
-		new ExtensionSuggest(this.plugin, extInput.inputEl, showExt, () => extensions);
 
 		const debouncedSave = debounce(
 			async () => {
-				if (!selectedExt) return;
-				const val = textarea.getValue().trim();
-				const defaultForExt =
-					selectedExt === '*'
-						? DEFAULT_EDITOR_CONFIG
-						: DEFAULT_EXTENSION_CONFIG;
-				try {
-					parseEditorConfig(val);
-					if (selectedExt !== '*' && val === defaultForExt.trim()) {
-						delete this.plugin.settings.editorConfigs[selectedExt];
-					} else {
-						this.plugin.settings.editorConfigs[selectedExt] = val;
-					}
+				if (!self.codeEditor) return;
+				const value = self.codeEditor.getValue().trim();
+				const key = isGlobal ? '*' : selectedExt;
+				if (applyFormatterValue(value, key)) {
 					await this.plugin.saveSettings();
-					broadcastEditorConfig(this.plugin, selectedExt);
-					updateLabel(selectedExt);
-				} catch {
-					// invalid JSON — wait for valid input
+					broadcastEditorConfig(this.plugin, key);
+					this.plugin.app.workspace.trigger('code-files:settings-changed');
 				}
 			},
 			600,
 			true
 		);
 
-		textarea.inputEl.addEventListener('input', () => debouncedSave());
+		const switchScope = async (global: boolean, ext?: string): Promise<void> => {
+			isGlobal = global;
+			if (!global && ext) {
+				selectedExt = ext;
+				// Save the selected extension
+				this.plugin.settings.lastSelectedConfigExtension = ext;
+				await this.plugin.saveSettings();
+			} else if (global) {
+				// Clear saved extension when switching to global
+				this.plugin.settings.lastSelectedConfigExtension = '';
+				await this.plugin.saveSettings();
+			}
+
+			// Update button states
+			if (global) {
+				btnGlobal.classList.add('mod-cta');
+				btnExt.classList.remove('mod-cta');
+			} else {
+				btnGlobal.classList.remove('mod-cta');
+				btnExt.classList.add('mod-cta');
+				btnExt.setText(`.${selectedExt}`);
+				btnExt.disabled = false;
+			}
+
+			// Load the appropriate config
+			const key = global ? '*' : selectedExt;
+			const cfg = this.plugin.settings.editorConfigs?.[key];
+			const defaultCfg = global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
+			if (self.codeEditor) {
+				self.codeEditor.setValue(cfg ?? defaultCfg);
+			}
+		};
+
+		btnGlobal.addEventListener('click', () => switchScope(true));
+		btnExt.addEventListener('click', () => {
+			if (selectedExt) switchScope(false, selectedExt);
+		});
+
+		const showExt = async (ext: string): Promise<void> => {
+			if (!ext) return;
+			await switchScope(false, ext);
+			extInput.setValue('');
+		};
+
+		new ExtensionSuggest(this.plugin, extInput.inputEl, showExt, () => extensions);
+
+		// Initialize Monaco editor
+		void (async () => {
+			const { mountCodeEditor } = await import('../editor/mountCodeEditor.ts');
+			self.codeEditor = await mountCodeEditor(
+				this.plugin,
+				'json',
+				DEFAULT_EDITOR_CONFIG,
+				'settings-editor-config.jsonc',
+				() => debouncedSave()
+			);
+			editorContainer.append(self.codeEditor.iframe);
+			// Restore last selected extension or default to global
+			if (selectedExt && extensions.includes(selectedExt)) {
+				await switchScope(false, selectedExt);
+			} else {
+				await switchScope(true);
+			}
+		})();
 
 		// -- Project Root Folder Color --------------------------------------------
 		containerEl.createEl('h3', { text: 'Project Root Folder' });
 
 		const colorSetting = new Setting(containerEl)
 			.setName('Folder highlight color')
-			.setDesc('Color used to highlight the project root folder in the file explorer. Leave default to use the theme green.');
+			.setDesc('Color used to highlight the project root folder in the file explorer. Leave default to use violet (#c644cf).');
 
 		const colorInput = colorSetting.controlEl.createEl('input');
 		colorInput.type = 'color';
-		colorInput.value = this.plugin.settings.projectRootFolderColor || '#44cf6e';
+		colorInput.value = this.plugin.settings.projectRootFolderColor || '#c644cf';
 		colorInput.style.marginRight = '8px';
 		colorInput.style.cursor = 'pointer';
 
@@ -197,7 +269,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		colorSetting.addButton((btn) =>
 			btn.setButtonText('Reset').onClick(async () => {
 				this.plugin.settings.projectRootFolderColor = '';
-				colorInput.value = '#44cf6e';
+				colorInput.value = '#c644cf';
 				await this.plugin.saveSettings();
 				updateProjectFolderHighlight(this.plugin);
 			})

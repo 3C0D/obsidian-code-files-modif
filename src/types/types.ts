@@ -36,6 +36,8 @@ export interface MyPluginSettings {
 	projectRootFolder: string;
 	/** Custom color for the project root folder highlight — empty string uses CSS default (--color-green) */
 	projectRootFolderColor: string;
+	/** Last selected extension in the settings tab Editor Config section */
+	lastSelectedConfigExtension: string;
 }
 
 /**
@@ -163,7 +165,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
 	extraExtensions: [],
 	projectRootFolder: '',
-	projectRootFolderColor: ''
+	projectRootFolderColor: '',
+	lastSelectedConfigExtension: ''
 };
 
 /** Obsidian view type identifier for the Monaco editor */
