@@ -12,18 +12,16 @@ import { broadcastProjectFiles } from '../utils/broadcast.ts';
 
 /**
  * Registers two context menus:
- * 1. file-menu — shown in the file explorer and
- *    tab headers. Folders get a submenu with plugin actions;
- *    files get a submenu with plugin actions.
- *    Explorer shows a flat "Rename Extension".
- * 2. editor-menu — right-click in the Markdown
- *    editor. If the cursor is inside a code fence,
- *    offers to edit it in Monaco; otherwise shows
- *    the same submenu.
+ * 1. file-menu — context menu in explorer and editor (except tab header)
+ * 2. editor-menu — 3-dot menu (⋮) in the Markdown editor view
+ *
+ * Multiple items are grouped in submenus
  */
 export function registerContextMenus(plugin: CodeFilesPlugin): void {
+	// -- file-menu
 	plugin.registerEvent(
 		plugin.app.workspace.on('file-menu', (menu, abstractFile, source) => {
+			// Folder: always show the Code Files submenu
 			if (abstractFile instanceof TFolder) {
 				const items = getFolderItems(plugin, abstractFile);
 				menu.addItem((i) => {
@@ -38,7 +36,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 				return;
 			}
 
-			// Rename Extension on all files in explorer and tab header
+			// File: show Rename Extension in explorer, Code Files submenu elsewhere, nothing on tab header
 			if (abstractFile instanceof TFile) {
 				menu.addItem((i) => {
 					if (source === 'file-explorer-context-menu') {
@@ -47,7 +45,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 							.onClick(() =>
 								new RenameExtensionModal(plugin, abstractFile).open()
 							);
-					} else {
+					} else if (source !== 'tab-header') {
 						const items = getFileItems(plugin);
 						i.setTitle('Code Files').setIcon('file-json');
 						const sub = i.setSubmenu();
@@ -65,16 +63,19 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 		})
 	);
 
+	// -- editor-menu
 	plugin.registerEvent(
 		plugin.app.workspace.on('editor-menu', (menu, editor) => {
 			const fenceContext = FenceEditContext.create(plugin, editor);
 
 			menu.addItem((item) => {
+				// Cursor inside a code fence: show "Edit Code Block in Monaco Editor"
 				if (fenceContext) {
 					item.setTitle('Edit Code Block in Monaco Editor')
 						.setIcon('code')
 						.onClick(() => FenceEditModal.openOnCurrentCode(plugin, editor));
 				} else {
+					// Cursor outside a code fence: show Code Files submenu (Open in Monaco, Rename Extension)
 					const items = getFileItems(plugin);
 					item.setTitle('Code Files').setIcon('file-json');
 					const sub = item.setSubmenu();
@@ -114,7 +115,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 		}
 	];
 
-	// Add "Clear Project Root Folder" if this folder is currently set as project root
+	// Show "Clear" only if this folder is already the project root
 	if (plugin.settings.projectRootFolder === folder.path) {
 		items.push({
 			title: 'Clear Project Root Folder',
@@ -139,15 +140,13 @@ function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 
 	const items: MenuItems[] = [];
 
+	// Both items require an active file — no fallback items if none
 	if (activeFile) {
 		items.push({
 			title: 'Open in Monaco Editor',
 			icon: 'file-code',
 			action: async () => await CodeEditorView.openFile(activeFile, plugin)
 		});
-	}
-	// Always show Rename Extension if there's an active file
-	if (activeFile) {
 		items.push({
 			title: 'Rename Extension',
 			icon: 'pencil',
