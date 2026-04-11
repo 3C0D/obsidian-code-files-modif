@@ -32,7 +32,7 @@ export interface MyPluginSettings {
 	excludedExtensions: string[];
 	/** Extra extensions added manually while allExtensions is true */
 	extraExtensions: string[];
-	/** Project root folder for inter-file navigation and imports resolution */
+	/** Project root folder (vault-relative path) for inter-file navigation and imports resolution */
 	projectRootFolder: string;
 	/** Custom color for the project root folder highlight — empty string uses CSS default (--color-green) */
 	projectRootFolderColor: string;

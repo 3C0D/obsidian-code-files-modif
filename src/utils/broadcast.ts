@@ -1,15 +1,13 @@
 import type CodeFilesPlugin from '../main.ts';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 
 /**
- * Sends updated validation options to all open
- * Monaco iframes.
+ * Sends a postMessage to each open Monaco iframe
+ * to update validation options.
  * Called after toggling semantic/syntax validation
- * in settings — the iframes are independent JS
- * contexts and don't share state, so each must
- * be notified individually.
+ * in settings — each iframe receives the message
+ * and updates its internal Monaco configuration.
  */
 export function broadcastOptions(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
@@ -92,9 +90,7 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
 			}
 		}
 	}
-	for (const leaf of plugin.app.workspace.getLeavesOfType('code-editor')) {
-		if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-			leaf.view.editor.send('load-project-files', { files });
-		}
+	for (const view of getCodeEditorViews(plugin.app)) {
+		view.editor?.send('load-project-files', { files });
 	}
 }
