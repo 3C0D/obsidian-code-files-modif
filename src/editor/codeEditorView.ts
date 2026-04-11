@@ -27,6 +27,7 @@ export class CodeEditorView extends TextFileView {
 	private returnAction: { remove: () => void } | null = null;
 	private diffAction: { remove: () => void } | null = null;
 	private diffTimer: NodeJS.Timeout | null = null;
+	private cssChangeHandler: (() => void) | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -85,6 +86,10 @@ export class CodeEditorView extends TextFileView {
 		this.returnAction?.remove();
 		this.diffAction?.remove();
 		if (this.diffTimer) clearTimeout(this.diffTimer);
+		if (this.cssChangeHandler) {
+			this.plugin.app.workspace.off('css-change', this.cssChangeHandler);
+			this.cssChangeHandler = null;
+		}
 		this.gearAction = null;
 		this.themeAction = null;
 		this.snippetFolderAction = null;
@@ -236,6 +241,14 @@ export class CodeEditorView extends TextFileView {
 				if (isOn) track.addClass('is-on');
 				track.createDiv({ cls: 'code-files-toggle-thumb' });
 				this.snippetToggleAction = toggleEl;
+
+				// Listen for external snippet state changes (from Obsidian settings)
+				this.cssChangeHandler = () => {
+					const currentState = isSnippetEnabled(this.plugin.app, snippetName);
+					track.toggleClass('is-on', currentState);
+					toggleEl.setAttr('aria-label', `${currentState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`);
+				};
+				this.plugin.app.workspace.on('css-change', this.cssChangeHandler);
 			}
 		}
 	}
