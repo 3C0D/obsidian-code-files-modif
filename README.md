@@ -120,9 +120,10 @@ A modal opens with filename, extension dropdown, and a **+** button to register 
 
 You can open any file in Monaco, even if it's not displayed in Obsidian's file explorer:
 
-- Right-click a folder in the explorer → **Code Files → Open Hidden Files in Code Files**
-- A suggester lists all files not shown in the explorer tree
-- Files are filtered by size (max 5MB) and exclude dangerous formats:
+- **From a specific folder**: Right-click a folder in the explorer → **Code Files → Open Hidden Files in Code Files**
+- **From entire vault**: Command palette → **"Open Hidden Files in Vault"**
+- A suggester lists all hidden files with their relative paths
+- Files are filtered by size (max 10MB) and exclude dangerous formats:
   - Executables: `exe`, `dll`, `so`, `dylib`, `app`, `dmg`, `msi`
   - Archives: `zip`, `rar`, `7z`, `tar`, `gz`, `bz2`, `xz`
   - Databases: `db`, `sqlite`, `mdb`

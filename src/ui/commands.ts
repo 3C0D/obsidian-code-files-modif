@@ -6,6 +6,7 @@ import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { ChooseCssFileModal } from '../modals/chooseCssFileModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
+import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
 import { broadcastOptions, broadcastEditorConfig } from '../utils/broadcast.ts';
 
 export function registerCommands(plugin: CodeFilesPlugin): void {
@@ -73,6 +74,14 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 				).open();
 			}
 			return true;
+		}
+	});
+
+	plugin.addCommand({
+		id: 'open-hidden-files-vault',
+		name: 'Open Hidden Files in Vault',
+		callback: () => {
+			new ChooseHiddenFileModal(plugin).open();
 		}
 	});
 }

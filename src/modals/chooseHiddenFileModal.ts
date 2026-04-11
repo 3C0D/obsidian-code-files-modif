@@ -56,7 +56,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 	constructor(
 		private plugin: CodeFilesPlugin,
-		private folder: TFolder
+		private folder?: TFolder
 	) {
 		super(plugin.app);
 		this.setPlaceholder('Search hidden files...');
@@ -134,7 +134,8 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 	private async loadHiddenFiles(): Promise<void> {
 		try {
 			const explorerPaths = this.getExplorerPaths();
-			await this.scanFolder(this.folder.path, explorerPaths);
+			const rootPath = this.folder?.path ?? '/';
+			await this.scanFolder(rootPath, explorerPaths);
 
 			if (this.hiddenFiles.length === 0) {
 				new Notice('No hidden files found in this folder');
@@ -149,7 +150,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 	getSuggestions(query: string): HiddenFileSuggestion[] {
 		return this.hiddenFiles.filter((file) =>
-			file.name.toLowerCase().includes(query.toLowerCase())
+			file.path.toLowerCase().includes(query.toLowerCase())
 		);
 	}
 
@@ -164,7 +165,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 	renderSuggestion(item: HiddenFileSuggestion, el: HTMLElement): void {
 		const container = el.createDiv({ cls: 'suggestion-content' });
-		container.createDiv({ text: item.name, cls: 'suggestion-title' });
+		container.createDiv({ text: item.path, cls: 'suggestion-title' });
 
 		const sizeKB = (item.size / 1024).toFixed(1);
 		container.createDiv({
