@@ -17,6 +17,7 @@ import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import { getActiveExtensions, reregisterExtensions } from '../utils/extensionUtils.ts';
 import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
+import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	constructor(
@@ -173,5 +174,33 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		);
 
 		textarea.inputEl.addEventListener('input', () => debouncedSave());
+
+		// -- Project Root Folder Color --------------------------------------------
+		containerEl.createEl('h3', { text: 'Project Root Folder' });
+
+		const colorSetting = new Setting(containerEl)
+			.setName('Folder highlight color')
+			.setDesc('Color used to highlight the project root folder in the file explorer. Leave default to use the theme green.');
+
+		const colorInput = colorSetting.controlEl.createEl('input');
+		colorInput.type = 'color';
+		colorInput.value = this.plugin.settings.projectRootFolderColor || '#44cf6e';
+		colorInput.style.marginRight = '8px';
+		colorInput.style.cursor = 'pointer';
+
+		colorInput.addEventListener('input', async () => {
+			this.plugin.settings.projectRootFolderColor = colorInput.value;
+			await this.plugin.saveSettings();
+			updateProjectFolderHighlight(this.plugin);
+		});
+
+		colorSetting.addButton((btn) =>
+			btn.setButtonText('Reset').onClick(async () => {
+				this.plugin.settings.projectRootFolderColor = '';
+				colorInput.value = '#44cf6e';
+				await this.plugin.saveSettings();
+				updateProjectFolderHighlight(this.plugin);
+			})
+		);
 	}
 }

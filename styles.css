@@ -105,5 +105,5 @@
 
 /* Project root folder highlight */
 .code-files-project-root-folder {
-  color: var(--color-green) !important;
+  color: var(--code-files-project-root-color, var(--color-green)) !important;
 }

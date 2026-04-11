@@ -34,6 +34,8 @@ export interface MyPluginSettings {
 	extraExtensions: string[];
 	/** Project root folder for inter-file navigation and imports resolution */
 	projectRootFolder: string;
+	/** Custom color for the project root folder highlight — empty string uses CSS default (--color-green) */
+	projectRootFolderColor: string;
 }
 
 /**
@@ -160,7 +162,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
 	extraExtensions: [],
-	projectRootFolder: ''
+	projectRootFolder: '',
+	projectRootFolderColor: ''
 };
 
 /** Obsidian view type identifier for the Monaco editor */

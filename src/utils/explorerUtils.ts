@@ -35,5 +35,11 @@ export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
 	) as HTMLElement | null;
 	if (titleEl) {
 		titleEl.classList.add(PROJECT_ROOT_CLASS);
+		const color = plugin.settings.projectRootFolderColor;
+		if (color) {
+			titleEl.style.setProperty('--code-files-project-root-color', color);
+		} else {
+			titleEl.style.removeProperty('--code-files-project-root-color');
+		}
 	}
 }
