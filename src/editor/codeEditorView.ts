@@ -22,12 +22,12 @@ export class CodeEditorView extends TextFileView {
 	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
 	/** Header action references for cleanup: we keep track of the header action elements we create (gear icon, theme selector, snippet controls, etc.) so we can remove them when the view is closed or when a new file is loaded. */
-	private gearAction: { remove: () => void } | null = null;
-	private themeAction: { remove: () => void } | null = null;
-	private snippetFolderAction: { remove: () => void } | null = null;
-	private snippetToggleAction: { remove: () => void } | null = null;
-	private returnAction: { remove: () => void } | null = null;
-	private diffAction: { remove: () => void } | null = null;
+	private gearAction: HTMLElement | null = null;
+	private themeAction: HTMLElement | null = null;
+	private snippetFolderAction: HTMLElement | null = null;
+	private snippetToggleAction: HTMLElement | null = null;
+	private returnAction: HTMLElement | null = null;
+	private diffAction: HTMLElement | null = null;
 	/** The diff timer is used to automatically hide the "Show Diff" action after a certain duration. We store the timer ID so we can clear it if needed (e.g., if the user triggers another format before the timer expires). */
 	private diffTimer: NodeJS.Timeout | null = null;
 	/** The CSS change handler is used to listen for external snippet state changes (from Obsidian settings) and update the toggle switch accordingly. */
@@ -53,9 +53,9 @@ export class CodeEditorView extends TextFileView {
 		return viewType;
 	}
 
-	/**	Context is used for language detection and is derived from the file path. For non-file views, it falls back to the last loaded file's path or an empty string. */
-	getContext(file?: TFile): string {
-		return file?.path ?? this.file?.path ?? '';
+	/**	Context is used for language detection and is derived from the file path. */
+	getContext(file: TFile): string {
+		return file.path;
 	}
 
 	/**
@@ -288,13 +288,9 @@ export class CodeEditorView extends TextFileView {
 		this.diffAction?.remove();
 
 		this.diffAction = this.addAction('diff', 'Show Format Diff', () => {
-			// Trigger the Monaco action via iframe
-			this.codeEditor?.iframe.contentWindow?.postMessage(
-				{ type: 'trigger-show-diff' },
-				'*'
-			);
+			this.codeEditor?.send('trigger-show-diff', {});
 		});
-		(this.diffAction as unknown as HTMLElement).addClass('code-files-diff-action');
+		this.diffAction.addClass('code-files-diff-action');
 
 		this.diffTimer = setTimeout(() => {
 			this.diffAction?.remove();
@@ -327,6 +323,10 @@ export class CodeEditorView extends TextFileView {
 	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
+		if (this.diffTimer) clearTimeout(this.diffTimer);
+		this.diffAction?.remove();
+		this.diffAction = null;
+		this.diffTimer = null;
 		this.codeEditor?.destroy();
 		this.contentEl.empty();
 		await this.mountEditor(file);
@@ -362,15 +362,13 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
-	/** Opens external files (CSS snippets) in a new leaf. */
+	/** Opens external files (CSS snippets) in a new leaf. Manual onLoadFile call required because leaf.open() doesn't trigger it for non-vault files. */
 	static async openExternalFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
 		const leaf = plugin.app.workspace.getLeaf(true);
 		const view = new CodeEditorView(leaf, plugin);
 		view.file = file;
 		await leaf.open(view);
-		// to load the content and initialize Monaco.
 		await view.onLoadFile(file);
-		// Update the tab header to show the correct file name
 		leaf.updateHeader();
 	}
 
