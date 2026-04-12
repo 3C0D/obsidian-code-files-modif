@@ -60,6 +60,17 @@
 		</script>
 		<!-- Step 2: load Monaco's AMD module loader (reads the require config above) -->
 		<script src="./vs/loader.js"></script>
+		<!-- Step 2.5: load Prettier and Mermaid formatters -->
+		<script src="./formatters/prettier-standalone.js"></script>
+		<script src="./formatters/prettier-markdown.js"></script>
+		<script src="./formatters/prettier-estree.js"></script>
+		<script src="./formatters/prettier-typescript.js"></script>
+		<script src="./formatters/prettier-babel.js"></script>
+		<script src="./formatters/prettier-postcss.js"></script>
+		<script src="./formatters/prettier-html.js"></script>
+		<script src="./formatters/prettier-yaml.js"></script>
+		<script src="./formatters/prettier-graphql.js"></script>
+		<script src="./formatters/mermaid-formatter.js"></script>
 		<!-- Step 3: custom helpers and Prettier config, must be available before editor init -->
 		<script src="./monacoHtml.js"></script>
 		<script>

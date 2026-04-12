@@ -240,6 +240,7 @@ async function createBuildContext(
 						'node_modules/monaco-themes/themes'
 					);
 					const themesTarget = path.join(buildPath, 'monaco-themes');
+					const formattersTarget = path.join(buildPath, 'formatters');
 					await cp(monacoSrc, monacoTarget, { recursive: true });
 					// Copy Codicons font so Monaco's @font-face can load it via app:// URL
 					// (Obsidian's CSP blocks data: font sources in child iframes)
@@ -249,44 +250,49 @@ async function createBuildContext(
 					);
 					const codiconTarget = path.join(buildPath, 'vs/editor/codicon.ttf');
 					await copyFile(codiconSrc, codiconTarget);
+					// Create formatters directory
+					if (!fs.existsSync(formattersTarget)) {
+						await fs.promises.mkdir(formattersTarget, { recursive: true });
+					}
+					// Copy Prettier and Mermaid formatters to formatters/ folder
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/standalone.js'),
-						path.join(buildPath, 'prettier-standalone.js')
+						path.join(formattersTarget, 'prettier-standalone.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/markdown.js'),
-						path.join(buildPath, 'prettier-markdown.js')
+						path.join(formattersTarget, 'prettier-markdown.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/estree.js'),
-						path.join(buildPath, 'prettier-estree.js')
+						path.join(formattersTarget, 'prettier-estree.js')
 					);
 					await copyFile(
 						path.join(
 							pluginDir,
 							'node_modules/prettier/plugins/typescript.js'
 						),
-						path.join(buildPath, 'prettier-typescript.js')
+						path.join(formattersTarget, 'prettier-typescript.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/babel.js'),
-						path.join(buildPath, 'prettier-babel.js')
+						path.join(formattersTarget, 'prettier-babel.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/postcss.js'),
-						path.join(buildPath, 'prettier-postcss.js')
+						path.join(formattersTarget, 'prettier-postcss.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/html.js'),
-						path.join(buildPath, 'prettier-html.js')
+						path.join(formattersTarget, 'prettier-html.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/yaml.js'),
-						path.join(buildPath, 'prettier-yaml.js')
+						path.join(formattersTarget, 'prettier-yaml.js')
 					);
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/plugins/graphql.js'),
-						path.join(buildPath, 'prettier-graphql.js')
+						path.join(formattersTarget, 'prettier-graphql.js')
 					);
 					// Bundle mermaid-formatter for browser
 					await esbuild.build({
@@ -295,7 +301,7 @@ async function createBuildContext(
 						],
 						bundle: true,
 						format: 'iife',
-						outfile: path.join(buildPath, 'mermaid-formatter.js'),
+						outfile: path.join(formattersTarget, 'mermaid-formatter.js'),
 						platform: 'browser',
 						minify: isProd
 					});
@@ -316,7 +322,7 @@ async function createBuildContext(
 							if (await isValidPath(folderToRemove)) {
 								await rm(folderToRemove, { recursive: true });
 							}
-							console.log('Built done in initial folder');
+							console.log('Build done in initial folder');
 						}
 					}
 					// if watch (dev)

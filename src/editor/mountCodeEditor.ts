@@ -128,16 +128,16 @@ export const mountCodeEditor = async (
 	const vsBase = res('vs').replace(/\?.*$/, '');
 	const configJsUrl = res('monacoHtml.js');
 	const configCssUrl = res('monacoHtml.css');
-	const prettierBase = res('prettier-standalone.js');
-	const prettierMarkdownUrl = res('prettier-markdown.js');
-	const prettierEstreeUrl = res('prettier-estree.js');
-	const prettierTypescriptUrl = res('prettier-typescript.js');
-	const prettierBabelUrl = res('prettier-babel.js');
-	const prettierPostcssUrl = res('prettier-postcss.js');
-	const prettierHtmlUrl = res('prettier-html.js');
-	const prettierYamlUrl = res('prettier-yaml.js');
-	const prettierGraphqlUrl = res('prettier-graphql.js');
-	const mermaidFormatterUrl = res('mermaid-formatter.js');
+	const prettierBase = res('formatters/prettier-standalone.js');
+	const prettierMarkdownUrl = res('formatters/prettier-markdown.js');
+	const prettierEstreeUrl = res('formatters/prettier-estree.js');
+	const prettierTypescriptUrl = res('formatters/prettier-typescript.js');
+	const prettierBabelUrl = res('formatters/prettier-babel.js');
+	const prettierPostcssUrl = res('formatters/prettier-postcss.js');
+	const prettierHtmlUrl = res('formatters/prettier-html.js');
+	const prettierYamlUrl = res('formatters/prettier-yaml.js');
+	const prettierGraphqlUrl = res('formatters/prettier-graphql.js');
+	const mermaidFormatterUrl = res('formatters/mermaid-formatter.js');
 
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal

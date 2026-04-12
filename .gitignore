@@ -30,15 +30,12 @@ vs/
 /monacoEditor.html
 /monaco-themes/
 
-# Prettier plugins (generated at build time)
-/prettier-*.js
+# Formatters (generated at build time)
+/formatters/
 
 # Monaco HTML config (generated at build time)
 /monacoHtml.css
 /monacoHtml.js
-
-# Mermaid formatter (generated at build time)
-/mermaid-formatter.js
 
 # Test files (use templates/ folder instead)
 /test-*.md
