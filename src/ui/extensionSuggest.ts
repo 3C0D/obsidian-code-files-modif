@@ -1,3 +1,8 @@
+/**
+ * Reusable autocomplete suggester for registered file extensions.
+ * Attaches to a text input and provides filtered suggestions as the user types.
+ * Used in CreateCodeFileModal, RenameExtensionModal, and settings tab.
+ */
 import { AbstractInputSuggest } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';

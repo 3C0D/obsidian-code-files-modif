@@ -1,3 +1,9 @@
+/**
+ * Modal for choosing or creating CSS snippet files.
+ * Lists existing snippets in .obsidian/snippets/ with autocomplete.
+ * Typing a new name offers to create a snippet file.
+ * Opens the selected or created snippet in Monaco Editor.
+ */
 import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';

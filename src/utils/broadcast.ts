@@ -1,3 +1,11 @@
+/**
+ * Broadcasts settings changes to all open Monaco Editor instances via postMessage.
+ * Each function targets specific settings:
+ * - broadcastOptions: semantic/syntax validation toggles
+ * - broadcastBrightness: CSS filter on iframe elements
+ * - broadcastEditorConfig: merged editor config (tabSize, formatOnSave, etc.)
+ * - broadcastProjectFiles: loads TS/JS files from project root for IntelliSense and cross-file navigation
+ */
 import type CodeFilesPlugin from '../main.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';

@@ -1,3 +1,10 @@
+/**
+ * Registers context menus for files and folders in the explorer and editor.
+ * Provides Code Files submenu with actions like:
+ * - Create code file, open hidden files, set project root folder (folders)
+ * - Open in Monaco, rename extension (files)
+ * - Edit code block in Monaco (editor, when cursor is inside a code fence)
+ */
 import { TFile, TFolder } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';

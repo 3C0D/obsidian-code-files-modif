@@ -1,3 +1,8 @@
+/**
+ * Modal for creating new code files with extension selection.
+ * Provides file name input, extension autocomplete from registered extensions,
+ * and on-the-fly extension registration. Opens the created file in Monaco automatically.
+ */
 import type { TAbstractFile, TFolder } from 'obsidian';
 import {
 	ButtonComponent,

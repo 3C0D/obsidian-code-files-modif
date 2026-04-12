@@ -1,3 +1,8 @@
+/**
+ * Registers all plugin commands with Obsidian.
+ * Commands include: create code file, open code block in Monaco, open current file in Monaco,
+ * edit CSS snippet, rename extension, open editor settings, and open hidden files.
+ */
 import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';

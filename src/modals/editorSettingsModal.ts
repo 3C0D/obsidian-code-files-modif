@@ -1,3 +1,9 @@
+/**
+ * Unified editor settings modal with two sections:
+ * 1. Toggles for global editor options (auto-save, validation, brightness, project root)
+ * 2. Monaco JSON editor for per-extension or global formatter config (tabSize, formatOnSave, etc.)
+ * Opened via the gear icon in the tab header. Changes are saved on close and broadcast to all open editors.
+ */
 import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {

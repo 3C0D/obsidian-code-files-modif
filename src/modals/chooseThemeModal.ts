@@ -1,3 +1,9 @@
+/**
+ * Theme picker modal with live preview and brightness adjustment.
+ * Hovering over themes applies them instantly to the editor for preview.
+ * Arrow keys adjust editor brightness. Confirming saves the theme; canceling restores the original.
+ * Themes are loaded from themelist.json and cached for the session.
+ */
 import { SuggestModal } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { themes, loadThemes } from '../utils/themes.ts';

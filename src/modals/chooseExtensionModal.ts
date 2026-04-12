@@ -1,3 +1,9 @@
+/**
+ * Modal for adding or removing file extensions from the plugin's registered list.
+ * Typing an extension not in the list offers to add it.
+ * Typing an extension already in the list offers to remove it.
+ * Changes take effect immediately (register/unregister with Obsidian).
+ */
 import { SuggestModal, Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {

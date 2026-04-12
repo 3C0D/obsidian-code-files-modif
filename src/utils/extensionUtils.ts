@@ -1,3 +1,9 @@
+/**
+ * Extension management utilities.
+ * Handles two modes: manual (user-curated list) and extended (all Monaco extensions minus exclusions).
+ * Provides functions to add/remove extensions, register/unregister with Obsidian,
+ * and diff-based reregistration to avoid redundant registry calls.
+ */
 import type { App } from 'obsidian';
 import type { MyPluginSettings } from '../types/types.ts';
 import { viewType } from '../types/types.ts';

@@ -1,3 +1,9 @@
+/**
+ * Settings persistence and editor config management.
+ * Handles loading/saving plugin settings with deep merge for editorConfigs.
+ * Provides parseEditorConfig (strips comments and trailing commas from JSONC)
+ * and buildMergedConfig (cascades default → global → per-extension).
+ */
 import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_SETTINGS,

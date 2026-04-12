@@ -1,3 +1,9 @@
+/**
+ * Modal for renaming a file's extension.
+ * Prompts for a new extension with autocomplete from registered extensions.
+ * If the extension is unknown to both Code Files and Obsidian, offers to register it.
+ * After renaming, reloads the leaf to open the file with the correct view for the new extension.
+ */
 import { ButtonComponent, FileView, Modal, Notice, TextComponent } from 'obsidian';
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';

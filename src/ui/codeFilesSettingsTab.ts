@@ -1,3 +1,11 @@
+/**
+ * Obsidian plugin settings tab.
+ * Provides UI for:
+ * - Ribbon icon toggle
+ * - Extension management (manual vs extended mode, add/remove extensions)
+ * - Per-extension editor config with Monaco JSON editor
+ * - Project root folder highlight color customization
+ */
 import type { App } from 'obsidian';
 import {
 	debounce,

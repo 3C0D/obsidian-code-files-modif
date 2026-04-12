@@ -1,3 +1,10 @@
+/**
+ * Creates and manages a Monaco Editor instance inside an isolated iframe.
+ * Handles bidirectional postMessage communication (init, change-value, change-theme, etc.),
+ * local Monaco loading (fetch HTML, patch ./vs paths to app://, inline CSS),
+ * and works around Obsidian's CSP constraints (blob URL, appendChild interception, @font-face patching).
+ * Returns a CodeEditorInstance with send(), getValue(), setValue(), destroy().
+ */
 import { normalizePath, TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { type CodeEditorInstance } from '../types/types.ts';

@@ -1,3 +1,8 @@
+/**
+ * Reusable autocomplete suggester for vault folders.
+ * Attaches to a text input and provides filtered folder suggestions as the user types.
+ * Used in EditorSettingsModal for selecting the project root folder.
+ */
 import type { TFolder } from 'obsidian';
 import { AbstractInputSuggest } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';

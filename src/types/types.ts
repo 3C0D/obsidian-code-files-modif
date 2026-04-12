@@ -160,6 +160,9 @@ export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
 
 /**
  * Control handle for a Monaco editor embedded in an iframe (blob URL).
+ * Returned by mountCodeEditor() and used by CodeEditorView, FenceEditModal, and EditorSettingsModal
+ * to communicate with the isolated Monaco instance via postMessage.
+ *
  * The iframe is isolated from Obsidian's scope; all writes and lifecycle ops go through postMessage,
  * reads return a locally-cached value kept in sync via 'change' events.
  *

@@ -1,3 +1,9 @@
+/**
+ * Visual highlighting for the project root folder in the file explorer.
+ * Adds/removes a CSS class to the folder title element to show which folder
+ * is set as the project root for TypeScript/JavaScript cross-file navigation.
+ * The highlight color is customizable via plugin settings.
+ */
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView } from 'obsidian-typings';
 

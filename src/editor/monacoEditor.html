@@ -1,4 +1,23 @@
 <!doctype html>
+<!--
+  Monaco Editor HTML - loaded as a blob URL inside an isolated iframe.
+  
+  This HTML is the Monaco Editor instance that runs inside each CodeEditorView, FenceEditModal, and EditorSettingsModal.
+  It's fetched by mountCodeEditor.ts, patched (./vs paths → absolute app:// URLs, CSS inlined),
+  then injected as a blob URL to bypass Obsidian's CSP restrictions.
+  
+  Communication with the parent (Obsidian) happens entirely via postMessage:
+  - Parent → iframe: init, change-value, change-theme, change-editor-config, load-project-files, etc.
+  - iframe → parent: ready, change, save-document, languages, format-diff-available, open-file, etc.
+  
+  Features:
+  - Full Monaco Editor with syntax highlighting, IntelliSense, and validation
+  - Prettier formatting for Markdown, JavaScript, TypeScript, CSS, HTML, JSON, YAML, GraphQL
+  - Mermaid diagram formatting (standalone .mmd files and ```mermaid blocks in Markdown)
+  - TypeScript/JavaScript cross-file navigation (Ctrl+Click on imports)
+  - Diff viewer for format changes
+  - Custom actions in Monaco's context menu and command palette
+-->
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />

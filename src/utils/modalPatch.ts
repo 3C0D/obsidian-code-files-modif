@@ -1,12 +1,10 @@
-/** Monkey-patches Modal.prototype.open to blur any active iframe before
- *  Obsidian saves the focused element — prevents "n.instanceOf is not a function"
- *  when Obsidian tries to restore focus on modal close.
- *
- *  Root cause: when a modal opens, Obsidian saves document.activeElement to
- *  restore focus on close. If that element is an iframe, Obsidian's internal
- *  instanceOf check crashes. Blurring before the save avoids the issue entirely.
- *
- *  Returns an unpatch function to restore the original behavior. */
+/**
+ * Monkey-patches Modal.prototype.open to prevent "n.instanceOf is not a function" crashes.
+ * When a modal opens while a Monaco iframe has focus, Obsidian saves that iframe element
+ * to restore focus on close. The iframe's elements don't have Obsidian's instanceOf method,
+ * causing a crash. This patch blurs the iframe before Obsidian saves the active element.
+ * Returns an unpatch function to restore original behavior on plugin unload.
+ */
 export function patchModalClose(): () => void {
 	// require() instead of static import: TypeScript would reject reassigning
 	// proto.open on a typed class. require() returns any, bypassing that check.

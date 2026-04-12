@@ -1,3 +1,14 @@
+/**
+ * Obsidian TextFileView wrapper for Monaco Editor.
+ * Bridges Obsidian's file lifecycle (load/save/rename/close) with the Monaco iframe's postMessage API.
+ * Manages the view header with extension badge, dirty state indicator, and action icons:
+ * - Theme picker, settings gear, return arrow (unregistered extensions), diff viewer
+ * - CSS snippet controls (folder opener, enable/disable toggle) when editing snippets
+ * 
+ * The Monaco Editor instance (CodeEditorInstance) is created by mountCodeEditor() and embedded
+ * as an iframe. This view handles all Obsidian-specific concerns (file I/O, header UI, lifecycle)
+ * while delegating editor functionality to the isolated Monaco iframe via postMessage.
+ */
 import type { TFile, WorkspaceLeaf } from 'obsidian';
 import { normalizePath, TextFileView } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
@@ -12,25 +23,32 @@ import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
 
 /**
- * Wraps a Monaco editor iframe in an Obsidian
- * TextFileView, bridging Obsidian's file lifecycle
- * (load/save/rename/close) with the iframe's
- * postMessage-based API.
+ * Obsidian TextFileView wrapper for Monaco Editor.
+ * Bridges Obsidian's file lifecycle (load/save/rename/close) with the Monaco iframe's postMessage API.
+ * Manages the view header with extension badge, dirty state indicator, and action icons:
+ * - Theme picker, settings gear, return arrow (unregistered extensions), diff viewer
+ * - CSS snippet controls (folder opener, enable/disable toggle) when editing snippets
  */
 export class CodeEditorView extends TextFileView {
+	/** The Monaco Editor instance, created by mountCodeEditor() and destroyed on view close. */
 	private codeEditor!: CodeEditorInstance;
 	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
-	/** Header action references for cleanup: we keep track of the header action elements we create (gear icon, theme selector, snippet controls, etc.) so we can remove them when the view is closed or when a new file is loaded. */
+	/** Gear icon action (Editor Settings) in the view header */
 	private gearAction: HTMLElement | null = null;
+	/** Theme picker icon action in the view header */
 	private themeAction: HTMLElement | null = null;
+	/** Snippet folder opener icon action in the view header (CSS snippets only) */
 	private snippetFolderAction: HTMLElement | null = null;
+	/** Snippet enable/disable toggle action in the view header (CSS snippets only) */
 	private snippetToggleAction: HTMLElement | null = null;
+	/** Return to default view icon action in the view header (unregistered extensions only) */
 	private returnAction: HTMLElement | null = null;
+	/** Show format diff icon action in the view header (appears after formatting) */
 	private diffAction: HTMLElement | null = null;
-	/** The diff timer is used to automatically hide the "Show Diff" action after a certain duration. We store the timer ID so we can clear it if needed (e.g., if the user triggers another format before the timer expires). */
+	/** Timer to automatically hide the diff action after 10 seconds */
 	private diffTimer: NodeJS.Timeout | null = null;
-	/** The CSS change handler is used to listen for external snippet state changes (from Obsidian settings) and update the toggle switch accordingly. */
+	/** Event handler for external CSS snippet state changes (from Obsidian settings) */
 	private cssChangeHandler: (() => void) | null = null;
 
 	constructor(
@@ -81,14 +99,19 @@ export class CodeEditorView extends TextFileView {
 		this.forceSave = false;
 	}
 
-	private cleanup(): void {
-		this.codeEditor?.destroy();
+	/** Removes all header actions from the view. */
+	private removeHeaderActions(): void {
 		this.gearAction?.remove();
 		this.themeAction?.remove();
 		this.snippetFolderAction?.remove();
 		this.snippetToggleAction?.remove();
 		this.returnAction?.remove();
 		this.diffAction?.remove();
+	}
+
+	private cleanup(): void {
+		this.codeEditor?.destroy();
+		this.removeHeaderActions();
 		if (this.diffTimer) clearTimeout(this.diffTimer);
 		if (this.cssChangeHandler) {
 			this.plugin.app.workspace.off('css-change', this.cssChangeHandler);
@@ -108,6 +131,7 @@ export class CodeEditorView extends TextFileView {
 		this.cleanup();
 	}
 
+	/** Focuses the Monaco editor when the view is activated. */
 	onActive(): void {
 		this.codeEditor?.send('focus', {});
 	}
@@ -167,12 +191,7 @@ export class CodeEditorView extends TextFileView {
 
 	/** Adds header actions: return to default view (only for unregistered extensions), change theme, snippet controls (only for CSS snippets), and open editor settings. */
 	private injectGearIcon(file: TFile): void {
-		this.gearAction?.remove();
-		this.themeAction?.remove();
-		this.snippetFolderAction?.remove();
-		this.snippetToggleAction?.remove();
-		this.returnAction?.remove();
-		this.diffAction?.remove();
+		this.removeHeaderActions();
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
 			const applyTheme = async (theme: string): Promise<void> => {

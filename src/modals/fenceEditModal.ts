@@ -1,3 +1,9 @@
+/**
+ * Modal for editing code fence content in a full Monaco Editor.
+ * Opened via context menu when right-clicking inside a code block in a markdown note.
+ * Mounts a Monaco instance, provides theme/settings controls in the title bar,
+ * and writes changes back to the note when closed.
+ */
 import { Modal, Notice, setIcon, type Editor } from 'obsidian';
 import { mountCodeEditor, resolveThemeParams } from '../editor/mountCodeEditor.ts';
 import type CodeFilesPlugin from '../main.ts';

@@ -1,3 +1,8 @@
+/**
+ * Encapsulates the position and content of a code fence in the Obsidian editor.
+ * Created from the cursor position using Obsidian's section cache.
+ * Provides read/write access to the fence body for the FenceEditModal.
+ */
 import type { Editor } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getLanguage } from './getLanguage.ts';

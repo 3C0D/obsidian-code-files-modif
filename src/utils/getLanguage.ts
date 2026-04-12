@@ -1,3 +1,10 @@
+/**
+ * Maps file extensions to Monaco language IDs.
+ * Provides a static fallback map for immediate language detection at startup,
+ * before any Monaco iframe is initialized. The dynamic map from Monaco itself
+ * is loaded and persisted separately (see mountCodeEditor.ts).
+ */
+
 // Static map of file extensions to Monaco language IDs.
 const staticMap: Record<string, string> = {
 	js: 'javascript',

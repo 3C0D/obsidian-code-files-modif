@@ -1,3 +1,10 @@
+/**
+ * Modal for discovering and opening hidden files in Monaco.
+ * "Hidden" means files not displayed in Obsidian's file explorer tree,
+ * regardless of their extension (e.g., .gitignore, .env, .dockerignore).
+ * Recursively scans a folder or the entire vault, filtering by size (max 10MB)
+ * and excluding binary formats (executables, archives, databases, fonts).
+ */
 import type { TFolder } from 'obsidian';
 import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
