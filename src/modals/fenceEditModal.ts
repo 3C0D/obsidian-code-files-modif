@@ -74,7 +74,7 @@ export class FenceEditModal extends Modal {
 				const params = await resolveThemeParams(this.plugin, theme);
 				this.codeEditor?.send('change-theme', params);
 			};
-			new ChooseThemeModal(this.plugin, applyTheme, applyTheme).open();
+			new ChooseThemeModal(this.plugin, applyTheme).open();
 		});
 		this.titleEl.appendChild(paletteEl);
 

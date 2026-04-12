@@ -49,20 +49,29 @@ export const resolveThemeParams = async (
 	return { theme: safeThemeId, themeData };
 };
 
-/** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
- *  Returns a control object to get/set the editor value and manage its lifecycle.
+/**
+ * Creates a Monaco Editor instance isolated in an iframe and returns a control handle.
  *
- *  Why an iframe?
- *  Monaco requires a full browser environment and conflicts with Obsidian's DOM if loaded directly.
- *  An iframe provides isolation while postMessage handles bidirectional communication.
+ * Why an iframe?
+ * Monaco requires a full browser environment and conflicts with Obsidian's DOM if loaded directly.
+ * The iframe provides isolation; postMessage handles all bidirectional communication.
  *
- *  Why async + fetch + blob URL?
- *  - getResourcePath() returns an app:// URL with a cache-busting timestamp (?1234...).
- *    This timestamp breaks relative paths like ./vs/loader.js inside the HTML.
- *  - file:// URLs are blocked by Electron.
- *  - Solution: fetch the HTML, patch the ./vs paths to absolute app:// URLs (timestamp stripped),
- *    inline the Monaco CSS (Obsidian's CSP blocks external <link> stylesheets in child frames),
- *    then inject via a blob URL which is not subject to the parent CSP for its own inline content.
+ * Why async + fetch + blob URL?
+ * - getResourcePath() appends a cache-busting timestamp (?1234...) that breaks relative paths
+ *   like ./vs/loader.js inside the HTML.
+ * - file:// URLs are blocked by Electron's CSP.
+ * - Solution: fetch the HTML, rewrite ./vs paths to absolute app:// URLs (timestamp stripped),
+ *   inline the Monaco CSS (Obsidian's CSP blocks external <link> in child frames),
+ *   then serve via a blob URL which bypasses the parent CSP for its own inline content.
+ * 
+ * @param plugin - The plugin instance
+ * @param language - Monaco language ID (e.g. 'typescript', 'javascript', 'markdown')
+ * @param initialValue - Initial content to display in the editor
+ * @param codeContext - Unique identifier for this editor instance (file path or modal ID), used to filter postMessage events
+ * @param onChange - Optional callback invoked when the editor content changes
+ * @param onSave - Optional callback invoked when the user presses Ctrl+S
+ * @param onFormatDiff - Optional callback invoked when a format diff is available (after formatting)
+ * @returns A CodeEditorInstance with methods to control the editor (send, getValue, setValue, destroy)
  */
 export const mountCodeEditor = async (
 	plugin: CodeFilesPlugin,
@@ -280,7 +289,7 @@ Element.prototype.appendChild = function(node) {
 						const params = await resolveThemeParams(plugin, t);
 						send('change-theme', params);
 					};
-					const modal = new ChooseThemeModal(plugin, applyTheme, applyTheme);
+					const modal = new ChooseThemeModal(plugin, applyTheme);
 					const origOnClose = modal.onClose.bind(modal);
 					modal.onClose = () => {
 						origOnClose();

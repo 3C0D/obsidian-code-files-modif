@@ -52,9 +52,13 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 }
 
 /**
- * Saves a raw editor config string for the given key ('*' or extension).
+ * Saves a raw editor config string for the given key.
  * Deletes the override if it matches the default for that key.
- * Returns false if the JSON is invalid.
+ * 
+ * @param plugin - The plugin instance
+ * @param key - `'*'` for the global config, or a file extension (e.g. `'ts'`, `'md'`) for a per-extension override
+ * @param value - The raw JSONC string from the editor (may contain comments and trailing commas)
+ * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
  */
 export function applyEditorConfig(
 	plugin: CodeFilesPlugin,
@@ -64,11 +68,18 @@ export function applyEditorConfig(
 	const defaultForKey = key === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
 	try {
 		parseEditorConfig(value);
+		const previous = plugin.settings.editorConfigs[key];
+		// Early exit if nothing changed
+		if (previous?.trim() === value) return false;
+		// Delete override if value matches default
 		if (key !== '*' && value === defaultForKey.trim()) {
+			if (!(key in plugin.settings.editorConfigs)) return false;
+			// Back to default: no need to persist, buildMergedConfig falls back to DEFAULT_EXTENSION_CONFIG
 			delete plugin.settings.editorConfigs[key];
-		} else {
-			plugin.settings.editorConfigs[key] = value;
+			return true;
 		}
+		// Changed and non-default: persist and let the caller broadcast
+		plugin.settings.editorConfigs[key] = value;
 		return true;
 	} catch {
 		return false;

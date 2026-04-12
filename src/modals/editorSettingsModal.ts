@@ -6,10 +6,7 @@
  */
 import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import {
-	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG
-} from '../types/types.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG } from '../types/types.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
@@ -44,7 +41,8 @@ export class EditorSettingsModal extends Modal {
 
 	async onOpen(): Promise<void> {
 		super.onOpen();
-		// Remove modal background overlay to keep editor fully visible
+
+		// Remove modals background overlay to keep editor fully visible
 		setTimeout(() => {
 			const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
 			backgrounds.forEach((bg) => (bg.style.opacity = '0'));
@@ -203,16 +201,17 @@ export class EditorSettingsModal extends Modal {
 				configTitle.setText(`Editor Config — .${this.extension}`);
 			}
 			// Load the appropriate config (existing or default)
-			const cfg =
-				this.plugin.settings.editorConfigs?.[global ? '*' : this.extension];
-			if (this.codeEditor)
-				this.codeEditor.setValue(
-					cfg ?? (global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG)
-				);
+			if (this.codeEditor) {
+				const cfg =
+					this.plugin.settings.editorConfigs?.[global ? '*' : this.extension] ??
+					(global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG);
+				this.codeEditor.setValue(cfg);
+			}
 		};
 
 		btnGlobal.onClick(() => switchScope(true));
 		btnExt.onClick(() => switchScope(false));
+		// Default to extension-specific config on open
 		switchScope(false);
 
 		const editorContainer = formatterSection.createEl('div', {
@@ -228,6 +227,10 @@ export class EditorSettingsModal extends Modal {
 		const existing = this.plugin.settings.editorConfigs[this.extension];
 		const initialValue = existing ?? DEFAULT_EXTENSION_CONFIG;
 
+		/**
+		 * Validates, persists, and broadcasts the current editor config on each keystroke.
+		 * Skips save and broadcast if the JSON is invalid or the value hasn't changed.
+		 */
 		const debouncedSave = debounce(
 			async () => {
 				if (!this.codeEditor) return;
@@ -235,11 +238,8 @@ export class EditorSettingsModal extends Modal {
 				const key = this.isGlobal ? '*' : this.extension;
 				if (applyEditorConfig(this.plugin, key, value)) {
 					await this.plugin.saveSettings();
-					broadcastEditorConfig(
-						this.plugin,
-						key
-					);
-					// Notify settings tab to refresh
+					broadcastEditorConfig(this.plugin, key);
+					// Notify Obsidian settings tab to refresh its config editor display
 					this.plugin.app.workspace.trigger('code-files:settings-changed');
 				}
 			},
@@ -247,6 +247,7 @@ export class EditorSettingsModal extends Modal {
 			true
 		);
 
+		// Mount the Monaco editor with the initial config value
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			'json',
@@ -255,25 +256,22 @@ export class EditorSettingsModal extends Modal {
 			() => debouncedSave()
 		);
 		editorContainer.append(this.codeEditor.iframe);
-
-		// Save button removed - config is saved on close
 	}
 
 	onClose(): void {
 		super.onClose();
+		// Restore modal background opacity
 		const backgrounds = document.querySelectorAll<HTMLElement>('.modal-bg');
 		backgrounds.forEach((bg) => (bg.style.opacity = ''));
 		if (this.codeEditor) {
 			const raw = this.codeEditor.getValue().trim();
 			const key = this.isGlobal ? '*' : this.extension;
+			// Final save in case the user closes before debouncedSave fires 
 			if (applyEditorConfig(this.plugin, key, raw)) {
 				void this.plugin.saveSettings();
-				// Notify settings tab to refresh
+				// Notify Obsidian settings tab to refresh its config editor display
 				this.plugin.app.workspace.trigger('code-files:settings-changed');
-				// Send the MERGED config
-				// (global + ext) so the iframe
-				// keeps inherited settings like
-				// formatOnSave.
+				// Push merged config (global + ext) to the Monaco iframe
 				this.onConfigApplied(buildMergedConfig(this.plugin, this.extension));
 			}
 			this.codeEditor.destroy();

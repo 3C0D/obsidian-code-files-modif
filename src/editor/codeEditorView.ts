@@ -213,6 +213,7 @@ export class CodeEditorView extends TextFileView {
 			).open();
 		});
 
+		// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered
 		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(file.extension);
 		if (isUnregistered) {
 			this.returnAction = this.addAction(
@@ -244,6 +245,7 @@ export class CodeEditorView extends TextFileView {
 			);
 
 			if (exists) {
+				// Create toggle action to enable/disable the snippet
 				const isOn = isSnippetEnabled(this.plugin.app, snippetName);
 				const toggleEl = this.addAction(
 					'square',
@@ -258,9 +260,10 @@ export class CodeEditorView extends TextFileView {
 						toggleEl.setAttr('aria-label', `${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`);
 					}
 				);
-				// Inject custom toggle switch
+				// Replace the default Obsidian action button with a custom CSS toggle switch
 				toggleEl.empty();
 				toggleEl.addClass('code-files-snippet-toggle-action');
+				// The toggle consists of a track (the background) and a thumb (the circle that moves). The "is-on" class controls the toggle state (on/off).
 				const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
 				if (isOn) track.addClass('is-on');
 				track.createDiv({ cls: 'code-files-toggle-thumb' });
