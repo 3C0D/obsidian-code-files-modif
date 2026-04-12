@@ -17,6 +17,13 @@ import { broadcastOptions } from '../utils/broadcast.ts';
 export class FenceEditModal extends Modal {
 	private codeEditor!: CodeEditorInstance;
 
+	/**
+	 * @param plugin - The plugin instance
+	 * @param code - The initial code fence content to edit
+	 * @param language - Monaco language ID (e.g., 'javascript', 'python')
+	 * @param langKey - Raw language key from the fence (e.g., 'js', 'py')
+	 * @param onSave - Callback invoked on modal close with the edited content. Use this to write changes back to the note.
+	 */
 	private constructor(
 		private plugin: CodeFilesPlugin,
 		private code: string,

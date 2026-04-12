@@ -109,6 +109,7 @@ export class CodeEditorView extends TextFileView {
 		this.diffAction?.remove();
 	}
 
+	/** Cleans up Monaco when the file is unloaded from the view. */
 	private cleanup(): void {
 		this.codeEditor?.destroy();
 		this.removeHeaderActions();
@@ -198,7 +199,7 @@ export class CodeEditorView extends TextFileView {
 				const params = await resolveThemeParams(this.plugin, theme);
 				this.codeEditor?.send('change-theme', params);
 			};
-			new ChooseThemeModal(this.plugin, applyTheme, applyTheme).open();
+			new ChooseThemeModal(this.plugin, applyTheme).open();
 		});
 
 		this.gearAction = this.addAction('settings', 'Editor Settings', () => {

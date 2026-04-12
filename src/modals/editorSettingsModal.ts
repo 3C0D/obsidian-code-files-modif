@@ -27,6 +27,12 @@ export class EditorSettingsModal extends Modal {
 	private codeEditor!: CodeEditorInstance;
 	private isGlobal = false;
 
+	/**
+	 * @param plugin - The plugin instance
+	 * @param extension - The file extension being edited (e.g., 'ts', 'js', 'md')
+	 * @param onSettingsChanged - Callback invoked when validation toggles change. Typically broadcasts options to all open editors.
+	 * @param onConfigApplied - Callback invoked on modal close with the merged editor config JSON string (global + per-extension). Use this to send the config to the Monaco iframe via postMessage.
+	 */
 	constructor(
 		private plugin: CodeFilesPlugin,
 		private extension: string,

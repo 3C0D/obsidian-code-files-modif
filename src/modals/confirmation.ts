@@ -46,6 +46,7 @@ class ConfirmModal extends Modal {
 	}
 }
 
+/** Opens a confirmation modal with the given message, returns a Promise that resolves to true/false based on user choice. */
 export async function confirmation(app: App, message: string): Promise<boolean> {
 	return new Promise((resolve) => {
 		new ConfirmModal(app, message, resolve).open();

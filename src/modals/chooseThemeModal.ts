@@ -21,9 +21,12 @@ export class ChooseThemeModal extends SuggestModal<string> {
 	/** Tracks whether themes have been loaded from themelist.json to avoid redundant fetches. */
 	private themesLoaded = false;
 
+	/**
+	 * @param plugin - The plugin instance
+	 * @param applyTheme - Callback invoked for both live preview and final theme selection. Sends the theme to Monaco via postMessage.
+	 */
 	constructor(
 		private plugin: CodeFilesPlugin,
-		private onChoose: (theme: string) => void | Promise<void>,
 		private applyTheme: (theme: string) => void
 	) {
 		super(plugin.app);
@@ -136,7 +139,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.plugin.settings.recentThemes = recent;
 		this.plugin.settings.theme = theme;
 		void this.plugin.saveSettings();
-		void this.onChoose(theme);
+		this.applyTheme(theme);
 	}
 
 	onClose(): void {

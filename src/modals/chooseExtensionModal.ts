@@ -25,6 +25,10 @@ type ExtensionSuggestion = { kind: 'add' | 'remove'; ext: string };
 export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 	private onUpdate: (newExt?: string) => void;
 
+	/**
+	 * @param plugin - The plugin instance
+	 * @param onUpdate - Optional callback invoked after adding/removing an extension. Receives the added extension name (or undefined if removed). Used by CreateCodeFileModal to refresh the extension input.
+	 */
 	constructor(
 		private plugin: CodeFilesPlugin,
 		onUpdate: (newExt?: string) => void = () => {}

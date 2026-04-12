@@ -9,6 +9,12 @@ import { getActiveExtensions } from '../utils/extensionUtils.ts';
 
 /** Reusable autocomplete suggester for registered extensions, attached to a text input. */
 export class ExtensionSuggest extends AbstractInputSuggest<string> {
+	/**
+	 * @param plugin - The plugin instance
+	 * @param inputEl - The text input element to attach the suggester to
+	 * @param onChoose - Callback invoked when a suggestion is selected. Receives the chosen extension (without leading dot).
+	 * @param getExtensions - Optional function to provide the list of extensions. Defaults to getActiveExtensions().
+	 */
 	constructor(
 		plugin: CodeFilesPlugin,
 		inputEl: HTMLInputElement,
