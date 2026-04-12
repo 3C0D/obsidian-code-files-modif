@@ -4,7 +4,7 @@
  * Manages the view header with extension badge, dirty state indicator, and action icons:
  * - Theme picker, settings gear, return arrow (unregistered extensions), diff viewer
  * - CSS snippet controls (folder opener, enable/disable toggle) when editing snippets
- * 
+ *
  * The Monaco Editor instance (CodeEditorInstance) is created by mountCodeEditor() and embedded
  * as an iframe. This view handles all Obsidian-specific concerns (file I/O, header UI, lifecycle)
  * while delegating editor functionality to the isolated Monaco iframe via postMessage.
@@ -190,8 +190,8 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Adds header actions: return to default view (only for unregistered extensions), change theme, snippet controls (only for CSS snippets), and open editor settings. */
-	private injectGearIcon(file: TFile): void {
+	/** Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets). */
+	private injectHeaderActions(file: TFile): void {
 		this.removeHeaderActions();
 
 		this.themeAction = this.addAction('palette', 'Change Theme', () => {
@@ -214,7 +214,9 @@ export class CodeEditorView extends TextFileView {
 		});
 
 		// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered
-		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(file.extension);
+		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(
+			file.extension
+		);
 		if (isUnregistered) {
 			this.returnAction = this.addAction(
 				'undo-2',
@@ -257,7 +259,10 @@ export class CodeEditorView extends TextFileView {
 							newState
 						);
 						track.toggleClass('is-on', newState);
-						toggleEl.setAttr('aria-label', `${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`);
+						toggleEl.setAttr(
+							'aria-label',
+							`${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
+						);
 					}
 				);
 				// Replace the default Obsidian action button with a custom CSS toggle switch
@@ -273,7 +278,10 @@ export class CodeEditorView extends TextFileView {
 				this.cssChangeHandler = () => {
 					const currentState = isSnippetEnabled(this.plugin.app, snippetName);
 					track.toggleClass('is-on', currentState);
-					toggleEl.setAttr('aria-label', `${currentState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`);
+					toggleEl.setAttr(
+						'aria-label',
+						`${currentState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
+					);
 				};
 				this.plugin.app.workspace.on('css-change', this.cssChangeHandler);
 			}
@@ -289,23 +297,26 @@ export class CodeEditorView extends TextFileView {
 			this.getContext(file),
 			() => {
 				this.setDirty(true);
+				// Debounced this.save() 2s
 				this.requestSave();
 			},
 			() => {
 				this.forceSave = true;
 				this.setSaving(true);
+				// void is used to explicitly ignore the returned promise, since the save operation is already being tracked by the saving badge and we don't want unhandled promise rejections if the save fails. The save method will reset the dirty and saving states accordingly once it completes.
 				void this.save().then(() => {
 					this.setDirty(false);
 					this.setSaving(false);
 				});
 			},
 			() => {
+				// Show the diff action in the header after formatting so users can see what changed. Hidden after 10 seconds. So then use the editor context menu
 				this.showDiffAction();
 			}
 		);
 	}
 
-	/** Shows the diff action in the header for 10 seconds after a format */
+	/** Shows the diff action in the header for x seconds after a format */
 	private showDiffAction(): void {
 		if (this.diffTimer) clearTimeout(this.diffTimer);
 		this.diffAction?.remove();
@@ -313,24 +324,26 @@ export class CodeEditorView extends TextFileView {
 		this.diffAction = this.addAction('diff', 'Show Format Diff', () => {
 			this.codeEditor?.send('trigger-show-diff', {});
 		});
+		// Flash the diff icon to draw attention to it
 		this.diffAction.addClass('code-files-diff-action');
 
+		// Hide the diff action after x seconds
 		this.diffTimer = setTimeout(() => {
 			this.diffAction?.remove();
 			this.diffAction = null;
 		}, DIFF_BUTTON_DISPLAY_DURATION);
 	}
 
-	/** When a file is loaded into the view, we initialize the Monaco Editor with the file's content and set up a callback to save changes. We also ensure the editor fills the view and handle cleanup when the view is closed. */
+	/** Initializes the Monaco editor when a file is loaded into the view. */
 	async onLoadFile(file: TFile): Promise<void> {
+		// super.onLoadFile reads file content into this.data and calls setViewData().
 		// For external files, leaf.open() doesn't trigger this automatically.
-		// Reads the file content into this.data and calls setViewData().
 		await super.onLoadFile(file);
 		await this.mountEditor(file);
-		this.contentEl.style.overflow = 'hidden';
+		this.contentEl.style.overflow = 'hidden'; // Monaco has its own scrollbars
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
-		this.injectGearIcon(file);
+		this.injectHeaderActions(file);
 	}
 
 	/** Cleans up Monaco when the file is unloaded from the view. */
@@ -355,7 +368,7 @@ export class CodeEditorView extends TextFileView {
 		await this.mountEditor(file);
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
-		this.injectGearIcon(file);
+		this.injectHeaderActions(file);
 	}
 
 	getViewData(): string {
@@ -392,6 +405,7 @@ export class CodeEditorView extends TextFileView {
 		view.file = file;
 		await leaf.open(view);
 		await view.onLoadFile(file);
+		// Update tab header tab to show the file name
 		leaf.updateHeader();
 	}
 

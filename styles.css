@@ -95,12 +95,12 @@
 /* Diff action icon - highlighted to draw attention after formatting */
 .code-files-diff-action {
   color: var(--code-files-diff-icon-color, #ff4848);
-  animation: code-files-diff-flash 2s ease-in-out;
+  animation: code-files-diff-flash 0.8s ease-in-out 3;
 }
 
 @keyframes code-files-diff-flash {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50% { opacity: 0.2; }
 }
 
 /* Project root folder highlight */
