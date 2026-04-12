@@ -3,10 +3,11 @@
 	<head>
 		<meta charset="UTF-8" />
 		<!--
-  CSP for the blob iframe. Note: Obsidian's parent CSP applies to child frames,
-  but inline content in a blob URL is not subject to it for script/style execution.
-  img-src includes data: to allow Monaco's squiggle error decorations (inline SVGs).
-  worker-src blob: allows Monaco's web workers (syntax checking, etc.).
+  CSP for Monaco's blob iframe. Since this HTML is loaded as a blob URL,
+  it doesn't inherit Obsidian's CSP and needs its own security policy.
+  - 'unsafe-eval' + 'unsafe-inline': Monaco's module loader requires eval() and inline scripts
+  - data: images: Monaco's error decorations use inline SVG data URLs
+  - blob: workers: Monaco's syntax checking runs in web workers
 -->
 		<meta
 			http-equiv="Content-Security-Policy"
@@ -14,6 +15,8 @@
 		/>
 		<link rel="stylesheet" href="./monacoHtml.css" />
 		<style>
+			/* Chain all three levels to 100% height: html and body don't inherit
+			   viewport height by default, so #container's height: 100% would resolve to 0 */
 			html,
 			body,
 			#container {
@@ -26,17 +29,22 @@
 		</style>
 	</head>
 	<body>
+		<!-- Monaco's mount target: monaco.editor.create() requires a DOM element with measurable dimensions -->
 		<div id="container"></div>
 		<!--
   require.paths.vs is patched to an absolute app:// URL by mountCodeEditor.ts before
   this HTML is injected as a blob URL, so ./vs resolves correctly.
 -->
+		<!-- Step 1: tell AMD loader where to find Monaco's files -->
 		<script>
 			var require = { paths: { vs: './vs' } };
 		</script>
+		<!-- Step 2: load Monaco's AMD module loader (reads the require config above) -->
 		<script src="./vs/loader.js"></script>
+		<!-- Step 3: custom helpers and Prettier config, must be available before editor init -->
 		<script src="./monacoHtml.js"></script>
 		<script>
+			<!-- Step 4: async-load Monaco itself, all init code runs in the callback -->
 			require(['vs/editor/editor.main'], function () {
 				var editor;
 				var context;

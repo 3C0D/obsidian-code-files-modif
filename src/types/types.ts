@@ -158,6 +158,18 @@ export const viewType = 'code-editor';
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */
 export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
 
+/**
+ * Control handle for a Monaco editor embedded in an iframe (blob URL).
+ * The iframe is isolated from Obsidian's scope; all writes and lifecycle ops go through postMessage,
+ * reads return a locally-cached value kept in sync via 'change' events.
+ *
+ * @property iframe    - The iframe DOM element
+ * @property send      - Send a typed command to the iframe (theme, options, content...)
+ * @property getValue  - Get current content (local cache, no postMessage)
+ * @property setValue  - Set content and sync to iframe
+ * @property clear     - Clear content
+ * @property destroy   - Remove iframe, revoke blob URL, detach message listener
+ */
 export interface CodeEditorInstance {
 	/** The iframe element containing the Monaco editor */
 	iframe: HTMLIFrameElement;

@@ -19,14 +19,18 @@ import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
  */
 export class CodeEditorView extends TextFileView {
 	private codeEditor!: CodeEditorInstance;
+	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
+	/** Header action references for cleanup: we keep track of the header action elements we create (gear icon, theme selector, snippet controls, etc.) so we can remove them when the view is closed or when a new file is loaded. */
 	private gearAction: { remove: () => void } | null = null;
 	private themeAction: { remove: () => void } | null = null;
 	private snippetFolderAction: { remove: () => void } | null = null;
 	private snippetToggleAction: { remove: () => void } | null = null;
 	private returnAction: { remove: () => void } | null = null;
 	private diffAction: { remove: () => void } | null = null;
+	/** The diff timer is used to automatically hide the "Show Diff" action after a certain duration. We store the timer ID so we can clear it if needed (e.g., if the user triggers another format before the timer expires). */
 	private diffTimer: NodeJS.Timeout | null = null;
+	/** The CSS change handler is used to listen for external snippet state changes (from Obsidian settings) and update the toggle switch accordingly. */
 	private cssChangeHandler: (() => void) | null = null;
 
 	constructor(
@@ -36,7 +40,7 @@ export class CodeEditorView extends TextFileView {
 		super(leaf);
 	}
 
-	/** Public getter for editor instance (used by mountCodeEditor for scroll-to-position) */
+	/** Expose the Monaco editor instance to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
 	get editor(): CodeEditorInstance | undefined {
 		return this.codeEditor;
 	}

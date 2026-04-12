@@ -29,6 +29,7 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 	}
 
 	getSuggestions(query: string): ExtensionSuggestion[] {
+		// Normalize query by removing leading dot, trimming whitespace, and converting to lowercase
 		const q = query.toLowerCase().replace(/^\./, '').trim();
 		const current = getActiveExtensions(this.plugin.settings);
 
