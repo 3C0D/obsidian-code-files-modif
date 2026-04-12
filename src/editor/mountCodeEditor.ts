@@ -11,6 +11,37 @@ import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { CodeEditorView } from './codeEditorView.ts';
 
+const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
+
+/** Resolves theme parameters for Monaco. For built-in themes, returns the theme name.
+ *  For custom themes, fetches the theme JSON and returns it as themeData. */
+export const resolveThemeParams = async (
+	plugin: CodeFilesPlugin,
+	theme: string
+): Promise<{ theme: string; themeData?: string }> => {
+	const pluginBase = normalizePath(
+		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
+	);
+	const resolvedTheme =
+		theme === 'default'
+			? document.body.classList.contains('theme-dark')
+				? 'vs-dark'
+				: 'vs'
+			: theme;
+	const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
+	let themeData: string | undefined;
+	if (!BUILTIN_THEMES.includes(theme)) {
+		try {
+			const themePath = normalizePath(`${pluginBase}/monaco-themes/${theme}.json`);
+			const url = plugin.app.vault.adapter.getResourcePath(themePath);
+			themeData = JSON.stringify(await (await fetch(url)).json());
+		} catch (e) {
+			console.warn(`code-files: theme "${theme}" not found`, e);
+		}
+	}
+	return { theme: safeThemeId, themeData };
+};
+
 /** Creates a Monaco Editor instance inside an iframe, communicating with it via postMessage.
  *  Returns a control object to get/set the editor value and manage its lifecycle.
  *
@@ -26,34 +57,6 @@ import { CodeEditorView } from './codeEditorView.ts';
  *    inline the Monaco CSS (Obsidian's CSP blocks external <link> stylesheets in child frames),
  *    then inject via a blob URL which is not subject to the parent CSP for its own inline content.
  */
-export const resolveThemeParams = async (
-	plugin: CodeFilesPlugin,
-	theme: string
-): Promise<{ theme: string; themeData?: string }> => {
-	const builtins = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
-	const pluginBase = normalizePath(
-		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
-	);
-	const resolvedTheme =
-		theme === 'default'
-			? document.body.classList.contains('theme-dark')
-				? 'vs-dark'
-				: 'vs'
-			: theme;
-	const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
-	let themeData: string | undefined;
-	if (!builtins.includes(theme)) {
-		try {
-			const themePath = normalizePath(`${pluginBase}/monaco-themes/${theme}.json`);
-			const url = plugin.app.vault.adapter.getResourcePath(themePath);
-			themeData = JSON.stringify(await (await fetch(url)).json());
-		} catch (e) {
-			console.warn(`code-files: theme "${theme}" not found`, e);
-		}
-	}
-	return { theme: safeThemeId, themeData };
-};
-
 export const mountCodeEditor = async (
 	plugin: CodeFilesPlugin,
 	language: string,
@@ -100,42 +103,25 @@ export const mountCodeEditor = async (
 		send('load-project-files', { files });
 	}
 
-	// getResourcePath returns app://...?timestamp
-	const htmlPath = normalizePath(`${pluginBase}/monacoEditor.html`);
-	const htmlUrl = plugin.app.vault.adapter.getResourcePath(htmlPath);
-	const vsPath = normalizePath(`${pluginBase}/vs`);
-	// Strip timestamp from vsBase so sub-paths like /editor/editor.main.css work
-	const vsBase = plugin.app.vault.adapter.getResourcePath(vsPath).replace(/\?.*$/, '');
-	const configJsPath = normalizePath(`${pluginBase}/monacoHtml.js`);
-	const configJsUrl = plugin.app.vault.adapter.getResourcePath(configJsPath);
-	const configCssPath = normalizePath(`${pluginBase}/monacoHtml.css`);
-	const configCssUrl = plugin.app.vault.adapter.getResourcePath(configCssPath);
-	const prettierPath = normalizePath(`${pluginBase}/prettier-standalone.js`);
-	const prettierBase = plugin.app.vault.adapter.getResourcePath(prettierPath);
-	const prettierMarkdownPath = normalizePath(`${pluginBase}/prettier-markdown.js`);
-	const prettierMarkdownUrl =
-		plugin.app.vault.adapter.getResourcePath(prettierMarkdownPath);
-	const prettierEstreePath = normalizePath(`${pluginBase}/prettier-estree.js`);
-	const prettierEstreeUrl =
-		plugin.app.vault.adapter.getResourcePath(prettierEstreePath);
-	const prettierTypescriptPath = normalizePath(`${pluginBase}/prettier-typescript.js`);
-	const prettierTypescriptUrl =
-		plugin.app.vault.adapter.getResourcePath(prettierTypescriptPath);
-	const prettierBabelPath = normalizePath(`${pluginBase}/prettier-babel.js`);
-	const prettierBabelUrl = plugin.app.vault.adapter.getResourcePath(prettierBabelPath);
-	const prettierPostcssPath = normalizePath(`${pluginBase}/prettier-postcss.js`);
-	const prettierPostcssUrl =
-		plugin.app.vault.adapter.getResourcePath(prettierPostcssPath);
-	const prettierHtmlPath = normalizePath(`${pluginBase}/prettier-html.js`);
-	const prettierHtmlUrl = plugin.app.vault.adapter.getResourcePath(prettierHtmlPath);
-	const prettierYamlPath = normalizePath(`${pluginBase}/prettier-yaml.js`);
-	const prettierYamlUrl = plugin.app.vault.adapter.getResourcePath(prettierYamlPath);
-	const prettierGraphqlPath = normalizePath(`${pluginBase}/prettier-graphql.js`);
-	const prettierGraphqlUrl =
-		plugin.app.vault.adapter.getResourcePath(prettierGraphqlPath);
-	const mermaidFormatterPath = normalizePath(`${pluginBase}/mermaid-formatter.js`);
-	const mermaidFormatterUrl =
-		plugin.app.vault.adapter.getResourcePath(mermaidFormatterPath);
+	const res = (name: string): string =>
+		plugin.app.vault.adapter.getResourcePath(
+			normalizePath(`${pluginBase}/${name}`)
+		);
+
+	const htmlUrl = res('monacoEditor.html');
+	const vsBase = res('vs').replace(/\?.*$/, '');
+	const configJsUrl = res('monacoHtml.js');
+	const configCssUrl = res('monacoHtml.css');
+	const prettierBase = res('prettier-standalone.js');
+	const prettierMarkdownUrl = res('prettier-markdown.js');
+	const prettierEstreeUrl = res('prettier-estree.js');
+	const prettierTypescriptUrl = res('prettier-typescript.js');
+	const prettierBabelUrl = res('prettier-babel.js');
+	const prettierPostcssUrl = res('prettier-postcss.js');
+	const prettierHtmlUrl = res('prettier-html.js');
+	const prettierYamlUrl = res('prettier-yaml.js');
+	const prettierGraphqlUrl = res('prettier-graphql.js');
+	const mermaidFormatterUrl = res('mermaid-formatter.js');
 
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal
@@ -168,7 +154,8 @@ export const mountCodeEditor = async (
 	if (extension && !getActiveExtensions(plugin.settings).includes(extension)) {
 		initParams.isUnregisteredExtension = true;
 	}
-	if (!['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'].includes(theme)) {
+	// 'default' excluded here because it's resolved to 'vs' or 'vs-dark' above
+	if (!BUILTIN_THEMES.includes(theme) || theme === 'default') {
 		const resolved = await resolveThemeParams(plugin, theme);
 		if (resolved.themeData) initParams.themeData = resolved.themeData;
 	}
@@ -389,7 +376,7 @@ Element.prototype.appendChild = function(node) {
 				break;
 			}
 			case 'open-file': {
-				if (data.context !== codeContext) break;
+				if (data.context === codeContext) {
 				const vaultPath = data.path as string;
 				const position = data.position as {
 					lineNumber: number;
@@ -420,15 +407,17 @@ Element.prototype.appendChild = function(node) {
 				if (!existingLeaf) await leaf.openFile(file);
 				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
 
-				if (position) {
-					setTimeout(
-						() => {
-							if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-								leaf.view.editor.send('scroll-to-position', { position });
-							}
-						},
-						existingLeaf ? 0 : 150
-					);
+					if (position) {
+						// Wait for Monaco to mount in new tabs (150ms empirical delay)
+						setTimeout(
+							() => {
+								if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+									leaf.view.editor.send('scroll-to-position', { position });
+								}
+							},
+							existingLeaf ? 0 : 150
+						);
+					}
 				}
 				break;
 			}
