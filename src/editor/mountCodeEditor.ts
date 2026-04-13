@@ -119,11 +119,18 @@ export const mountCodeEditor = async (
 		send('load-project-files', { files });
 	}
 
+	// Resolves a plugin-relative path to an app:// URL.
+	// getResourcePath() appends a cache-busting timestamp (?123...) which breaks
+	// relative imports inside the iframe — callers must strip it with .replace(/\?.*$/, '')
+	// when the URL is used as a base path (see vsBase below).
 	const res = (name: string): string =>
 		plugin.app.vault.adapter.getResourcePath(
 			normalizePath(`${pluginBase}/${name}`)
 		);
 
+	// Resolve all plugin asset URLs up front.
+	// vsBase has its timestamp stripped so it can be used as a path prefix inside the iframe HTML.
+	// Prettier plugins and mermaid are loaded as UMD bundles served via app:// to satisfy CSP.
 	const htmlUrl = res('monacoEditor.html');
 	const vsBase = res('vs').replace(/\?.*$/, '');
 	const configJsUrl = res('monacoHtml.js');
@@ -241,10 +248,21 @@ Element.prototype.appendChild = function(node) {
 </script>
 </head>`
 	);
+	/**
+	 * Wrap the patched HTML in a Blob and serve it via a blob: URL.
+	 * This is required because:
+	 *  - file:// URLs are blocked by Electron's CSP.
+	 *  - srcdoc and data: URLs cannot run scripts under Obsidian's CSP.
+	 *  - A blob: URL is treated as same-origin by the iframe and bypasses the parent CSP
+	 *    for its own inline content, while still allowing app:// script sources.
+	 * blobUrl must be revoked in destroy() to avoid a memory leak.
+	 */
 	const blob = new Blob([html], { type: 'text/html' });
 	const blobUrl = URL.createObjectURL(blob);
 	iframe.src = blobUrl;
 
+	// Sends a typed postMessage to the Monaco iframe.
+	// '*' is intentional: the iframe is a blob: URL with no stable origin.
 	const send = (type: string, payload: Record<string, unknown>): void => {
 		iframe.contentWindow?.postMessage({ type, ...payload }, '*');
 	};
@@ -444,16 +462,19 @@ Element.prototype.appendChild = function(node) {
 
 	window.addEventListener('message', onMessage);
 
+	// Clears the editor content and resets the internal value cache.
 	const clear = (): void => {
 		send('change-value', { value: '' });
 		value = '';
 	};
 
+	// Updates the editor content and keeps the internal cache in sync.
 	const setValue = (newValue: string): void => {
 		value = newValue;
 		send('change-value', { value: newValue });
 	};
 
+	// Returns the last known editor content (synced on every 'change' message).
 	const getValue = (): string => value;
 
 	const destroy = (): void => {

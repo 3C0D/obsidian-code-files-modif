@@ -29,7 +29,7 @@ Ces fichiers sont dans `.gitignore` (`vs/` et `monacoEditor.html` à la racine).
 
 Les paramètres qui étaient dans la query string de l'URL externe passent maintenant via `postMessage` (`init`).
 
-### 5. Remplacer la liste statique de langages par une map dynamique
+### 5. Remplacer la liste statique de langages par une map dynamique ENCORE VRAI??????
 
 Monaco est local, donc on peut interroger `monaco.languages.getLanguages()` depuis l'iframe et construire la map extension → langage dynamiquement. Cela évite de maintenir une liste à la main et couvre automatiquement tous les langages Monaco.
 

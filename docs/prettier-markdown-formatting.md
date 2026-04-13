@@ -68,6 +68,7 @@ When creating the Monaco iframe, we:
 ```typescript
 const prettierBase = plugin.app.vault.adapter
     .getResourcePath(`${pluginBase}/prettier-standalone.js`)
+	// delete query string ?123...
     .replace(/\?.*$/, '');
 const prettierMarkdownUrl = plugin.app.vault.adapter
     .getResourcePath(`${pluginBase}/prettier-markdown.js`)

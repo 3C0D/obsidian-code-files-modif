@@ -90,13 +90,3 @@ Si autoSave est réactivé, Obsidian reprend son comportement normal : sauvegard
 ## WordWrap — comportement
 
 `Alt+Z` et le toggle dans la roue crantée mettent à jour le setting persisté (pas juste pour la session). L'iframe reçoit `change-editor-config` ou un message dédié `word-wrap-toggled` pour appliquer à chaud.
-
----
-
-## Roue crantée — implémentation
-
-Inspirée de `leaf-icon-manager.ts` du plugin `Obsidian-Vault-Name-in-Status-Bar` :
-- Injection dans `(leaf.view as FileView).actionsEl` via `actionsEl.prepend(iconEl)`
-- Uniquement sur les vues `code-editor` (pas les notes Markdown)
-- `setIcon(iconEl, 'settings')` pour l'icône roue crantée
-- Nettoyage dans `onUnloadFile` / `onClose`
