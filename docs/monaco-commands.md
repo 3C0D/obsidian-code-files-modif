@@ -1,67 +1,66 @@
-# Ajouter une commande Monaco — Guide et pièges
+# Adding Monaco Commands — Guide and Pitfalls
 
-## Les deux surfaces d'exposition
+## Two Exposure Surfaces
 
-Monaco propose deux mécanismes pour exposer une action utilisateur :
+Monaco offers two mechanisms to expose a user action:
 
 ### `editor.addCommand(keybinding, handler)`
-Enregistre uniquement un raccourci clavier. L'action **n'apparaît pas** dans le menu contextuel ni dans la palette de commandes Monaco (F1). À utiliser uniquement pour des raccourcis sans UI visible.
+Registers only a keyboard shortcut. The action **does not appear** in the context menu or Monaco command palette (F1). Use only for shortcuts without visible UI.
 
 ### `editor.addAction(descriptor)`
-Enregistre une action complète. Avec `contextMenuGroupId` renseigné, elle apparaît **à la fois** dans le menu contextuel et dans la palette F1. C'est la méthode à privilégier.
+Registers a complete action. With `contextMenuGroupId` set, it appears **both** in the context menu and the F1 palette. This is the preferred method.
 
 ```javascript
 editor.addAction({
-  id: 'code-files-mon-action',        // identifiant unique
-  label: 'Mon Action',                 // texte affiché
-  contextMenuGroupId: 'navigation',    // groupe dans le menu contextuel
-  contextMenuOrder: 1.9,               // ordre dans le groupe
-  keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyX], // optionnel
+  id: 'code-files-my-action',          // unique identifier
+  label: 'My Action',                  // displayed text
+  contextMenuGroupId: 'navigation',    // group in context menu
+  contextMenuOrder: 1.9,               // order within group
+  keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyX], // optional
   run: function() {
-    window.parent.postMessage({ type: 'mon-action', context: context }, '*');
+    window.parent.postMessage({ type: 'my-action', context: context }, '*');
   }
 });
 ```
 
 ---
 
-## Flux complet d'une commande contextuelle
+## Complete Flow of a Context Command
 
-Le flux pour une commande qui ouvre un modal Obsidian depuis Monaco :
+The flow for a command that opens an Obsidian modal from Monaco:
 
 ```
 Monaco (iframe)
-  └─ addAction.run() → postMessage { type: 'mon-action', context }
+  └─ addAction.run() → postMessage { type: 'my-action', context }
        ↓
 mountCodeEditor.ts (window.addEventListener 'message')
-  └─ case 'mon-action': → ouvre le modal Obsidian
+  └─ case 'my-action': → opens Obsidian modal
 ```
 
-### 1. Dans `monacoEditor.html`
+### 1. In `monacoEditor.html`
 
 ```javascript
 editor.addAction({
-  id: 'code-files-mon-action',
-  label: 'Mon Action',
+  id: 'code-files-my-action',
+  label: 'My Action',
   contextMenuGroupId: 'navigation',
   contextMenuOrder: 1.9,
   run: function() {
-    window.parent.postMessage({ type: 'mon-action', context: context }, '*');
+    window.parent.postMessage({ type: 'my-action', context: context }, '*');
   }
 });
 ```
 
-### 2. Dans `mountCodeEditor.ts`
+### 2. In `mountCodeEditor.ts`
 
 ```typescript
-case 'mon-action': {
+case 'my-action': {
   if (data.context === codeContext) {
-    (document.activeElement as HTMLElement)?.blur(); // obligatoire — voir ci-dessous
-    const modal = new MonModal(plugin, ...);
+    const modal = new MyModal(plugin, ...);
     const origOnClose = modal.onClose.bind(modal);
     modal.onClose = () => {
       origOnClose();
-      iframe.focus(); // rend le focus à Monaco après fermeture
+      iframe.focus(); // restore focus to Monaco after closing
     };
     modal.open();
   }
@@ -71,45 +70,62 @@ case 'mon-action': {
 
 ---
 
-## Pourquoi le `blur()` est obligatoire avant tout `modal.open()`
+## Modal Focus Handling — Automatic via modalPatch
 
-Monaco tourne dans une **iframe isolée**. Son DOM est complètement séparé du DOM d'Obsidian — les éléments de l'iframe n'héritent pas des patches que le code minifié d'Obsidian injecte sur `Node.prototype`, notamment la méthode `instanceOf`.
+The plugin uses `patchModalClose()` (in `modalPatch.ts`) which monkey-patches `Modal.prototype.open` globally. This patch automatically blurs any focused iframe before Obsidian saves `document.activeElement`, preventing the "instanceOf is not a function" crash.
 
-Quand on appelle `modal.open()` (ou `app.setting.open()`), Obsidian sauvegarde `document.activeElement` pour restaurer le focus à la fermeture. Si l'élément actif au moment de l'ouverture est un élément interne de l'iframe Monaco (le `<textarea>` caché, un bouton, etc.), Obsidian tente à la fermeture de valider cet élément avec `element.instanceOf(HTMLElement)` — méthode inexistante sur les éléments de l'iframe. Résultat :
+### Why This Was Needed
+
+Monaco runs in an **isolated iframe**. Its DOM is completely separated from Obsidian's DOM — iframe elements don't inherit the patches that Obsidian's minified code injects on `Node.prototype`, notably the `instanceOf` method.
+
+When `modal.open()` (or `app.setting.open()`) is called, Obsidian saves `document.activeElement` to restore focus on close. If the active element is inside the Monaco iframe (the hidden `<textarea>`, a button, etc.), Obsidian attempts to validate it with `element.instanceOf(HTMLElement)` on close — a method that doesn't exist on iframe elements. Result:
 
 ```
 Uncaught TypeError: n.instanceOf is not a function
     at e.close (app.js:1:...)
 ```
 
-**La solution** : appeler `(document.activeElement as HTMLElement)?.blur()` juste avant toute ouverture de modal ou de fenêtre Obsidian. Le focus retombe sur le `body` d'Obsidian qui possède `instanceOf`, et la fermeture se passe sans erreur.
+### The Solution
+
+The `patchModalClose()` function intercepts all `modal.open()` calls and automatically blurs any focused iframe before Obsidian saves the active element:
 
 ```typescript
-(document.activeElement as HTMLElement)?.blur();
-modal.open(); // ou app.setting.open()
+// In modalPatch.ts
+proto.open = function (...args: unknown[]) {
+    const active = document.activeElement;
+    if (active?.tagName === 'IFRAME') {
+        (active as HTMLElement).blur();
+        document.body.focus();
+    }
+    return original.apply(this, args);
+};
 ```
 
-Cette règle s'applique à **tous** les points d'entrée depuis Monaco vers Obsidian, sans exception — y compris les commandes Obsidian enregistrées via `addCommand()` qui peuvent être invoquées depuis la palette de commandes Obsidian alors que Monaco a le focus.
+This means:
+- **No manual `blur()` calls needed** before `modal.open()`
+- **Works for all modals** (including third-party plugins)
+- **Applied once** in `main.ts` on plugin load
+- **Removed on unload** to leave no trace
 
 ---
 
-## Piège 1 — `n.instanceOf is not a function` à la fermeture du modal
+## Pitfall 1 — `n.instanceOf is not a function` on Modal Close
 
-**Cause :** voir la section "Pourquoi le `blur()` est obligatoire" ci-dessus.
+**Cause:** See the "Modal Focus Handling" section above.
 
-**Solution obligatoire :** appeler `(document.activeElement as HTMLElement)?.blur()` juste avant `modal.open()`.
+**Solution:** The `modalPatch` handles this automatically — no manual `blur()` needed.
 
-**Restauration du focus :** monkey-patcher `modal.onClose` pour rappeler `iframe.focus()` après fermeture, sinon l'utilisateur perd le focus sur l'éditeur.
+**Focus restoration:** Monkey-patch `modal.onClose` to call `iframe.focus()` after closing, otherwise the user loses focus on the editor.
 
 ---
 
-## Piège 2 — La commande ne s'exécute qu'une seule fois
+## Pitfall 2 — Command Only Executes Once
 
-**Symptôme :** la première exécution fonctionne, les suivantes sont ignorées silencieusement.
+**Symptom:** The first execution works, subsequent ones are silently ignored.
 
-**Cause :** le `codeContext` de l'iframe ne correspond plus au fichier actuel. Cela arrive typiquement après un rename d'extension — l'iframe garde l'ancien `codeContext` (ex. `script.py`) alors que le fichier s'appelle maintenant `script.js`. Le filtre `if (data.context === codeContext)` dans `mountCodeEditor.ts` rejette tous les messages suivants.
+**Cause:** The iframe's `codeContext` no longer matches the current file. This typically happens after an extension rename — the iframe keeps the old `codeContext` (e.g., `script.py`) while the file is now `script.js`. The filter `if (data.context === codeContext)` in `mountCodeEditor.ts` rejects all subsequent messages.
 
-**Solution :** implémenter `onRename(file: TFile)` dans `CodeEditorView` pour détruire l'ancienne iframe et en monter une nouvelle avec le bon `codeContext` :
+**Solution:** Implement `onRename(file: TFile)` in `CodeEditorView` to destroy the old iframe and mount a new one with the correct `codeContext`:
 
 ```typescript
 async onRename(file: TFile): Promise<void> {
@@ -130,20 +146,20 @@ async onRename(file: TFile): Promise<void> {
 
 ---
 
-## Piège 3 — Mettre à jour la config à chaud
+## Pitfall 3 — Updating Config at Runtime
 
-Les paramètres envoyés via `initParams` à l'init ne sont pas automatiquement mis à jour si les settings changent. Il faut envoyer un message dédié depuis `mountCodeEditor.ts` et le gérer dans `monacoEditor.html`.
+Parameters sent via `initParams` at initialization are not automatically updated if settings change. You must send a dedicated message from `mountCodeEditor.ts` and handle it in `monacoEditor.html`.
 
-Exemple avec `change-formatter-config` :
+Example with `change-editor-config`:
 
-**Dans `mountCodeEditor.ts`** — après sauvegarde de la config :
+**In `mountCodeEditor.ts`** — after saving the config:
 ```typescript
-send('change-formatter-config', { config: newConfigJson });
+send('change-editor-config', { config: newConfigJson });
 ```
 
-**Dans `monacoEditor.html`** — dans le `switch` des messages :
+**In `monacoEditor.html`** — in the message `switch`:
 ```javascript
-case 'change-formatter-config':
+case 'change-editor-config':
   if (editor) {
     var cfg = JSON.parse(data.config);
     editor.getModel().updateOptions({ tabSize: cfg.tabSize, insertSpaces: cfg.insertSpaces });
@@ -153,17 +169,17 @@ case 'change-formatter-config':
   break;
 ```
 
-Le même pattern s'applique pour `change-theme`, `change-language`, etc.
+The same pattern applies for `change-theme`, `change-language`, etc.
 
 ---
 
-## Raccourcis vers des actions Obsidian natives
+## Shortcuts to Native Obsidian Actions
 
-Monaco capture tous les événements clavier dans l'iframe — les raccourcis globaux d'Obsidian (comme `Ctrl+,` pour les settings) ne passent pas au parent. Pour les réactiver, il faut les intercepter dans Monaco et les relayer via `postMessage`.
+Monaco captures all keyboard events in the iframe — Obsidian's global shortcuts (like `Ctrl+,` for settings) don't reach the parent. To reactivate them, intercept them in Monaco and relay via `postMessage`.
 
-### Exemple — `Ctrl+,` pour ouvrir les Settings Obsidian
+### Example — `Ctrl+,` to Open Obsidian Settings
 
-**Dans `monacoEditor.html`** — intercepter le raccourci avant Monaco :
+**In `monacoEditor.html`** — intercept the shortcut before Monaco:
 
 ```javascript
 editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma, function() {
@@ -171,16 +187,15 @@ editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma, function() {
 });
 ```
 
-**Dans `mountCodeEditor.ts`** — handler côté parent :
+**In `mountCodeEditor.ts`** — handler on parent side:
 
 ```typescript
 case 'open-settings': {
     if (data.context === codeContext) {
-        (document.activeElement as HTMLElement)?.blur();
         plugin.app.setting.open();
     }
     break;
 }
 ```
 
-> **Note :** la fenêtre Settings d'Obsidian n'est pas un modal Obsidian classique, mais le `blur()` reste nécessaire — Obsidian capture `document.activeElement` à l'ouverture et crashe à la fermeture si l'élément actif appartient à l'iframe (problème `instanceOf`). Pas besoin de monkey-patcher `onClose` en revanche, car Settings gère son propre cycle de vie.
+> **Note:** The Obsidian Settings window is not a standard Obsidian modal, but the `modalPatch` still handles the focus issue automatically. No need to monkey-patch `onClose` since Settings manages its own lifecycle.

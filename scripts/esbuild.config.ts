@@ -10,8 +10,7 @@ import {
 	isValidPath,
 	copyFilesToTargetDir,
 	askQuestion,
-	createReadlineInterface,
-	removeMainCss
+	createReadlineInterface
 } from './utils.js';
 
 // Determine the plugin directory (where the script is called from)
@@ -183,40 +182,9 @@ async function getBuildPath(isProd: boolean): Promise<string> {
 async function createBuildContext(
 	buildPath: string,
 	isProd: boolean,
-	entryPoints: string[],
-	hasSass: boolean
+	entryPoints: string[]
 ): Promise<esbuild.BuildContext> {
 	const plugins = [
-		// Add SASS plugin if SCSS files are detected
-		...(hasSass
-			? [
-					await (async () => {
-						try {
-							// @ts-expect-error - esbuild-sass-plugin is installed during injection
-							const { sassPlugin } = await import('esbuild-sass-plugin');
-							return sassPlugin({
-								syntax: 'scss',
-								style: 'expanded'
-							});
-						} catch (error) {
-							console.warn(
-								'⚠️  esbuild-sass-plugin not found. Install it with: yarn add -D esbuild-sass-plugin'
-							);
-							throw error;
-						}
-					})(),
-					{
-						name: 'remove-main-css',
-						setup(build: esbuild.PluginBuild): void {
-							build.onEnd(async (result) => {
-								if (result.errors.length === 0) {
-									await removeMainCss(buildPath);
-								}
-							});
-						}
-					}
-				]
-			: []),
 		{
 			name: 'copy-to-plugins-folder',
 			setup: (build: esbuild.PluginBuild): void => {
@@ -251,9 +219,7 @@ async function createBuildContext(
 					const codiconTarget = path.join(buildPath, 'vs/editor/codicon.ttf');
 					await copyFile(codiconSrc, codiconTarget);
 					// Create formatters directory
-					if (!fs.existsSync(formattersTarget)) {
-						await fs.promises.mkdir(formattersTarget, { recursive: true });
-					}
+					await fs.promises.mkdir(formattersTarget, { recursive: true });
 					// Copy Prettier and Mermaid formatters to formatters/ folder
 					await copyFile(
 						path.join(pluginDir, 'node_modules/prettier/standalone.js'),
@@ -300,7 +266,7 @@ async function createBuildContext(
 							path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')
 						],
 						bundle: true,
-						format: 'iife',
+						format: 'iife', // Wrap in (function(){...})() for <script> tag loading in the Monaco iframe
 						outfile: path.join(formattersTarget, 'mermaid-formatter.js'),
 						platform: 'browser',
 						minify: isProd
@@ -363,27 +329,16 @@ async function main(): Promise<void> {
 				: `Building in ${buildPath}`
 		);
 
-		// Check for SCSS first, then CSS in src, then in root
-		const srcStylesScssPath = path.join(pluginDir, 'src/styles.scss');
-		const srcStylesPath = path.join(pluginDir, 'src/styles.css');
-		const rootStylesPath = path.join(pluginDir, 'styles.css');
-
-		const scssExists = await isValidPath(srcStylesScssPath);
-		const stylePath = scssExists
-			? srcStylesScssPath
-			: (await isValidPath(srcStylesPath))
-				? srcStylesPath
-				: (await isValidPath(rootStylesPath))
-					? rootStylesPath
-					: '';
+		// Check for CSS in root
+		const stylesPath = path.join(pluginDir, 'styles.css');
+		const stylePath = (await isValidPath(stylesPath)) ? stylesPath : '';
 
 		const mainTsPath = path.join(pluginDir, 'src/main.ts');
 		const entryPoints = stylePath ? [mainTsPath, stylePath] : [mainTsPath];
 		const context = await createBuildContext(
 			buildPath,
 			isProd,
-			entryPoints,
-			scssExists
+			entryPoints
 		);
 
 		if (isProd) {
