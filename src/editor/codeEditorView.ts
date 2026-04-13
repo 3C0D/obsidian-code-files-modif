@@ -71,6 +71,11 @@ export class CodeEditorView extends TextFileView {
 		return viewType;
 	}
 
+	/** The icon for the view, shown in the header */
+	getIcon(): string {
+		return 'file-code-corner';
+	}
+
 	/**	Context is used for language detection and is derived from the file path. */
 	getContext(file: TFile): string {
 		return file.path;

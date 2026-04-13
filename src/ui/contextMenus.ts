@@ -32,7 +32,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 			if (abstractFile instanceof TFolder) {
 				const items = getFolderItems(plugin, abstractFile);
 				menu.addItem((i) => {
-					i.setTitle('Code Files').setIcon('file-json');
+					i.setTitle('Code Files').setIcon('file-code-corner');
 					const sub = i.setSubmenu();
 					for (const it of items) {
 						sub.addItem((subItem) =>
@@ -54,7 +54,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 							);
 					} else if (source !== 'tab-header') {
 						const items = getFileItems(plugin);
-						i.setTitle('Code Files').setIcon('file-json');
+						i.setTitle('Code Files').setIcon('file-code-corner');
 						const sub = i.setSubmenu();
 						for (const it of items) {
 							sub.addItem((subItem) =>
@@ -84,7 +84,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 				} else {
 					// Cursor outside a code fence: show Code Files submenu (Open in Monaco, Rename Extension)
 					const items = getFileItems(plugin);
-					item.setTitle('Code Files').setIcon('file-json');
+					item.setTitle('Code Files').setIcon('file-code-corner');
 					const sub = item.setSubmenu();
 					for (const it of items) {
 						sub.addItem((subItem) =>
@@ -151,7 +151,7 @@ function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 	if (activeFile) {
 		items.push({
 			title: 'Open in Monaco Editor',
-			icon: 'file-code',
+			icon: 'file-code-corner',
 			action: async () => await CodeEditorView.openFile(activeFile, plugin)
 		});
 		items.push({

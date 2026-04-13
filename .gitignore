@@ -45,9 +45,6 @@ vs/
 # Keep injection info for traceability
 # .injection-info.json should be committed to track injection version
 
-# symlink
-my-obsidian-repos
-
 #LLM
 .amazonq/*
 tsconfig.tsbuildinfo

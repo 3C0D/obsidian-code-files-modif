@@ -35,6 +35,7 @@ export const resolveThemeParams = async (
 				? 'vs-dark'
 				: 'vs'
 			: theme;
+	// Sanitized theme name. Only alphanumeric and dashes allowed
 	const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
 	let themeData: string | undefined;
 	if (!BUILTIN_THEMES.includes(theme)) {
@@ -63,7 +64,7 @@ export const resolveThemeParams = async (
  * - Solution: fetch the HTML, rewrite ./vs paths to absolute app:// URLs (timestamp stripped),
  *   inline the Monaco CSS (Obsidian's CSP blocks external <link> in child frames),
  *   then serve via a blob URL which bypasses the parent CSP for its own inline content.
- * 
+ *
  * @param plugin - The plugin instance
  * @param language - Monaco language ID (e.g. 'typescript', 'javascript', 'markdown')
  * @param initialValue - Initial content to display in the editor
@@ -94,12 +95,18 @@ export const mountCodeEditor = async (
 		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
 	);
 
-	/** Loads TypeScript/JavaScript files from the project root and sends them to Monaco.
-	 *  Monaco needs the source code to provide IntelliSense and cross-file navigation.
-	 *  Called once when the editor initializes (on 'ready' message). */
+	/**
+	 * Reads all TS/JS files under the project root and sends them to Monaco for IntelliSense.
+	 * Called once on editor init (on 'ready' message).
+	 *
+	 * @param send - Callback to post a message to the Monaco iframe.
+	 *               Called once with type 'load-project-files' and payload { files },
+	 *               where files is an array of { path, content } objects.
+	 */
 	async function loadProjectFiles(
 		send: (type: string, payload: Record<string, unknown>) => void
 	): Promise<void> {
+		// relative path
 		const root = plugin.settings.projectRootFolder;
 		if (!root) return;
 
@@ -120,19 +127,19 @@ export const mountCodeEditor = async (
 	}
 
 	// Resolves a plugin-relative path to an app:// URL.
-	// getResourcePath() appends a cache-busting timestamp (?123...) which breaks
-	// relative imports inside the iframe — callers must strip it with .replace(/\?.*$/, '')
-	// when the URL is used as a base path (see vsBase below).
+	// getResourcePath() appends a cache-busting timestamp (?123...) to all URLs.
+	// This timestamp is harmless for direct fetch() or <script src> usage,
+	// but MUST be stripped when the URL is used as a base path for relative imports
+	// (e.g., '${vsBase}/loader.js') because the timestamp breaks path concatenation.
 	const res = (name: string): string =>
-		plugin.app.vault.adapter.getResourcePath(
-			normalizePath(`${pluginBase}/${name}`)
-		);
+		plugin.app.vault.adapter.getResourcePath(normalizePath(`${pluginBase}/${name}`));
 
 	// Resolve all plugin asset URLs up front.
-	// vsBase has its timestamp stripped so it can be used as a path prefix inside the iframe HTML.
-	// Prettier plugins and mermaid are loaded as UMD bundles served via app:// to satisfy CSP.
+	// vsBase strips the timestamp because it's used as a path prefix inside the iframe HTML.
+	// All other URLs keep the timestamp — they're used directly with fetch() or <script src>.
+	// Prettier plugins and mermaid are loaded as UMD(Universal Module Definition) bundles served via app:// to satisfy CSP.
 	const htmlUrl = res('monacoEditor.html');
-	const vsBase = res('vs').replace(/\?.*$/, '');
+	const vsBase = res('vs').replace(/\?.*$/, ''); // Strip timestamp for use as base path
 	const configJsUrl = res('monacoHtml.js');
 	const configCssUrl = res('monacoHtml.css');
 	const prettierBase = res('formatters/prettier-standalone.js');
@@ -411,42 +418,47 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-file': {
 				if (data.context === codeContext) {
-				const vaultPath = data.path as string;
-				const position = data.position as {
-					lineNumber: number;
-					column: number;
-				} | null;
-				const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
-				if (!(file instanceof TFile)) break;
+					const vaultPath = data.path as string;
+					const position = data.position as {
+						lineNumber: number;
+						column: number;
+					} | null;
+					const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
+					if (!(file instanceof TFile)) break;
 
-				// Look for an existing leaf in the main editor area (no sidebars, no popout windows)
-				const existingLeaf = plugin.app.workspace
-					.getLeavesOfType('code-editor')
-					.find((l) => {
-						// Must be in the main window
-						if (l.view.containerEl.win !== window) return false;
-						// Must be in the root split (editor area), not left/right sidebar
-						const root = plugin.app.workspace.rootSplit;
-						let el: Element | null = l.containerEl;
-						while (el && el !== root.containerEl) el = el.parentElement;
-						if (!el) return false;
-						// File must match
-						return (
-							l.view instanceof CodeEditorView &&
-							l.view.file?.path === vaultPath
-						);
-					});
+					// Look for an existing leaf in the main editor area (no sidebars, no popout windows)
+					const existingLeaf = plugin.app.workspace
+						.getLeavesOfType('code-editor')
+						.find((l) => {
+							// Must be in the main window
+							if (l.view.containerEl.win !== window) return false;
+							// Must be in the root split (editor area), not left/right sidebar
+							const root = plugin.app.workspace.rootSplit;
+							let el: Element | null = l.containerEl;
+							while (el && el !== root.containerEl) el = el.parentElement;
+							if (!el) return false;
+							// File must match
+							return (
+								l.view instanceof CodeEditorView &&
+								l.view.file?.path === vaultPath
+							);
+						});
 
-				const leaf = existingLeaf ?? plugin.app.workspace.getLeaf('tab');
-				if (!existingLeaf) await leaf.openFile(file);
-				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+					const leaf = existingLeaf ?? plugin.app.workspace.getLeaf('tab');
+					if (!existingLeaf) await leaf.openFile(file);
+					plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
 
 					if (position) {
 						// Wait for Monaco to mount in new tabs (150ms empirical delay)
 						setTimeout(
 							() => {
-								if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-									leaf.view.editor.send('scroll-to-position', { position });
+								if (
+									leaf.view instanceof CodeEditorView &&
+									leaf.view.editor
+								) {
+									leaf.view.editor.send('scroll-to-position', {
+										position
+									});
 								}
 							},
 							existingLeaf ? 0 : 150
