@@ -1,60 +1,76 @@
 # Architecture — Code Files Plugin
 
-## Vue d'ensemble
+## Communication Flow
 
 ```
-Obsidian
-  ├── CodeEditorView          (TextFileView — un onglet = une instance)
-  │     └── mountCodeEditor() → CodeEditorInstance
-  │                                 ├── iframe  (blob URL → monacoEditor.html)
-  │                                 ├── send()  (parent → iframe)
-  │                                 └── onMessage handler (iframe → parent)
-  │
-  ├── FenceEditModal          (Modal — édition d'un code fence)
-  │     └── mountCodeEditor()
-  │
-  └── EditorSettingsModal     (Modal — gear icon)
-        └── mountCodeEditor() (Monaco embarqué pour éditer le JSON de config)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              Obsidian                                   │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ CodeEditorView (TextFileView)                                    │  │
+│  │ • One instance per tab                                           │  │
+│  │ • Manages file lifecycle (load/save/rename/close)                │  │
+│  │ • Handles header UI (theme, settings, badges)                    │  │
+│  │                                                                  │  │
+│  │  ┌────────────────────────────────────────────────────────────┐ │  │
+│  │  │ mountCodeEditor() → CodeEditorInstance                     │ │  │
+│  │  │ • Creates iframe with blob URL                             │ │  │
+│  │  │ • Sets up postMessage communication                        │ │  │
+│  │  │                                                            │ │  │
+│  │  │  ┌──────────────────────────────────────────────────────┐ │ │  │
+│  │  │  │ iframe (monacoEditor.html)                           │ │ │  │
+│  │  │  │ • Monaco Editor instance                             │ │ │  │
+│  │  │  │ • Isolated environment (blob URL)                    │ │ │  │
+│  │  │  │ • Loads Monaco from app:// URLs                      │ │ │  │
+│  │  │  │                                                      │ │ │  │
+│  │  │  │  postMessage ↕                                       │ │ │  │
+│  │  │  │                                                      │ │ │  │
+│  │  │  │  ready → init → change-value → change/save          │ │ │  │
+│  │  │  └──────────────────────────────────────────────────────┘ │ │  │
+│  │  │                                                            │ │  │
+│  │  │  API: send(), getValue(), setValue(), destroy()           │ │  │
+│  │  └────────────────────────────────────────────────────────────┘ │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  FenceEditModal, EditorSettingsModal → also use mountCodeEditor()      │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-`mountCodeEditor` est le seul point d'entrée pour créer un éditeur Monaco. Il retourne un `CodeEditorInstance` qui encapsule l'iframe et son cycle de vie.
+**Key principle:** `mountCodeEditor` is the single entry point for creating Monaco editors. It returns a `CodeEditorInstance` that encapsulates the iframe and its lifecycle.
 
 ---
 
-## Cycle de vie d'une iframe Monaco
+## Monaco iframe Lifecycle
 
-### Ouverture
+### Opening
 
 ```
 CodeEditorView.onLoadFile(file)
   └── mountCodeEditor(plugin, language, initialValue, codeContext, onChange, onSave)
         ├── 1. Fetch monacoEditor.html via app:// URL
-        ├── 2. Patch ./vs → app:// URL absolue (sans timestamp)
-        ├── 3. Fetch editor.main.css → inline dans le HTML
-        ├── 4. Patch @font-face codicon → app:// URL du .ttf copié au build
-        ├── 5. Intercepte appendChild pour bloquer les <link> dynamiques de Monaco
-        ├── 6. Crée une blob URL → iframe.src
+        ├── 2. Patch ./vs → absolute app:// URL (strip timestamp)
+        ├── 3. Fetch editor.main.css → inline into HTML
+        ├── 4. Patch @font-face codicon → app:// URL for .ttf
+        ├── 5. Intercept appendChild to block Monaco's dynamic <link> tags
+        ├── 6. Create blob URL → iframe.src
         └── 7. window.addEventListener('message', onMessage)
 ```
 
-### Séquence d'initialisation (postMessage)
+### Initialization Sequence (postMessage)
 
 ```
 iframe                            parent (mountCodeEditor.ts)
   │                                     │
-  │── ready ──────────────────────────► │  Monaco est chargé
+  │── ready ──────────────────────────► │  Monaco loaded
   │                                     │── init (initParams) ──────────► │
-  │                                     │── get-languages ───────────────► │
   │                                     │── change-value (initialValue) ──► │
-  │                                     │
-  │◄── languages (map ext→langId) ──────│  persisté dans data.json (une fois par session)
   │
-  │  [l'utilisateur édite]
-  │── change (value, context) ─────────► │  onChange?.()
-  │── save-document (context) ──────────► │  onSave?.()
+  │  [user edits]
+  │── change (value, context) ─────────► │  onChange?.() + requestSave()
+  │── save-document (context) ──────────► │  onSave?.() (Ctrl+S)
 ```
 
-### Fermeture
+### Closing
 
 ```
 CodeEditorView.onUnloadFile / onClose
@@ -67,130 +83,138 @@ CodeEditorView.onUnloadFile / onClose
 
 ---
 
-## Protocole postMessage — référence complète
+## postMessage Protocol — Complete Reference
 
 ### Parent → iframe
 
-| Type | Payload | Effet |
-|------|---------|-------|
-| `init` | `initParams` (voir ci-dessous) | Crée l'éditeur Monaco (une seule fois, guard `initialized`) |
-| `change-value` | `{ value }` | Remplace le contenu de l'éditeur |
-| `change-language` | `{ language }` | Change le langage de coloration |
-| `change-theme` | `{ theme, themeData? }` | Applique un thème (defineTheme si custom) |
-| `change-editor-config` | `{ config }` | Applique la config JSON (tabSize, formatOnSave, etc.) |
-| `change-options` | `{ noSemanticValidation, noSyntaxValidation }` | Met à jour les diagnostics TS/JS |
-| `change-word-wrap` | `{ wordWrap }` | Change le word wrap |
-| `change-background` | `{ background, theme? }` | Change le fond de l'iframe |
-| `get-languages` | — | Déclenche l'envoi de la map extension → langage |
+| Type | Payload | Effect |
+|------|---------|--------|
+| `init` | `initParams` (see below) | Creates Monaco editor (once, guarded by `initialized`) |
+| `change-value` | `{ value }` | Replaces editor content |
+| `change-language` | `{ language }` | Changes syntax highlighting language |
+| `change-theme` | `{ theme, themeData? }` | Applies theme (defineTheme if custom) |
+| `change-editor-config` | `{ config }` | Applies JSON config (tabSize, formatOnSave, etc.) |
+| `change-options` | `{ noSemanticValidation, noSyntaxValidation }` | Updates TS/JS diagnostics |
+| `change-word-wrap` | `{ wordWrap }` | Toggles word wrap |
+| `change-background` | `{ background, theme? }` | Changes iframe background |
+| `load-project-files` | `{ files: [{path, content}] }` | Loads TS/JS files for IntelliSense |
+| `focus` | — | Focuses the editor |
+| `scroll-to-position` | `{ position }` | Scrolls to line/column |
+| `trigger-show-diff` | — | Opens diff viewer modal |
 
 ### iframe → parent
 
-| Type | Payload | Signification |
-|------|---------|---------------|
-| `ready` | — | Monaco est chargé, prêt à recevoir `init` |
-| `languages` | `{ langs: [ext, langId][] }` | Map complète des langages Monaco |
-| `change` | `{ value, context }` | Contenu modifié par l'utilisateur |
-| `save-document` | `{ context }` | Ctrl+S pressé |
-| `word-wrap-toggled` | `{ wordWrap, context }` | Alt+Z pressé |
-| `open-rename-extension` | `{ context }` | Action "Rename Extension" déclenchée |
-| `open-theme-picker` | `{ context }` | Action "Change Theme" déclenchée |
-| `open-formatter-config` | `{ context }` | Action "Formatter Config" déclenchée |
-| `open-settings` | `{ context }` | Ctrl+, pressé |
-| `open-obsidian-palette` | `{ context }` | Ctrl+P pressé |
+| Type | Payload | Meaning |
+|------|---------|----------|
+| `ready` | — | Monaco loaded, ready to receive `init` |
+| `change` | `{ value, context }` | Content modified by user |
+| `save-document` | `{ context }` | Ctrl+S pressed |
+| `word-wrap-toggled` | `{ wordWrap, context }` | Alt+Z pressed |
+| `format-diff-available` | `{ context }` | Formatting completed with changes |
+| `open-rename-extension` | `{ context }` | "Rename Extension" action triggered |
+| `open-theme-picker` | `{ context }` | "Change Theme" action triggered |
+| `open-formatter-config` | `{ context }` | "Formatter Config" action triggered |
+| `open-settings` | `{ context }` | Ctrl+, pressed |
+| `open-obsidian-palette` | `{ context }` | Ctrl+P pressed |
+| `open-file` | `{ path, position, context }` | Ctrl+Click on import (cross-file navigation) |
+| `delete-file` | `{ context }` | Ctrl+Delete pressed |
+| `return-to-default-view` | `{ context }` | Return arrow clicked (unregistered extensions) |
 
-### `initParams` — détail
+### `initParams` — Detail
 
 ```typescript
 {
-  context: string,               // identifiant de l'instance (path fichier ou "modal-editor.ext")
-  lang: string,                  // langage Monaco
-  theme: string,                 // id thème (caractères spéciaux remplacés par -)
-  themeData?: string,            // JSON stringifié du thème custom (si non builtin)
+  context: string,               // Instance identifier (file path or "modal-editor.ext")
+  lang: string,                  // Monaco language ID
+  theme: string,                 // Theme ID (special chars replaced with -)
+  themeData?: string,            // Stringified JSON of custom theme (if not builtin)
   wordWrap: 'on' | 'off',
   folding: boolean,
   lineNumbers: boolean,
   minimap: boolean,
   noSemanticValidation: boolean,
   noSyntaxValidation: boolean,
-  background?: 'transparent',   // présent si theme === 'default'
-  formatterConfig: string,       // JSON mergé global(*) + per-ext
+  background?: 'transparent',    // Present if theme === 'default'
+  editorConfig: string,          // Merged JSON: global(*) + per-extension
+  projectRootFolder?: string,    // For TS/JS cross-file navigation
+  isUnregisteredExtension?: boolean,
 }
 ```
 
 ---
 
-## Le `codeContext`
+## The `codeContext`
 
-Chaque instance Monaco reçoit un `codeContext` unique à sa création. Il sert à deux choses :
+Each Monaco instance receives a unique `codeContext` at creation. It serves two purposes:
 
-1. **Filtrer les messages** — `onMessage` ignore tout message dont `data.context !== codeContext`. Plusieurs iframes peuvent être ouvertes simultanément (un fichier + un fence modal) ; sans ce filtre, leurs messages se croiseraient.
+1. **Message filtering** — `onMessage` ignores any message where `data.context !== codeContext`. Multiple iframes can be open simultaneously (a file + a fence modal); without this filter, their messages would cross-contaminate.
 
-2. **Identifier la source d'une action** — quand Monaco envoie `open-theme-picker`, le parent sait quelle iframe en est à l'origine.
+2. **Action source identification** — when Monaco sends `open-theme-picker`, the parent knows which iframe originated it.
 
-Valeurs typiques :
-- Fichier ouvert : `"path/to/file.ts"` (via `file.path`)
-- Fence modal : `"modal-editor.js"`
-- Config JSON dans EditorSettingsModal : `"editor-settings-config.jsonc"`
+Typical values:
+- Open file: `"path/to/file.ts"` (via `file.path`)
+- Fence modal: `"modal-editor.js"`
+- JSON config in EditorSettingsModal: `"editor-settings-config.jsonc"`
 
-**Attention :** si un fichier est renommé, l'ancien `codeContext` devient stale. `CodeEditorView.onRename` détruit l'iframe et en recrée une nouvelle avec le bon context.
+**Important:** If a file is renamed, the old `codeContext` becomes stale. `CodeEditorView.onRename` destroys the iframe and creates a new one with the correct context.
 
 ---
 
-## Système de langages
+## Language System
 
-Deux sources, par ordre de priorité :
+Two sources, in priority order:
 
 ```
 dynamicMap (Monaco) > staticMap (fallback) > 'plaintext'
 ```
 
-- **`staticMap`** (`getLanguage.ts`) — liste statique d'environ 80 extensions courantes. Disponible immédiatement au démarrage, avant qu'une iframe soit ouverte.
-- **`dynamicMap`** — rempli depuis `monaco.languages.getLanguages()` à la première ouverture d'un éditeur. Persisté dans `data.json` (clé `languageMap`). Rechargé au démarrage via `loadPersistedLanguages()`.
+- **`staticMap`** (`getLanguage.ts`) — Static list of ~80 common extensions. Available immediately at startup, before any iframe is opened.
+- **`dynamicMap`** — Populated from `monaco.languages.getLanguages()` on first editor open. Persisted in `data.json` (key `languageMap`). Reloaded at startup via `loadPersistedLanguages()`.
 
-La persistance garantit que la coloration syntaxique fonctionne dès le premier onglet rouvert au démarrage, sans attendre qu'une iframe Monaco soit initialisée.
-
----
-
-## Système d'extensions
-
-Deux modes exclusifs contrôlés par `settings.allExtensions` :
-
-| Mode | Source des extensions actives | Modifiable par |
-|------|-------------------------------|----------------|
-| Manuel (`allExtensions: false`) | `settings.extensions[]` | add/remove dans la liste |
-| Étendu (`allExtensions: true`) | `getAllMonacoExtensions(excluded)` + `extraExtensions[]` | excluded/extra lists |
-
-`getActiveExtensions()` retourne toujours la liste computée selon le mode actif.
-
-`reregisterExtensions()` diff la liste précédente (`_registeredExts`) contre la nouvelle et appelle `registerExtension`/`unregisterExtension` uniquement pour les changements — évite de réenregistrer 80 extensions identiques à chaque save.
+Persistence ensures syntax highlighting works from the first reopened tab at startup, without waiting for a Monaco iframe to initialize.
 
 ---
 
-## Système de config éditeur
+## Extension System
 
-Deux niveaux de config JSON (JSONC supporté via `parseEditorConfig`) :
+Two exclusive modes controlled by `settings.allExtensions`:
+
+| Mode | Active Extensions Source | Modified By |
+|------|--------------------------|-------------|
+| Manual (`allExtensions: false`) | `settings.extensions[]` | add/remove in list |
+| Extended (`allExtensions: true`) | `getAllMonacoExtensions(excluded)` + `extraExtensions[]` | excluded/extra lists |
+
+`getActiveExtensions()` always returns the computed list according to the active mode.
+
+`reregisterExtensions()` diffs the previous list (`_registeredExts`) against the new one and calls `registerExtension`/`unregisterExtension` only for changes — avoids re-registering 80 identical extensions on every save.
+
+---
+
+## Editor Config System
+
+Two levels of JSON config (JSONC supported via `parseEditorConfig`):
 
 ```
-editorConfigs['*']     → config globale (DEFAULT_EDITOR_CONFIG)
-editorConfigs['ts']    → override pour .ts uniquement
+editorConfigs['*']     → Global config (DEFAULT_EDITOR_CONFIG)
+editorConfigs['ts']    → Override for .ts only
 ```
 
-Merge à l'usage : `{ ...globalCfg, ...extCfg }`. Envoyé comme `formatterConfig` dans `initParams`, ou via `change-editor-config` pour une mise à jour à chaud.
+Merged at usage: `{ ...globalCfg, ...extCfg }`. Sent as `editorConfig` in `initParams`, or via `change-editor-config` for hot updates.
 
-`parseEditorConfig` strip les commentaires `//` et `/* */` et les virgules trailing avant le `JSON.parse`.
+`parseEditorConfig` strips `//` and `/* */` comments and trailing commas before `JSON.parse`.
 
-`broadcastEditorConfig(ext)` : si `ext === '*'`, rebroadcast le config mergé à **toutes** les vues ouvertes. Sinon, uniquement aux vues dont `file.extension === ext`.
+`broadcastEditorConfig(ext)`: if `ext === '*'`, rebroadcasts merged config to **all** open views. Otherwise, only to views where `file.extension === ext`.
 
 ---
 
-## CSP — contraintes et solutions
+## CSP — Constraints and Solutions
 
-La CSP d'Obsidian s'applique à toutes les frames enfants et ne peut pas être surchargée depuis l'iframe. Contraintes :
+Obsidian's CSP applies to all child frames and cannot be overridden from the iframe. Constraints:
 
-| Ressource | Bloqué | Solution |
-|-----------|--------|----------|
-| `<link rel="stylesheet">` dynamique | Oui | CSS inliné dans le HTML + patch `appendChild` |
-| `data:` pour les polices | Oui | TTF copié au build, URL `app://` dans le CSS |
-| `data:` pour les images | Non (autorisé dans `img-src`) | `img-src data:` dans le `<meta>` CSP de l'iframe |
-| URLs relatives `./vs` | Cassées (timestamp) | Remplacées par URL `app://` absolue |
-| `file://` | Bloqué par Electron | Blob URL comme `src` de l'iframe |
+| Resource | Blocked | Solution |
+|----------|---------|----------|
+| Dynamic `<link rel="stylesheet">` | Yes | CSS inlined in HTML + patch `appendChild` |
+| `data:` for fonts | Yes | TTF copied at build, `app://` URL in CSS |
+| `data:` for images | No (allowed in `img-src`) | `img-src data:` in iframe's `<meta>` CSP |
+| Relative URLs `./vs` | Broken (timestamp) | Replaced with absolute `app://` URL |
+| `file://` | Blocked by Electron | Blob URL as iframe `src` |

@@ -30,48 +30,54 @@ yarn add mermaid-formatter
 Since `mermaid-formatter` is a Node.js package without a browser build, we create a wrapper:
 
 ```javascript
-import { formatMermaid } from 'mermaid-formatter';
-window.mermaidFormatter = { formatMermaid };
+import { formatMermaid, formatMarkdownMermaidBlocks } from 'mermaid-formatter';
+window.mermaidFormatter = { formatMermaid, formatMarkdownMermaidBlocks };
 ```
 
-This exposes the formatter as a global `window.mermaidFormatter` object.
+This exposes the formatter as a global `window.mermaidFormatter` object with two functions:
+- `formatMermaid(code)` — formats standalone Mermaid code
+- `formatMarkdownMermaidBlocks(markdown)` — formats all ` ```mermaid ` blocks in markdown
 
 ### 3. Build Step (`scripts/esbuild.config.ts`)
 
-We bundle `mermaid-formatter` for the browser using esbuild:
+We bundle `mermaid-formatter` for the browser using esbuild and place it in the `formatters/` directory:
 
 ```typescript
+const formattersTarget = path.join(buildPath, 'formatters');
+await fs.promises.mkdir(formattersTarget, { recursive: true });
+
+// Bundle mermaid-formatter for browser
 await esbuild.build({
-    entryPoints: [path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')],
+    entryPoints: [
+        path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')
+    ],
     bundle: true,
-    format: 'iife',
-    outfile: path.join(buildPath, 'mermaid-formatter.js'),
+    format: 'iife', // Wrap in (function(){...})() for <script> tag loading in the Monaco iframe
+    outfile: path.join(formattersTarget, 'mermaid-formatter.js'),
     platform: 'browser',
     minify: isProd
 });
 ```
 
-This creates `mermaid-formatter.js` alongside other plugin files.
+This creates `formatters/mermaid-formatter.js` alongside Prettier files.
 
-### 4. Script Injection (`src/editor/mountCodeEditor.ts`)
+### 4. Script Loading (`src/editor/monacoEditor.html`)
 
-We resolve the `app://` URL and inject it into the Monaco iframe:
+The Mermaid formatter is loaded directly in the iframe HTML as a `<script>` tag:
 
-```typescript
-const mermaidFormatterUrl = plugin.app.vault.adapter
-    .getResourcePath(`${pluginBase}/mermaid-formatter.js`)
-    .replace(/\?.*$/, '');
+```html
+<!-- Step 2.5: load Prettier and Mermaid formatters -->
+<script src="./formatters/prettier-standalone.js"></script>
+<script src="./formatters/prettier-markdown.js"></script>
+<!-- ... other Prettier plugins ... -->
+<script src="./formatters/mermaid-formatter.js"></script>
 ```
 
-Then inject it as a `<script>` tag:
+The `./formatters/` path is resolved to an `app://` URL by the iframe's base URL patching in `mountCodeEditor.ts`.
 
-```typescript
-html = html.replace(
-    '</head>',
-    `<script src="${mermaidFormatterUrl}"></script>
-</head>`
-);
-```
+The IIFE bundle exposes:
+- `window.mermaidFormatter.formatMermaid` — formats standalone Mermaid code
+- `window.mermaidFormatter.formatMarkdownMermaidBlocks` — formats Mermaid blocks in markdown
 
 ### 5. Formatter Registration (`src/editor/monacoEditor.html`)
 
@@ -112,7 +118,7 @@ monaco.languages.registerDocumentFormattingEditProvider('mermaid', {
 - `formatMermaid()` is synchronous (unlike Prettier's async format)
 - The function returns an array of text edits (Monaco's expected format)
 - On error, we return an empty array (no formatting applied)
-- Format diff tracking works the same as for markdown
+- Format diff tracking works the same as for Prettier formatters
 
 #### B. Mermaid blocks inside Markdown files
 
@@ -127,19 +133,13 @@ monaco.languages.registerDocumentFormattingEditProvider('markdown', {
                 parser: 'markdown',
                 plugins: [prettierPlugins.markdown],
                 proseWrap: PRETTIER_PROSE_WRAP,
-                printWidth: PRETTIER_PRINT_WIDTH
+                printWidth: PRETTIER_PRINT_WIDTH,
+                tabWidth: PRETTIER_TAB_WIDTH,
+                useTabs: PRETTIER_USE_TABS
             });
             // Format mermaid blocks inside the markdown
             if (window.mermaidFormatter && window.mermaidFormatter.formatMarkdownMermaidBlocks) {
                 formatted = window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted);
-            }
-            if (formatted !== original) {
-                lastFormatOriginal = original;
-                lastFormatFormatted = formatted;
-                window.parent.postMessage(
-                    { type: 'format-diff-available', context: context },
-                    '*'
-                );
             }
             return [{ range: model.getFullModelRange(), text: formatted }];
         } catch(e) {
@@ -232,7 +232,7 @@ graph TD
 ## Dependencies
 
 - **mermaid-formatter** (v0.3.0+) — installed via `yarn add mermaid-formatter`
-- Bundled into `mermaid-formatter.js` at build time
+- Bundled into `formatters/mermaid-formatter.js` at build time
 - No additional dependencies in `main.js` — runs entirely in the iframe
 
 ## Future Enhancements

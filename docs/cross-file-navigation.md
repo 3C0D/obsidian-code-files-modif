@@ -1,81 +1,96 @@
-# Navigation Inter-Fichiers (Cross-File Navigation)
+# Cross-File Navigation (TypeScript/JavaScript)
 
-Ce document explique comment la navigation inter-fichiers a été implémentée dans le plugin Code Files pour permettre le Ctrl+Clic sur les imports TypeScript/JavaScript.
-
----
-
-## Vue d'ensemble
-
-La navigation inter-fichiers permet de :
-- **Ctrl+Clic** sur un import pour ouvrir le fichier source dans Obsidian
-- Naviguer vers la **position exacte** (ligne + colonne) de la définition
-- Résoudre les imports relatifs TypeScript/JavaScript entre fichiers d'un même projet
+This document explains how TypeScript/JavaScript cross-file navigation works in the Code Files plugin. It allows you to Ctrl+Click on imports, function calls, or class names to jump to their definitions in other files.
 
 ---
 
-## Architecture
+## Overview
 
-### 1. Configuration du projet
+Cross-file navigation requires:
 
-**Fichier :** `src/types/types.ts`
-- Ajout du champ `projectRootFolder: string` dans `MyPluginSettings`
-- Permet de définir le dossier racine du projet pour la résolution des imports
-
-**Fichier :** `src/modals/editorSettingsModal.ts`
-- Champ "Project Root Folder" dans le panneau Editor Settings (⚙️)
-- Autocomplete avec `FolderSuggest` pour sélectionner un dossier du vault
-
-**Fichier :** `src/ui/folderSuggest.ts`
-- Composant de suggestion de dossiers basé sur `AbstractInputSuggest`
-- Liste tous les dossiers du vault avec filtrage
+1. **Project Root Folder** — Set via Editor Settings (⚙️ gear icon) or folder context menu
+2. **Loading project files** — All TS/JS files from the project root are loaded into Monaco
+3. **TypeScript configuration** — Monaco's TypeScript language service is configured with proper URIs
+4. **Navigation interception** — Ctrl+Click events are intercepted and sent to Obsidian
+5. **File opening** — Obsidian opens the target file and scrolls to the definition
 
 ---
 
-### 2. Chargement des fichiers du projet
+## Implementation Details
 
-**Fichier :** `src/editor/mountCodeEditor.ts`
+### 1. Loading Project Files
 
-**Fonction `loadProjectFiles` :**
+**File:** `src/editor/mountCodeEditor.ts`
+
+**Function `loadProjectFiles`:**
 ```typescript
-async function loadProjectFiles(send) {
+async function loadProjectFiles(
+    send: (type: string, payload: Record<string, unknown>) => void
+): Promise<void> {
     const root = plugin.settings.projectRootFolder;
     if (!root) return;
-    
-    const files = [];
+
+    const files: { path: string; content: string }[] = [];
     for (const file of plugin.app.vault.getFiles()) {
         if (!file.path.startsWith(root + '/')) continue;
         if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
-        files.push({ path: file.path, content: await plugin.app.vault.cachedRead(file) });
+        try {
+            files.push({
+                path: file.path,
+                content: await plugin.app.vault.cachedRead(file)
+            });
+        } catch {
+            /* skip unreadable files */
+        }
     }
     send('load-project-files', { files });
 }
 ```
 
-- Charge tous les fichiers TS/JS du dossier projet
-- Envoie les fichiers à Monaco via postMessage
-- Appelé après `ready` dans le handler de messages
+**When it's called:**
+- Once when the editor initializes (on 'ready' message)
+- Loads all TypeScript/JavaScript files from the project root folder
+- Sends them to Monaco via postMessage
 
 ---
 
-### 3. Configuration TypeScript dans Monaco
+### 2. Message Handler
 
-**Fichier :** `src/editor/monacoEditor.html`
+**File:** `src/editor/mountCodeEditor.ts`
 
-**Création du modèle avec URI `file:///` :**
+**Handler in `onMessage`:**
+```typescript
+case 'ready': {
+    // Monaco is loaded — send config, then set initial content.
+    send('init', initParams);
+    send('change-value', { value });
+    send('focus', {});
+    void loadProjectFiles(send);
+    break;
+}
+```
+
+---
+
+### 3. TypeScript Configuration in Monaco
+
+**File:** `src/editor/monacoEditor.html`
+
+**Creating the model with `file:///` URI:**
 ```javascript
-// CRITIQUE : Le fichier courant doit avoir un URI file:/// pour que TypeScript
-// puisse matcher les imports avec les extra libs
+// CRITICAL: The current file must have a file:/// URI so TypeScript
+// can match imports with extra libs
 var modelUri = monaco.Uri.parse('file:///' + context);
 var existingModel = monaco.editor.getModel(modelUri);
 var model = existingModel || monaco.editor.createModel('', params.lang || 'plaintext', modelUri);
 opts.model = model;
 ```
 
-**Configuration des compilerOptions :**
+**Configuring compilerOptions:**
 ```javascript
 if (params.projectRootFolder) {
     var compilerOptions = {
-        baseUrl: 'file:///' + params.projectRootFolder,  // URI complet, pas chemin relatif
+        baseUrl: 'file:///' + params.projectRootFolder,  // Full URI, not relative path
         moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
         allowNonTsExtensions: true,
         target: monaco.languages.typescript.ScriptTarget.ESNext,
@@ -89,11 +104,11 @@ if (params.projectRootFolder) {
 }
 ```
 
-**Chargement des extra libs :**
+**Loading extra libs:**
 ```javascript
 case 'load-project-files':
     if (!window._initialized) {
-        // Différer si init n'est pas encore traité
+        // Defer if init hasn't been processed yet
         window._pendingProjectFiles = data.files;
     } else {
         for (var i = 0; i < data.files.length; i++) {
@@ -111,15 +126,15 @@ case 'load-project-files':
 
 ---
 
-### 4. Interception de la navigation
+### 4. Navigation Interception
 
-**Fichier :** `src/editor/monacoEditor.html`
+**File:** `src/editor/monacoEditor.html`
 
-**Enregistrement de l'opener :**
+**Registering the opener:**
 ```javascript
 monaco.editor.registerEditorOpener({
     openCodeEditor: function(_source, resource, selectionOrPosition) {
-        // Extraire la position (ligne + colonne)
+        // Extract position (line + column)
         var position = null;
         if (selectionOrPosition && 'startLineNumber' in selectionOrPosition) {
             position = {
@@ -133,7 +148,7 @@ monaco.editor.registerEditorOpener({
             };
         }
         
-        // Envoyer à Obsidian
+        // Send to Obsidian
         window.parent.postMessage({
             type: 'open-file',
             path: resource.path.replace(/^\//, ''),  // vault-relative path
@@ -148,11 +163,11 @@ monaco.editor.registerEditorOpener({
 
 ---
 
-### 5. Ouverture du fichier dans Obsidian
+### 5. Opening the File in Obsidian
 
-**Fichier :** `src/editor/mountCodeEditor.ts`
+**File:** `src/editor/mountCodeEditor.ts`
 
-**Handler `open-file` :**
+**Handler `open-file`:**
 ```typescript
 case 'open-file': {
     if (data.context !== codeContext) break;
@@ -189,13 +204,13 @@ case 'open-file': {
 }
 ```
 
-**Réutilisation des tabs existants :**
-- Cherche d'abord si le fichier est déjà ouvert dans un tab de l'éditeur principal
-- Exclut les sidebars et les fenêtres popout
-- Si le fichier est déjà ouvert, réutilise le tab existant au lieu d'en créer un nouveau
-- Le délai pour le scroll est de 0ms si le tab existait déjà (Monaco prêt), 150ms pour un nouveau fichier
+**Tab reuse logic:**
+- First checks if the file is already open in a tab in the main editor area
+- Excludes sidebars and popout windows
+- If the file is already open, reuses the existing tab instead of creating a new one
+- Scroll delay is 0ms if the tab already existed (Monaco ready), 150ms for a new file
 
-**Handler `scroll-to-position` dans l'iframe :**
+**Handler `scroll-to-position` in the iframe:**
 ```javascript
 case 'scroll-to-position':
     if (editor && data.position) {
@@ -207,12 +222,12 @@ case 'scroll-to-position':
 
 ---
 
-### 6. Getter public pour l'editor
+### 6. Public Getter for the Editor
 
-**Fichier :** `src/editor/codeEditorView.ts`
+**File:** `src/editor/codeEditorView.ts`
 
 ```typescript
-/** Public getter for editor instance (used by mountCodeEditor for scroll-to-position) */
+/** Expose the Monaco editor instance to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
 get editor(): CodeEditorInstance | undefined {
     return this.codeEditor;
 }
@@ -220,91 +235,91 @@ get editor(): CodeEditorInstance | undefined {
 
 ---
 
-## Diagnostic : Vérifier les URIs
+## Diagnostics: Verifying URIs
 
-Pour vérifier que les URIs sont correctement configurés :
+To verify that URIs are correctly configured:
 
-1. **Ouvrir DevTools** (F12)
-2. **Aller dans Console**
-3. **Sélectionner l'iframe Monaco** :
-   - Cliquer sur le dropdown "top" en haut de la console
-   - Survoler les entrées jusqu'à ce que la feuille active s'éclaire
-   - Sélectionner l'iframe (ressemble à `blob:app://obsidian.md/21436132-fdd0-4a72-8f5c...`)
-4. **Taper dans la console** :
+1. **Open DevTools** (F12)
+2. **Go to Console**
+3. **Select the Monaco iframe**:
+   - Click the "top" dropdown at the top of the console
+   - Hover over entries until the active sheet highlights
+   - Select the iframe (looks like `blob:app://obsidian.md/21436132-fdd0-4a72-8f5c...`)
+4. **Type in the console**:
    ```javascript
    monaco.editor.getModels().map(m => m.uri.toString())
    ```
-5. **Vérifier le résultat** :
-   - ✅ Tous les URIs doivent être en `file:///templates/projet-test-sample/...`
-   - ❌ Si tu vois `inmemory://model/1`, le modèle n'a pas été créé avec l'URI correct
+5. **Verify the result**:
+   - ✅ All URIs should be `file:///templates/projet-test-sample/...`
+   - ❌ If you see `inmemory://model/1`, the model wasn't created with the correct URI
 
 ---
 
-## Problèmes courants
+## Common Issues
 
-### TypeScript ne résout pas les imports
+### TypeScript doesn't resolve imports
 
-**Cause :** Mismatch d'URI entre le fichier courant et les extra libs.
+**Cause:** URI mismatch between the current file and extra libs.
 
-**Solution :**
-- Vérifier que le modèle du fichier courant utilise `monaco.Uri.parse('file:///' + context)`
-- Vérifier que `baseUrl` est `'file:///' + projectRootFolder` (pas un chemin relatif)
-- Vérifier que tous les extra libs utilisent des URIs `file:///`
+**Solution:**
+- Verify that the current file's model uses `monaco.Uri.parse('file:///' + context)`
+- Verify that `baseUrl` is `'file:///' + projectRootFolder` (not a relative path)
+- Verify that all extra libs use `file:///` URIs
 
-### La navigation ne fonctionne pas
+### Navigation doesn't work
 
-**Cause :** `registerEditorOpener` n'est pas appelé ou le postMessage n'arrive pas.
+**Cause:** `registerEditorOpener` isn't called or the postMessage doesn't arrive.
 
-**Solution :**
-- Vérifier que `registerEditorOpener` est appelé après `monaco.editor.create`
-- Vérifier dans la console que le postMessage `open-file` est envoyé
-- Vérifier que le handler `open-file` dans `mountCodeEditor.ts` est bien déclenché
+**Solution:**
+- Verify that `registerEditorOpener` is called after `monaco.editor.create`
+- Check in the console that the `open-file` postMessage is sent
+- Verify that the `open-file` handler in `mountCodeEditor.ts` is triggered
 
-### Plusieurs tabs s'ouvrent pour le même fichier
+### Multiple tabs open for the same file
 
-**Cause :** La logique de réutilisation des tabs ne trouve pas le tab existant.
+**Cause:** The tab reuse logic doesn't find the existing tab.
 
-**Solution :**
-- Vérifier que le fichier est bien ouvert dans l'éditeur principal (pas dans une sidebar ou popout)
-- Le check remonte l'arbre DOM jusqu'à `rootSplit.containerEl` pour exclure les sidebars
-- Si la structure interne d'Obsidian change dans une future version, ce check peut nécessiter un ajustement
+**Solution:**
+- Verify that the file is open in the main editor area (not in a sidebar or popout)
+- The check walks up the DOM tree to `rootSplit.containerEl` to exclude sidebars
+- If Obsidian's internal structure changes in a future version, this check may need adjustment
 
-### Le scroll vers la position ne fonctionne pas
+### Scroll to position doesn't work
 
-**Cause :** Le fichier s'ouvre mais le curseur ne se positionne pas.
+**Cause:** The file opens but the cursor doesn't position.
 
-**Solution :**
-- Vérifier que `position` est bien extrait de `selectionOrPosition`
-- Vérifier que le `setTimeout` de 100ms est suffisant pour que Monaco soit prêt
-- Vérifier que `leaf.view instanceof CodeEditorView` est vrai
-
----
-
-## Projet de test
-
-Un projet exemple est disponible dans `templates/projet-test-sample/` avec 3 fichiers TypeScript :
-
-- **utils.ts** — Fonctions utilitaires (add, multiply, Calculator)
-- **service.ts** — Service qui importe utils.ts
-- **main.ts** — Point d'entrée qui importe service.ts et utils.ts
-
-**Pour tester :**
-1. Copier `templates/projet-test-sample/` dans ton vault
-2. Ouvrir un fichier TS dans Monaco
-3. Cliquer sur ⚙️ (gear) dans le tab header
-4. Configurer "Project Root Folder" → `templates/projet-test-sample`
-5. Ouvrir `main.ts`
-6. Ctrl+Clic sur `MathService` → ouvre `service.ts` à la ligne de la classe
-7. Ctrl+Clic sur `add` → ouvre `utils.ts` à la ligne de la fonction
+**Solution:**
+- Verify that `position` is correctly extracted from `selectionOrPosition`
+- Verify that the `setTimeout` delay is sufficient for Monaco to be ready (0ms for existing tabs, 150ms for new files)
+- Verify that `leaf.view instanceof CodeEditorView` is true
 
 ---
 
-## Fichiers modifiés
+## Test Project
 
-- `src/types/types.ts` — Ajout `projectRootFolder`
-- `src/ui/folderSuggest.ts` — Nouveau composant
-- `src/modals/editorSettingsModal.ts` — Champ Project Root Folder
+A sample project is available in `templates/projet-test-sample/` with 3 TypeScript files:
+
+- **utils.ts** — Utility functions (add, multiply, Calculator)
+- **service.ts** — Service that imports utils.ts
+- **main.ts** — Entry point that imports service.ts and utils.ts
+
+**To test:**
+1. Copy `templates/projet-test-sample/` to your vault
+2. Open a TS file in Monaco
+3. Click ⚙️ (gear) in the tab header
+4. Configure "Project Root Folder" → `templates/projet-test-sample`
+5. Open `main.ts`
+6. Ctrl+Click on `MathService` → opens `service.ts` at the class line
+7. Ctrl+Click on `add` → opens `utils.ts` at the function line
+
+---
+
+## Modified Files
+
+- `src/types/types.ts` — Added `projectRootFolder`
+- `src/ui/folderSuggest.ts` — New component
+- `src/modals/editorSettingsModal.ts` — Project Root Folder field
 - `src/editor/mountCodeEditor.ts` — `loadProjectFiles` + handlers
-- `src/editor/monacoEditor.html` — Configuration TypeScript + opener
-- `src/editor/codeEditorView.ts` — Getter public `editor`
-- `templates/projet-test-sample/` — Projet de test
+- `src/editor/monacoEditor.html` — TypeScript configuration + opener
+- `src/editor/codeEditorView.ts` — Public `editor` getter
+- `templates/projet-test-sample/` — Test project
