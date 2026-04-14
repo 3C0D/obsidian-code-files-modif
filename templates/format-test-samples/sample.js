@@ -1,14 +1,14 @@
-// JavaScript sample with formatting issues
-function calculateTotal(items,tax){
-const subtotal=items.reduce((sum,item)=>{
-return sum+item.price*item.quantity;},0);
-return subtotal*(1+tax);}
+// JavaScript sample with intentional formatting issues
+function calculateTotal(items,tax){const subtotal=items.reduce((sum,item)=>{return sum+item.price*item.quantity;},0);return subtotal*(1+tax);}
 
 const products=[{name:"Laptop",price:999,quantity:1},{name:"Mouse",price:25,quantity:2}];
 
-const result=calculateTotal(products,0.2);
-console.log(`Total: $${result.toFixed(2)}`);
+const result=calculateTotal(products,0.2);console.log(`Total: $${result.toFixed(2)}`);
 
-class ShoppingCart{constructor(){this.items=[];}
-addItem(item){this.items.push(item);}
-getTotal(){return this.items.reduce((sum,item)=>sum+item.price,0);}}
+class ShoppingCart{constructor(){this.items=[];}addItem(item){this.items.push(item);}getTotal(){return this.items.reduce((sum,item)=>sum+item.price,0);}}
+
+const cart=new ShoppingCart();cart.addItem({name:"Keyboard",price:75});
+
+function processData(data){if(!data){return null;}const filtered=data.filter(x=>x.active).map(x=>({...x,processed:true}));return filtered;}
+
+const config={apiUrl:"https://api.example.com",timeout:5000,retries:3,headers:{"Content-Type":"application/json","Authorization":"Bearer token"}};

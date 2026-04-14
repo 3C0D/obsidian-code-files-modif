@@ -1,0 +1,14 @@
+# Exclude format test samples - they contain intentional formatting errors
+templates/format-test-samples/
+
+# Build output
+dist/
+main.js
+
+# Dependencies
+node_modules/
+
+# Monaco editor files
+vs/
+formatters/
+monaco-themes/

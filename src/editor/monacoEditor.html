@@ -299,28 +299,51 @@
 					setTimeout(function () {
 						var remaining = diffEditorInstance.getLineChanges();
 						if (!remaining || remaining.length === 0) {
-							doFullRevertCleanup();
+							// All blocks reverted — clean up and close
+							lastFormatOriginal = null;
+							lastFormatFormatted = null;
+							if (diffOverlayEl) {
+								diffOverlayEl.style.display = 'none';
+							}
+							clearRevertWidgets();
+							if (diffScrollDisposable) {
+								diffScrollDisposable.dispose();
+								diffScrollDisposable = null;
+							}
+							if (editor) editor.focus();
+							window.parent.postMessage({ type: 'format-diff-reverted', context: context }, '*');
 						} else {
 							buildRevertWidgets();
 						}
 					}, 300);
 				}
 
-				function doFullRevertCleanup() {
-					lastFormatOriginal = null;
-					lastFormatFormatted = null;
-					closeDiffModal();
-					window.parent.postMessage({ type: 'format-diff-reverted', context: context }, '*');
-				}
-
 				function revertAll() {
 					if (!lastFormatOriginal) return;
+					
+					// Simply restore the original content before formatting
 					editor.getModel().pushEditOperations(
 						[],
 						[{ range: editor.getModel().getFullModelRange(), text: lastFormatOriginal }],
 						function () { return null; }
 					);
-					doFullRevertCleanup();
+					
+					// Clean up
+					lastFormatOriginal = null;
+					lastFormatFormatted = null;
+					
+					// Close the diff modal
+					if (diffOverlayEl) {
+						diffOverlayEl.style.display = 'none';
+					}
+					clearRevertWidgets();
+					if (diffScrollDisposable) {
+						diffScrollDisposable.dispose();
+						diffScrollDisposable = null;
+					}
+					if (editor) editor.focus();
+					
+					window.parent.postMessage({ type: 'format-diff-reverted', context: context }, '*');
 				}
 
 				function openDiffModal(original, formatted) {

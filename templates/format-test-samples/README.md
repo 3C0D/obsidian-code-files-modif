@@ -1,30 +1,35 @@
 # Format Test Samples
 
-Ce dossier contient des fichiers de test pour vérifier le formatage Prettier dans Obsidian.
+This folder contains test files to verify Prettier formatting in Obsidian Code Files plugin.
 
-## Comment utiliser
+## ⚠️ Important
 
-1. Copiez ce dossier `format-test-samples` dans votre vault Obsidian
-2. Ouvrez chaque fichier dans Monaco Editor
-3. Utilisez **Shift+Alt+F** ou activez **formatOnSave** pour formater
-4. Observez les changements de formatage
+These files contain **intentional formatting errors** to demonstrate the formatter. They are excluded from auto-formatting via `.prettierignore` to preserve the errors for testing.
 
-## Fichiers inclus
+## How to use
 
-- **sample.js** - JavaScript avec erreurs de formatage
-- **sample.ts** - TypeScript avec erreurs de formatage
-- **sample.css** - CSS avec erreurs de formatage
-- **sample.scss** - SCSS avec erreurs de formatage
-- **sample.html** - HTML avec erreurs de formatage
-- **sample.json** - JSON avec erreurs de formatage
-- **sample.yaml** - YAML avec erreurs de formatage
-- **sample.graphql** - GraphQL avec erreurs de formatage
-- **sample.md** - Markdown avec erreurs de formatage et blocs Mermaid
-- **sample.mmd** - Mermaid standalone avec erreurs de formatage
-- **sample.c** - C avec erreurs de formatage (Monaco formatter natif, pas Prettier)
-- **sample.cpp** - C++ avec erreurs de formatage (Monaco formatter natif, pas Prettier)
+1. Copy this `format-test-samples` folder to your Obsidian vault
+2. Open each file in Monaco Editor
+3. Use **Shift+Alt+F** or enable **formatOnSave** to format
+4. Observe the formatting changes in the diff viewer
+5. Test the selective revert feature (↩ buttons in the gutter)
 
-## Langages supportés par Prettier
+## Files included
+
+- **sample.js** - JavaScript with formatting errors
+- **sample.ts** - TypeScript with formatting errors
+- **sample.css** - CSS with formatting errors
+- **sample.scss** - SCSS with formatting errors
+- **sample.html** - HTML with formatting errors
+- **sample.json** - JSON with formatting errors
+- **sample.yaml** - YAML with formatting errors
+- **sample.graphql** - GraphQL with formatting errors
+- **sample.md** - Markdown with formatting errors and Mermaid blocks
+- **sample.mmd** - Mermaid standalone with formatting errors
+- **sample.c** - C with formatting errors (Monaco native formatter, not Prettier)
+- **sample.cpp** - C++ with formatting errors (Monaco native formatter, not Prettier)
+
+## Languages supported by Prettier
 
 ✅ JavaScript (parser: babel)
 ✅ TypeScript (parser: typescript)
@@ -38,4 +43,4 @@ Ce dossier contient des fichiers de test pour vérifier le formatage Prettier da
 ✅ Markdown (parser: markdown)
 ✅ Mermaid (mermaid-formatter)
 
-Chaque fichier contient intentionnellement des erreurs de formatage pour démontrer l'effet du formateur.
+Each file intentionally contains formatting errors to demonstrate the formatter's effect.
