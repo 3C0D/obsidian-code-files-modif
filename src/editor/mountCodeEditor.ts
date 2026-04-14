@@ -42,6 +42,7 @@ export const resolveThemeParams = async (
 		try {
 			const themePath = normalizePath(`${pluginBase}/monaco-themes/${theme}.json`);
 			const url = plugin.app.vault.adapter.getResourcePath(themePath);
+			// Timestamp is appended to the URL by getResourcePath, but it doesn't affect the fetch since it's just a cache buster. The theme JSON is fetched and passed as a string to the iframe, which will parse it and register the theme with Monaco.
 			themeData = JSON.stringify(await (await fetch(url)).json());
 		} catch (e) {
 			console.warn(`code-files: theme "${theme}" not found`, e);
@@ -91,9 +92,7 @@ export const mountCodeEditor = async (
 	let value = initialValue;
 	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
 	// Use doc.body to support popout windows (each window has its own document/body)
-	const defaultTheme = doc.body.classList.contains('theme-dark')
-		? 'vs-dark'
-		: 'vs';
+	const defaultTheme = doc.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs';
 	const theme =
 		plugin.settings.theme === 'default' ? defaultTheme : plugin.settings.theme;
 
@@ -132,11 +131,7 @@ export const mountCodeEditor = async (
 		send('load-project-files', { files });
 	}
 
-	// Resolves a plugin-relative path to an app:// URL.
-	// getResourcePath() appends a cache-busting timestamp (?123...) to all URLs.
-	// This timestamp is harmless for direct fetch() or <script src> usage,
-	// but MUST be stripped when the URL is used as a base path for relative imports
-	// (e.g., '${vsBase}/loader.js') because the timestamp breaks path concatenation.
+	// Resolves a plugin-relative path to an app:// URL (URI).
 	const res = (name: string): string =>
 		plugin.app.vault.adapter.getResourcePath(normalizePath(`${pluginBase}/${name}`));
 
@@ -180,7 +175,7 @@ export const mountCodeEditor = async (
 			codeContext.startsWith('modal-editor.')
 				? false
 				: plugin.settings.minimap,
-		// Monaco uses negative flags (noSemanticValidation), but settings use positive flags (semanticValidation)
+		// Monaco uses negative flags (noSemanticValidation, noSyntaxValidation), but settings use positive flags
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation,
 		projectRootFolder: plugin.settings.projectRootFolder
@@ -192,15 +187,16 @@ export const mountCodeEditor = async (
 	if (extension && !getActiveExtensions(plugin.settings).includes(extension)) {
 		initParams.isUnregisteredExtension = true;
 	}
-	// 'default' excluded here because it's resolved to 'vs' or 'vs-dark' above
-	if (!BUILTIN_THEMES.includes(theme) || theme === 'default') {
+
+	// Custom themes need their JSON fetched and passed as themeData; built-in themes are handled by Monaco directly.
+	if (!BUILTIN_THEMES.includes(theme)) {
 		const resolved = await resolveThemeParams(plugin, theme);
 		if (resolved.themeData) initParams.themeData = resolved.themeData;
 	}
 
-	if (plugin.settings.theme === 'default') {
-		initParams.background = 'transparent';
-	}
+	// Transparent background prevents a color flash in the iframe while Monaco loads.
+	initParams.background = 'transparent';
+	
 	initParams.editorConfig = buildMergedConfig(plugin, extension);
 
 	// Create the iframe in the correct document (supports popout windows)

@@ -462,10 +462,9 @@
 						automaticLayout: true
 					};
 
-					if (params.background === 'transparent') {
-						document.body.style.background = 'transparent';
-						document.documentElement.style.background = 'transparent';
-					}
+					// Transparent background set by parent — prevents color flash on init.
+					document.body.style.background = 'transparent';
+					document.documentElement.style.background = 'transparent';
 
 					// Allow comments and trailing commas in all JSON models (needed for .jsonc config files)
 					monaco.languages.json.jsonDefaults.setDiagnosticsOptions({

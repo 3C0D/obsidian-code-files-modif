@@ -6,7 +6,7 @@
  */
 import { SuggestModal } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { themes, loadThemes } from '../utils/themes.ts';
+import { themes, loadThemes } from '../utils/themeUtils.ts';
 import { broadcastBrightness } from '../utils/broadcast.ts';
 
 /** Cached list of all available themes, populated on first modal open. */

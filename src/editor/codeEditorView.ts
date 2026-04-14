@@ -17,10 +17,11 @@ import { getLanguage } from '../utils/getLanguage.ts';
 import { viewType, type CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
-import { snippetExists, isSnippetEnabled } from '../utils/snippetUtils.ts';
+import { snippetExists, isSnippetEnabled, registerSnippetChangeHandler } from '../utils/snippetUtils.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
+import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
 
 /**
  * Obsidian TextFileView wrapper for Monaco Editor.
@@ -48,8 +49,10 @@ export class CodeEditorView extends TextFileView {
 	private diffAction: HTMLElement | null = null;
 	/** Timer to automatically hide the diff action after 10 seconds */
 	private diffTimer: NodeJS.Timeout | null = null;
-	/** Event handler for external CSS snippet state changes (from Obsidian settings) */
-	private cssChangeHandler: (() => void) | null = null;
+	/** Cleanup function for snippet change handler */
+	private unregisterSnippetHandler: (() => void) | null = null;
+	/** Cleanup function for theme change handler */
+	private unregisterThemeHandler: (() => void) | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -119,10 +122,10 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.destroy();
 		this.removeHeaderActions();
 		if (this.diffTimer) clearTimeout(this.diffTimer);
-		if (this.cssChangeHandler) {
-			this.plugin.app.workspace.off('css-change', this.cssChangeHandler);
-			this.cssChangeHandler = null;
-		}
+		this.unregisterSnippetHandler?.();
+		this.unregisterSnippetHandler = null;
+		this.unregisterThemeHandler?.();
+		this.unregisterThemeHandler = null;
 		this.gearAction = null;
 		this.themeAction = null;
 		this.snippetFolderAction = null;
@@ -280,15 +283,17 @@ export class CodeEditorView extends TextFileView {
 				this.snippetToggleAction = toggleEl;
 
 				// Listen for external snippet state changes (from Obsidian settings)
-				this.cssChangeHandler = () => {
-					const currentState = isSnippetEnabled(this.plugin.app, snippetName);
-					track.toggleClass('is-on', currentState);
-					toggleEl.setAttr(
-						'aria-label',
-						`${currentState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
-					);
-				};
-				this.plugin.app.workspace.on('css-change', this.cssChangeHandler);
+				this.unregisterSnippetHandler = registerSnippetChangeHandler(
+					this.plugin.app,
+					snippetName,
+					(isOn) => {
+						track.toggleClass('is-on', isOn);
+						toggleEl.setAttr(
+							'aria-label',
+							`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
+						);
+					}
+				);
 			}
 		}
 	}
@@ -338,6 +343,8 @@ export class CodeEditorView extends TextFileView {
 				});
 			}
 		);
+		// Register theme change handler to follow Obsidian's theme when set to 'default'
+		this.unregisterThemeHandler = registerThemeChangeHandler(this.plugin, this.codeEditor);
 	}
 
 	/** Shows the diff action in the header for x seconds after a format */
