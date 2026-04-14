@@ -62,7 +62,8 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // --- Formatting ---
     "printWidth": 100,  // Line length for Prettier formatters
 
-    // --- Display (decommenting disables) ---
+    // --- Display ---
+    "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
     // "folding": false,
     // "lineNumbers": "off",
     // "minimap": { "enabled": false },
@@ -70,7 +71,6 @@ export const DEFAULT_EDITOR_CONFIG = `{
 
     // --- Optional ---
     // "rulers": [80, 120],  // Visual guides for line length (all languages)
-    // "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
     // "fontSize": 14,
     // "bracketPairColorization.enabled": true,
 }`;
