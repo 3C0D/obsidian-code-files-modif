@@ -31,6 +31,14 @@ jobs:
           yarn install
           yarn build
 
+      # Package all necessary files into a zip
+      - name: Package release files
+        run: |
+          mkdir release-package
+          cp manifest.json main.js styles.css monacoEditor.html monacoHtml.js monacoHtml.css release-package/
+          cp -r vs monaco-themes formatters release-package/
+          cd release-package && zip -r ../obsidian-code-files-modif.zip .
+
       # Create the release on GitHub
       - name: Create Release
         id: create_release
@@ -43,5 +51,5 @@ jobs:
           generateReleaseNotes: true
           artifactErrorsFailBuild: false
           makeLatest: true
-          artifacts: "manifest.json,main.js,styles.css"
+          artifacts: "manifest.json,main.js,styles.css,obsidian-code-files-modif.zip"
           bodyFile: ".github/workflows/release-body.md"
