@@ -111,6 +111,7 @@ CodeEditorView.onUnloadFile / onClose
 | `save-document` | `{ context }` | Ctrl+S pressed |
 | `word-wrap-toggled` | `{ wordWrap, context }` | Alt+Z pressed |
 | `format-diff-available` | `{ context }` | Formatting completed with changes |
+| `format-diff-reverted` | `{ context }` | All formatting reverted — reset to pre-format state |
 | `open-rename-extension` | `{ context }` | "Rename Extension" action triggered |
 | `open-theme-picker` | `{ context }` | "Change Theme" action triggered |
 | `open-formatter-config` | `{ context }` | "Formatter Config" action triggered |

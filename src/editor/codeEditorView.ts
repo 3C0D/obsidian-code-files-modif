@@ -323,8 +323,19 @@ export class CodeEditorView extends TextFileView {
 			},
 			() => {
 				// Show the diff action in the header after formatting so users can
-				// see what changed. Hidden after 10 seconds.
+				// see what changed. Hidden after x seconds.
 				this.showDiffAction();
+			},
+			() => {
+				// onFormatDiffReverted — full reset
+				// as if no formatting ever happened
+				this.hideDiffAction();
+				this.setDirty(false);
+				// Save the reverted content to disk
+				this.forceSave = true;
+				void this.save().then(() => {
+					this.setSaving(false);
+				});
 			}
 		);
 	}
@@ -345,6 +356,14 @@ export class CodeEditorView extends TextFileView {
 			this.diffAction?.remove();
 			this.diffAction = null;
 		}, DIFF_BUTTON_DISPLAY_DURATION);
+	}
+
+	/** Hides the diff action immediately (called when all blocks are reverted) */
+	public hideDiffAction(): void {
+		if (this.diffTimer) clearTimeout(this.diffTimer);
+		this.diffAction?.remove();
+		this.diffAction = null;
+		this.diffTimer = null;
 	}
 
 	/** Initializes the Monaco editor when a file is loaded into the view. */

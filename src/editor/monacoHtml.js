@@ -5,8 +5,10 @@
 
 // Monaco Diff Editor Options
 var DIFF_EDITOR_OPTIONS = {
-	// Make the diff editor read-only (users can't edit in diff view)
-	readOnly: true,
+	// readOnly: false allows pushEditOperations (for revertBlock)
+	// domReadOnly: true blocks keyboard input but keeps programmatic edits
+	readOnly: false,
+	domReadOnly: true,
 	
 	// Show side-by-side comparison (true) or inline diff (false)
 	renderSideBySide: true,
@@ -16,7 +18,10 @@ var DIFF_EDITOR_OPTIONS = {
 	
 	// Show whitespace changes (spaces, tabs, line breaks)
 	// Set to true to ignore whitespace-only changes
-	ignoreTrimWhitespace: false
+	ignoreTrimWhitespace: false,
+
+	// Allow resizing the split between original and modified
+	enableSplitViewResizing: true
 };
 
 // Timeout (ms) to wait for format changes before giving up

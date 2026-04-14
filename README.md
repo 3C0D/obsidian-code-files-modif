@@ -7,7 +7,8 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Monaco Editor** — full VS Code editor embedded in Obsidian, loaded locally (no external dependency)
 - **Syntax highlighting** — automatic language detection from file extension
 - **50+ themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview
-- **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave), with diff viewer for all formatted files
+- **Format Diff & Selective Revert** — format code with Prettier and view all changes side-by-side. Includes a block-by-block revert tool directly in the gutter (similar to VS Code)
+- **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave)
 - **Mermaid formatting** — format Mermaid diagram files with mermaid-formatter (Shift+Alt+F or formatOnSave). Also formats ` ```mermaid ` code blocks inside markdown files.
 - **Multi-language formatting** — format JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, and GraphQL files with Prettier (Shift+Alt+F or formatOnSave)
 - **Cross-file navigation** — Ctrl+Click on TypeScript/JavaScript imports to jump to definitions in other files
@@ -55,9 +56,11 @@ After formatting any file, you can view the changes:
 - Click it to open a side-by-side comparison (original vs formatted)
 - The diff viewer is also available in the context menu: **"⟷ Show Format Diff"**
 - Shows exactly what changed during the last format operation
+- **Selective Revert**: Use the ↩ button in the left gutter to revert specific layout changes block-by-block without undoing the entire document.
+- **Revert All**: Undoes all formatting changes instantly and closes the diff view.
 - Works for all file types that support formatting (JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown, Mermaid)
 
-The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with syntax highlighting and inline diff markers.
+The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with syntax highlighting, inline diff markers, and interactive widgets.
 
 ---
 

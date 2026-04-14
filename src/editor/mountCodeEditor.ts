@@ -82,7 +82,8 @@ export const mountCodeEditor = async (
 	containerEl: HTMLElement,
 	onChange?: () => void,
 	onSave?: () => void,
-	onFormatDiff?: () => void
+	onFormatDiff?: () => void,
+	onFormatDiffReverted?: () => void
 ): Promise<CodeEditorInstance> => {
 	// Use the document/window of the container element to support Obsidian popout windows
 	const doc = containerEl.ownerDocument;
@@ -418,6 +419,12 @@ Element.prototype.appendChild = function(node) {
 			case 'format-diff-available': {
 				if (data.context === codeContext) {
 					onFormatDiff?.();
+				}
+				break;
+			}
+			case 'format-diff-reverted': {
+				if (data.context === codeContext) {
+					onFormatDiffReverted?.();
 				}
 				break;
 			}
