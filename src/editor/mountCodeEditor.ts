@@ -348,6 +348,7 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-settings': {
 				if (data.context === codeContext) {
+					// Patch onClose to refocus Monaco when settings dialog closes
 					const old = plugin.app.setting.onClose;
 					plugin.app.setting.onClose = () => {
 						plugin.app.setting.onClose = old;
@@ -375,7 +376,16 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-obsidian-palette': {
 				if (data.context === codeContext) {
-					plugin.app.commands.executeCommandById('command-palette:open');
+					// Patch onClose to refocus Monaco when command palette closes
+					const cmdPalette = plugin.app.internalPlugins.getPluginById('command-palette');
+					if (!cmdPalette) break;
+					const modal = cmdPalette.instance.modal;
+					const old = modal.onClose;
+					modal.onClose = () => {
+						modal.onClose = old;
+						send('focus', {});
+					};
+					modal.open();
 				}
 				break;
 			}
