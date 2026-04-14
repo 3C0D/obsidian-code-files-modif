@@ -17,7 +17,8 @@ export class RenameExtensionModal extends Modal {
 
 	constructor(
 		private plugin: CodeFilesPlugin,
-		private file: TFile
+		private file: TFile,
+		private restoreFocus?: () => void
 	) {
 		super(plugin.app);
 		this.newExt = file.extension;
@@ -74,6 +75,7 @@ export class RenameExtensionModal extends Modal {
 
 	onClose(): void {
 		this.contentEl.empty();
+		this.restoreFocus?.();
 	}
 
 	private getNewPath(): string {

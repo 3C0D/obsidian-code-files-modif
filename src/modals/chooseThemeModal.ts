@@ -27,7 +27,8 @@ export class ChooseThemeModal extends SuggestModal<string> {
 	 */
 	constructor(
 		private plugin: CodeFilesPlugin,
-		private applyTheme: (theme: string) => void
+		private applyTheme: (theme: string) => void,
+		private restoreFocus?: () => void
 	) {
 		super(plugin.app);
 		this.originalTheme = plugin.settings.theme;
@@ -150,5 +151,6 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		if (!this.confirmed) {
 			this.applyTheme(this.originalTheme);
 		}
+		this.restoreFocus?.();
 	}
 }

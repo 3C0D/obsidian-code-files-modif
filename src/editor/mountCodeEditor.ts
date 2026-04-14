@@ -320,20 +320,15 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					// ext from file path or e.g 'settings-editor-config.jsonc
 					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
-					const modal = new EditorSettingsModal(
+					new EditorSettingsModal(
 						plugin,
 						ext,
 						() => broadcastOptions(plugin),
 						(config) => {
 							send('change-editor-config', { config });
-						}
-					);
-					const origOnClose = modal.onClose.bind(modal);
-					modal.onClose = () => {
-						origOnClose();
-						iframe.focus();
-					};
-					modal.open();
+						},
+						() => send('focus', {})
+					).open();
 				}
 				break;
 			}
@@ -343,13 +338,11 @@ Element.prototype.appendChild = function(node) {
 						const params = await resolveThemeParams(plugin, t);
 						send('change-theme', params);
 					};
-					const modal = new ChooseThemeModal(plugin, applyTheme);
-					const origOnClose = modal.onClose.bind(modal);
-					modal.onClose = () => {
-						origOnClose();
-						iframe.focus();
-					};
-					modal.open();
+					new ChooseThemeModal(
+						plugin,
+						applyTheme,
+						() => send('focus', {})
+					).open();
 				}
 				break;
 			}
@@ -385,13 +378,11 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					const file = plugin.app.vault.getFileByPath(codeContext);
 					if (!file) break;
-					const modal = new RenameExtensionModal(plugin, file);
-					const origOnClose = modal.onClose.bind(modal);
-					modal.onClose = () => {
-						origOnClose();
-						iframe.focus();
-					};
-					modal.open();
+					new RenameExtensionModal(
+						plugin,
+						file,
+						() => setTimeout(() => send('focus', {}), 50)
+					).open();
 				}
 				break;
 			}

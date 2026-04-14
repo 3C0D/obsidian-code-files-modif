@@ -207,7 +207,11 @@ export class CodeEditorView extends TextFileView {
 				const params = await resolveThemeParams(this.plugin, theme);
 				this.codeEditor?.send('change-theme', params);
 			};
-			new ChooseThemeModal(this.plugin, applyTheme).open();
+			new ChooseThemeModal(
+				this.plugin,
+				applyTheme,
+				() => this.codeEditor?.send('focus', {})
+			).open();
 		});
 
 		this.gearAction = this.addAction('settings', 'Editor Settings', () => {
@@ -217,7 +221,8 @@ export class CodeEditorView extends TextFileView {
 				() => broadcastOptions(this.plugin),
 				(config) => {
 					this.codeEditor?.send('change-editor-config', { config });
-				}
+				},
+				() => this.codeEditor?.send('focus', {})
 			).open();
 		});
 

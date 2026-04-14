@@ -34,7 +34,8 @@ export class EditorSettingsModal extends Modal {
 		private plugin: CodeFilesPlugin,
 		private extension: string,
 		private onSettingsChanged: () => void,
-		private onConfigApplied: (config: string) => void
+		private onConfigApplied: (config: string) => void,
+		private restoreFocus?: () => void
 	) {
 		super(plugin.app);
 	}
@@ -278,5 +279,6 @@ export class EditorSettingsModal extends Modal {
 			this.codeEditor.destroy();
 		}
 		this.contentEl.empty();
+		this.restoreFocus?.();
 	}
 }

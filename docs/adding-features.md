@@ -78,21 +78,21 @@ In the `switch` statement of `onMessage`:
 ```typescript
 case 'open-my-action': {
     if (data.context === codeContext) {
-        const modal = new MyModal(plugin, ...);
-        const origOnClose = modal.onClose.bind(modal);
-        modal.onClose = () => {
-            origOnClose();
-            iframe.focus(); // restore focus to Monaco after closing
-        };
-        modal.open();
+        new MyModal(
+            plugin,
+            ...,
+            () => send('focus', {})  // restoreFocus callback
+        ).open();
     }
     break;
 }
 ```
 
-### c. Modal Focus Handling — Automatic via modalPatch
+### c. Modal Focus Handling — Two Mechanisms
 
-The `blur()` workaround is **no longer needed**. The plugin now uses `patchModalClose()` (in `modalPatch.ts`) which monkey-patches `Modal.prototype.open` globally. This patch automatically blurs any focused iframe before Obsidian saves `document.activeElement`, preventing the "instanceOf is not a function" crash.
+**1. modalPatch (automatic crash prevention)**
+
+The plugin uses `patchModalClose()` (in `modalPatch.ts`) which monkey-patches `Modal.prototype.open` globally. This patch automatically blurs any focused iframe before Obsidian saves `document.activeElement`, preventing the "instanceOf is not a function" crash.
 
 The patch is applied once in `main.ts` on plugin load:
 ```typescript
@@ -107,7 +107,51 @@ this.unpatchModal?.();
 This means:
 - **No manual `blur()` calls needed** before `modal.open()`
 - **Works for all modals** opened from Monaco (including third-party plugins)
-- **Cleaner code** — just open the modal directly
+- **Prevents crashes** when modals close
+
+**2. restoreFocus callback (focus restoration)**
+
+When a modal closes, focus returns to Obsidian's main DOM, not to the Monaco iframe. To restore focus to Monaco and preserve cursor position, modals accept an optional `restoreFocus` callback:
+
+**In the modal class:**
+```typescript
+constructor(
+    private plugin: CodeFilesPlugin,
+    ...,
+    private restoreFocus?: () => void
+) {
+    super(plugin.app);
+}
+
+onClose(): void {
+    super.onClose();
+    // ... cleanup code ...
+    this.restoreFocus?.();
+}
+```
+
+**When opening the modal:**
+```typescript
+new MyModal(
+    plugin,
+    ...,
+    () => send('focus', {})  // sends { type: 'focus' } to iframe
+).open();
+```
+
+**In monacoEditor.html:**
+```javascript
+case 'focus':
+    if (editor) editor.focus();
+    break;
+```
+
+Monaco preserves cursor position internally, so calling `editor.focus()` is sufficient.
+
+**Note:** For modals with input fields (like RenameExtensionModal), add a small delay to avoid cursor jump:
+```typescript
+() => setTimeout(() => send('focus', {}), 50)
+```
 
 ---
 
@@ -155,7 +199,8 @@ If the modal is opened from Monaco (via postMessage), the `modalPatch` handles f
 **New Monaco command:**
 - [ ] `editor.addAction()` in `monacoEditor.html`
 - [ ] `case` in the `switch` of `onMessage` in `mountCodeEditor.ts`
-- [ ] `iframe.focus()` in the monkey-patched `onClose` (no manual `blur()` needed)
+- [ ] Modal accepts `restoreFocus?: () => void` parameter and calls it in `onClose()`
+- [ ] Pass `() => send('focus', {})` when opening the modal (add delay if needed for input modals)
 
 **New parent → iframe message:**
 - [ ] `send('type', payload)` on parent side
