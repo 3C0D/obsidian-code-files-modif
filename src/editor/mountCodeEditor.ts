@@ -68,7 +68,7 @@ export const resolveThemeParams = async (
  * @param plugin - The plugin instance
  * @param language - Monaco language ID (e.g. 'typescript', 'javascript', 'markdown')
  * @param initialValue - Initial content to display in the editor
- * @param codeContext - Unique identifier for this editor instance (file path or modal ID), used to filter postMessage events
+ * @param codeContext - Unique identifier for this editor instance (file path or modal ID), used to filter postMessage events. Avoids cross-talk between multiple open editors.
  * @param onChange - Optional callback invoked when the editor content changes
  * @param onSave - Optional callback invoked when the user presses Ctrl+S
  * @param onFormatDiff - Optional callback invoked when a format diff is available (after formatting)
@@ -174,13 +174,15 @@ export const mountCodeEditor = async (
 			codeContext.startsWith('modal-editor.')
 				? false
 				: plugin.settings.minimap,
+		// Monaco uses negative flags (noSemanticValidation), but settings use positive flags (semanticValidation)
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation,
 		projectRootFolder: plugin.settings.projectRootFolder
 	};
-	// Check if this is an unregistered extension
+	// find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
 	const extMatch = codeContext.match(/\.([^.]+)$/);
 	const extension = extMatch ? extMatch[1] : '';
+	// If the editor is for a file with an extension that doesn't have a registered formatter, set a flag so the Monaco iframe can show a warning and hide formatting options.
 	if (extension && !getActiveExtensions(plugin.settings).includes(extension)) {
 		initParams.isUnregisteredExtension = true;
 	}
@@ -213,14 +215,20 @@ export const mountCodeEditor = async (
 	// Replace the base64-encoded font source in @font-face with an absolute app:// URL.
 	// Obsidian's CSP blocks data: font sources in child frames, but app:// URLs are allowed.
 	const codiconFontUrl = `${vsBase}/editor/codicon.ttf`;
+
+	// In Monaco's CSS, the codicon @font-face src ends with url(<base64-data>) format('truetype').
+	// Obsidian's CSP blocks data: font sources in child frames — replace with the local app:// URL.
+	// Group 1 captures everything up to the url() to preserve the rest of the rule intact.
 	cssText = cssText.replace(
-		/(@font-face\s*\{[^}]*src:[^;]*)(url\([^)]+\)\s*format\(["']truetype["']\))/g,
+		/(@font-face\s*\{[^}]*src:[^;]*)url\([^)]+\)\s*format\(["']truetype["']\)/g,
 		`$1url('${codiconFontUrl}') format('truetype')`
 	);
 	// Fetch and inline the monacoHtml.css config
 	const configCssText = await (await fetch(configCssUrl)).text();
-	// Inject CSS inline and intercept dynamic <link> insertions Monaco attempts at runtime.
-	// Without this, Monaco tries to inject a <link rel="stylesheet"> which the parent CSP blocks.
+	// Inject CSS inline and intercept dynamic <link rel="stylesheet"> insertions Monaco attempts at runtime.
+	// Without this, Monaco tries to inject its CSS via <link> which Obsidian's CSP blocks in child frames.
+	// appendChild is monkey-patched: <link> nodes are silently dropped (returned without inserting)
+	// so Monaco doesn't throw, while all other nodes are inserted normally via the original appendChild.
 	html = html.replace(
 		'</head>',
 		`<script>
@@ -257,26 +265,43 @@ Element.prototype.appendChild = function(node) {
 	);
 	/**
 	 * Wrap the patched HTML in a Blob and serve it via a blob: URL.
-	 * This is required because:
-	 *  - file:// URLs are blocked by Electron's CSP.
+	 * This is required because naive approaches to load the local HTML file are all blocked:
+	 *  - iframe.src = file:///...monacoEditor.html : blocked by Electron's CSP.
 	 *  - srcdoc and data: URLs cannot run scripts under Obsidian's CSP.
-	 *  - A blob: URL is treated as same-origin by the iframe and bypasses the parent CSP
-	 *    for its own inline content, while still allowing app:// script sources.
+	 * A blob: URL bypasses these restrictions — it is treated as same-origin by the iframe
+	 * and allows app:// script sources, while containing the patched HTML inline.
 	 * blobUrl must be revoked in destroy() to avoid a memory leak.
 	 */
 	const blob = new Blob([html], { type: 'text/html' });
 	const blobUrl = URL.createObjectURL(blob);
 	iframe.src = blobUrl;
 
-	// Sends a typed postMessage to the Monaco iframe.
-	// '*' is intentional: the iframe is a blob: URL with no stable origin.
+	/**
+	 * Sends a typed postMessage to the Monaco iframe.
+	 * '*' is intentional: the iframe is a blob: URL with no stable origin to target.
+	 *
+	 * @param type - Message type identifier (e.g. 'init', 'change-value', 'change-theme').
+	 * @param payload - Data to send alongside the message. Spread into the message object,
+	 *                  so the iframe receives { type, ...payload }.
+	 */
 	const send = (type: string, payload: Record<string, unknown>): void => {
 		iframe.contentWindow?.postMessage({ type, ...payload }, '*');
 	};
 
+	/**
+	 * Handles incoming postMessages from the Monaco iframe.
+	 * Registered on window and filtered by source to only process messages
+	 * from this specific iframe — guards against other Monaco instances
+	 * or third-party postMessage calls hitting this handler.
+	 *
+	 * @param data - The message payload sent by the iframe, containing at minimum
+	 *               a `type` string and optionally a `context` string to identify
+	 *               which editor instance sent the message.
+	 * @param source - The window that sent the message. Compared against
+	 *                 iframe.contentWindow to reject foreign messages.
+	 */
 	const onMessage = async ({ data, source }: MessageEvent): Promise<void> => {
-		// Reject messages not originating from this specific iframe — guards against
-		// other Monaco instances or third-party postMessage calls hitting this handler.
+		// guard against messages from other iframes or sources
 		if (source !== iframe.contentWindow) return;
 		switch (data.type) {
 			case 'ready': {
@@ -290,6 +315,7 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-formatter-config': {
 				if (data.context === codeContext) {
+					// ext from file path or e.g 'settings-editor-config.jsonc
 					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
 					const modal = new EditorSettingsModal(
 						plugin,
@@ -332,18 +358,17 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'delete-file': {
 				if (data.context === codeContext) {
-					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
-					if (file instanceof TFile) {
-						const leaf = plugin.app.workspace
-							.getLeavesOfType('code-editor')
-							.find(
-								(l) =>
-									l.view instanceof CodeEditorView &&
-									l.view.file?.path === codeContext
-							);
-						leaf?.detach();
-						await plugin.app.vault.trash(file, true);
-					}
+					const file = plugin.app.vault.getFileByPath(codeContext);
+					if (!file) break;
+					const leaf = plugin.app.workspace
+						.getLeavesOfType('code-editor')
+						.find(
+							(l) =>
+								l.view instanceof CodeEditorView &&
+								l.view.file?.path === codeContext
+						);
+					leaf?.detach();
+					await plugin.app.vault.trash(file, true);
 				}
 				break;
 			}
@@ -355,33 +380,31 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
-					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
-					if (file instanceof TFile) {
-						const modal = new RenameExtensionModal(plugin, file);
-						const origOnClose = modal.onClose.bind(modal);
-						modal.onClose = () => {
-							origOnClose();
-							iframe.focus();
-						};
-						modal.open();
-					}
+					const file = plugin.app.vault.getFileByPath(codeContext);
+					if (!file) break;
+					const modal = new RenameExtensionModal(plugin, file);
+					const origOnClose = modal.onClose.bind(modal);
+					modal.onClose = () => {
+						origOnClose();
+						iframe.focus();
+					};
+					modal.open();
 				}
 				break;
 			}
 			case 'return-to-default-view': {
 				if (data.context === codeContext) {
-					const file = plugin.app.vault.getAbstractFileByPath(codeContext);
-					if (file instanceof TFile) {
-						const leaf = plugin.app.workspace
-							.getLeavesOfType('code-editor')
-							.find(
-								(l) =>
-									l.view instanceof CodeEditorView &&
-									l.view.file?.path === codeContext
-							);
-						if (leaf) {
-							await leaf.openFile(file);
-						}
+					const file = plugin.app.vault.getFileByPath(codeContext);
+					if (!file) break;
+					const leaf = plugin.app.workspace
+						.getLeavesOfType('code-editor')
+						.find(
+							(l) =>
+								l.view instanceof CodeEditorView &&
+								l.view.file?.path === codeContext
+						);
+					if (leaf) {
+						await leaf.openFile(file);
 					}
 				}
 				break;
@@ -393,8 +416,6 @@ Element.prototype.appendChild = function(node) {
 				break;
 			}
 			case 'change': {
-				// Filter by codeContext to avoid processing changes from other open editors.
-				// Each iframe sends its own context string so messages don't cross-contaminate.
 				if (data.context === codeContext) {
 					if (value !== data.value) {
 						value = data.value as string;
@@ -423,8 +444,8 @@ Element.prototype.appendChild = function(node) {
 						lineNumber: number;
 						column: number;
 					} | null;
-					const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
-					if (!(file instanceof TFile)) break;
+					const file = plugin.app.vault.getFileByPath(vaultPath);
+					if (!file) break;
 
 					// Look for an existing leaf in the main editor area (no sidebars, no popout windows)
 					const existingLeaf = plugin.app.workspace

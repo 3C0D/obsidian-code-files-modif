@@ -66,6 +66,7 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // "folding": false,
     // "lineNumbers": "off",
     // "minimap": { "enabled": false },
+    // "wordWrap": "on",  // "on" | "off"
 
     // --- Optional ---
     // "rulers": [80, 120],  // Visual guides for line length (all languages)
@@ -176,7 +177,14 @@ export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
 export interface CodeEditorInstance {
 	/** The iframe element containing the Monaco editor */
 	iframe: HTMLIFrameElement;
-	/** Sends a postMessage instruction from Obsidian to the Monaco iframe (e.g. change theme, update options, set content) */
+	/**
+	 * Sends a typed postMessage to the Monaco iframe.
+	 * '*' is intentional: the iframe is a blob: URL with no stable origin to target.
+	 *
+	 * @param type - Message type identifier (e.g. 'init', 'change-value', 'change-theme').
+	 * @param payload - Data to send alongside the message. Spread into the message object,
+	 *                  so the iframe receives { type, ...payload }.
+	 */
 	send: (type: string, payload: Record<string, unknown>) => void;
 	/** Clears the editor content */
 	clear: () => void;
