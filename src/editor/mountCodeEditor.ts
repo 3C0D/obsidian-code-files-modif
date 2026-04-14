@@ -348,6 +348,11 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-settings': {
 				if (data.context === codeContext) {
+					const old = plugin.app.setting.onClose;
+					plugin.app.setting.onClose = () => {
+						plugin.app.setting.onClose = old;
+						send('focus', {});
+					};
 					plugin.app.setting.open();
 				}
 				break;
