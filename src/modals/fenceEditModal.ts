@@ -82,7 +82,8 @@ export class FenceEditModal extends Modal {
 			this.plugin,
 			this.language,
 			this.code,
-			`modal-editor.${this.langKey}`
+			`modal-editor.${this.langKey}`,
+			this.contentEl
 		);
 
 		this.contentEl.append(this.codeEditor.iframe);

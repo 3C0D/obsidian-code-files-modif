@@ -253,6 +253,7 @@ export class EditorSettingsModal extends Modal {
 			'json',
 			initialValue,
 			`editor-settings-config.jsonc`,
+			this.contentEl,
 			() => debouncedSave()
 		);
 		editorContainer.append(this.codeEditor.iframe);

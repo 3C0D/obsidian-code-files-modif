@@ -293,13 +293,17 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Creates the Monaco editor instance with callbacks for content changes (dirty + requestSave) and manual saves (Ctrl+S). */
+	/** Creates the Monaco editor instance with callbacks for content changes
+	 *  (dirty + requestSave) and manual saves (Ctrl+S).
+	 *  contentEl is passed to resolve the owner document/window, which differs
+	 *  from the main window when opened in an Obsidian popout window. */
 	private async mountEditor(file: TFile): Promise<void> {
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
 			getLanguage(file.extension),
 			this.data,
 			this.getContext(file),
+			this.contentEl,
 			() => {
 				this.setDirty(true);
 				// Debounced this.save() 2s
@@ -308,14 +312,18 @@ export class CodeEditorView extends TextFileView {
 			() => {
 				this.forceSave = true;
 				this.setSaving(true);
-				// void is used to explicitly ignore the returned promise, since the save operation is already being tracked by the saving badge and we don't want unhandled promise rejections if the save fails. The save method will reset the dirty and saving states accordingly once it completes.
+				// void is used to explicitly ignore the returned promise, since the save
+				// operation is already being tracked by the saving badge and we don't want
+				// unhandled promise rejections if the save fails. The save method will
+				// reset the dirty and saving states accordingly once it completes.
 				void this.save().then(() => {
 					this.setDirty(false);
 					this.setSaving(false);
 				});
 			},
 			() => {
-				// Show the diff action in the header after formatting so users can see what changed. Hidden after 10 seconds. So then use the editor context menu
+				// Show the diff action in the header after formatting so users can
+				// see what changed. Hidden after 10 seconds.
 				this.showDiffAction();
 			}
 		);

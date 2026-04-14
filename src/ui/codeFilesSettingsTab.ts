@@ -228,6 +228,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				'json',
 				DEFAULT_EDITOR_CONFIG,
 				'settings-editor-config.jsonc',
+				containerEl,
 				() => debouncedSave()
 			);
 			editorContainer.append(this.codeEditor.iframe);

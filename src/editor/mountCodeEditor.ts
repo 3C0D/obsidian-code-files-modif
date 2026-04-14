@@ -5,7 +5,7 @@
  * and works around Obsidian's CSP constraints (blob URL, appendChild interception, @font-face patching).
  * Returns a CodeEditorInstance with send(), getValue(), setValue(), destroy().
  */
-import { normalizePath, TFile } from 'obsidian';
+import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { type CodeEditorInstance } from '../types/types.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
@@ -79,13 +79,18 @@ export const mountCodeEditor = async (
 	language: string,
 	initialValue: string,
 	codeContext: string,
+	containerEl: HTMLElement,
 	onChange?: () => void,
 	onSave?: () => void,
 	onFormatDiff?: () => void
 ): Promise<CodeEditorInstance> => {
+	// Use the document/window of the container element to support Obsidian popout windows
+	const doc = containerEl.ownerDocument;
+	const win = doc.win;
 	let value = initialValue;
 	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
-	const defaultTheme = document.body.classList.contains('theme-dark')
+	// Use doc.body to support popout windows (each window has its own document/body)
+	const defaultTheme = doc.body.classList.contains('theme-dark')
 		? 'vs-dark'
 		: 'vs';
 	const theme =
@@ -197,7 +202,8 @@ export const mountCodeEditor = async (
 	}
 	initParams.editorConfig = buildMergedConfig(plugin, extension);
 
-	const iframe: HTMLIFrameElement = document.createElement('iframe');
+	// Create the iframe in the correct document (supports popout windows)
+	const iframe = doc.createElement('iframe') as HTMLIFrameElement;
 	iframe.style.width = '100%';
 	iframe.style.height = '100%';
 	iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
@@ -493,7 +499,8 @@ Element.prototype.appendChild = function(node) {
 		}
 	};
 
-	window.addEventListener('message', onMessage);
+	// Register the message listener on the correct window (supports popout windows)
+	win.addEventListener('message', onMessage);
 
 	// Clears the editor content and resets the internal value cache.
 	const clear = (): void => {
@@ -511,7 +518,7 @@ Element.prototype.appendChild = function(node) {
 	const getValue = (): string => value;
 
 	const destroy = (): void => {
-		window.removeEventListener('message', onMessage);
+		win.removeEventListener('message', onMessage);
 		// Revoke the blob URL to free memory — the iframe HTML is no longer needed after close
 		URL.revokeObjectURL(blobUrl);
 		iframe.remove();
