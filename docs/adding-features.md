@@ -136,7 +136,7 @@ case 'my-message':
 
 ---
 
-## 4. New UI Surface (Modal, SuggestModal)
+## 4. Adding a New Modal or Dialog
 
 No plugin-specific requirements — follow standard Obsidian patterns. See `ChooseThemeModal` for a `SuggestModal` with preview, `RenameExtensionModal` for a simple modal with input + button.
 

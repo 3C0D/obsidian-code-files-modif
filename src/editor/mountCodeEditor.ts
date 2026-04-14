@@ -131,7 +131,7 @@ export const mountCodeEditor = async (
 		send('load-project-files', { files });
 	}
 
-	// Resolves a plugin-relative path to an app:// URL (URI).
+	// Resolves a plugin-relative path to an app:// URL
 	const res = (name: string): string =>
 		plugin.app.vault.adapter.getResourcePath(normalizePath(`${pluginBase}/${name}`));
 
