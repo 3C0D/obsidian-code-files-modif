@@ -1,243 +1,122 @@
 # Monaco Diff Editor — Singleton Pattern Fix
 
-## Files Modified
-
-- **`src/editor/monacoEditor.html`** — singleton pattern implementation in `openDiffModal()`
-- **`src/types/monacoHtml.css`** — added `display: none` to `.diff-overlay`
-
----
+## Summary
+Fixed "InstantiationService has been disposed" error by implementing singleton pattern for diff editor. Create once, reuse, never dispose the editor itself.
 
 ## Problem
-
-After adding Prettier formatting for TypeScript/JavaScript, a critical error appeared:
-
+After adding Prettier formatting, critical error appeared:
 ```
 Uncaught Error: InstantiationService has been disposed
 ```
 
-**Trigger:** Open the diff modal (diff button after formatting), close the modal, then right-click in the main editor.
-
-**Stack trace:**
-```
-at _onContextMenu (editor.api-CalNCsUg.js:52)
-at emitContextMenu (editor.api-CalNCsUg.js:55)
-at InstantiationService (editor.api-CalNCsUg.js:893)
-```
-
----
+**Trigger:** Open diff modal → close → right-click in main editor
 
 ## Root Cause
+Monaco uses **global `StandaloneServices` singleton** shared between all editors in iframe. Disposing diff editor corrupts shared services, breaking main editor's context menu.
 
-Monaco Editor uses a **global `StandaloneServices` singleton** shared between all editor instances in the same JavaScript context (iframe). This singleton contains the `InstantiationService` which manages the creation of Monaco's internal services.
-
-**Initial (buggy) approach:**
-
+**Buggy approach:**
 ```js
-function openDiffModal(original, formatted) {
-    var overlay = document.createElement('div');
-    // ... création de l'overlay et du container
-    
-    var diffEditor = monaco.editor.createDiffEditor(container, options);
-    diffEditor.setModel({ original, modified });
-    
-    closeBtn.onclick = function() {
-        overlay.remove();
-        diffEditor.dispose(); // ← PROBLÈME ICI
-    };
-}
-```
-
-**Why it breaks:**
-
-1. `monaco.editor.createDiffEditor()` creates a diff editor that **shares** the `StandaloneServices` with the main editor
-2. When calling `diffEditor.dispose()`, Monaco disposes **all shared services**, including the `InstantiationService`
-3. The main editor ends up with a dead `InstantiationService`
-4. On the next right-click, Monaco tries to use this service to create the context menu → error
-
----
-
-## Fix Attempts (Ineffective)
-
-### Attempt 1: Dispose only the models
-
-```js
+var diffEditor = monaco.editor.createDiffEditor(container, options);
+// ...
 closeBtn.onclick = function() {
-    var model = diffEditor.getModel();
-    if (model) {
-        model.original?.dispose();
-        model.modified?.dispose();
-    }
+    diffEditor.dispose(); // ← BREAKS shared services
     overlay.remove();
-    diffEditor = null;
 };
 ```
 
-**Result:** Error persists. Disposing models while they're still attached to the editor causes internal issues.
-
-### Attempt 2: Add `contextmenu: false`
-
-```js
-var DIFF_EDITOR_OPTIONS = {
-    readOnly: true,
-    renderSideBySide: true,
-    automaticLayout: true,
-    ignoreTrimWhitespace: false,
-    contextmenu: false // ← inefficace
-};
-```
-
-**Result:** Ineffective. This option disables the main editor's context menu, but the diff editor has its own instantiation cycle and ignores this option.
-
-### Attempt 3: Block contextmenu event at DOM level
-
-```js
-container.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}, true);
-```
-
-**Result:** Ineffective. The problem isn't the diff editor's context menu, but the main editor's menu after closing the diff.
-
-### Attempt 4: 150ms delay before opening the diff
-
-```js
-case 'trigger-show-diff':
-    if (lastFormatOriginal && lastFormatFormatted) {
-        setTimeout(function() {
-            openDiffModal(lastFormatOriginal, lastFormatFormatted);
-        }, 150);
-    }
-    break;
-```
-
-**Result:** Ineffective. The delay doesn't solve the service sharing problem.
-
----
+## Failed Attempts
+1. **Dispose only models** — models still attached to editor
+2. **`contextmenu: false`** — doesn't affect service sharing
+3. **Block contextmenu events** — problem is main editor, not diff
+4. **150ms delay** — doesn't solve service sharing
 
 ## Solution: Singleton Pattern
 
-**Principle:** Create the diff editor **once** on first call, then **reuse it** for all subsequent calls. Never dispose the editor itself, only its models.
-
 ### Implementation
+**Location:** `monacoEditor.html`
 
 ```js
-// Global variables in the iframe
+// Global variables
 var diffEditorInstance = null;
 var diffOverlayEl = null;
 
-function closeDiffModal() {
-    if (diffOverlayEl) diffOverlayEl.style.display = 'none';
-}
-
 function openDiffModal(original, formatted) {
-    // Lazy creation: only once
+    // Create once, reuse forever
     if (!diffOverlayEl) {
         diffOverlayEl = document.createElement('div');
         diffOverlayEl.className = 'diff-overlay';
-
-        var toolbar = document.createElement('div');
-        toolbar.className = 'diff-toolbar';
-        var closeBtn = document.createElement('button');
-        closeBtn.textContent = '✕ Close';
-        closeBtn.className = 'diff-close-btn';
-        closeBtn.onclick = closeDiffModal; // ← Just hide, don't destroy
-        toolbar.appendChild(closeBtn);
-
-        var container = document.createElement('div');
-        container.className = 'diff-container';
-
-        diffOverlayEl.appendChild(toolbar);
-        diffOverlayEl.appendChild(container);
+        // ... create toolbar, container
         document.body.appendChild(diffOverlayEl);
-
+        
         // Created once, never disposed
-        diffEditorInstance = monaco.editor.createDiffEditor(container, DIFF_EDITOR_OPTIONS);
+        diffEditorInstance = monaco.editor.createDiffEditor(container, options);
     }
-
-    // Show the overlay
+    
+    // Show overlay
     diffOverlayEl.style.display = 'block';
-
-    // Detach old models BEFORE disposing them
+    
+    // CRITICAL: Detach before disposing
     var oldModel = diffEditorInstance.getModel();
     if (oldModel) {
-        diffEditorInstance.setModel(null); // ← CRITICAL: detach first
-        oldModel.original?.dispose();
+        diffEditorInstance.setModel(null); // 1. Detach first
+        oldModel.original?.dispose();      // 2. Then dispose
         oldModel.modified?.dispose();
     }
-
+    
     // Attach new models
     diffEditorInstance.setModel({
         original: monaco.editor.createModel(original, currentLang),
         modified: monaco.editor.createModel(formatted, currentLang)
     });
+}
 
-    // Layout after display
-    requestAnimationFrame(function() {
-        var container = diffOverlayEl.querySelector('.diff-container');
-        diffEditorInstance.layout({
-            width: container.clientWidth,
-            height: container.clientHeight
-        });
-    });
+function closeDiffModal() {
+    if (diffOverlayEl) diffOverlayEl.style.display = 'none';
 }
 ```
 
-### Associated CSS
-
+### CSS
 ```css
 .diff-overlay {
-    display: none; /* Hidden by default, shown via JS */
-    position: fixed;
-    inset: 0;
+    display: none; /* Hidden by default */
+    position: fixed; inset: 0;
     background: rgba(0, 0, 0, 0.7);
     z-index: 10000;
 }
 ```
 
----
-
-## Key Points of the Solution
+## Key Points
 
 ### 1. Single Creation
-
-The diff editor is created **once** on the first call to `openDiffModal()`. Subsequent calls reuse the same instance.
+Diff editor created **once** on first call, reused for all subsequent calls.
 
 ### 2. Show/Hide via CSS
+Use `display: block/none` instead of creating/destroying overlay.
 
-Instead of creating/destroying the overlay each time, we use `display: block/none`. The overlay stays in the DOM.
-
-### 3. Critical Order for Models
-
+### 3. Critical Model Order
 ```js
 diffEditorInstance.setModel(null);  // 1. Detach first
 oldModel.original?.dispose();        // 2. Then dispose
-oldModel.modified?.dispose();
 ```
+**Why:** Disposing attached models causes internal Monaco errors.
 
-**Why this order?** Disposing a model while it's still attached to an editor causes internal Monaco errors. You must first detach with `setModel(null)`.
-
-### 4. No Dispose of the Diff Editor
-
-The diff editor is **never** disposed. It stays in memory for the entire lifetime of the iframe. Only the models (text content) are disposed and recreated on each opening.
+### 4. Never Dispose Editor
+Diff editor stays in memory for iframe lifetime. Only models are disposed/recreated.
 
 ### 5. StandaloneServices Stability
-
-By keeping the diff editor alive, the `StandaloneServices` singleton remains stable. The main editor keeps its services intact and the context menu works normally.
-
----
+Keeping diff editor alive preserves shared services, main editor context menu works.
 
 ## Benefits
+- **No InstantiationService error** — singleton never corrupted
+- **Better performance** — no recreation on each opening
+- **Simpler logic** — less creation/destruction
+- **No memory leaks** — models properly disposed
 
-1. **No InstantiationService error** — the singleton is never corrupted
-2. **Performance** — no diff editor recreation on each opening
-3. **Simplicity** — less creation/destruction logic
-4. **No memory leak** — models are properly disposed
+## Lesson Learned
+**Monaco shares internal services between all editors in same context.** Creating/destroying editors can corrupt shared singleton.
+
+**General rule:** For secondary editors (diff, modal, etc.), use **singleton pattern**: create once, reuse, never dispose editor itself.
 
 ---
 
-## Lesson Learned
-
-**Monaco Editor shares its internal services between all editor instances in the same JavaScript context.** Creating then destroying editors (especially diff editors) can corrupt this shared singleton.
-
-**General solution:** For any secondary editor (diff, modal, etc.), prefer the **singleton pattern**: create once, reuse, never dispose the editor itself.
+**Revised:** ✓

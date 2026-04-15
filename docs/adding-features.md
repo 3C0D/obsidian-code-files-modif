@@ -1,23 +1,22 @@
 # Adding Features — Practical Guide
 
-## 1. Adding a New Toggle Setting
+## Summary
+Step-by-step guide for adding toggle settings, Monaco commands, postMessage handlers, and modals. Includes automatic focus handling via modalPatch.
 
-### a. Declare the Field
+## 1. Adding Toggle Setting
 
-`types.ts` — add to `MyPluginSettings`:
+### Declare Field
+**Location:** `types.ts`
 ```typescript
-/** Short description */
+// In MyPluginSettings
 myOption: boolean;
-```
 
-Add the default value in `DEFAULT_SETTINGS`:
-```typescript
+// In DEFAULT_SETTINGS
 myOption: true,
 ```
 
-### b. Expose in the Gear Icon Modal
-
-`editorSettingsModal.ts` — in `onOpen()`, after existing toggles:
+### Add to Gear Modal
+**Location:** `editorSettingsModal.ts`
 ```typescript
 new Setting(toggleSection)
     .setName('My Option')
@@ -26,42 +25,39 @@ new Setting(toggleSection)
         t.setValue(this.plugin.settings.myOption).onChange(async (v) => {
             this.plugin.settings.myOption = v;
             await this.plugin.saveSettings();
-            this.onSettingsChanged(); // triggers broadcastOptions() in the caller
+            this.onSettingsChanged(); // triggers broadcastOptions()
         })
     );
 ```
 
-### c. Send to Monaco if Applicable
-
-If the option affects the Monaco editor, include it in `broadcastOptions()` (`broadcast.ts`):
+### Send to Monaco (if applicable)
+**Locations:** `broadcast.ts`, `mountCodeEditor.ts`, `monacoEditor.html`
 ```typescript
+// In broadcastOptions()
 view.codeEditor?.send('change-options', {
-    // ... existing options
     myOption: this.settings.myOption,
 });
-```
 
-And in `initParams` (`mountCodeEditor.ts`):
-```typescript
+// In initParams
 myOption: plugin.settings.myOption,
+
+// In monacoEditor.html message switch
+case 'change-options':
+    // handle data.myOption
+    break;
 ```
 
-And handle it in `monacoEditor.html` in the message `switch` statement.
+## 2. Adding Monaco Command
 
----
-
-## 2. Adding a New Monaco Command (Context Menu + F1)
-
-### a. Declare the Action in `monacoEditor.html`
-
-In the initialization code, after existing actions:
+### Declare Action
+**Location:** `monacoEditor.html`
 ```javascript
 editor.addAction({
     id: 'code-files-my-action',
     label: '🔖 My Action',
-    contextMenuGroupId: 'code-files',   // group in context menu
-    contextMenuOrder: 4,                 // order within group
-    run: function () {
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 4,
+    run: function() {
         window.parent.postMessage(
             { type: 'open-my-action', context: context },
             '*'
@@ -70,11 +66,8 @@ editor.addAction({
 });
 ```
 
-> For keyboard shortcut only (no menu entry): use `editor.addCommand(keybinding, handler)`.
-
-### b. Handle the Message in `mountCodeEditor.ts`
-
-In the `switch` statement of `onMessage`:
+### Handle Message
+**Location:** `mountCodeEditor.ts`
 ```typescript
 case 'open-my-action': {
     if (data.context === codeContext) {
@@ -88,88 +81,57 @@ case 'open-my-action': {
 }
 ```
 
-### c. Modal Focus Handling — Two Mechanisms
+### Modal Focus Handling
 
-**1. modalPatch (automatic crash prevention)**
+#### Automatic Crash Prevention
+**Location:** `modalPatch.ts` (applied in `main.ts`)
+- Monkey-patches `Modal.prototype.open` globally
+- Automatically blurs focused iframe before modal opens
+- Prevents "instanceOf is not a function" crash
+- **No manual blur() calls needed**
 
-The plugin uses `patchModalClose()` (in `modalPatch.ts`) which monkey-patches `Modal.prototype.open` globally. This patch automatically blurs any focused iframe before Obsidian saves `document.activeElement`, preventing the "instanceOf is not a function" crash.
-
-The patch is applied once in `main.ts` on plugin load:
-```typescript
-this.unpatchModal = patchModalClose();
-```
-
-And removed on unload:
-```typescript
-this.unpatchModal?.();
-```
-
-This means:
-- **No manual `blur()` calls needed** before `modal.open()`
-- **Works for all modals** opened from Monaco (including third-party plugins)
-- **Prevents crashes** when modals close
-
-**2. restoreFocus callback (focus restoration)**
-
-When a modal closes, focus returns to Obsidian's main DOM, not to the Monaco iframe. To restore focus to Monaco and preserve cursor position, modals accept an optional `restoreFocus` callback:
-
-**In the modal class:**
+#### Focus Restoration
+**Modal constructor:**
 ```typescript
 constructor(
     private plugin: CodeFilesPlugin,
     ...,
     private restoreFocus?: () => void
-) {
-    super(plugin.app);
-}
+) {}
 
 onClose(): void {
     super.onClose();
-    // ... cleanup code ...
     this.restoreFocus?.();
 }
 ```
 
-**When opening the modal:**
+**When opening modal:**
 ```typescript
 new MyModal(
     plugin,
     ...,
-    () => send('focus', {})  // sends { type: 'focus' } to iframe
+    () => send('focus', {})  // restores focus to Monaco
 ).open();
 ```
 
-**In monacoEditor.html:**
-```javascript
-case 'focus':
-    if (editor) editor.focus();
-    break;
-```
-
-Monaco preserves cursor position internally, so calling `editor.focus()` is sufficient.
-
-**Note:** For modals with input fields (like RenameExtensionModal), add a small delay to avoid cursor jump:
+**For input modals, add delay:**
 ```typescript
 () => setTimeout(() => send('focus', {}), 50)
 ```
 
----
-
 ## 3. New postMessage (parent → iframe)
 
-### a. Send from Parent
-
+### Send from Parent
 ```typescript
-// via send() returned by mountCodeEditor
+// Via mountCodeEditor return value
 codeEditor.send('my-message', { myValue: 42 });
 
-// or from CodeEditorView
+// From CodeEditorView
 this.codeEditor?.send('my-message', { myValue: 42 });
 ```
 
-### b. Handle in `monacoEditor.html`
-
-In the `switch` statement of `window.addEventListener('message', ...)`:
+### Handle in iframe
+**Location:** `monacoEditor.html`
 ```javascript
 case 'my-message':
     if (editor) {
@@ -178,30 +140,31 @@ case 'my-message':
     break;
 ```
 
----
+## 4. Adding Modal/Dialog
 
-## 4. Adding a New Modal or Dialog
+Follow standard Obsidian patterns. See examples:
+- `ChooseThemeModal` — SuggestModal with preview
+- `RenameExtensionModal` — simple modal with input + button
 
-No plugin-specific requirements — follow standard Obsidian patterns. See `ChooseThemeModal` for a `SuggestModal` with preview, `RenameExtensionModal` for a simple modal with input + button.
-
-If the modal is opened from Monaco (via postMessage), the `modalPatch` handles focus automatically — no manual `blur()` needed.
-
----
+If opened from Monaco, `modalPatch` handles focus automatically.
 
 ## Summary Checklist
 
 **New toggle setting:**
 - [ ] Field in `MyPluginSettings` + `DEFAULT_SETTINGS`
-- [ ] Toggle in `EditorSettingsModal` (gear icon)
-- [ ] Optional: in `CodeFilesSettingsTab` if globally relevant
-- [ ] If applicable to Monaco: in `initParams` + `broadcastOptions()` + handle in `monacoEditor.html`
+- [ ] Toggle in `EditorSettingsModal`
+- [ ] If Monaco-related: `initParams` + `broadcastOptions()` + handle in iframe
 
 **New Monaco command:**
 - [ ] `editor.addAction()` in `monacoEditor.html`
-- [ ] `case` in the `switch` of `onMessage` in `mountCodeEditor.ts`
-- [ ] Modal accepts `restoreFocus?: () => void` parameter and calls it in `onClose()`
-- [ ] Pass `() => send('focus', {})` when opening the modal (add delay if needed for input modals)
+- [ ] Message handler in `mountCodeEditor.ts`
+- [ ] Modal accepts `restoreFocus` callback
+- [ ] Pass `() => send('focus', {})` when opening
 
-**New parent → iframe message:**
-- [ ] `send('type', payload)` on parent side
-- [ ] `case 'type':` in the `switch` of `monacoEditor.html`
+**New postMessage:**
+- [ ] `send('type', payload)` on parent
+- [ ] `case 'type':` in iframe message switch
+
+---
+
+**Revised:** ✓

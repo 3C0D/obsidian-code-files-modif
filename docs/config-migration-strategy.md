@@ -1,91 +1,79 @@
 # Configuration Migration Strategy
 
+## Summary
+No automatic migration implemented. Uses simple three-level fallback: DEFAULT → Global (*) → Per-Extension. Users can reset configs by deleting them to get fresh templates.
+
 ## The Problem
+When developers add new commented properties to default templates (e.g., `// "fontSize": 14`), existing user configs don't receive these updates automatically.
 
-When updating `DEFAULT_EDITOR_CONFIG` or `DEFAULT_EXTENSION_CONFIG` with new commented properties (e.g., adding `// "fontSize": 14`), existing user configurations don't automatically receive these new template comments.
+**Example:**
+1. User saves `.ts` config: `{ "tabSize": 2 }`
+2. Developer adds `// "fontSize": 14` to default template
+3. User reopens `.ts` config → only sees `{ "tabSize": 2 }`, missing new option
 
-**Example scenario:**
-1. User opens config for `.ts`, sees default template with comments
-2. User uncomments `"tabSize": 2` and saves
-3. Developer adds `// "fontSize": 14` to `DEFAULT_EXTENSION_CONFIG`
-4. Plugin recompiles and restarts
-5. User reopens config for `.ts` → **only sees** `{ "tabSize": 2 }`, **not** the new `fontSize` comment
+## Current Solution: Simple Fallback
 
-## Why This Happens
-
-Configs are stored as JSONC strings in `data.json`. Once saved, they're frozen. The fallback to default templates only applies when a config key doesn't exist.
-
-## Current Solution: Simple Fallback System
-
-**No automatic migration is implemented.** The system uses a three-level cascade:
-
+### Three-Level Cascade
 ```
 DEFAULT_EDITOR_CONFIG → Global (*) → Per-Extension (.ts)
 ```
 
-**How it works:**
-- If a config key doesn't exist in `data.json`, it falls back to the default template
-- Once a user saves a config, it's stored permanently
-- Users can reset by deleting the config (it will fall back to the fresh template)
+### How It Works
+- **Fresh configs** → use default template with comments
+- **Saved configs** → stored permanently in `data.json`
+- **Missing configs** → fall back to default template
 
-**Implementation:**
-- `loadSettings()` in `settingsUtils.ts` ensures global config always exists
-- `buildMergedConfig()` merges global + per-extension configs
-- `parseEditorConfig()` strips comments and trailing commas before parsing
-
-## Why No Automatic Migration?
-
-1. **Risk of data corruption** — JSONC parsing is complex, could break user configs
-2. **User expectations** — Users expect their saved configs to remain unchanged
-3. **Simple workarounds exist** — Delete config to get fresh template, or copy from global config
-4. **Most users don't need every option** — Default templates include common examples
+### Implementation
+**Locations:** `settingsUtils.ts`, `buildMergedConfig()`
+- `loadSettings()` ensures global config exists
+- `parseEditorConfig()` strips comments before parsing
+- No automatic merging or migration
 
 ## User Experience
 
-**Editor Settings Modal (⚙️ gear icon):**
-- Two buttons: **Global (*)** and **.extension**
-- Switch between them to edit global or per-extension configs
-- Changes save automatically (debounced)
-- First-time users see the default template with commented examples
+### To Get New Options
+1. **Check global config (`*`)** → see all available options
+2. **Copy to per-extension** → manual copy/paste
+3. **Reset config** → delete content, reopen for fresh template
+4. **Check README** → for new features
 
-**To reset a config:**
-- Delete all content in the editor, or
-- Manually delete the key from `data.json`
-- Reopen → fresh template appears
+### Editor Settings Modal
+- **Two buttons:** Global (*) and .extension
+- **Auto-save** with debouncing
+- **Fresh templates** for first-time users
 
-## Alternative Approaches Considered (Not Implemented)
+## Why No Automatic Migration?
 
-### 1. UI-Based "Show All Options" Button
-Add a button to merge new default properties into existing config.
+1. **Risk of corruption** — JSONC parsing complex, could break configs
+2. **User expectations** — saved configs should remain unchanged
+3. **Simple workarounds** — delete to reset, copy from global
+4. **Most users don't need every option** — defaults include common examples
 
-**Pros:** User control, no automatic changes  
-**Cons:** Complex JSONC parsing, risk of overwriting user comments  
-**Status:** Not implemented — "delete and reopen" is simpler and safer
+## Alternatives Considered (Not Implemented)
 
-### 2. Automatic Migration on Plugin Update
-Detect version changes and auto-merge new properties.
+### 1. "Show All Options" Button
+**Pros:** User control, no automatic changes
+**Cons:** Complex JSONC parsing, risk of overwriting comments
+**Status:** Too risky for benefit
 
-**Pros:** Users automatically get new options  
-**Cons:** High risk of corruption, complex logic, difficult to test  
-**Status:** Not implemented — too risky for the benefit
+### 2. Automatic Migration on Update
+**Pros:** Users get new options automatically
+**Cons:** High corruption risk, complex logic, hard to test
+**Status:** Too dangerous
 
 ## Recommendation
-
-**Keep the current simple fallback system.** It's safe, predictable, and easy to understand.
-
-If users need new options:
-1. Check README or release notes
-2. Open global config (`*`) to see all available options
-3. Copy properties to per-extension config
-4. Or delete config to get fresh template
+**Keep current simple system.** Safe, predictable, easy to understand.
 
 ## Future Considerations
+If migration becomes necessary:
+1. Version tracking in `data.json`
+2. Migration functions per version
+3. Extensive testing with edge cases
+4. Rollback mechanism
+5. Change logging
 
-If automatic migration becomes necessary (e.g., breaking changes):
-1. Implement version tracking in `data.json`
-2. Write migration functions per version
-3. Test extensively with edge cases
-4. Provide rollback mechanism
-5. Log changes to users
+But simple fallback is sufficient and safer for now.
 
-But for now, the simple fallback system is sufficient and safer.
+---
+
+**Revised:** ✓
