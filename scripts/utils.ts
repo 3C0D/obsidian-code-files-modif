@@ -162,14 +162,9 @@ export async function ensureGitSync(): Promise<void> {
 	}
 }
 
-/** Returns true if the current path is inside an Obsidian plugins folder
- *  (any hidden config dir, not just .obsidian) */
+/** Returns true if the current path is inside an Obsidian plugins folder */
 export function isInPluginsFolder(currentPath: string): boolean {
-	const parts = currentPath.split(path.sep);
-	for (let i = 1; i < parts.length; i++) {
-		if (parts[i] === 'plugins' && parts[i - 1].startsWith('.')) return true;
-	}
-	return false;
+	return currentPath.includes(path.join('.obsidian', 'plugins'));
 }
 
 /** Validates that a path points to an Obsidian vault with a plugins directory */
