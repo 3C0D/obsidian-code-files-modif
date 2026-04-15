@@ -12,10 +12,6 @@ import manifest from '../../manifest.json' with { type: 'json' };
 
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
-import { broadcastOptions } from '../utils/broadcast.ts';
-import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
-import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
-import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { CodeEditorView } from './codeEditorView.ts';
 
 const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
@@ -73,6 +69,9 @@ export const resolveThemeParams = async (
  * @param onChange - Optional callback invoked when the editor content changes
  * @param onSave - Optional callback invoked when the user presses Ctrl+S
  * @param onFormatDiff - Optional callback invoked when a format diff is available (after formatting)
+ * @param onOpenEditorConfig - Optional callback invoked when the user requests editor settings
+ * @param onOpenThemePicker - Optional callback invoked when the user requests theme picker
+ * @param onOpenRenameExtension - Optional callback invoked when the user requests rename extension
  * @returns A CodeEditorInstance with methods to control the editor (send, getValue, setValue, destroy)
  */
 export const mountCodeEditor = async (
@@ -84,7 +83,10 @@ export const mountCodeEditor = async (
 	onChange?: () => void,
 	onSave?: () => void,
 	onFormatDiff?: () => void,
-	onFormatDiffReverted?: () => void
+	onFormatDiffReverted?: () => void,
+	onOpenEditorConfig?: (ext: string) => void,
+	onOpenThemePicker?: () => void,
+	onOpenRenameExtension?: () => void
 ): Promise<CodeEditorInstance> => {
 	// Use the document/window of the container element to support Obsidian popout windows
 	const doc = containerEl.ownerDocument;
@@ -320,29 +322,13 @@ Element.prototype.appendChild = function(node) {
 				if (data.context === codeContext) {
 					// ext from file path or e.g 'settings-editor-config.jsonc
 					const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
-					new EditorSettingsModal(
-						plugin,
-						ext,
-						() => broadcastOptions(plugin),
-						(config) => {
-							send('change-editor-config', { config });
-						},
-						() => send('focus', {})
-					).open();
+					onOpenEditorConfig?.(ext);
 				}
 				break;
 			}
 			case 'open-theme-picker': {
 				if (data.context === codeContext) {
-					const applyTheme = async (t: string): Promise<void> => {
-						const params = await resolveThemeParams(plugin, t);
-						send('change-theme', params);
-					};
-					new ChooseThemeModal(
-						plugin,
-						applyTheme,
-						() => send('focus', {})
-					).open();
+					onOpenThemePicker?.();
 				}
 				break;
 			}
@@ -391,13 +377,7 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-rename-extension': {
 				if (data.context === codeContext) {
-					const file = plugin.app.vault.getFileByPath(codeContext);
-					if (!file) break;
-					new RenameExtensionModal(
-						plugin,
-						file,
-						() => setTimeout(() => send('focus', {}), 50)
-					).open();
+					onOpenRenameExtension?.();
 				}
 				break;
 			}

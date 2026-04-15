@@ -48,6 +48,3 @@ vs/
 #LLM
 .amazonq/*
 tsconfig.tsbuildinfo
-
-#Legacy Project symlink
-legacy-project

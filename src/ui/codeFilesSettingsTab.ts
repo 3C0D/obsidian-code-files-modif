@@ -229,7 +229,13 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				DEFAULT_EDITOR_CONFIG,
 				'settings-editor-config.jsonc',
 				containerEl,
-				() => debouncedSave()
+				() => debouncedSave(),
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined
 			);
 			editorContainer.append(this.codeEditor.iframe);
 			// Restore last selected extension or default to global

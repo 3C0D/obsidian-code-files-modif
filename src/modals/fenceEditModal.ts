@@ -83,7 +83,34 @@ export class FenceEditModal extends Modal {
 			this.language,
 			this.code,
 			`modal-editor.${this.langKey}`,
-			this.contentEl
+			this.contentEl,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			// onOpenEditorConfig
+			(ext) => {
+				new EditorSettingsModal(
+					this.plugin,
+					ext,
+					() => broadcastOptions(this.plugin),
+					(config) => this.codeEditor?.send('change-editor-config', { config }),
+					() => this.codeEditor?.send('focus', {})
+				).open();
+			},
+			// onOpenThemePicker
+			() => {
+				const applyTheme = async (theme: string): Promise<void> => {
+					const params = await resolveThemeParams(this.plugin, theme);
+					this.codeEditor?.send('change-theme', params);
+				};
+				new ChooseThemeModal(
+					this.plugin,
+					applyTheme,
+					() => this.codeEditor?.send('focus', {})
+				).open();
+			}
+			// onOpenRenameExtension: undefined (fences don't have a file path)
 		);
 
 		this.contentEl.append(this.codeEditor.iframe);

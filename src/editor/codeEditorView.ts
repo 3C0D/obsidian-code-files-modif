@@ -17,6 +17,7 @@ import { getLanguage } from '../utils/getLanguage.ts';
 import { viewType, type CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
+import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { snippetExists, isSnippetEnabled, registerSnippetChangeHandler } from '../utils/snippetUtils.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
@@ -346,6 +347,42 @@ export class CodeEditorView extends TextFileView {
 				void this.save().then(() => {
 					this.setSaving(false);
 				});
+			},
+			// onOpenEditorConfig
+			(ext) => {
+				new EditorSettingsModal(
+					this.plugin,
+					ext,
+					() => broadcastOptions(this.plugin),
+					(config) => {
+						this.codeEditor?.send('change-editor-config', { config });
+					},
+					() => this.codeEditor?.send('focus', {})
+				).open();
+			},
+			// onOpenThemePicker
+			() => {
+				const applyTheme = async (theme: string): Promise<void> => {
+					const params = await resolveThemeParams(this.plugin, theme);
+					this.codeEditor?.send('change-theme', params);
+				};
+				new ChooseThemeModal(
+					this.plugin,
+					applyTheme,
+					() => this.codeEditor?.send('focus', {})
+				).open();
+			},
+			// onOpenRenameExtension
+			() => {
+				const f = this.plugin.app.vault.getFileByPath(file.path);
+				if (f && 'extension' in f) {
+					const modal = new RenameExtensionModal(
+						this.plugin,
+						f,
+						() => setTimeout(() => this.codeEditor?.send('focus', {}), 50)
+					);
+					modal.open();
+				}
 			}
 		);
 		// Register theme change handler to follow Obsidian's theme when set to 'default'

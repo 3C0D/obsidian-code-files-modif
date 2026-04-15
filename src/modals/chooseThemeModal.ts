@@ -24,6 +24,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 	/**
 	 * @param plugin - The plugin instance
 	 * @param applyTheme - Callback invoked for both live preview and final theme selection. Sends the theme to Monaco via postMessage.
+	 * @param restoreFocus - Optional callback to restore focus to the editor after closing the modal, since Obsidian doesn't do this automatically. If not provided, focus will remain on the last clicked element in the modal.
 	 */
 	constructor(
 		private plugin: CodeFilesPlugin,

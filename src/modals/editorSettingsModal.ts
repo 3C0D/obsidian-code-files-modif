@@ -29,6 +29,7 @@ export class EditorSettingsModal extends Modal {
 	 * @param extension - The file extension being edited (e.g., 'ts', 'js', 'md')
 	 * @param onSettingsChanged - Callback invoked when validation toggles change. Typically broadcasts options to all open editors.
 	 * @param onConfigApplied - Callback invoked on modal close with the merged editor config JSON string (global + per-extension). Use this to send the config to the Monaco iframe via postMessage.
+	 * @param restoreFocus - Optional callback to restore focus to the editor after closing the modal, since Obsidian doesn't do this automatically. If not provided, focus will remain on the last clicked element in the modal.
 	 */
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -255,7 +256,13 @@ export class EditorSettingsModal extends Modal {
 			initialValue,
 			`editor-settings-config.jsonc`,
 			this.contentEl,
-			() => debouncedSave()
+			() => debouncedSave(),
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined,
+			undefined
 		);
 		editorContainer.append(this.codeEditor.iframe);
 	}
