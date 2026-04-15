@@ -6,11 +6,11 @@
  */
 import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG } from '../types/types.ts';
+import { DEFAULT_EDITOR_CONFIG, getExtensionConfigTemplate } from '../types/types.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
-import { buildMergedConfig, applyEditorConfig } from '../utils/settingsUtils.ts';
+import { buildMergedConfig, saveEditorConfig } from '../utils/settingsUtils.ts';
 import {
 	broadcastProjectFiles,
 	broadcastBrightness,
@@ -206,7 +206,7 @@ export class EditorSettingsModal extends Modal {
 			if (this.codeEditor) {
 				const cfg =
 					this.plugin.settings.editorConfigs?.[global ? '*' : this.extension] ??
-					(global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG);
+					(global ? DEFAULT_EDITOR_CONFIG : getExtensionConfigTemplate(this.extension));
 				this.codeEditor.setValue(cfg);
 			}
 		};
@@ -227,7 +227,7 @@ export class EditorSettingsModal extends Modal {
 		editorContainer.style.height = '190px';
 
 		const existing = this.plugin.settings.editorConfigs[this.extension];
-		const initialValue = existing ?? DEFAULT_EXTENSION_CONFIG;
+		const initialValue = existing ?? getExtensionConfigTemplate(this.extension);
 
 		/**
 		 * Validates, persists, and broadcasts the current editor config on each keystroke.
@@ -238,7 +238,7 @@ export class EditorSettingsModal extends Modal {
 				if (!this.codeEditor) return;
 				const value = this.codeEditor.getValue().trim();
 				const key = this.isGlobal ? '*' : this.extension;
-				if (applyEditorConfig(this.plugin, key, value)) {
+				if (saveEditorConfig(this.plugin, key, value)) {
 					await this.plugin.saveSettings();
 					broadcastEditorConfig(this.plugin, key);
 					// Notify Obsidian settings tab to refresh its config editor display
@@ -276,7 +276,7 @@ export class EditorSettingsModal extends Modal {
 			const raw = this.codeEditor.getValue().trim();
 			const key = this.isGlobal ? '*' : this.extension;
 			// Final save in case the user closes before debouncedSave fires 
-			if (applyEditorConfig(this.plugin, key, raw)) {
+			if (saveEditorConfig(this.plugin, key, raw)) {
 				void this.plugin.saveSettings();
 				// Notify Obsidian settings tab to refresh its config editor display
 				this.plugin.app.workspace.trigger('code-files:settings-changed');

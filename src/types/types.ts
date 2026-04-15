@@ -84,6 +84,145 @@ export const DEFAULT_EXTENSION_CONFIG = `{
     // "trimTrailingWhitespace": false,
 }`;
 
+/**
+ * Returns a language-specific config template with commented suggestions.
+ * Used when creating a new per-extension config to provide helpful defaults.
+ * 
+ * @param ext - File extension WITHOUT the leading dot (e.g. 'ts', 'md', 'json')
+ * @returns A JSON string with commented suggestions for this extension
+ */
+export function getExtensionConfigTemplate(ext: string): string {
+	if (!ext) return DEFAULT_EXTENSION_CONFIG;
+	const templates: Record<string, string> = {
+		md: `{
+    // Markdown-specific options
+    // "printWidth": 80,  // Line length for wrapping prose
+    // "proseWrap": "always",  // "always" | "never" | "preserve" - how to wrap prose
+    // "tabSize": 2,
+}`,
+		json: `{
+    // JSON typically uses 2-space indentation
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		jsonc: `{
+    // JSONC (JSON with Comments) typically uses 2-space indentation
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		yaml: `{
+    // YAML typically uses 2-space indentation
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		yml: `{
+    // YAML typically uses 2-space indentation
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		js: `{
+    // JavaScript options
+    // "tabSize": 2,
+    // "printWidth": 100,
+    // "formatOnSave": true,
+}`,
+		jsx: `{
+    // JSX options
+    // "tabSize": 2,
+    // "printWidth": 100,
+    // "formatOnSave": true,
+}`,
+		ts: `{
+    // TypeScript options
+    // "tabSize": 2,
+    // "printWidth": 100,
+    // "formatOnSave": true,
+}`,
+		tsx: `{
+    // TSX options
+    // "tabSize": 2,
+    // "printWidth": 100,
+    // "formatOnSave": true,
+}`,
+		css: `{
+    // CSS options
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		scss: `{
+    // SCSS options
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		less: `{
+    // Less options
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		html: `{
+    // HTML options
+    // "tabSize": 2,
+    // "printWidth": 100,
+}`,
+		graphql: `{
+    // GraphQL options
+    // "tabSize": 2,
+    // "printWidth": 80,
+}`,
+		mmd: `{
+    // Mermaid diagram options
+    // "tabSize": 2,
+    // "formatOnSave": true,
+}`,
+		py: `{
+    // Python typically uses 4-space indentation (PEP 8)
+    // "tabSize": 4,
+    // "insertSpaces": true,
+    // "printWidth": 88,  // Black formatter default
+    // "trimTrailingWhitespace": true,
+}`,
+		go: `{
+    // Go uses tabs for indentation (gofmt standard)
+    // "tabSize": 4,
+    // "insertSpaces": false,
+    // "trimTrailingWhitespace": true,
+}`,
+		rs: `{
+    // Rust typically uses 4-space indentation (rustfmt default)
+    // "tabSize": 4,
+    // "insertSpaces": true,
+    // "printWidth": 100,
+}`,
+		c: `{
+    // C typically uses 4-space or tab indentation
+    // "tabSize": 4,
+    // "insertSpaces": true,
+}`,
+		cpp: `{
+    // C++ typically uses 4-space or tab indentation
+    // "tabSize": 4,
+    // "insertSpaces": true,
+}`,
+		java: `{
+    // Java typically uses 4-space indentation
+    // "tabSize": 4,
+    // "insertSpaces": true,
+}`,
+		cs: `{
+    // C# typically uses 4-space indentation
+    // "tabSize": 4,
+    // "insertSpaces": true,
+}`,
+		php: `{
+    // PHP typically uses 4-space indentation (PSR-2)
+    // "tabSize": 4,
+    // "insertSpaces": true,
+}`,
+	};
+
+	return templates[ext] || DEFAULT_EXTENSION_CONFIG;
+}
+
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
 export const OBSIDIAN_NATIVE_EXTENSIONS = [
 	'md',

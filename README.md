@@ -209,13 +209,25 @@ Accepts standard Monaco `IEditorOptions`:
     "insertSpaces": true,
     "formatOnSave": true,
     "formatOnType": false,
-    "printWidth": 80,  // Line length for Prettier (markdown, mermaid only)
+    "printWidth": 80,  // Line length for Prettier (markdown, mermaid, JS, TS, CSS, etc.)
+    "proseWrap": "always",  // Markdown only: "always" | "never" | "preserve"
     // "rulers": [80, 120],  // Visual line length guides (all languages)
     // "fontSize": 14,
 }
 ```
 
-**Note:** `printWidth` affects Prettier-based formatters (Markdown, Mermaid, JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL). Use `rulers` for visual line length guides.
+**Language-Specific Templates:** When you open the extension config for a specific file type, the editor pre-fills with helpful suggestions:
+
+- **Markdown (`.md`)**: Includes `proseWrap` option for controlling prose wrapping
+- **JSON/YAML**: Suggests 2-space indentation (common convention)
+- **JavaScript/TypeScript**: Suggests 2-space indentation, 100-char line length
+- **Python**: Suggests 4-space indentation, 88-char line length (Black formatter)
+- **Go**: Suggests tabs instead of spaces (gofmt standard)
+- **And more...**
+
+These are commented suggestions — uncomment to override global config.
+
+**Note:** `printWidth` affects Prettier-based formatters (Markdown, Mermaid, JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL). `proseWrap` is Markdown-specific. Use `rulers` for visual line length guides in all languages.
 
 Changes save automatically when the panel closes. Per-extension config merges with global.
 

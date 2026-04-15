@@ -234,6 +234,9 @@ export const mountCodeEditor = async (
 	// Without this, Monaco tries to inject its CSS via <link> which Obsidian's CSP blocks in child frames.
 	// appendChild is monkey-patched: <link> nodes are silently dropped (returned without inserting)
 	// so Monaco doesn't throw, while all other nodes are inserted normally via the original appendChild.
+	// Inject parseEditorConfig as inline JavaScript because the iframe is isolated
+	// and cannot import from settingsUtils.ts. This is a duplicate of the TypeScript
+	// version in settingsUtils.ts — keep them in sync (same regex patterns, same logic).
 	html = html.replace(
 		'</head>',
 		`<script>

@@ -12,14 +12,23 @@ import {
 } from '../types/types.ts';
 
 /**
- * Parses a JSON string that may contain JavaScript-style comments and trailing commas.
- *
+ * Parses JSONC (JSON with Comments) by stripping comments and trailing commas.
+ * 
+ * This is an internal utility used by saveEditorConfig() and buildMergedConfig()
+ * to validate and parse raw editor config strings from Monaco.
+ * 
  * Handles:
  * - Single-line comments (`// ...`)
  * - Multi-line block comments (`/* ... * /`)
  * - Trailing commas before closing brackets/braces
+ * 
+ * @param str - Raw JSONC string (may contain comments and trailing commas)
+ * @returns Parsed JavaScript object
+ * @throws {SyntaxError} If the JSON is invalid after stripping comments
+ * 
+ * @internal
  */
-function parseEditorConfig(str: string): unknown {
+export function parseEditorConfig(str: string): unknown {
 	return JSON.parse(
 		str
 			.replace(/\/\/[^\n]*/g, '')
@@ -56,11 +65,11 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
  * Deletes the override if it matches the default for that key.
  * 
  * @param plugin - The plugin instance
- * @param key - `'*'` for the global config, or a file extension (e.g. `'ts'`, `'md'`) for a per-extension override
+ * @param key - File extension WITHOUT the leading dot (e.g. 'ts', 'md'), or '*' for global config
  * @param value - The raw JSONC string from the editor (may contain comments and trailing commas)
  * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
  */
-export function applyEditorConfig(
+export function saveEditorConfig(
 	plugin: CodeFilesPlugin,
 	key: string,
 	value: string
@@ -71,10 +80,10 @@ export function applyEditorConfig(
 		const previous = plugin.settings.editorConfigs[key];
 		// Early exit if nothing changed
 		if (previous?.trim() === value) return false;
-		// Delete override if value matches default
-		if (key !== '*' && value === defaultForKey.trim()) {
-			if (!(key in plugin.settings.editorConfigs)) return false;
-			// Back to default: no need to persist, buildMergedConfig falls back to DEFAULT_EXTENSION_CONFIG
+		// Delete global override if value matches default
+		if (key === '*' && value === defaultForKey.trim()) {
+			if (!('*' in plugin.settings.editorConfigs)) return false;
+			// Back to default: no need to persist
 			delete plugin.settings.editorConfigs[key];
 			return true;
 		}
