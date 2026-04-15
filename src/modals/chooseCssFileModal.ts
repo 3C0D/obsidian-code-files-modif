@@ -4,7 +4,7 @@
  * Typing a new name offers to create a snippet file.
  * Opens the selected or created snippet in Monaco Editor.
  */
-import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
+import { normalizePath, Notice, SuggestModal } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import type { CssSuggestion } from '../types/types.ts';
@@ -44,12 +44,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 			new Notice('Make sure to enable the new snippet in Obsidian options.');
 		}
 
-		// Snippets are outside the vault — use external mount.
-		// TFile is constructed manually because the adapter
-		// path is not indexed in the vault.
-		// @ts-expect-error: TFile constructor is internal API
-		const pseudoFile = new TFile(this.plugin.app.vault, path);
-		await CodeEditorView.openExternalFile(pseudoFile, this.plugin);
+		await CodeEditorView.openExternalFile(path, this.plugin);
 	}
 
 	renderSuggestion(item: CssSuggestion, el: HTMLElement): void {

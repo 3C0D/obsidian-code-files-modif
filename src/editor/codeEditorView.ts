@@ -479,8 +479,13 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
-	/** Opens external files (CSS snippets) in a new leaf. Manual onLoadFile call required because leaf.open() doesn't trigger it for non-vault files. */
-	static async openExternalFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
+	/** Opens external files (CSS snippets) in a new leaf via an adapter path (not vault-indexed).
+	 *  Constructs a pseudo TFile internally since the path is outside the vault. */
+	static async openExternalFile(filePath: string, plugin: CodeFilesPlugin): Promise<void> {
+		// Snippets are outside the vault — TFile is constructed manually
+		// because the adapter path is not indexed in the vault.
+		// @ts-expect-error: TFile constructor is internal API
+		const file = new TFile(plugin.app.vault, filePath);
 		const leaf = plugin.app.workspace.getLeaf(true);
 		const view = new CodeEditorView(leaf, plugin);
 		view.file = file;
@@ -495,7 +500,7 @@ export class CodeEditorView extends TextFileView {
 		if (plugin.app.vault.getAbstractFileByPath(file.path)) {
 			await CodeEditorView.openVaultFile(file, plugin);
 		} else {
-			await CodeEditorView.openExternalFile(file, plugin);
+			await CodeEditorView.openExternalFile(file.path, plugin);
 		}
 	}
 }

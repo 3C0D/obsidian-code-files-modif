@@ -6,7 +6,7 @@
  * and excluding binary formats (executables, archives, databases, fonts).
  */
 import type { TFolder } from 'obsidian';
-import { normalizePath, Notice, SuggestModal, TFile } from 'obsidian';
+import { normalizePath, Notice, SuggestModal } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView } from 'obsidian-typings';
@@ -163,11 +163,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 	async onChooseSuggestion(item: HiddenFileSuggestion): Promise<void> {
 		const path = normalizePath(item.path);
-
-		// Create pseudo TFile for external file
-		// @ts-expect-error: TFile constructor is internal API
-		const pseudoFile = new TFile(this.plugin.app.vault, path);
-		await CodeEditorView.openExternalFile(pseudoFile, this.plugin);
+		await CodeEditorView.openExternalFile(path, this.plugin);
 	}
 
 	renderSuggestion(item: HiddenFileSuggestion, el: HTMLElement): void {
