@@ -1,4 +1,5 @@
-import { access, mkdir, copyFile, rm } from 'fs/promises';
+import { access, mkdir, copyFile, rm, writeFile } from 'fs/promises';
+import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import * as readline from 'readline';
 import { execSync } from 'child_process';
@@ -159,4 +160,98 @@ export async function ensureGitSync(): Promise<void> {
 		);
 		throw error;
 	}
+}
+
+/** Returns true if the current path is inside an Obsidian plugins folder
+ *  (any hidden config dir, not just .obsidian) */
+export function isInPluginsFolder(currentPath: string): boolean {
+	const parts = currentPath.split(path.sep);
+	for (let i = 1; i < parts.length; i++) {
+		if (parts[i] === 'plugins' && parts[i - 1].startsWith('.')) return true;
+	}
+	return false;
+}
+
+/** Validates that a path points to an Obsidian vault with a plugins directory */
+export function validateVaultPath(vaultPath: string): boolean {
+	return (
+		existsSync(path.join(vaultPath, '.obsidian')) &&
+		existsSync(path.join(vaultPath, '.obsidian', 'plugins'))
+	);
+}
+
+/** Resolves the full plugin install path from a vault path */
+export function getVaultPath(vaultPath: string, pluginId: string): string {
+	if (!validateVaultPath(vaultPath)) {
+		console.error(`❌ Invalid vault path: ${vaultPath}`);
+		console.error(`   The path must contain a .obsidian/plugins directory`);
+		process.exit(1);
+	}
+	const pluginsPath = path.join('.obsidian', 'plugins');
+	return vaultPath.includes(pluginsPath)
+		? path.join(vaultPath, pluginId)
+		: path.join(vaultPath, '.obsidian', 'plugins', pluginId);
+}
+
+/** Updates or adds an env key in the .env file */
+export async function updateEnvFile(
+	envKey: string,
+	vaultPath: string,
+	envPath: string
+): Promise<void> {
+	let envContent = '';
+	try {
+		envContent = readFileSync(envPath, 'utf8');
+	} catch {
+		/* file doesn't exist yet */
+	}
+	const regex = new RegExp(`^${envKey}=.*$`, 'm');
+	const newLine = `${envKey}=${vaultPath}`;
+	envContent = regex.test(envContent)
+		? envContent.replace(regex, newLine)
+		: envContent + (envContent.endsWith('\n') ? '' : '\n') + newLine + '\n';
+	await writeFile(envPath, envContent);
+	console.log(`✅ Updated ${envKey} in .env file`);
+}
+
+/**
+ * Prompt the user for a vault path if it's missing or still a placeholder in the .env file.
+ */
+export async function promptForVaultPath(
+	envKey: string,
+	rl: readline.Interface
+): Promise<string> {
+	const vaultType = envKey === 'REAL_VAULT' ? 'real' : 'test';
+	const usage =
+		envKey === 'REAL_VAULT'
+			? 'for final plugin installation'
+			: 'for development and testing';
+
+	console.log(`❓ ${envKey} path is required ${usage}`);
+	const vaultPath = await askQuestion(
+		`📝 Enter your ${vaultType} vault path (or Ctrl+C to cancel): `,
+		rl
+	);
+
+	if (!vaultPath) {
+		console.log('❌ No path provided, exiting...');
+		process.exit(1);
+	}
+
+	return vaultPath;
+}
+
+/** Creates a .env file with placeholder paths if it doesn't exist */
+export async function ensureEnvFile(envPath: string): Promise<void> {
+	if (await isValidPath(envPath)) return;
+	const template =
+		[
+			'# Obsidian vault paths for plugin development',
+			'# TEST_VAULT: path to your test/development vault (used with yarn dev)',
+			'# REAL_VAULT: path to your production vault (used with yarn real)',
+			'TEST_VAULT=/path/to/your/test/vault',
+			'REAL_VAULT=/path/to/your/real/vault'
+		].join('\n') + '\n';
+	await writeFile(envPath, template);
+	console.log('📄 Created .env with placeholder paths');
 }
