@@ -145,7 +145,7 @@ Similar registration for Go and C/C++, with language-specific options.
 
 - `README.md`: Add to "Supported Languages" section
 - `types.ts`: Update language-specific config templates
-- Test files: Create `templates/format-test-samples/sample.{py,go,c,cpp}`
+- Test files: Create `templates/format-test-samples-for-obsidian/sample.{py,go,c,cpp}`
 
 ## Formatter-Specific Notes
 
@@ -175,14 +175,14 @@ No stable npm package with browser-ready WASM build exists for rustfmt. The offi
 - `src/ruff-formatter-bundle-entry.js` - Ruff bundle entry
 - `src/gofmt-formatter-bundle-entry.js` - gofmt bundle entry
 - `src/clang-format-bundle-entry.js` - clang-format bundle entry
-- `templates/format-test-samples/` - Test files for each language
+- `templates/format-test-samples-for-obsidian/` - Test files for each language
 - `README.md` - Updated supported languages list
 - `types.ts` - Updated language-specific config templates
 
 ## Testing
 
 Each formatter was tested with:
-1. Intentionally malformed test files in `templates/format-test-samples/`
+1. Intentionally malformed test files in `templates/format-test-samples-for-obsidian/`
 2. Format on demand (Shift+Alt+F)
 3. Format on save (when enabled)
 4. Format diff viewer with selective revert

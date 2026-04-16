@@ -1,14 +1,14 @@
 # Ruff configuration for Code Files plugin
 # This file configures Ruff linter/formatter behavior for the plugin's test samples.
 # 
-# Context: The templates/format-test-samples/ folder contains intentionally malformed files
+# Context: The templates/format-test-samples-for-obsidian/ folder contains intentionally malformed files
 # (one per supported extension) used to test formatter integration in Monaco. The Python file
 # has deliberate formatting and import errors that should be ignored by the linter.
 
 [lint]
 # Ignore specific rules in test files
 [lint.per-file-ignores]
-"templates/format-test-samples/*.py" = [
+"templates/format-test-samples-for-obsidian/*.py" = [
     "E401",  # Multiple imports on one line
     "E402",  # Module level import not at top of file
     "F401",  # Imported but unused

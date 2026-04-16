@@ -49,7 +49,7 @@ Prettier formatting is available for:
 
 ### Test Samples
 
-The `format-test-samples/` folder contains example files with intentional formatting errors to test the formatter. Copy this folder to your vault to try formatting on different file types.
+The `templates/format-test-samples-for-obsidian/` folder contains example files with intentional formatting errors to test the formatter. **Copy this folder to your Obsidian vault** to try formatting on different file types.
 
 ### Format Diff Viewer
 

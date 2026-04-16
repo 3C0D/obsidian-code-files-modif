@@ -8,7 +8,7 @@ These files contain **intentional formatting errors** to demonstrate the formatt
 
 ## How to use
 
-1. Copy this `format-test-samples` folder to your Obsidian vault
+1. Copy this `format-test-samples-for-obsidian` folder to your Obsidian vault
 2. Open each file in Monaco Editor
 3. Use **Shift+Alt+F** or enable **formatOnSave** to format
 4. Observe the formatting changes in the diff viewer
