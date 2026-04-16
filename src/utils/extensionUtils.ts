@@ -10,6 +10,7 @@ import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/types.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
+import { getEmptyFileExtension } from './fileUtils.ts';
 
 /** Returns all known code extensions, minus exclusions. */
 export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
@@ -120,7 +121,7 @@ export function unregisterExtension(plugin: CodeFilesPlugin, ext: string): void 
 		plugin.app.viewRegistry.unregisterExtensions([ext]);
 		plugin.app.workspace.getLeavesOfType(viewType).forEach((leaf) => {
 			const view = leaf.view as CodeEditorView;
-			if (view.file?.extension === ext) leaf.detach();
+			if (view.file && getEmptyFileExtension(view.file) === ext) leaf.detach();
 		});
 	} catch (e) {
 		console.log(`code-files: could not unregister extension "${ext}":`, e);

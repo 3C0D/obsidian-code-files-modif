@@ -27,6 +27,7 @@ import { broadcastOptions } from '../utils/broadcast.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
 import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
+import { getEmptyFileExtension } from '../utils/fileUtils.ts';
 
 /**
  * Obsidian TextFileView wrapper for Monaco Editor.
@@ -177,8 +178,9 @@ export class CodeEditorView extends TextFileView {
 		if (!titleContainer) return;
 		titleContainer.querySelector('.code-files-ext-badge')?.remove();
 		titleContainer.querySelector('.code-files-dirty-badge')?.remove();
+		const ext = getEmptyFileExtension(file);
 		const badge = createEl('span', {
-			text: `.${file.extension}`,
+			text: ext ? `.${ext}` : file.name,
 			cls: 'code-files-ext-badge'
 		});
 		titleContainer.appendChild(badge);
@@ -217,10 +219,11 @@ export class CodeEditorView extends TextFileView {
 			).open();
 		});
 
+		const ext = getEmptyFileExtension(file);
 		this.gearAction = this.addAction('settings', 'Editor Settings', () => {
 			new EditorSettingsModal(
 				this.plugin,
-				file.extension,
+				ext,
 				() => broadcastOptions(this.plugin),
 				(config) => {
 					this.codeEditor?.send('change-editor-config', { config });
@@ -230,9 +233,7 @@ export class CodeEditorView extends TextFileView {
 		});
 
 		// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered
-		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(
-			file.extension
-		);
+		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(ext);
 		if (isUnregistered) {
 			this.returnAction = this.addAction(
 				'undo-2',
@@ -247,7 +248,7 @@ export class CodeEditorView extends TextFileView {
 		// Add snippet controls ONLY when editing a CSS snippet file
 		// Added LAST so they appear on the LEFT
 		const isSnippetFile =
-			file.path.includes('.obsidian/snippets') && file.extension === 'css';
+			file.path.includes('.obsidian/snippets') && getEmptyFileExtension(file) === 'css';
 		if (isSnippetFile) {
 			const snippetName = file.basename;
 			const exists = snippetExists(this.plugin.app, snippetName);
@@ -311,9 +312,10 @@ export class CodeEditorView extends TextFileView {
 	 *  contentEl is passed to resolve the owner document/window, which differs
 	 *  from the main window when opened in an Obsidian popout window. */
 	private async mountEditor(file: TFile): Promise<void> {
+		const ext = getEmptyFileExtension(file);
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,
-			getLanguage(file.extension),
+			getLanguage(ext),
 			this.data,
 			this.getContext(file),
 			this.contentEl,
