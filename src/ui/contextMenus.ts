@@ -12,10 +12,18 @@ import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
+import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItems } from '../types/types.ts';
+import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/types.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
+import {
+	addExtension,
+	registerExtension,
+	syncRegisteredExts,
+	getActiveExtensions
+} from '../utils/extensionUtils.ts';
 
 /**
  * Registers two context menus:
@@ -43,17 +51,11 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 				return;
 			}
 
-			// File: show Rename Extension in explorer, Code Files submenu elsewhere, nothing on tab header
+			// File: show Code Files submenu in explorer, Code Files submenu elsewhere, nothing on tab header
 			if (abstractFile instanceof TFile) {
-				menu.addItem((i) => {
-					if (source === 'file-explorer-context-menu') {
-						i.setTitle('Rename Extension')
-							.setIcon('pencil')
-							.onClick(() =>
-								new RenameExtensionModal(plugin, abstractFile).open()
-							);
-					} else if (source !== 'tab-header') {
-						const items = getFileItems(plugin);
+				if (source === 'file-explorer-context-menu') {
+					const items = getFileExplorerItems(plugin, abstractFile);
+					menu.addItem((i) => {
 						i.setTitle('Code Files').setIcon('file-code-corner');
 						const sub = i.setSubmenu();
 						for (const it of items) {
@@ -64,8 +66,22 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 									.onClick(it.action)
 							);
 						}
-					}
-				});
+					});
+				} else if (source !== 'tab-header') {
+					const items = getFileItems(plugin);
+					menu.addItem((i) => {
+						i.setTitle('Code Files').setIcon('file-code-corner');
+						const sub = i.setSubmenu();
+						for (const it of items) {
+							sub.addItem((subItem) =>
+								subItem
+									.setTitle(it.title)
+									.setIcon(it.icon)
+									.onClick(it.action)
+							);
+						}
+					});
+				}
 			}
 		})
 	);
@@ -135,6 +151,58 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			}
 		});
 	}
+
+	return items;
+}
+
+/** Builds the submenu items for files in the file explorer. */
+function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[] {
+	const ext = file.extension;
+	const items: MenuItems[] = [];
+
+	// Check if extension is registered and if it's native to Obsidian
+	const activeExts = getActiveExtensions(plugin.settings);
+	const isRegistered = activeExts.includes(ext);
+	const isNative = OBSIDIAN_NATIVE_EXTENSIONS.includes(ext);
+
+	// Show "Open in Monaco Editor" if:
+	// - File has no extension (LICENSE, README, etc.), OR
+	// - Extension is not registered AND not native
+	if (!isRegistered) {
+		items.push({
+			title: 'Open in Monaco Editor',
+			icon: 'file-code-corner',
+			action: async () => await CodeEditorView.openFile(file, plugin)
+		});
+	}
+
+	// Show "Register Extension" only if has extension AND not registered AND not native
+	if (!isRegistered && !isNative) {
+		items.push({
+			title: 'Register Extension',
+			icon: 'plus-circle',
+			action: async () => {
+				const added = addExtension(plugin.settings, ext);
+				if (!added) {
+					new Notice(
+						'Extension already registered or native extension not allowed'
+					);
+					return;
+				}
+				registerExtension(plugin, ext);
+				await plugin.saveSettings();
+				syncRegisteredExts(plugin);
+				new Notice(`".${ext}" registered with Code Files`);
+			}
+		});
+	}
+
+	// Always show "Rename Extension"
+	items.push({
+		title: 'Rename Extension',
+		icon: 'pencil',
+		action: () => new RenameExtensionModal(plugin, file).open()
+	});
 
 	return items;
 }

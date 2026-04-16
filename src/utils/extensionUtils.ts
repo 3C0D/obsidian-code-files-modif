@@ -6,10 +6,16 @@
  */
 import type { App } from 'obsidian';
 import type { MyPluginSettings } from '../types/types.ts';
-import { viewType } from '../types/types.ts';
-import { getAllMonacoExtensions } from './getLanguage.ts';
+import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/types.ts';
+import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
+
+/** Returns all known code extensions, minus exclusions. */
+export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
+	const excluded = new Set(excludedExtensions);
+	return Object.keys(staticMap).filter((ext) => !excluded.has(ext));
+}
 
 /**
  * Returns the list of extensions currently handled
@@ -35,8 +41,22 @@ export function getActiveExtensions(settings: MyPluginSettings): string[] {
  * Adds an extension to all relevant lists to maintain consistency
  * across manual and extended modes.
  * Uses Set to prevent duplicates.
+ * Blocks native Obsidian extensions and already registered extensions.
+ * @returns true if the extension was added, false if blocked (native or already registered)
  */
-export function addExtension(settings: MyPluginSettings, ext: string): void {
+export function addExtension(settings: MyPluginSettings, ext: string): boolean {
+	// Block native extensions
+	if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
+		console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
+		return false;
+	}
+
+	// Block already registered extensions
+	if (getActiveExtensions(settings).includes(ext)) {
+		console.warn(`code-files: cannot add "${ext}" - already registered`);
+		return false;
+	}
+
 	// Add to both main lists
 	settings.extensions = [...new Set([...settings.extensions, ext])];
 	settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
@@ -45,6 +65,8 @@ export function addExtension(settings: MyPluginSettings, ext: string): void {
 	const excluded = new Set(settings.excludedExtensions);
 	excluded.delete(ext);
 	settings.excludedExtensions = [...excluded];
+
+	return true;
 }
 
 /**
