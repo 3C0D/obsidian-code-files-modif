@@ -72,6 +72,7 @@ export const resolveThemeParams = async (
  * @param onOpenEditorConfig - Optional callback invoked when the user requests editor settings
  * @param onOpenThemePicker - Optional callback invoked when the user requests theme picker
  * @param onOpenRenameExtension - Optional callback invoked when the user requests rename extension
+ * @param autoFocus - Optional flag to disable automatic focus on editor ready (default: true)
  * @returns A CodeEditorInstance with methods to control the editor (send, getValue, setValue, destroy)
  */
 export const mountCodeEditor = async (
@@ -86,7 +87,8 @@ export const mountCodeEditor = async (
 	onFormatDiffReverted?: () => void,
 	onOpenEditorConfig?: (ext: string) => void,
 	onOpenThemePicker?: () => void,
-	onOpenRenameExtension?: () => void
+	onOpenRenameExtension?: () => void,
+	autoFocus = true
 ): Promise<CodeEditorInstance> => {
 	// Use the document/window of the container element to support Obsidian popout windows
 	const doc = containerEl.ownerDocument;
@@ -329,7 +331,7 @@ Element.prototype.appendChild = function(node) {
 				// Order matters: init must come before change-value so the editor exists when value arrives.
 				send('init', initParams);
 				send('change-value', { value });
-				send('focus', {});
+				if (autoFocus) send('focus', {});
 				void loadProjectFiles(send);
 				break;
 			}
