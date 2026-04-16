@@ -90,7 +90,6 @@ export const staticMap: Record<string, string> = {
 	ini: 'ini',
 	properties: 'ini',
 	nginx: 'ini',
-	env: 'ini',
 	toml: 'toml',
 	dockerfile: 'dockerfile',
 	graphql: 'graphql',
