@@ -46,8 +46,10 @@ const EXCLUDED_EXTENSIONS = [
 	'eot'
 ];
 
-/** Maximum file size in bytes (5MB) */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+/** Maximum file size in MB for opening in Monaco (configurable in settings) */
+function getMaxFileSize(plugin: CodeFilesPlugin): number {
+	return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
+}
 
 interface HiddenFileSuggestion {
 	name: string;
@@ -102,7 +104,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 			try {
 				const stat = await this.plugin.app.vault.adapter.stat(filePath);
-				if (!stat || stat.size > MAX_FILE_SIZE) continue;
+				if (!stat || stat.size > getMaxFileSize(this.plugin)) continue;
 				this.hiddenFiles.push({
 					name: fileName,
 					path: filePath,

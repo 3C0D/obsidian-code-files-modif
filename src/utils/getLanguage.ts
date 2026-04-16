@@ -6,7 +6,7 @@
  */
 
 // Static map of file extensions to Monaco language IDs.
-const staticMap: Record<string, string> = {
+export const staticMap: Record<string, string> = {
 	js: 'javascript',
 	es6: 'javascript',
 	jsx: 'javascript',
@@ -120,8 +120,4 @@ export function getLanguage(extension: string): string {
 	return staticMap[extension] ?? 'plaintext';
 }
 
-/** Returns all known code extensions, minus exclusions. */
-export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
-	const excluded = new Set(excludedExtensions);
-	return Object.keys(staticMap).filter((ext) => !excluded.has(ext));
-}
+

@@ -106,6 +106,22 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			}
 		});
 
+		new Setting(containerEl)
+			.setName('Maximum file size')
+			.setDesc('Maximum file size in MB for opening files in Monaco (default: 10 MB)')
+			.addText((text) =>
+				text
+					.setPlaceholder('10')
+					.setValue(String(this.plugin.settings.maxFileSize))
+					.onChange(async (value) => {
+						const num = parseFloat(value);
+						if (!isNaN(num) && num > 0 && num <= 100) {
+							this.plugin.settings.maxFileSize = num;
+							await this.plugin.saveSettings();
+						}
+					})
+			);
+
 		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Editor Config' });
 		containerEl.createEl('p', {

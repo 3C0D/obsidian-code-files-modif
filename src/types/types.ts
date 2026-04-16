@@ -32,6 +32,8 @@ export interface MyPluginSettings {
 	excludedExtensions: string[];
 	/** Extra extensions added manually while allExtensions is true */
 	extraExtensions: string[];
+	/** Maximum file size in MB for opening in Monaco (default: 10) */
+	maxFileSize: number;
 	/** Project root folder (vault-relative path) for inter-file navigation and imports resolution */
 	projectRootFolder: string;
 	/** Custom color for the project root folder highlight — empty string uses CSS default (--color-green) */
@@ -291,6 +293,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
 	extraExtensions: [],
+	maxFileSize: 10,
 	projectRootFolder: '',
 	projectRootFolderColor: '',
 	lastSelectedConfigExtension: ''
