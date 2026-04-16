@@ -206,7 +206,9 @@ export class EditorSettingsModal extends Modal {
 			if (this.codeEditor) {
 				const cfg =
 					this.plugin.settings.editorConfigs?.[global ? '*' : this.extension] ??
-					(global ? DEFAULT_EDITOR_CONFIG : getExtensionConfigTemplate(this.extension));
+					(global
+						? DEFAULT_EDITOR_CONFIG
+						: getExtensionConfigTemplate(this.extension));
 				this.codeEditor.setValue(cfg);
 			}
 		};
@@ -275,7 +277,7 @@ export class EditorSettingsModal extends Modal {
 		if (this.codeEditor) {
 			const raw = this.codeEditor.getValue().trim();
 			const key = this.isGlobal ? '*' : this.extension;
-			// Final save in case the user closes before debouncedSave fires 
+			// Final save in case the user closes before debouncedSave fires
 			if (saveEditorConfig(this.plugin, key, raw)) {
 				void this.plugin.saveSettings();
 				// Notify Obsidian settings tab to refresh its config editor display

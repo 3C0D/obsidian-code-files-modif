@@ -18,7 +18,11 @@ import { viewType, type CodeEditorInstance } from '../types/types.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
-import { snippetExists, isSnippetEnabled, registerSnippetChangeHandler } from '../utils/snippetUtils.ts';
+import {
+	snippetExists,
+	isSnippetEnabled,
+	registerSnippetChangeHandler
+} from '../utils/snippetUtils.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
@@ -208,10 +212,8 @@ export class CodeEditorView extends TextFileView {
 				const params = await resolveThemeParams(this.plugin, theme);
 				this.codeEditor?.send('change-theme', params);
 			};
-			new ChooseThemeModal(
-				this.plugin,
-				applyTheme,
-				() => this.codeEditor?.send('focus', {})
+			new ChooseThemeModal(this.plugin, applyTheme, () =>
+				this.codeEditor?.send('focus', {})
 			).open();
 		});
 
@@ -366,27 +368,26 @@ export class CodeEditorView extends TextFileView {
 					const params = await resolveThemeParams(this.plugin, theme);
 					this.codeEditor?.send('change-theme', params);
 				};
-				new ChooseThemeModal(
-					this.plugin,
-					applyTheme,
-					() => this.codeEditor?.send('focus', {})
+				new ChooseThemeModal(this.plugin, applyTheme, () =>
+					this.codeEditor?.send('focus', {})
 				).open();
 			},
 			// onOpenRenameExtension
 			() => {
 				const f = this.plugin.app.vault.getFileByPath(file.path);
 				if (f && 'extension' in f) {
-					const modal = new RenameExtensionModal(
-						this.plugin,
-						f,
-						() => setTimeout(() => this.codeEditor?.send('focus', {}), 50)
+					const modal = new RenameExtensionModal(this.plugin, f, () =>
+						setTimeout(() => this.codeEditor?.send('focus', {}), 50)
 					);
 					modal.open();
 				}
 			}
 		);
 		// Register theme change handler to follow Obsidian's theme when set to 'default'
-		this.unregisterThemeHandler = registerThemeChangeHandler(this.plugin, this.codeEditor);
+		this.unregisterThemeHandler = registerThemeChangeHandler(
+			this.plugin,
+			this.codeEditor
+		);
 	}
 
 	/** Shows the diff action in the header for x seconds after a format */
@@ -481,7 +482,10 @@ export class CodeEditorView extends TextFileView {
 
 	/** Opens external files (CSS snippets) in a new leaf via an adapter path (not vault-indexed).
 	 *  Constructs a pseudo TFile internally since the path is outside the vault. */
-	static async openExternalFile(filePath: string, plugin: CodeFilesPlugin): Promise<void> {
+	static async openExternalFile(
+		filePath: string,
+		plugin: CodeFilesPlugin
+	): Promise<void> {
 		// Snippets are outside the vault — TFile is constructed manually
 		// because the adapter path is not indexed in the vault.
 		// @ts-expect-error: TFile constructor is internal API

@@ -16,7 +16,11 @@ import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
-import { getActiveExtensions, addExtension, registerExtension } from '../utils/extensionUtils.ts';
+import {
+	getActiveExtensions,
+	addExtension,
+	registerExtension
+} from '../utils/extensionUtils.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {

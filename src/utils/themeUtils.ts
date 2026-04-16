@@ -22,8 +22,8 @@ export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
 }
 
 /** Registers a listener that updates Monaco's theme when Obsidian switches dark/light mode.
- *  Only active when theme is set to 'default'. Returns a cleanup function to unregister. 
- * 
+ *  Only active when theme is set to 'default'. Returns a cleanup function to unregister.
+ *
  * @returns () => void - function to unregister the event listener
  * */
 export function registerThemeChangeHandler(

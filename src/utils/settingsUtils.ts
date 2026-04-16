@@ -13,19 +13,19 @@ import {
 
 /**
  * Parses JSONC (JSON with Comments) by stripping comments and trailing commas.
- * 
+ *
  * This is an internal utility used by saveEditorConfig() and buildMergedConfig()
  * to validate and parse raw editor config strings from Monaco.
- * 
+ *
  * Handles:
  * - Single-line comments (`// ...`)
  * - Multi-line block comments (`/* ... * /`)
  * - Trailing commas before closing brackets/braces
- * 
+ *
  * @param str - Raw JSONC string (may contain comments and trailing commas)
  * @returns Parsed JavaScript object
  * @throws {SyntaxError} If the JSON is invalid after stripping comments
- * 
+ *
  * @internal
  */
 export function parseEditorConfig(str: string): unknown {
@@ -63,7 +63,7 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 /**
  * Saves a raw editor config string for the given key.
  * Deletes the override if it matches the default for that key.
- * 
+ *
  * @param plugin - The plugin instance
  * @param key - File extension WITHOUT the leading dot (e.g. 'ts', 'md'), or '*' for global config
  * @param value - The raw JSONC string from the editor (may contain comments and trailing commas)

@@ -7,22 +7,14 @@
  * - Project root folder highlight color customization
  */
 import type { App } from 'obsidian';
-import {
-	debounce,
-	PluginSettingTab,
-	Setting,
-	TextComponent
-} from 'obsidian';
+import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
-import {
-	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG
-} from '../types/types.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG } from '../types/types.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import { getActiveExtensions, reregisterExtensions } from '../utils/extensionUtils.ts';
-import { applyEditorConfig } from '../utils/settingsUtils.ts';
+import { saveEditorConfig } from '../utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
@@ -129,7 +121,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		// Scope buttons row
 		const scopeRow = containerEl.createEl('div', {
-			attr: { style: 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;' }
+			attr: {
+				style: 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;'
+			}
 		});
 
 		const btnGlobal = scopeRow.createEl('button', {
@@ -147,7 +141,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		scopeRow.createEl('span', {
 			text: 'Choose a specific ext:',
-			attr: { style: 'margin-left: auto; margin-right: 8px; color: var(--text-muted); font-size: 0.9em;' }
+			attr: {
+				style: 'margin-left: auto; margin-right: 8px; color: var(--text-muted); font-size: 0.9em;'
+			}
 		});
 
 		const extInput = new TextComponent(scopeRow);
@@ -156,7 +152,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		// Monaco editor container
 		const editorContainer = containerEl.createEl('div', {
-			attr: { style: 'border: 1px solid var(--background-modifier-border); border-radius: 4px; overflow: hidden; height: 190px; margin-top: 8px;' }
+			attr: {
+				style: 'border: 1px solid var(--background-modifier-border); border-radius: 4px; overflow: hidden; height: 190px; margin-top: 8px;'
+			}
 		});
 
 		const debouncedSave = debounce(
@@ -164,7 +162,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				if (!this.codeEditor) return;
 				const value = this.codeEditor.getValue().trim();
 				const key = isGlobal ? '*' : selectedExt;
-				if (applyEditorConfig(this.plugin, key, value)) {
+				if (saveEditorConfig(this.plugin, key, value)) {
 					await this.plugin.saveSettings();
 					broadcastEditorConfig(this.plugin, key);
 					this.plugin.app.workspace.trigger('code-files:settings-changed');
@@ -251,7 +249,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		const colorSetting = new Setting(containerEl)
 			.setName('Folder highlight color')
-			.setDesc('Color used to highlight the project root folder in the file explorer. Leave default to use violet (#c644cf).');
+			.setDesc(
+				'Color used to highlight the project root folder in the file explorer. Leave default to use violet (#c644cf).'
+			);
 
 		const colorInput = colorSetting.controlEl.createEl('input');
 		colorInput.type = 'color';

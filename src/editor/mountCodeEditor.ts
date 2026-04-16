@@ -155,6 +155,12 @@ export const mountCodeEditor = async (
 	const prettierYamlUrl = res('formatters/prettier-yaml.js');
 	const prettierGraphqlUrl = res('formatters/prettier-graphql.js');
 	const mermaidFormatterUrl = res('formatters/mermaid-formatter.js');
+	const clangFormatterUrl = res('formatters/clang-formatter.js');
+	const clangWasmUrl = res('formatters/clang-format.wasm');
+	const ruffFormatterUrl = res('formatters/ruff-formatter.js');
+	const ruffWasmUrl = res('formatters/ruff_fmt_bg.wasm');
+	const gofmtFormatterUrl = res('formatters/gofmt-formatter.js');
+	const gofmtWasmUrl = res('formatters/gofmt.wasm');
 
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal
@@ -198,7 +204,7 @@ export const mountCodeEditor = async (
 
 	// Transparent background prevents a color flash in the iframe while Monaco loads.
 	initParams.background = 'transparent';
-	
+
 	initParams.editorConfig = buildMergedConfig(plugin, extension);
 
 	// Create the iframe in the correct document (supports popout windows)
@@ -259,6 +265,12 @@ function parseEditorConfig(str) {
 <script src="${prettierYamlUrl}"></script>
 <script src="${prettierGraphqlUrl}"></script>
 <script src="${mermaidFormatterUrl}"></script>
+<script src="${clangFormatterUrl}"></script>
+<script>window.__CLANG_WASM_URL__ = '${clangWasmUrl}';</script>
+<script src="${ruffFormatterUrl}"></script>
+<script>window.__RUFF_WASM_URL__ = '${ruffWasmUrl}';</script>
+<script src="${gofmtFormatterUrl}"></script>
+<script>window.__GOFMT_WASM_URL__ = '${gofmtWasmUrl}';</script>
 <script src="${configJsUrl}"></script>
 <style>${cssText}</style>
 <style>${configCssText}</style>
@@ -366,7 +378,8 @@ Element.prototype.appendChild = function(node) {
 			case 'open-obsidian-palette': {
 				if (data.context === codeContext) {
 					// Patch onClose to refocus Monaco when command palette closes
-					const cmdPalette = plugin.app.internalPlugins.getPluginById('command-palette');
+					const cmdPalette =
+						plugin.app.internalPlugins.getPluginById('command-palette');
 					if (!cmdPalette) break;
 					const modal = cmdPalette.instance.modal;
 					const old = modal.onClose;

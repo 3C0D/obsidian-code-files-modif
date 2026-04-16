@@ -10,7 +10,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Format Diff & Selective Revert** — format code with Prettier and view all changes side-by-side. Includes a block-by-block revert tool directly in the gutter (similar to VS Code)
 - **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave)
 - **Mermaid formatting** — format Mermaid diagram files with mermaid-formatter (Shift+Alt+F or formatOnSave). Also formats ` ```mermaid ` code blocks inside markdown files.
-- **Multi-language formatting** — format JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, and GraphQL files with Prettier (Shift+Alt+F or formatOnSave)
+- **Multi-language formatting** — format JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Python, Go, C, and C++ files (Shift+Alt+F or formatOnSave)
 - **Cross-file navigation** — Ctrl+Click on TypeScript/JavaScript imports to jump to definitions in other files
 - **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
 - **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
@@ -43,6 +43,9 @@ Prettier formatting is available for:
 - **GraphQL** (parser: graphql)
 - **Markdown** (parser: markdown) — with Mermaid block formatting
 - **Mermaid** (mermaid-formatter) — standalone .mmd files
+- **Python** (Ruff formatter) — PEP 8 compliant formatting
+- **Go** (gofmt) — official Go formatter
+- **C/C++** (clang-format) — LLVM's official formatter
 
 ### Test Samples
 
@@ -58,7 +61,7 @@ After formatting any file, you can view the changes:
 - Shows exactly what changed during the last format operation
 - **Selective Revert**: Use the ↩ button in the left gutter to revert specific layout changes block-by-block without undoing the entire document.
 - **Revert All**: Undoes all formatting changes instantly and closes the diff view.
-- Works for all file types that support formatting (JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown, Mermaid)
+- Works for all file types that support formatting (JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown, Mermaid, Python, Go, C, C++)
 
 The diff viewer uses Monaco's native `createDiffEditor`, displaying changes with syntax highlighting, inline diff markers, and interactive widgets.
 
@@ -218,14 +221,14 @@ Accepts standard Monaco `IEditorOptions`:
 
 **Language-Specific Templates:** When you open the extension config for a specific file type, the editor pre-fills with helpful suggestions:
 
-- **Markdown (`.md`)**: Includes `proseWrap` option for controlling prose wrapping
-- **JSON/YAML**: Suggests 2-space indentation (common convention)
-- **JavaScript/TypeScript**: Suggests 2-space indentation, 100-char line length
-- **Python**: Suggests 4-space indentation, 88-char line length (Black formatter)
-- **Go**: Suggests tabs instead of spaces (gofmt standard)
-- **And more...**
+- **Languages with Prettier formatting** (JS, TS, CSS, HTML, JSON, YAML, Markdown, Mermaid): Inherit global config (tabs, tabSize 4) unless overridden
+- **JSON/YAML**: Override with 2-space indentation (Prettier standard)
+- **Python**: Override with 4-space indentation (PEP 8 standard)
+- **Go**: Override with tabs (gofmt standard)
+- **C/C++**: Override with 4-space indentation (clang-format default)
+- **Other languages** (Rust, Java, C#, PHP): Templates suggest 4-space indentation, but **no formatter is currently integrated** — these are editor display settings only
 
-These are commented suggestions — uncomment to override global config.
+These are suggestions — uncomment to override global config. Note that formatting (Shift+Alt+F) only works for languages with Prettier or Mermaid integration.
 
 **Note:** `printWidth` affects Prettier-based formatters (Markdown, Mermaid, JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL). `proseWrap` is Markdown-specific. Use `rulers` for visual line length guides in all languages.
 
@@ -316,6 +319,29 @@ See `docs/mermaid-formatting.md` for details on how Mermaid diagram formatting i
 
 See `docs/cross-file-navigation.md` for details on how TypeScript/JavaScript cross-file navigation is implemented.
 
-### Future Formatter Considerations
+### Adding New Formatters
 
-**Biome Integration** — Consider integrating [Biome](https://biomejs.dev/) as a replacement for Prettier once it supports more languages. Biome is a Rust-based formatter and linter that aims to cover more languages than Prettier. Currently supports JavaScript, TypeScript, JSON, and JSX/TSX, but is actively expanding language support. Once Biome covers additional languages not supported by Prettier (C, C++, Go, Rust, Python, etc.), the integration would follow the same pattern as Prettier using `monaco.languages.registerDocumentFormattingEditProvider`. A settings option could be added to switch between formatters.
+**Current Status:**
+- **Integrated formatters**: Prettier (JS, TS, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown), Mermaid, Ruff (Python), gofmt (Go), clang-format (C/C++)
+- **No formatter yet**: Rust, Java, C#, PHP (syntax highlighting only)
+
+**Integration Pattern:**
+All formatters follow the same pattern in `monacoEditor.html`:
+1. Load formatter library as UMD bundle via `<script>` tag
+2. Register with Monaco: `monaco.languages.registerDocumentFormattingEditProvider(languageId, provider)`
+3. Provider implements `provideDocumentFormattingEdits()` which returns text edits
+
+**Potential Formatters:**
+- **Rust**: rustfmt (WASM build needed)
+- **Java**: google-java-format (WASM build needed)
+- **C#**: csharpier (WASM build needed)
+- **PHP**: PHP-CS-Fixer (WASM build needed)
+- **Multi-language**: [Biome](https://biomejs.dev/) (supports JS, TS, JSON, JSX/TSX via WASM, expanding to more languages)
+
+**Key Files for Integration:**
+- `monacoEditor.html` — register formatter provider
+- `mountCodeEditor.ts` — load formatter bundle via `<script>` tag
+- `types.ts` — update language-specific config templates
+- `README.md` — document supported languages
+
+See `docs/prettier-markdown-formatting.md` and `docs/mermaid-formatting.md` for implementation examples.

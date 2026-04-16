@@ -27,15 +27,17 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 		const q = query.toLowerCase();
 		if (!q) return folders;
 
-		return folders
-			.filter((folder) => folder.path.toLowerCase().includes(q))
-			// Sort folders that start with the query first, then alphabetically
-			.sort((a, b) => {
-				const aStarts = a.path.toLowerCase().startsWith(q);
-				const bStarts = b.path.toLowerCase().startsWith(q);
-				if (aStarts !== bStarts) return aStarts ? -1 : 1;
-				return a.path.localeCompare(b.path);
-			});
+		return (
+			folders
+				.filter((folder) => folder.path.toLowerCase().includes(q))
+				// Sort folders that start with the query first, then alphabetically
+				.sort((a, b) => {
+					const aStarts = a.path.toLowerCase().startsWith(q);
+					const bStarts = b.path.toLowerCase().startsWith(q);
+					if (aStarts !== bStarts) return aStarts ? -1 : 1;
+					return a.path.localeCompare(b.path);
+				})
+		);
 	}
 
 	renderSuggestion(folder: TFolder, el: HTMLElement): void {

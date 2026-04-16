@@ -51,7 +51,7 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // Options here override global settings for this extension (like VSCode workspace settings).
     // --- Indentation ---
     "tabSize": 4,
-    "insertSpaces": true,
+    "insertSpaces": false,
 
     // --- On Save / On Type ---
     "formatOnSave": true,
@@ -87,7 +87,7 @@ export const DEFAULT_EXTENSION_CONFIG = `{
 /**
  * Returns a language-specific config template with commented suggestions.
  * Used when creating a new per-extension config to provide helpful defaults.
- * 
+ *
  * @param ext - File extension WITHOUT the leading dot (e.g. 'ts', 'md', 'json')
  * @returns A JSON string with commented suggestions for this extension
  */
@@ -101,23 +101,27 @@ export function getExtensionConfigTemplate(ext: string): string {
     // "tabSize": 2,
 }`,
 		json: `{
-    // JSON typically uses 2-space indentation
-    // "tabSize": 2,
+    // JSON uses 2-space indentation (Prettier override)
+    "tabSize": 2,
+    "insertSpaces": true,
     // "printWidth": 80,
 }`,
 		jsonc: `{
-    // JSONC (JSON with Comments) typically uses 2-space indentation
-    // "tabSize": 2,
+    // JSON uses 2-space indentation (Prettier override)
+    "tabSize": 2,
+    "insertSpaces": true,
     // "printWidth": 80,
 }`,
 		yaml: `{
-    // YAML typically uses 2-space indentation
-    // "tabSize": 2,
+    // YAML uses 2-space indentation (standard)
+    "tabSize": 2,
+    "insertSpaces": true,
     // "printWidth": 80,
 }`,
 		yml: `{
-    // YAML typically uses 2-space indentation
-    // "tabSize": 2,
+    // YAML uses 2-space indentation (standard)
+    "tabSize": 2,
+    "insertSpaces": true,
     // "printWidth": 80,
 }`,
 		js: `{
@@ -175,49 +179,49 @@ export function getExtensionConfigTemplate(ext: string): string {
     // "formatOnSave": true,
 }`,
 		py: `{
-    // Python typically uses 4-space indentation (PEP 8)
+    // Python uses 4-space indentation (PEP 8)
+    // Ruff formatter is integrated
     // "tabSize": 4,
-    // "insertSpaces": true,
-    // "printWidth": 88,  // Black formatter default
-    // "trimTrailingWhitespace": true,
+    "insertSpaces": true,
+    "printWidth": 88,  // Ruff default line length
 }`,
 		go: `{
-    // Go uses tabs for indentation (gofmt standard)
-    // "tabSize": 4,
-    // "insertSpaces": false,
-    // "trimTrailingWhitespace": true,
+    // Go uses tabs (gofmt standard)
+    // gofmt formatter is integrated
+    "insertSpaces": false,
+    // "printWidth": 100,
 }`,
 		rs: `{
-    // Rust typically uses 4-space indentation (rustfmt default)
+    // Rust uses 4-space indentation (rustfmt default)
     // "tabSize": 4,
-    // "insertSpaces": true,
+    "insertSpaces": true,
     // "printWidth": 100,
 }`,
 		c: `{
     // C typically uses 4-space or tab indentation
     // "tabSize": 4,
-    // "insertSpaces": true,
+    "insertSpaces": true,
 }`,
 		cpp: `{
     // C++ typically uses 4-space or tab indentation
     // "tabSize": 4,
-    // "insertSpaces": true,
+    "insertSpaces": true,
 }`,
 		java: `{
     // Java typically uses 4-space indentation
     // "tabSize": 4,
-    // "insertSpaces": true,
+    "insertSpaces": true,
 }`,
 		cs: `{
     // C# typically uses 4-space indentation
     // "tabSize": 4,
-    // "insertSpaces": true,
+    "insertSpaces": true,
 }`,
 		php: `{
     // PHP typically uses 4-space indentation (PSR-2)
     // "tabSize": 4,
-    // "insertSpaces": true,
-}`,
+    "insertSpaces": true,
+}`
 	};
 
 	return templates[ext] || DEFAULT_EXTENSION_CONFIG;

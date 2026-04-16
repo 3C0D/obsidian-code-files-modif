@@ -9,7 +9,7 @@
 - No external dependencies — 17.5MB local bundle
 
 ### 2. **Advanced Code Formatting with Diff Control**
-- **10+ Languages**: JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown, Mermaid
+- **15+ Languages**: JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Markdown, Mermaid, Python, Go, C, C++
 - **Format Diff Viewer**: Side-by-side comparison after formatting
 - **Selective Revert**: Block-by-block revert buttons in diff gutter
 - **Revert All**: Instant undo of all formatting changes
@@ -22,8 +22,8 @@
 - **Format on save**: Optional automatic formatting before save
 
 ### 4. **Cross-File Navigation (TypeScript/JavaScript)**
-- **Ctrl+Click on imports** to jump to definitions
-- **Project Root setup**: Right-click folder → "Define as Project Root Folder"
+1- **Project Root setup**: Right-click folder → "Define as Project Root Folder"
+2- **Ctrl+Click** to jump to definitions
 - **Smart tab reuse**: Opens in existing tab if file already open
 - **IntelliSense**: Full project context for code completion
 
@@ -37,7 +37,7 @@
 - **Two modes**: Manual list or extended Monaco-supported list
 - **Runtime changes**: Add/remove extensions without restart
 - **On-the-fly registration**: Add extensions during file creation
-- **Flexible switching**: Toggle between manual/extended modes anytime
+- **Flexible switching**: Toggle between manual/extended modes anytime in setting tabs
 
 ### 7. **50+ Themes with Live Preview**
 - **Real-time preview**: Hover themes to see changes instantly

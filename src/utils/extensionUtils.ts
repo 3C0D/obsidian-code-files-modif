@@ -21,10 +21,12 @@ import type CodeFilesPlugin from '../main.ts';
  */
 export function getActiveExtensions(settings: MyPluginSettings): string[] {
 	if (settings.allExtensions) {
-		return [...new Set([
-			...getAllMonacoExtensions(settings.excludedExtensions),
-			...settings.extraExtensions
-		])];
+		return [
+			...new Set([
+				...getAllMonacoExtensions(settings.excludedExtensions),
+				...settings.extraExtensions
+			])
+		];
 	}
 	return [...new Set(settings.extensions)];
 }
@@ -38,7 +40,7 @@ export function addExtension(settings: MyPluginSettings, ext: string): void {
 	// Add to both main lists
 	settings.extensions = [...new Set([...settings.extensions, ext])];
 	settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
-	
+
 	// Remove from excluded if present
 	const excluded = new Set(settings.excludedExtensions);
 	excluded.delete(ext);
@@ -55,11 +57,11 @@ export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	const exts = new Set(settings.extensions);
 	exts.delete(ext);
 	settings.extensions = [...exts];
-	
+
 	const extras = new Set(settings.extraExtensions);
 	extras.delete(ext);
 	settings.extraExtensions = [...extras];
-	
+
 	// Add to excluded list (for extended mode)
 	settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
 }

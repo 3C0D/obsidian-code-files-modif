@@ -1292,6 +1292,21 @@
   resolved "https://registry.yarnpkg.com/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.11.1.tgz#538b1e103bf8d9864e7b85cc96fa8d6fb6c40777"
   integrity sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g==
 
+"@wasm-fmt/clang-format@^22.1.3":
+  version "22.1.3"
+  resolved "https://registry.yarnpkg.com/@wasm-fmt/clang-format/-/clang-format-22.1.3.tgz#eb66201bbfd056b7ceefbb9b39cdf289ebf716e9"
+  integrity sha512-6tW2+MyhzGn2y+Qz6ac0FQOjriwM2Z/SJt7I07oZkRcurbx2z6Wa3Iu+gSMScMeo/JJe5uhiaCJRWT+hXdYTyQ==
+
+"@wasm-fmt/gofmt@^0.7.3":
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/@wasm-fmt/gofmt/-/gofmt-0.7.3.tgz#8cfd93fae8e8cec845b720a64e37d78dc0927373"
+  integrity sha512-nzVTwMxHDOYrHonT7DzjqicbaTYOYPNYeXKPJnDrVUbJjx67Sg/LS1uzlOTWKToGMF8Y8l0u7G5/5Q3/8nHMMA==
+
+"@wasm-fmt/ruff_fmt@^0.15.10":
+  version "0.15.10"
+  resolved "https://registry.yarnpkg.com/@wasm-fmt/ruff_fmt/-/ruff_fmt-0.15.10.tgz#c7ecf3f1d6a7b4be633057f948bf04a6cdcfa052"
+  integrity sha512-QTYjQaIfLj1uWI/KroMnrIvr+P4RgSSJo7QyTfoX8eo1q9TS7m3pL4rWGY5ToY0IKkDfnRcoFNVoaWppaDtnvg==
+
 acorn-jsx@^5.3.2:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"

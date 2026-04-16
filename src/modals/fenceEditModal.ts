@@ -104,10 +104,8 @@ export class FenceEditModal extends Modal {
 					const params = await resolveThemeParams(this.plugin, theme);
 					this.codeEditor?.send('change-theme', params);
 				};
-				new ChooseThemeModal(
-					this.plugin,
-					applyTheme,
-					() => this.codeEditor?.send('focus', {})
+				new ChooseThemeModal(this.plugin, applyTheme, () =>
+					this.codeEditor?.send('focus', {})
 				).open();
 			}
 			// onOpenRenameExtension: undefined (fences don't have a file path)

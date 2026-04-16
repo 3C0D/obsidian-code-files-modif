@@ -7,5 +7,28 @@
   "[markdown]": {
     "editor.defaultFormatter": "yzhang.markdown-all-in-one"
   },
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  
+  // Disable extensions that could interfere with test sample files
+  "extensions.ignoreRecommendations": false,
+  "python.linting.enabled": false,
+  "python.formatting.provider": "none",
+  "go.formatTool": "none",
+  "C_Cpp.formatting": "disabled",
+  "[python]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  "[go]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  "[c]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  "[cpp]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  }
 }

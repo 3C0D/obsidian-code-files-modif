@@ -9,7 +9,13 @@ import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import { confirmation } from './confirmation.ts';
-import { isCodeFilesExtension, getCodeEditorViews, addExtension, registerExtension, syncRegisteredExts } from '../utils/extensionUtils.ts';
+import {
+	isCodeFilesExtension,
+	getCodeEditorViews,
+	addExtension,
+	registerExtension,
+	syncRegisteredExts
+} from '../utils/extensionUtils.ts';
 
 /** Prompts the user to rename a file's extension, updating the file and reloading the view. */
 export class RenameExtensionModal extends Modal {

@@ -11,7 +11,7 @@ export function isSnippetEnabled(app: App, name: string): boolean {
 }
 
 /** Registers a listener that syncs the toggle UI when the snippet state changes externally (e.g. from Obsidian settings).
- * 
+ *
  * @returns () => void - function to unregister the event listener
  */
 export function registerSnippetChangeHandler(

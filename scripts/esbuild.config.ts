@@ -79,11 +79,11 @@ async function validateEnvironment(): Promise<void> {
 
 /**
  * Get the build path based on the environment and user input
- * 
- * @Param isProd Whether this is a production build (true for 'production' arg, false for 'watch'/'dev')
+ *
+ * @Param _isProd Whether this is a production build (true for 'production' arg, false for 'watch'/'dev')
  * @return The path to build the plugin to (either the vault plugins folder or the initial folder for in-place development)
  */
-async function getBuildPath(isProd: boolean): Promise<string> {
+async function getBuildPath(_isProd: boolean): Promise<string> {
 	// In-place development: already inside a plugins folder
 	if (isInPluginsFolder(pluginDir)) {
 		console.log('ℹ️  Building in Obsidian plugins folder (in-place development)');
@@ -203,6 +203,75 @@ async function createBuildContext(
 						platform: 'browser',
 						minify: isProd
 					});
+					// Bundle ruff-formatter (Python) for browser
+					await esbuild.build({
+						entryPoints: [
+							path.join(pluginDir, 'src/ruff-formatter-bundle-entry.js')
+						],
+						bundle: true,
+						format: 'iife',
+						outfile: path.join(formattersTarget, 'ruff-formatter.js'),
+						platform: 'browser',
+						minify: isProd,
+						loader: {
+							'.wasm': 'file'
+						},
+						metafile: true
+					});
+					// Copy WASM file to formatters/ folder
+					const wasmSrc = path.join(
+						pluginDir,
+						'node_modules/@wasm-fmt/ruff_fmt/ruff_fmt_bg.wasm'
+					);
+					const wasmTarget = path.join(formattersTarget, 'ruff_fmt_bg.wasm');
+					await copyFile(wasmSrc, wasmTarget);
+					// Bundle gofmt-formatter (Go) for browser
+					await esbuild.build({
+						entryPoints: [
+							path.join(pluginDir, 'src/gofmt-formatter-bundle-entry.js')
+						],
+						bundle: true,
+						format: 'iife',
+						outfile: path.join(formattersTarget, 'gofmt-formatter.js'),
+						platform: 'browser',
+						minify: isProd,
+						loader: {
+							'.wasm': 'file'
+						},
+						metafile: true
+					});
+					// Copy WASM file to formatters/ folder
+					const gofmtWasmSrc = path.join(
+						pluginDir,
+						'node_modules/@wasm-fmt/gofmt/gofmt.wasm'
+					);
+					const gofmtWasmTarget = path.join(formattersTarget, 'gofmt.wasm');
+					await copyFile(gofmtWasmSrc, gofmtWasmTarget);
+					// Bundle clang-format (C/C++) for browser
+					await esbuild.build({
+						entryPoints: [
+							path.join(pluginDir, 'src/clang-format-bundle-entry.js')
+						],
+						bundle: true,
+						format: 'iife',
+						outfile: path.join(formattersTarget, 'clang-formatter.js'),
+						platform: 'browser',
+						minify: isProd,
+						loader: {
+							'.wasm': 'file'
+						},
+						metafile: true
+					});
+					// Copy WASM file to formatters/ folder
+					const clangWasmSrc = path.join(
+						pluginDir,
+						'node_modules/@wasm-fmt/clang-format/clang-format.wasm'
+					);
+					const clangWasmTarget = path.join(
+						formattersTarget,
+						'clang-format.wasm'
+					);
+					await copyFile(clangWasmSrc, clangWasmTarget);
 					await copyFile(htmlSrc, htmlTarget);
 					await copyFile(configJsSrc, configJsTarget);
 					await copyFile(configCssSrc, configCssTarget);
