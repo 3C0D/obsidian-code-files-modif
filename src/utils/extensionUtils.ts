@@ -73,6 +73,7 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
  * Removes an extension from all relevant lists to maintain consistency
  * across manual and extended modes.
  * Uses Set to prevent duplicates.
+ * Only adds to excludedExtensions if the extension was part of the default Monaco extensions.
  */
 export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	// Remove from both main lists
@@ -84,8 +85,10 @@ export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	extras.delete(ext);
 	settings.extraExtensions = [...extras];
 
-	// Add to excluded list (for extended mode)
-	settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
+	// Only add to excluded list if it was part of the default Monaco extensions
+	if (ext in staticMap) {
+		settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
+	}
 }
 
 export function isCodeFilesExtension(app: App, ext: string): boolean {
