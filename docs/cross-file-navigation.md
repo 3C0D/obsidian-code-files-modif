@@ -72,7 +72,7 @@ monaco.editor.getModels().map(m => m.uri.toString())
 
 ## Test Project
 
-**Location:** `templates/projet-test-sample/`
+**Location:** `templates/projet-test-sample-for-obsidian/`
 - 3 TypeScript files with cross-imports
 - Test: Ctrl+Click on `MathService` → opens `service.ts`
 - Test: Ctrl+Click on `add` → opens `utils.ts`
