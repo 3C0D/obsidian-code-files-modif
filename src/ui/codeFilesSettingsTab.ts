@@ -7,7 +7,7 @@
  * - Project root folder highlight color customization
  */
 import type { App } from 'obsidian';
-import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
+import { debounce, Platform, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
@@ -18,6 +18,11 @@ import { saveEditorConfig } from '../utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
+import {
+	getObsidianHotkey,
+	parseHotkeyOverride,
+	formatHotkey
+} from '../utils/hotkeyUtils.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	private codeEditor: CodeEditorInstance | null = null;
@@ -291,6 +296,109 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				await this.plugin.saveSettings();
 				updateProjectFolderHighlight(this.plugin);
 			})
+		);
+
+		// -- Monaco Hotkey Overrides -----------------------------------------
+		containerEl.createEl('h3', { text: 'Monaco Hotkey Overrides' });
+		containerEl.createEl('p', {
+			text: 'Override Obsidian shortcuts for Monaco editor. Leave empty to use Obsidian defaults (will autofill). Format: Ctrl+P, Ctrl + P, or Ctrl P.',
+			attr: {
+				style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;'
+			}
+		});
+
+		const createHotkeyOverrideSetting = (
+			name: string,
+			commandId: string,
+			overrideKey: 'commandPaletteHotkeyOverride' | 'settingsHotkeyOverride' | 'deleteFileHotkeyOverride'
+		): void => {
+			const obsidianHotkey = getObsidianHotkey(this.plugin.app, commandId);
+			// Display Obsidian hotkey with platform-specific modifier names (Ctrl on Windows, Cmd on Mac)
+			const defaultStr = obsidianHotkey
+				? obsidianHotkey.modifiers
+						.map((m) =>
+							m === 'Mod' && Platform.isWin
+								? 'Ctrl'
+								: m === 'Mod'
+									? 'Cmd'
+									: m
+						)
+						.join('+') +
+						'+' +
+						obsidianHotkey.key
+				: '';
+			const currentOverride = this.plugin.settings[overrideKey];
+
+			new Setting(containerEl)
+				.setName(name)
+				.setDesc(`Current Obsidian: ${defaultStr || 'none'}`)
+				.addText((text) => {
+					const displayValue = currentOverride || `${defaultStr} (default)`;
+					text.setValue(displayValue);
+					text.setPlaceholder('Ctrl+P, Ctrl + P, or Ctrl P');
+					text.inputEl.style.width = '200px';
+
+					text.inputEl.addEventListener('blur', async () => {
+						let value = text.getValue().trim();
+
+						// Remove " (default)" suffix if present
+						if (value.endsWith(' (default)')) {
+							value = value.replace(/ \(default\)$/, '').trim();
+						}
+
+						// If empty, reset to default
+						if (!value) {
+							this.plugin.settings[overrideKey] = '';
+							text.setValue(`${defaultStr} (default)`);
+							await this.plugin.saveSettings();
+							return;
+						}
+
+						// Validate and normalize format (converts Ctrl/Cmd/Meta → Mod internally)
+						const parsed = parseHotkeyOverride(value);
+						if (!parsed) {
+							// Invalid format, reset to default
+							this.plugin.settings[overrideKey] = '';
+							text.setValue(`${defaultStr} (default)`);
+							await this.plugin.saveSettings();
+							return;
+						}
+
+						// Format with + and no spaces (stores as Mod+P internally)
+						const formatted = formatHotkey(parsed);
+						this.plugin.settings[overrideKey] = formatted;
+						// Display with platform-specific modifier for user clarity
+						const displayFormatted = parsed.modifiers
+							.map((m) =>
+								m === 'Mod' && Platform.isWin
+									? 'Ctrl'
+									: m === 'Mod'
+										? 'Cmd'
+										: m
+							)
+							.join('+') +
+							'+' +
+							parsed.key;
+						text.setValue(displayFormatted);
+						await this.plugin.saveSettings();
+					});
+				});
+		};
+
+		createHotkeyOverrideSetting(
+			'Command Palette',
+			'command-palette:open',
+			'commandPaletteHotkeyOverride'
+		);
+		createHotkeyOverrideSetting(
+			'Settings',
+			'app:open-settings',
+			'settingsHotkeyOverride'
+		);
+		createHotkeyOverrideSetting(
+			'Delete File',
+			'app:delete-file',
+			'deleteFileHotkeyOverride'
 		);
 	}
 }

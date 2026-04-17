@@ -12,7 +12,7 @@ import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getEmptyFileExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
-import { getObsidianHotkey } from './hotkeyUtils.ts';
+import { getObsidianHotkey, parseHotkeyOverride } from './hotkeyUtils.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -134,6 +134,11 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  * For inactive views, they'll get new hotkeys on next activation via onLoadFile.
  * For the active view, performs a soft reload preserving content and cursor position.
  *
+ * Hotkeys are stored internally as 'Mod' for cross-platform consistency:
+ * - 'Mod' = 'Ctrl' on Windows/Linux
+ * - 'Mod' = 'Cmd' on Mac
+ * This matches Obsidian's internal representation and ensures overrides work consistently.
+ *
  * @param plugin - The plugin instance
  */
 export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
@@ -149,7 +154,20 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		modifiers: ['Ctrl'],
 		key: 'Delete'
 	};
-	const currentHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });
+
+	// Apply overrides if they exist (overrides are stored as 'Mod' internally)
+	const finalSettingsHotkey =
+		parseHotkeyOverride(plugin.settings.settingsHotkeyOverride) ?? settingsHotkey;
+	const finalPaletteHotkey =
+		parseHotkeyOverride(plugin.settings.commandPaletteHotkeyOverride) ?? paletteHotkey;
+	const finalDeleteFileHotkey =
+		parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
+
+	const currentHotkeys = JSON.stringify({
+		settingsHotkey: finalSettingsHotkey,
+		paletteHotkey: finalPaletteHotkey,
+		deleteFileHotkey: finalDeleteFileHotkey
+	});
 
 	// Compare with last known state to detect changes
 	if (currentHotkeys !== plugin._lastHotkeys) {
@@ -162,9 +180,9 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		for (const view of views) {
 			if (view.leaf !== activeLeaf && view.editor) {
 				view.editor.send('update-hotkeys', {
-					commandPaletteHotkey: paletteHotkey,
-					settingsHotkey: settingsHotkey,
-					deleteFileHotkey: deleteFileHotkey
+					commandPaletteHotkey: finalPaletteHotkey,
+					settingsHotkey: finalSettingsHotkey,
+					deleteFileHotkey: finalDeleteFileHotkey
 				});
 			}
 		}
@@ -190,7 +208,7 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 
 				// Show notice to user
 				const settingsStr =
-					settingsHotkey.modifiers
+					finalSettingsHotkey.modifiers
 						.map((m) =>
 							m === 'Mod' && Platform.isWin
 								? 'Ctrl'
@@ -200,9 +218,9 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 						)
 						.join('+') +
 					'+' +
-					settingsHotkey.key;
+					finalSettingsHotkey.key;
 				const paletteStr =
-					paletteHotkey.modifiers
+					finalPaletteHotkey.modifiers
 						.map((m) =>
 							m === 'Mod' && Platform.isWin
 								? 'Ctrl'
@@ -212,9 +230,9 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 						)
 						.join('+') +
 					'+' +
-					paletteHotkey.key;
+					finalPaletteHotkey.key;
 				const deleteStr =
-					deleteFileHotkey.modifiers
+					finalDeleteFileHotkey.modifiers
 						.map((m) =>
 							m === 'Mod' && Platform.isWin
 								? 'Ctrl'
@@ -224,7 +242,7 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 						)
 						.join('+') +
 					'+' +
-					deleteFileHotkey.key;
+					finalDeleteFileHotkey.key;
 				new Notice(
 					`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
 				);

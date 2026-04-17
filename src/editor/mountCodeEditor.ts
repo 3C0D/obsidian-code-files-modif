@@ -12,7 +12,7 @@ import manifest from '../../manifest.json' with { type: 'json' };
 
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
-import { getObsidianHotkey } from '../utils/hotkeyUtils.ts';
+import { getObsidianHotkey, parseHotkeyOverride } from '../utils/hotkeyUtils.ts';
 import { CodeEditorView } from './codeEditorView.ts';
 import { broadcastHotkeys } from '../utils/broadcast.ts';
 
@@ -177,6 +177,17 @@ export const mountCodeEditor = async (
 		key: 'Delete'
 	};
 
+	// Apply overrides if they exist (overrides are stored as 'Mod' internally for cross-platform consistency)
+	const finalCommandPaletteHotkey =
+		parseHotkeyOverride(plugin.settings.commandPaletteHotkeyOverride) ??
+		commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' };
+	const finalSettingsHotkey =
+		parseHotkeyOverride(plugin.settings.settingsHotkeyOverride) ??
+		settingsHotkey ?? { modifiers: ['Mod'], key: ',' };
+	const finalDeleteFileHotkey =
+		parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ??
+		deleteFileHotkey;
+
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal
 	// - settings-editor-config: config editor in the plugin settings tab
@@ -202,9 +213,9 @@ export const mountCodeEditor = async (
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation,
 		projectRootFolder: plugin.settings.projectRootFolder,
-		commandPaletteHotkey: commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' },
-		settingsHotkey: settingsHotkey ?? { modifiers: ['Mod'], key: ',' },
-		deleteFileHotkey: deleteFileHotkey
+		commandPaletteHotkey: finalCommandPaletteHotkey,
+		settingsHotkey: finalSettingsHotkey,
+		deleteFileHotkey: finalDeleteFileHotkey
 	};
 	// find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
 	const extMatch = codeContext.match(/\.([^.]+)$/);

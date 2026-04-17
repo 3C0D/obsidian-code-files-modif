@@ -49,6 +49,71 @@ export function getObsidianHotkey(
 }
 
 /**
+ * Parses a hotkey override string and returns a HotkeyConfig.
+ * Accepts formats: "Ctrl+P", "Ctrl + P", "ctrl+shift+p", "Cmd+P", etc.
+ * Normalizes platform-specific modifiers to 'Mod' for cross-platform consistency:
+ * - "Ctrl" → "Mod" (Windows/Linux primary modifier)
+ * - "Cmd"/"Command"/"Meta" → "Mod" (Mac primary modifier)
+ * This matches Obsidian's internal hotkey representation where 'Mod' is used
+ * as a cross-platform alias (Ctrl on Windows/Linux, Cmd on Mac).
+ * Returns null if invalid.
+ */
+export function parseHotkeyOverride(override: string): HotkeyConfig | null {
+	if (!override || !override.trim()) return null;
+
+	const parts = override
+		.trim()
+		.split(/[+\s]+/)
+		.map((p) => p.trim())
+		.filter((p) => p.length > 0);
+
+	if (parts.length === 0) return null;
+
+	const modifiers: string[] = [];
+	let key = '';
+
+	for (const part of parts) {
+		const lower = part.toLowerCase();
+		if (
+			lower === 'ctrl' ||
+			lower === 'shift' ||
+			lower === 'alt' ||
+			lower === 'mod' ||
+			lower === 'meta' ||
+			lower === 'cmd' ||
+			lower === 'command'
+		) {
+			// Normalize all primary modifiers to 'Mod' for cross-platform consistency
+			if (lower === 'ctrl' || lower === 'command' || lower === 'cmd' || lower === 'meta') {
+				modifiers.push('Mod');
+			} else if (lower === 'shift' || lower === 'alt') {
+				// Keep Shift and Alt as-is (capitalized)
+				modifiers.push(part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+			} else {
+				// 'mod' already normalized
+				modifiers.push('Mod');
+			}
+		} else {
+			// Last non-modifier part is the key
+			key = part;
+		}
+	}
+
+	if (!key) return null;
+
+	return { modifiers, key };
+}
+
+/**
+ * Formats a HotkeyConfig as a display string (e.g., "Mod+P").
+ * Note: This returns the raw modifier names (including 'Mod').
+ * For user-facing display, use Platform.isWin to convert 'Mod' → 'Ctrl' or 'Cmd'.
+ */
+export function formatHotkey(config: HotkeyConfig): string {
+	return [...config.modifiers, config.key].join('+');
+}
+
+/**
  * Retrieves all Monaco-relevant hotkeys (settings, palette, delete file)
  * and returns them as a serialized JSON string for change detection.
  *

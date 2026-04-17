@@ -42,6 +42,12 @@ export interface MyPluginSettings {
 	projectRootFolderColor: string;
 	/** Last selected extension in the settings tab Editor Config section */
 	lastSelectedConfigExtension: string;
+	/** Override for command palette hotkey (empty string = use Obsidian default) */
+	commandPaletteHotkeyOverride: string;
+	/** Override for settings hotkey (empty string = use Obsidian default) */
+	settingsHotkeyOverride: string;
+	/** Override for delete file hotkey (empty string = use Obsidian default) */
+	deleteFileHotkeyOverride: string;
 }
 
 /**
@@ -310,7 +316,10 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	maxFileSize: 10,
 	projectRootFolder: '',
 	projectRootFolderColor: '',
-	lastSelectedConfigExtension: ''
+	lastSelectedConfigExtension: '',
+	commandPaletteHotkeyOverride: '',
+	settingsHotkeyOverride: '',
+	deleteFileHotkeyOverride: ''
 };
 
 /** Obsidian view type identifier for the Monaco editor */
