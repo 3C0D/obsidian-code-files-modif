@@ -43,6 +43,7 @@ export function getActiveExtensions(settings: MyPluginSettings): string[] {
  * across manual and extended modes.
  * Uses Set to prevent duplicates.
  * Blocks native Obsidian extensions and already registered extensions.
+ * Only adds to extraExtensions if the extension is not part of the default Monaco extensions.
  * @returns true if the extension was added, false if blocked (native or already registered)
  */
 export function addExtension(settings: MyPluginSettings, ext: string): boolean {
@@ -58,9 +59,13 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
 		return false;
 	}
 
-	// Add to both main lists
+	// Add to manual extensions list
 	settings.extensions = [...new Set([...settings.extensions, ext])];
-	settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
+
+	// Only add to extraExtensions if it's not part of the default Monaco extensions
+	if (!(ext in staticMap)) {
+		settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
+	}
 
 	// Remove from excluded if present
 	const excluded = new Set(settings.excludedExtensions);
