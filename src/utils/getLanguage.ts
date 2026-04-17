@@ -113,6 +113,11 @@ export const staticMap: Record<string, string> = {
 	asm: 'asm',
 	prisma: 'prisma',
 	prettierrc: 'json',
+	eslintrc: 'json',
+	babelrc: 'json',
+	stylelintrc: 'json',
+	swcrc: 'json',
+	clangformat: 'yaml',
 };
 
 /** Returns the Monaco language id for a given file extension. */

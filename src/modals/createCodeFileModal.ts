@@ -108,6 +108,43 @@ export class CreateCodeFileModal extends Modal {
 			return;
 		}
 
+		let cleanName = this.fileName.trim();
+		
+		// If no filename provided, create a file with just the extension (e.g., ".prettierrc")
+		if (!cleanName) {
+			cleanName = `.${ext}`;
+			// Confirm with user before creating extension-only file
+			const confirmed = await new Promise<boolean>((resolve) => {
+				const modal = new Modal(this.app);
+				modal.titleEl.setText('Create file without name?');
+				modal.contentEl.createEl('p', { text: `Create file: ${cleanName}` });
+				const btnContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
+				new ButtonComponent(btnContainer)
+					.setButtonText('Cancel')
+					.onClick(() => {
+						modal.close();
+						resolve(false);
+					});
+				new ButtonComponent(btnContainer)
+					.setButtonText('Create')
+					.setCta()
+					.onClick(() => {
+						modal.close();
+						resolve(true);
+					});
+				modal.open();
+			});
+			
+			if (!confirmed) return;
+		} else {
+			// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
+			if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+				cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
+			} else if (cleanName.endsWith('.')) {
+				cleanName = cleanName.slice(0, -1);
+			}
+		}
+
 		// If the extension is not registered yet, register it on the fly
 		if (!getActiveExtensions(this.plugin.settings).includes(ext)) {
 			addExtension(this.plugin.settings, ext);
@@ -116,16 +153,8 @@ export class CreateCodeFileModal extends Modal {
 			new Notice(`Added ".${ext}" to registered extensions`);
 		}
 
-		let cleanName = this.fileName.trim();
-		// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
-		if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
-			cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
-		} else if (cleanName.endsWith('.')) {
-			cleanName = cleanName.slice(0, -1);
-		}
-
 		this.close();
-		const newPath = normalizePath(`${this.parent.path}/${cleanName}.${ext}`);
+		const newPath = normalizePath(`${this.parent.path}/${cleanName}${cleanName.startsWith('.') ? '' : `.${ext}`}`);
 		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');
@@ -134,7 +163,7 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		const newFile = await this.app.vault.create(newPath, '');
-		void CodeEditorView.openVaultFile(newFile, this.plugin);
+		void CodeEditorView.openFile(newFile, this.plugin);
 	}
 
 	onClose(): void {
