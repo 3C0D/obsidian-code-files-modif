@@ -118,9 +118,7 @@ export const staticMap: Record<string, string> = {
 	babelrc: 'json',
 	stylelintrc: 'json',
 	swcrc: 'json',
-	clangformat: 'yaml',
-	pythonconfig: 'python',
-	pycarrer: 'python'
+	clangformat: 'yaml'
 };
 
 /** Returns the Monaco language id for a given file extension. */

@@ -71,7 +71,7 @@ export const resolveThemeParams = async (
  * @param onFormatDiff - Optional callback invoked when a format diff is available (after formatting)
  * @param onOpenEditorConfig - Optional callback invoked when the user requests editor settings
  * @param onOpenThemePicker - Optional callback invoked when the user requests theme picker
- * @param onOpenRenameExtension - Optional callback invoked when the user requests rename extension
+ * @param onOpenRenameExtension - Optional callback invoked when the user requests rename (name.ext)
  * @param autoFocus - Optional flag to disable automatic focus on editor ready (default: true)
  * @returns A CodeEditorInstance with methods to control the editor (send, getValue, setValue, destroy)
  */

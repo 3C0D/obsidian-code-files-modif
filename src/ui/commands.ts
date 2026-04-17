@@ -1,7 +1,7 @@
 /**
  * Registers all plugin commands with Obsidian.
  * Commands include: create code file, open code block in Monaco, open current file in Monaco,
- * edit CSS snippet, rename extension, open editor settings, and open hidden files.
+ * edit CSS snippet, rename file (name.ext), open editor settings, and open hidden files.
  */
 import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
@@ -52,7 +52,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 
 	plugin.addCommand({
 		id: 'rename-extension',
-		name: 'Rename extension of current file',
+		name: 'Rename (Name.ext) of current file',
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (!file) return false;

@@ -2,7 +2,7 @@
  * Registers context menus for files and folders in the explorer and editor.
  * Provides Code Files submenu with actions like:
  * - Create code file, open hidden files, set project root folder (folders)
- * - Open in Monaco, rename extension (files)
+ * - Open in Monaco, rename file (name.ext) (files)
  * - Edit code block in Monaco (editor, when cursor is inside a code fence)
  */
 import { TFile, TFolder } from 'obsidian';
@@ -98,7 +98,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 						.setIcon('code')
 						.onClick(() => FenceEditModal.openOnCurrentCode(plugin, editor));
 				} else {
-					// Cursor outside a code fence: show Code Files submenu (Open in Monaco, Rename Extension)
+					// Cursor outside a code fence: show Code Files submenu (Open in Monaco, Rename (Name.ext))
 					const items = getFileItems(plugin);
 					item.setTitle('Code Files').setIcon('file-code-corner');
 					const sub = item.setSubmenu();
@@ -197,9 +197,9 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 		});
 	}
 
-	// Always show "Rename Extension"
+	// Always show "Rename (Name.ext)"
 	items.push({
-		title: 'Rename Extension',
+		title: 'Rename (Name.ext)',
 		icon: 'pencil',
 		action: () => new RenameExtensionModal(plugin, file).open()
 	});
@@ -223,7 +223,7 @@ function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 			action: async () => await CodeEditorView.openFile(activeFile, plugin)
 		});
 		items.push({
-			title: 'Rename Extension',
+			title: 'Rename (Name.ext)',
 			icon: 'pencil',
 			action: () => new RenameExtensionModal(plugin, activeFile).open()
 		});

@@ -140,14 +140,21 @@ This is useful for editing configuration files like `.gitignore`, `.env`, `.dock
 
 ---
 
-## Renaming file extensions
+## Renaming files (name + extension)
 
 - Click the **pencil icon** in the tab header
-- Right-click a file in the explorer → **"Rename Extension"**
-- Right-click the file in the editor → **"Rename Extension"**
-- Command palette → **"Rename file extension"**
+- Right-click a file in the explorer → **"Rename (Name.ext)"**
+- Right-click the file in the editor → **"Rename (Name.ext)"**
+- Command palette → **"Rename (Name.ext) of current file"**
 
-If the extension is unknown, you'll be prompted to register it.
+Allows renaming both the filename and extension:
+- Change extension: `myfile.py` → `myfile.js`
+- Change name: `myfile.py` → `newname.py`
+- Change both: `myfile.py` → `newfile.js`
+- Create dotfiles: `.env` → `.prettierrc`
+- Transform dotfiles to normal files: `.pythonconfig` → `config.yaml`
+
+If the new extension is unknown, you'll be prompted to register it.
 
 ---
 
@@ -168,7 +175,7 @@ When a code file is open, icons appear in the tab header:
 
 | Icon | What it does |
 |------|-------------|
-| ✏️ **Pencil** | Rename the file's extension. Unknown extensions will prompt for registration. |
+| ✏️ **Pencil** | Rename the file (name + extension). Unknown extensions will prompt for registration. |
 | 🎨 **Palette** | Pick a theme with live preview. Hover over themes to preview them in real-time, adjust brightness with left/right arrows. |
 | ⬅️ **Arrow** | Return to default view (only for files with unregistered extensions opened in Monaco). |
 | ⚙️ **Gear** | Open the Editor Settings panel |
@@ -228,6 +235,15 @@ Accepts standard Monaco `IEditorOptions`:
 - **C/C++**: Override with 4-space indentation (clang-format default)
 - **Other languages** (Rust, Java, C#, PHP): Templates suggest 4-space indentation, but **no formatter is currently integrated** — these are editor display settings only
 
+**Config Cascade with Language Fallback:** Extensions that map to a different Monaco language automatically inherit that language's config. For example:
+- `.clangformat` (maps to `yaml`) inherits YAML config (tabSize: 2)
+- `.prettierrc` (maps to `json`) inherits JSON config (tabSize: 2)
+- `.eslintrc`, `.babelrc` (map to `json`) inherit JSON config
+
+Cascade order: `global (*) → language (yaml) → extension (clangformat)`
+
+This means you only need to configure the base language (like `yaml`), and all extensions that use that language will inherit the settings automatically. You can still override per-extension if needed.
+
 These are suggestions — uncomment to override global config. Note that formatting (Shift+Alt+F) only works for languages with Prettier or Mermaid integration.
 
 **Note:** `printWidth` affects Prettier-based formatters (Markdown, Mermaid, JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL). `proseWrap` is Markdown-specific. Use `rulers` for visual line length guides in all languages.
@@ -271,7 +287,7 @@ Extensions control which file types open in Monaco.
 - **Manual** — maintain your own list
 - **Extended** — broad curated list auto-registered. You can still exclude or add extras.
 
-Extensions can also be added on the fly from the **Create Code File** modal or **Rename Extension** dialog.
+Extensions can also be added on the fly from the **Create Code File** modal or **Rename (Name.ext)** dialog.
 
 ---
 
@@ -285,6 +301,7 @@ Extensions can also be added on the fly from the **Create Code File** modal or *
 | `getLanguage.ts` | Extension → Monaco language ID mapping |
 | `fenceEditModal.ts` | Modal for editing code fences |
 | `createCodeFileModal.ts` | Modal for creating new code files |
+| `renameExtensionModal.ts` | Modal for renaming files (name + extension) |
 | `editorSettingsModal.ts` | Gear panel: toggles + JSON config editor |
 | `chooseThemeModal.ts` | Theme picker with live preview |
 

@@ -1,13 +1,12 @@
 /**
- * Modal for renaming a file's extension.
- * Prompts for a new extension with autocomplete from registered extensions.
- * If the extension is unknown to both Code Files and Obsidian, offers to register it.
+ * Modal for renaming a file (name + extension).
+ * Displays the current full filename and allows editing both name and extension.
+ * If the new extension is unknown to both Code Files and Obsidian, offers to register it.
  * After renaming, reloads the leaf to open the file with the correct view for the new extension.
  */
 import { ButtonComponent, FileView, Modal, Notice, TextComponent } from 'obsidian';
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import { confirmation } from './confirmation.ts';
 import {
 	isCodeFilesExtension,
@@ -17,9 +16,9 @@ import {
 	syncRegisteredExts
 } from '../utils/extensionUtils.ts';
 
-/** Prompts the user to rename a file's extension, updating the file and reloading the view. */
+/** Prompts the user to rename a file (name + extension), updating the file and reloading the view. */
 export class RenameExtensionModal extends Modal {
-	private newExt: string;
+	private newFilename: string;
 
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -27,18 +26,33 @@ export class RenameExtensionModal extends Modal {
 		private restoreFocus?: () => void
 	) {
 		super(plugin.app);
-		this.newExt = file.extension;
+		this.newFilename = file.name;
 	}
 
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
-		this.modalEl.style.width = '360px';
+		this.modalEl.style.width = '400px';
 
-		const pathDisplay = contentEl.createEl('p', {
-			text: this.getNewPath(),
+		// Display current filename
+		contentEl.createEl('div', {
+			text: 'Current:',
 			attr: {
-				style: 'color: var(--text-muted); font-size: 0.85em; margin-bottom: 12px; word-break: break-all;'
+				style: 'font-weight: 500; margin-bottom: 4px; font-size: 0.9em;'
+			}
+		});
+		contentEl.createEl('div', {
+			text: this.file.name,
+			attr: {
+				style: 'color: var(--text-muted); margin-bottom: 16px; font-family: var(--font-monospace); word-break: break-all;'
+			}
+		});
+
+		// New filename input
+		contentEl.createEl('div', {
+			text: 'New filename:',
+			attr: {
+				style: 'font-weight: 500; margin-bottom: 4px; font-size: 0.9em;'
 			}
 		});
 
@@ -47,11 +61,12 @@ export class RenameExtensionModal extends Modal {
 		});
 
 		const input = new TextComponent(row);
-		input.setPlaceholder('ext. (registers if unknown after confirm)');
+		input.setPlaceholder('filename.ext or .dotfile');
+		input.setValue(this.newFilename);
 		input.inputEl.style.flexGrow = '1';
+		input.inputEl.style.fontFamily = 'var(--font-monospace)';
 		input.onChange((value) => {
-			this.newExt = value.replace(/^\./, '');
-			pathDisplay.textContent = this.getNewPath();
+			this.newFilename = value.trim();
 		});
 
 		this.scope.register([], 'Enter', (e) => {
@@ -60,23 +75,13 @@ export class RenameExtensionModal extends Modal {
 			return false;
 		});
 
-		new ExtensionSuggest(
-			this.plugin,
-			input.inputEl,
-			(ext) => {
-				input.setValue(ext);
-				this.newExt = ext;
-				pathDisplay.textContent = this.getNewPath();
-			},
-			() => Object.keys(this.plugin.app.viewRegistry.typeByExtension)
-		);
-
 		new ButtonComponent(row)
 			.setButtonText('Rename')
 			.setCta()
 			.onClick(() => void this.save());
 
 		input.inputEl.focus();
+		input.inputEl.select();
 	}
 
 	onClose(): void {
@@ -84,41 +89,63 @@ export class RenameExtensionModal extends Modal {
 		this.restoreFocus?.();
 	}
 
-	private getNewPath(): string {
-		const base = this.file.basename;
-		const cleanExt = this.newExt.replace(/^\./, '').trim();
-		return cleanExt ? `${base}.${cleanExt}` : base;
+	/** 
+	 * Extracts the extension from a filename.
+	 * Handles dotfiles (like .env, .pythonconfig) where the extension is the full name without the leading dot.
+	 */
+	private getExtension(filename: string): string {
+		// Dotfile without extension: .env → "env"
+		if (filename.startsWith('.') && !filename.includes('.', 1)) {
+			return filename.slice(1);
+		}
+		// Normal file: myfile.py → "py"
+		const lastDot = filename.lastIndexOf('.');
+		return lastDot > 0 ? filename.slice(lastDot + 1) : '';
 	}
 
+	/** 
+	 * Renames the file with the new filename (name + extension).
+	 * Handles dotfiles (.env, .pythonconfig) and normal files (myfile.py).
+	 * Registers unknown extensions with Code Files if user confirms.
+	 */
 	private async save(): Promise<void> {
-		const ext = this.newExt.replace(/^\./, '').trim();
+		const newFilename = this.newFilename.trim();
 
-		if (!ext) {
-			new Notice('Please enter an extension');
+		if (!newFilename) {
+			new Notice('Please enter a filename');
 			return;
 		}
 
-		const newPath = `${this.file.basename}.${ext}`;
+		// Construct new path
+		const newPath = this.file.parent
+			? `${this.file.parent.path}/${newFilename}`
+			: newFilename;
+		
 		if (newPath === this.file.path) {
 			this.close();
 			return;
 		}
 
-		// Register with CodeFiles if unknown to both CodeFiles and Obsidian
-		const isKnown =
-			isCodeFilesExtension(this.plugin.app, ext) ||
-			!!this.plugin.app.viewRegistry.typeByExtension[ext];
-		if (!isKnown) {
-			const ok = await confirmation(
-				this.plugin.app,
-				`".${ext}" is not a registered extension. Register it with Code Files?`
-			);
-			if (!ok) return;
-			addExtension(this.plugin.settings, ext);
-			registerExtension(this.plugin, ext);
-			await this.plugin.saveSettings();
-			syncRegisteredExts(this.plugin);
-			new Notice(`".${ext}" registered with Code Files`);
+		// Extract extension from new filename
+		const ext = this.getExtension(newFilename);
+		
+		// Register with CodeFiles if extension exists and is unknown to both CodeFiles and Obsidian
+		if (ext) {
+			const isKnown =
+				isCodeFilesExtension(this.plugin.app, ext) ||
+				!!this.plugin.app.viewRegistry.typeByExtension[ext];
+			if (!isKnown) {
+				const ok = await confirmation(
+					this.plugin.app,
+					`".${ext}" is not a registered extension. Register it with Code Files?`
+				);
+				if (!ok) return;
+				addExtension(this.plugin.settings, ext);
+				registerExtension(this.plugin, ext);
+				await this.plugin.saveSettings();
+				syncRegisteredExts(this.plugin);
+				new Notice(`".${ext}" registered with Code Files`);
+			}
 		}
 
 		this.close();

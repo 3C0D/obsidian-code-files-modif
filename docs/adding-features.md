@@ -144,7 +144,7 @@ case 'my-message':
 
 Follow standard Obsidian patterns. See examples:
 - `ChooseThemeModal` — SuggestModal with preview
-- `RenameExtensionModal` — simple modal with input + button
+- `RenameExtensionModal` — modal for renaming files (name + extension) with dotfile support
 
 If opened from Monaco, `modalPatch` handles focus automatically.
 

@@ -166,6 +166,32 @@ This ensures:
 5. Format document (Shift+Alt+F)
 6. Verify formatting uses 2-space indentation
 
+### Creating Files Without Extension
+
+**The Bug (Fixed):**
+
+When creating a file with only an extension (no name), like `.prettierrc`, the modal would crash with "Cannot read properties of null (reading 'path')" because `vault.create()` returns a `TFile` that may not be immediately indexed in the vault.
+
+**The Fix:** (`createCodeFileModal.ts`)
+
+Use `CodeEditorView.openFile()` instead of `openVaultFile()` after creating the file:
+
+```typescript
+const newFile = await this.app.vault.create(newPath, '');
+void CodeEditorView.openFile(newFile, this.plugin);
+```
+
+`openFile()` checks if the file exists in the vault with `getAbstractFileByPath()` before opening, handling newly created files correctly.
+
+### Testing
+
+1. Open `.prettierrc` in Monaco
+2. Open Editor Settings (gear icon)
+3. Change `tabSize` from 4 to 2
+4. Close settings modal
+5. Format document (Shift+Alt+F)
+6. Verify formatting uses 2-space indentation
+
 ## Current Limitation
 
 **Requires external plugin:** Files starting with `.` are hidden by Obsidian by default. Users need a plugin like "Show Hidden Files" to see them in the file explorer.
