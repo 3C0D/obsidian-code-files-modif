@@ -43,7 +43,8 @@ export default class CodeFilesPlugin extends Plugin {
 			return null;
 		};
 		const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
-		this._lastHotkeys = JSON.stringify({ settingsHotkey });
+		const paletteHotkey = getHotkey('command-palette:open') ?? { modifiers: ['Mod'], key: 'p' };
+		this._lastHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey });
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 		initExtensions(this);

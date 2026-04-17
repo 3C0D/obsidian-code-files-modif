@@ -159,7 +159,8 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 	};
 
 	const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
-	const currentHotkeys = JSON.stringify({ settingsHotkey });
+	const paletteHotkey = getHotkey('command-palette:open') ?? { modifiers: ['Mod'], key: 'p' };
+	const currentHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey });
 
 	// Compare with last known state to detect changes
 	if (currentHotkeys !== plugin._lastHotkeys) {
@@ -188,10 +189,13 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 				}
 				
 				// Show notice to user
-				const hotkeyStr = settingsHotkey.modifiers
+				const settingsStr = settingsHotkey.modifiers
 					.map(m => m === 'Mod' && Platform.isWin ? 'Ctrl' : m === 'Mod' ? 'Cmd' : m)
 					.join('+') + '+' + settingsHotkey.key;
-				new Notice(`Editor hotkeys reloaded (Settings: ${hotkeyStr})`);
+				const paletteStr = paletteHotkey.modifiers
+					.map(m => m === 'Mod' && Platform.isWin ? 'Ctrl' : m === 'Mod' ? 'Cmd' : m)
+					.join('+') + '+' + paletteHotkey.key;
+				new Notice(`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr})`);
 				
 				break;
 			}
