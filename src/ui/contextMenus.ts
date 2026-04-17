@@ -20,7 +20,9 @@ import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {
 	addExtension,
+	removeExtension,
 	registerExtension,
+	unregisterExtension,
 	syncRegisteredExts,
 	getActiveExtensions
 } from '../utils/extensionUtils.ts';
@@ -193,6 +195,21 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 				await plugin.saveSettings();
 				syncRegisteredExts(plugin);
 				new Notice(`".${ext}" registered with Code Files`);
+			}
+		});
+	}
+
+	// Show "Unregister Extension" only if registered AND not native
+	if (isRegistered && !isNative) {
+		items.push({
+			title: 'Unregister Extension',
+			icon: 'minus-circle',
+			action: async () => {
+				removeExtension(plugin.settings, ext);
+				unregisterExtension(plugin, ext);
+				await plugin.saveSettings();
+				syncRegisteredExts(plugin);
+				new Notice(`".${ext}" unregistered from Code Files`);
 			}
 		});
 	}
