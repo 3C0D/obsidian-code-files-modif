@@ -312,7 +312,7 @@ export class CodeEditorView extends TextFileView {
 	 *  (dirty + requestSave) and manual saves (Ctrl+S).
 	 *  contentEl is passed to resolve the owner document/window, which differs
 	 *  from the main window when opened in an Obsidian popout window. */
-	private async mountEditor(file: TFile): Promise<void> {
+	public async mountEditor(file: TFile): Promise<void> {
 		const ext = getEmptyFileExtension(file);
 		this.codeEditor = await mountCodeEditor(
 			this.plugin,

@@ -16,10 +16,34 @@ export default class CodeFilesPlugin extends Plugin {
 	ribbonIconEl: HTMLElement | null = null;
 	_registeredExts: Set<string> = new Set();
 	private _modalClosePatch: (() => void) | null = null;
+	_lastHotkeys?: string;
 
 	async onload(): Promise<void> {
 		await loadSettings(this);
 		this._modalClosePatch = patchModalClose();
+
+		// Initialize _lastHotkeys with current hotkey state to enable change detection
+		const getHotkey = (commandId: string): { modifiers: string[]; key: string } | null => {
+			const custom = this.app.hotkeyManager.getHotkeys(commandId);
+			if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
+				const mods = custom[0].modifiers;
+				return { 
+					modifiers: Array.isArray(mods) ? mods : [mods], 
+					key: custom[0].key 
+				};
+			}
+			const cmd = this.app.commands?.commands?.[commandId];
+			if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+				const mods = cmd.hotkeys[0].modifiers;
+				return { 
+					modifiers: Array.isArray(mods) ? mods : [mods], 
+					key: cmd.hotkeys[0].key 
+				};
+			}
+			return null;
+		};
+		const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
+		this._lastHotkeys = JSON.stringify({ settingsHotkey });
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 		initExtensions(this);

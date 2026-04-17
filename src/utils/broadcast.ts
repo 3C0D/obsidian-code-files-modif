@@ -6,11 +6,14 @@
  * - broadcastEditorConfig: merged editor config (tabSize, formatOnSave, etc.)
  * - broadcastProjectFiles: loads TS/JS files from project root for IntelliSense and cross-file navigation
  */
+import { Notice, Platform } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getEmptyFileExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
+import type { FileExplorerView } from 'obsidian-typings';
+import type { CodeEditorView } from '../editor/codeEditorView.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -118,5 +121,82 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
 	}
 	for (const view of getCodeEditorViews(plugin.app)) {
 		view.editor?.send('load-project-files', { files });
+	}
+}
+
+/**
+ * Retrieves current Obsidian hotkey for opening settings and compares with previous value.
+ * If changed, reloads all open CodeEditor views to apply new hotkey.
+ * Called when settings modal closes.
+ */
+/**
+ * Checks if Obsidian hotkeys have changed and broadcasts updates to all open Monaco editors.
+ * Called when settings modal closes to detect hotkey changes made by the user.
+ * For inactive views, they'll get new hotkeys on next activation via onLoadFile.
+ * For the active view, performs a soft reload preserving content and cursor position.
+ * 
+ * @param plugin - The plugin instance
+ */
+export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
+	const getHotkey = (commandId: string): { modifiers: string[]; key: string } | null => {
+		// Check custom hotkeys first (user-defined in settings)
+		const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
+		if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
+			const mods = custom[0].modifiers;
+			return { 
+				modifiers: Array.isArray(mods) ? mods : [mods], 
+				key: custom[0].key 
+			};
+		}
+		// Fall back to default command hotkeys
+		const cmd = plugin.app.commands?.commands?.[commandId];
+		if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+			const mods = cmd.hotkeys[0].modifiers;
+			return { 
+				modifiers: Array.isArray(mods) ? mods : [mods], 
+				key: cmd.hotkeys[0].key 
+			};
+		}
+		return null;
+	};
+
+	const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
+	const currentHotkeys = JSON.stringify({ settingsHotkey });
+
+	// Compare with last known state to detect changes
+	if (currentHotkeys !== plugin._lastHotkeys) {
+		plugin._lastHotkeys = currentHotkeys;
+		
+		const views = getCodeEditorViews(plugin.app);
+		const activeLeaf = plugin.app.workspace.activeLeaf;
+		
+		// Reload the active view to apply new hotkeys immediately
+		for (const view of views) {
+			if (view.leaf === activeLeaf && view.file && view.editor) {
+				// Save current content before reload (preserves unsaved changes)
+				const currentContent = view.editor.getValue();
+				
+				// Destroy and remount editor (preserves undo/redo history)
+				view.editor.destroy();
+				view.contentEl.empty();
+				
+				// Remount with current content
+				await view.mountEditor(view.file);
+				view.contentEl.append(view.editor!.iframe);
+				
+				// Restore content if it was modified
+				if (currentContent !== view.data) {
+					view.editor!.setValue(currentContent);
+				}
+				
+				// Show notice to user
+				const hotkeyStr = settingsHotkey.modifiers
+					.map(m => m === 'Mod' && Platform.isWin ? 'Ctrl' : m === 'Mod' ? 'Cmd' : m)
+					.join('+') + '+' + settingsHotkey.key;
+				new Notice(`Editor hotkeys reloaded (Settings: ${hotkeyStr})`);
+				
+				break;
+			}
+		}
 	}
 }

@@ -13,6 +13,7 @@ import manifest from '../../manifest.json' with { type: 'json' };
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { CodeEditorView } from './codeEditorView.ts';
+import { broadcastHotkeys } from '../utils/broadcast.ts';
 
 const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 
@@ -378,10 +379,14 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-settings': {
 				if (data.context === codeContext) {
-					// Patch onClose to refocus Monaco when settings dialog closes
+					// Patch settings modal onClose to detect hotkey changes
+					// Wait 200ms after close to ensure Obsidian has saved the new hotkeys
 					const old = plugin.app.setting.onClose;
 					plugin.app.setting.onClose = () => {
 						plugin.app.setting.onClose = old;
+						setTimeout(() => {
+							void broadcastHotkeys(plugin);
+						}, 200);
 						send('focus', {});
 					};
 					plugin.app.setting.open();

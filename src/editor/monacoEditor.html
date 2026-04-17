@@ -1179,6 +1179,10 @@
 								openDiffModal(lastFormatOriginal, lastFormatFormatted);
 							}
 							break;
+						case 'update-hotkeys':
+							if (data.commandPaletteHotkey) currentCommandPaletteHotkey = data.commandPaletteHotkey;
+							if (data.settingsHotkey) currentSettingsHotkey = data.settingsHotkey;
+							break;
 						case 'load-project-files':
 							// Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
 							// If Monaco isn't initialized yet, queue the files for later.
