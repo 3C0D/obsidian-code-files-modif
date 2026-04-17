@@ -2,50 +2,21 @@
 // All document formatting providers for Monaco Editor
 
 // Global variables shared with monacoEditor.html
-var editor;
-var context;
-var currentLang;
-var lastFormatOriginal;
-var lastFormatFormatted;
-
-function runFormatWithDiff() {
-	var formatAction = editor.getAction('editor.action.formatDocument');
-	if (!formatAction || !formatAction.isSupported()) return Promise.resolve();
-	var original = editor.getValue();
-
-	return new Promise(function (resolve) {
-		var disposable = editor.onDidChangeModelContent(function () {
-			disposable.dispose();
-			clearTimeout(fallback);
-			var formatted = editor.getValue();
-			if (formatted !== original) {
-				lastFormatOriginal = original;
-				lastFormatFormatted = formatted;
-				window.parent.postMessage(
-					{ type: 'format-diff-available', context: context },
-					'*'
-				);
-			}
-			resolve();
-		});
-
-		var fallback = setTimeout(function () {
-			disposable.dispose();
-			resolve();
-		}, FORMAT_CHANGE_TIMEOUT);
-
-		formatAction.run();
-	});
-}
+// (runFormatWithDiff, editor, context, currentLang, lastFormatOriginal, lastFormatFormatted
+//  are defined in monacoEditor.html and accessible here)
 
 function registerFormatters() {
 	// Register Mermaid as a custom language if not already registered
-	if (!monaco.languages.getLanguages().some(function(lang) { return lang.id === 'mermaid'; })) {
+	if (
+		!monaco.languages.getLanguages().some(function (lang) {
+			return lang.id === 'mermaid';
+		})
+	) {
 		monaco.languages.register({ id: 'mermaid' });
 	}
 
 	monaco.languages.registerDocumentFormattingEditProvider('markdown', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			try {
 				var original = model.getValue();
 				var formatted = await prettier.format(original, {
@@ -57,11 +28,15 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				// Format mermaid blocks inside the markdown
-				if (window.mermaidFormatter && window.mermaidFormatter.formatMarkdownMermaidBlocks) {
-					formatted = window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted);
+				if (
+					window.mermaidFormatter &&
+					window.mermaidFormatter.formatMarkdownMermaidBlocks
+				) {
+					formatted =
+						window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted);
 				}
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier format failed', e);
 				return [];
 			}
@@ -69,7 +44,7 @@ function registerFormatters() {
 	});
 
 	monaco.languages.registerDocumentFormattingEditProvider('mermaid', {
-		provideDocumentFormattingEdits: function(model) {
+		provideDocumentFormattingEdits: function (model) {
 			try {
 				if (!window.mermaidFormatter || !window.mermaidFormatter.formatMermaid) {
 					console.warn('code-files: mermaid-formatter not loaded');
@@ -86,7 +61,7 @@ function registerFormatters() {
 					);
 				}
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: mermaid format failed', e);
 				return [];
 			}
@@ -94,7 +69,7 @@ function registerFormatters() {
 	});
 
 	monaco.languages.registerDocumentFormattingEditProvider('typescript', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			try {
 				var original = model.getValue();
 				var formatted = await prettier.format(original, {
@@ -105,7 +80,7 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier typescript format failed', e);
 				return [];
 			}
@@ -113,7 +88,7 @@ function registerFormatters() {
 	});
 
 	monaco.languages.registerDocumentFormattingEditProvider('javascript', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			try {
 				var original = model.getValue();
 				var formatted = await prettier.format(original, {
@@ -124,7 +99,7 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier javascript format failed', e);
 				return [];
 			}
@@ -132,9 +107,9 @@ function registerFormatters() {
 	});
 
 	// ── Prettier: CSS / SCSS / Less ───────────────────────────────────────────
-	['css', 'scss', 'less'].forEach(function(lang) {
+	['css', 'scss', 'less'].forEach(function (lang) {
 		monaco.languages.registerDocumentFormattingEditProvider(lang, {
-			provideDocumentFormattingEdits: async function(model) {
+			provideDocumentFormattingEdits: async function (model) {
 				try {
 					var original = model.getValue();
 					var formatted = await prettier.format(original, {
@@ -145,7 +120,7 @@ function registerFormatters() {
 						useTabs: PRETTIER_USE_TABS
 					});
 					return [{ range: model.getFullModelRange(), text: formatted }];
-				} catch(e) {
+				} catch (e) {
 					console.warn('code-files: prettier ' + lang + ' format failed', e);
 					return [];
 				}
@@ -155,7 +130,7 @@ function registerFormatters() {
 
 	// ── Prettier: HTML ────────────────────────────────────────────────────────
 	monaco.languages.registerDocumentFormattingEditProvider('html', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			try {
 				var original = model.getValue();
 				var formatted = await prettier.format(original, {
@@ -166,7 +141,7 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier html format failed', e);
 				return [];
 			}
@@ -176,7 +151,7 @@ function registerFormatters() {
 	// ── Prettier: JSON ────────────────────────────────────────────────────────
 	// Overrides Monaco's native JSON formatter for consistency with other languages
 	monaco.languages.registerDocumentFormattingEditProvider('json', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			try {
 				var original = model.getValue();
 				var formatted = await prettier.format(original, {
@@ -187,7 +162,7 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier json format failed', e);
 				return [];
 			}
@@ -196,7 +171,7 @@ function registerFormatters() {
 
 	// ── Prettier: YAML ────────────────────────────────────────────────────────
 	monaco.languages.registerDocumentFormattingEditProvider('yaml', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			// Skip formatting for .lock files (yarn.lock, package-lock.json, etc.)
 			if (context && /\.lock$/i.test(context)) {
 				return [];
@@ -211,7 +186,7 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier yaml format failed', e);
 				return [];
 			}
@@ -220,7 +195,7 @@ function registerFormatters() {
 
 	// ── Prettier: GraphQL ─────────────────────────────────────────────────────
 	monaco.languages.registerDocumentFormattingEditProvider('graphql', {
-		provideDocumentFormattingEdits: async function(model) {
+		provideDocumentFormattingEdits: async function (model) {
 			try {
 				var original = model.getValue();
 				var formatted = await prettier.format(original, {
@@ -231,7 +206,7 @@ function registerFormatters() {
 					useTabs: PRETTIER_USE_TABS
 				});
 				return [{ range: model.getFullModelRange(), text: formatted }];
-			} catch(e) {
+			} catch (e) {
 				console.warn('code-files: prettier graphql format failed', e);
 				return [];
 			}
@@ -239,9 +214,9 @@ function registerFormatters() {
 	});
 
 	// ── C/C++: clang-format ───────────────────────────────────────────────────
-	['c', 'cpp'].forEach(function(lang) {
+	['c', 'cpp'].forEach(function (lang) {
 		monaco.languages.registerDocumentFormattingEditProvider(lang, {
-			provideDocumentFormattingEdits: async function(model) {
+			provideDocumentFormattingEdits: async function (model) {
 				try {
 					if (!window.clangFormatter) {
 						console.warn('code-files: clang-formatter not loaded');
@@ -257,8 +232,11 @@ function registerFormatters() {
 					var original = model.getValue();
 					var formatted = window.clangFormatter.format(original);
 					return [{ range: model.getFullModelRange(), text: formatted }];
-				} catch(e) {
-					console.warn('code-files: clang-format ' + lang + ' format failed', e);
+				} catch (e) {
+					console.warn(
+						'code-files: clang-format ' + lang + ' format failed',
+						e
+					);
 					return [];
 				}
 			}
@@ -266,7 +244,7 @@ function registerFormatters() {
 	});
 
 	// ── Python: Ruff Formatter ────────────────────────────────────────────────
-	(async function() {
+	(async function () {
 		if (!window.ruffFormatter) {
 			console.warn('code-files: ruff-formatter not loaded');
 			return;
@@ -280,7 +258,7 @@ function registerFormatters() {
 		}
 
 		monaco.languages.registerDocumentFormattingEditProvider('python', {
-			provideDocumentFormattingEdits: function(model) {
+			provideDocumentFormattingEdits: function (model) {
 				try {
 					var original = model.getValue();
 					var formatted = window.ruffFormatter.format(original, null, {
@@ -291,7 +269,7 @@ function registerFormatters() {
 						quote_style: 'double',
 						magic_trailing_comma: 'respect'
 					});
-					
+
 					if (formatted !== original) {
 						lastFormatOriginal = original;
 						lastFormatFormatted = formatted;
@@ -300,9 +278,9 @@ function registerFormatters() {
 							'*'
 						);
 					}
-					
+
 					return [{ range: model.getFullModelRange(), text: formatted }];
-				} catch(e) {
+				} catch (e) {
 					console.warn('code-files: ruff format failed', e);
 					return [];
 				}
@@ -311,7 +289,7 @@ function registerFormatters() {
 	})();
 
 	// ── Go: gofmt Formatter ───────────────────────────────────────────────────
-	(async function() {
+	(async function () {
 		if (!window.gofmtFormatter) {
 			console.warn('code-files: gofmt-formatter not loaded');
 			return;
@@ -325,11 +303,11 @@ function registerFormatters() {
 		}
 
 		monaco.languages.registerDocumentFormattingEditProvider('go', {
-			provideDocumentFormattingEdits: function(model) {
+			provideDocumentFormattingEdits: function (model) {
 				try {
 					var original = model.getValue();
 					var formatted = window.gofmtFormatter.format(original);
-					
+
 					if (formatted !== original) {
 						lastFormatOriginal = original;
 						lastFormatFormatted = formatted;
@@ -338,9 +316,9 @@ function registerFormatters() {
 							'*'
 						);
 					}
-					
+
 					return [{ range: model.getFullModelRange(), text: formatted }];
-				} catch(e) {
+				} catch (e) {
 					console.warn('code-files: gofmt format failed', e);
 					return [];
 				}

@@ -1,0 +1,1233 @@
+<!doctype html>
+<!--
+  Monaco Editor HTML - loaded as a blob URL inside an isolated iframe.
+  
+  This HTML is the Monaco Editor instance that runs inside each CodeEditorView, FenceEditModal, and EditorSettingsModal.
+  It's fetched by mountCodeEditor.ts, patched (./vs paths → absolute app:// URLs, CSS inlined),
+  then injected as a blob URL to bypass Obsidian's CSP restrictions.
+  
+  Communication with the parent (Obsidian) happens entirely via postMessage:
+  - Parent → iframe: init, change-value, change-theme, change-editor-config, load-project-files, etc.
+  - iframe → parent: ready, change, save-document, languages, format-diff-available, open-file, etc.
+  
+  Features:
+  - Full Monaco Editor with syntax highlighting, IntelliSense, and validation
+  - Prettier formatting for Markdown, JavaScript, TypeScript, CSS, HTML, JSON, YAML, GraphQL
+  - Mermaid diagram formatting (standalone .mmd files and ```mermaid blocks in Markdown)
+  - TypeScript/JavaScript cross-file navigation (Ctrl+Click on imports)
+  - Diff viewer for format changes
+  - Custom actions in Monaco's context menu and command palette
+-->
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<!--
+  CSP for Monaco's blob iframe. Since this HTML is loaded as a blob URL,
+  it doesn't inherit Obsidian's CSP and needs its own security policy.
+  - 'unsafe-eval' + 'unsafe-inline': Monaco's module loader requires eval() and inline scripts
+  - data: images: Monaco's error decorations use inline SVG data URLs
+  - blob: workers: Monaco's syntax checking runs in web workers
+-->
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self' app:; script-src 'self' 'unsafe-eval' 'unsafe-inline' app:; style-src 'self' 'unsafe-inline' app:; img-src 'self' app: data:; worker-src blob:;"
+		/>
+		<link rel="stylesheet" href="./monacoHtml.css" />
+		<style>
+			/* Chain all three levels to 100% height: html and body don't inherit
+			   viewport height by default, so #container's height: 100% would resolve to 0 */
+			html,
+			body,
+			#container {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- Monaco's mount target: monaco.editor.create() requires a DOM element with measurable dimensions -->
+		<div id="container"></div>
+		<!--
+  require.paths.vs is patched to an absolute app:// URL by mountCodeEditor.ts before
+  this HTML is injected as a blob URL, so ./vs resolves correctly.
+-->
+		<!-- Step 1: tell AMD loader where to find Monaco's files -->
+		<script>
+			var require = { paths: { vs: './vs' } };
+		</script>
+		<!-- Step 2: load Monaco's AMD module loader (reads the require config above) -->
+		<script src="./vs/loader.js"></script>
+		<!-- Step 2.5: load Prettier and Mermaid formatters -->
+		<script src="./formatters/prettier-standalone.js"></script>
+		<script src="./formatters/prettier-markdown.js"></script>
+		<script src="./formatters/prettier-estree.js"></script>
+		<script src="./formatters/prettier-typescript.js"></script>
+		<script src="./formatters/prettier-babel.js"></script>
+		<script src="./formatters/prettier-postcss.js"></script>
+		<script src="./formatters/prettier-html.js"></script>
+		<script src="./formatters/prettier-yaml.js"></script>
+		<script src="./formatters/prettier-graphql.js"></script>
+		<script src="./formatters/mermaid-formatter.js"></script>
+		<!-- Step 3: custom helpers and Prettier config(above), must be available before editor init -->
+		<script src="./monacoHtml.js"></script>
+		<script>
+			<!-- Step 4: async-load Monaco itself, all init code runs in the callback -->
+			require(['vs/editor/editor.main'], function () {
+				var editor;
+				var context;
+				var formatOnSave = false;
+				var editorDefaults = {};
+				var lastFormatOriginal = null;
+				var lastFormatFormatted = null;
+				var currentLang = 'plaintext';
+				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
+				var initialized = false;
+				// Mutable hotkey state — updated by 'update-hotkeys' without reloading the editor
+				var currentCommandPaletteHotkey = null;
+				var currentSettingsHotkey = null;
+				// Diff editor singleton - created once, reused
+				var diffEditorInstance = null;
+				var diffOverlayEl = null;
+				// Active revert glyph/overlay widgets (one per diff hunk)
+				var revertZoneWidgets = [];
+				// Disposable for the scroll listener (overlay widget fallback)
+				var diffScrollDisposable = null;
+
+				function closeDiffModal() {
+					if (diffOverlayEl) {
+						diffOverlayEl.style.display = 'none';
+						
+						// Always ensure the main editor is perfectly in sync with the diff editor when we close it
+						if (diffEditorInstance) {
+							var models = diffEditorInstance.getModel();
+							if (models && models.modified) {
+								var diffText = models.modified.getValue();
+								if (editor.getValue() !== diffText) {
+									editor.getModel().pushEditOperations(
+										[],
+										[{ range: editor.getModel().getFullModelRange(), text: diffText }],
+										function () { return null; }
+									);
+								}
+							}
+						}
+						
+						if (editor) editor.focus();
+					}
+					clearRevertWidgets();
+					if (diffScrollDisposable) {
+						diffScrollDisposable.dispose();
+						diffScrollDisposable = null;
+					}
+				}
+
+				function clearRevertWidgets() {
+					if (!diffEditorInstance) return;
+					var origEditor = diffEditorInstance.getOriginalEditor();
+					revertZoneWidgets.forEach(function (w) {
+						if (w.type === 'glyph' && typeof origEditor.removeGlyphMarginWidget === 'function') {
+							origEditor.removeGlyphMarginWidget(w.widget);
+						} else if (w.type === 'overlay') {
+							origEditor.removeOverlayWidget(w.widget);
+						}
+					});
+					revertZoneWidgets = [];
+				}
+
+				function buildRevertWidgets() {
+					clearRevertWidgets();
+					if (diffScrollDisposable) {
+						diffScrollDisposable.dispose();
+						diffScrollDisposable = null;
+					}
+				
+					var changes = diffEditorInstance.getLineChanges();
+					if (!changes || changes.length === 0) return;
+				
+					var origEditor = diffEditorInstance.getOriginalEditor();
+					var useGlyphApi = typeof origEditor.addGlyphMarginWidget === 'function';
+				
+					changes.forEach(function (change, idx) {
+						var origLine = change.originalStartLineNumber > 0 ? change.originalStartLineNumber : Math.max(1, change.originalEndLineNumber);
+				
+						var btn = document.createElement('button');
+						btn.className = 'diff-revert-block-btn';
+						btn.textContent = '↩';
+						btn.title = 'Revert Block';
+						btn.addEventListener('click', function (e) {
+							e.stopPropagation();
+							e.preventDefault();
+							revertBlock(change);
+						});
+				
+						var widgetId = 'revert-glyph-' + idx;
+				
+						if (useGlyphApi) {
+							var glyphWidget = {
+								getId: function () { return widgetId; },
+								getDomNode: function () { return btn; },
+								getPosition: function () {
+									return {
+										lane: monaco.editor.GlyphMarginLane.Left,
+										zIndex: 100,
+										range: {
+											startLineNumber: origLine, startColumn: 1, endLineNumber: origLine, endColumn: 1
+										}
+									};
+								}
+							};
+							origEditor.addGlyphMarginWidget(glyphWidget);
+							revertZoneWidgets.push({ type: 'glyph', widget: glyphWidget });
+						} else {
+							var container = document.createElement('div');
+							container.style.position = 'absolute';
+							container.style.zIndex = '100';
+							container.appendChild(btn);
+				
+							var overlayWidget = {
+								getId: function () { return widgetId; },
+								getDomNode: function () { return container; },
+								getPosition: function () { return null; }
+							};
+							origEditor.addOverlayWidget(overlayWidget);
+							revertZoneWidgets.push({ type: 'overlay', widget: overlayWidget, line: origLine, container: container });
+							positionOverlayWidget(origEditor, container, origLine);
+						}
+					});
+				
+					if (!useGlyphApi) {
+						diffScrollDisposable = origEditor.onDidScrollChange(function () {
+							revertZoneWidgets.forEach(function (w) {
+								if (w.type === 'overlay') {
+									positionOverlayWidget(origEditor, w.container, w.line);
+								}
+							});
+						});
+					}
+				}
+				
+				function positionOverlayWidget(edtr, container, lineNumber) {
+					var top = edtr.getTopForLineNumber(lineNumber) - edtr.getScrollTop();
+					var lh = edtr.getOption(monaco.editor.EditorOption.lineHeight);
+					container.style.top = top + 'px';
+					container.style.left = '4px';
+					container.style.height = lh + 'px';
+					container.style.display = 'flex';
+					container.style.alignItems = 'center';
+				}
+
+				function revertBlock(change) {
+					var models = diffEditorInstance.getModel();
+					if (!models) return;
+					var origModel = models.original;
+					var modModel = models.modified;
+				
+					var origText = '';
+					var hasOrig = change.originalStartLineNumber > 0 && change.originalEndLineNumber >= change.originalStartLineNumber;
+					if (hasOrig) {
+						var lines = [];
+						for (var i = change.originalStartLineNumber; i <= change.originalEndLineNumber; i++) {
+							lines.push(origModel.getLineContent(i));
+						}
+						origText = lines.join('\n');
+					}
+				
+					var hasMod = change.modifiedStartLineNumber > 0 && change.modifiedEndLineNumber >= change.modifiedStartLineNumber;
+					var edit;
+				
+					if (hasMod && hasOrig) {
+						edit = {
+							range: {
+								startLineNumber: change.modifiedStartLineNumber, startColumn: 1,
+								endLineNumber: change.modifiedEndLineNumber, endColumn: modModel.getLineMaxColumn(change.modifiedEndLineNumber)
+							},
+							text: origText
+						};
+					} else if (hasMod && !hasOrig) {
+						var endLn = change.modifiedEndLineNumber;
+						var range;
+						if (endLn >= modModel.getLineCount()) {
+							if (change.modifiedStartLineNumber > 1) {
+								range = {
+									startLineNumber: change.modifiedStartLineNumber - 1, startColumn: modModel.getLineMaxColumn(change.modifiedStartLineNumber - 1),
+									endLineNumber: endLn, endColumn: modModel.getLineMaxColumn(endLn)
+								};
+							} else {
+								range = {
+									startLineNumber: 1, startColumn: 1,
+									endLineNumber: endLn, endColumn: modModel.getLineMaxColumn(endLn)
+								};
+							}
+						} else {
+							range = {
+								startLineNumber: change.modifiedStartLineNumber, startColumn: 1,
+								endLineNumber: endLn + 1, endColumn: 1
+							};
+						}
+						edit = { range: range, text: '' };
+					} else if (!hasMod && hasOrig) {
+						var insertLine = change.modifiedStartLineNumber > 0 ? change.modifiedStartLineNumber : 1;
+						var maxCol = modModel.getLineMaxColumn(insertLine);
+						edit = {
+							range: {
+								startLineNumber: insertLine, startColumn: maxCol,
+								endLineNumber: insertLine, endColumn: maxCol
+							},
+							text: '\n' + origText
+						};
+					} else {
+						return;
+					}
+				
+					modModel.pushEditOperations([], [edit], function () { return null; });
+				
+					// Appliquer exactement la même modification à l'éditeur principal derrière le modal
+					// Cela préserve l'historique Cmd+Z et déclenche correctement onDidChangeModelContent
+					if (editor && editor.getModel()) {
+						editor.getModel().pushEditOperations([], [edit], function () { return null; });
+						lastFormatFormatted = editor.getValue();
+					} else {
+						var newContent = modModel.getValue();
+						editor.getModel().pushEditOperations(
+							[],
+							[{ range: editor.getModel().getFullModelRange(), text: newContent }],
+							function () { return null; }
+						);
+						lastFormatFormatted = newContent;
+					}
+				
+					setTimeout(function () {
+						var remaining = diffEditorInstance.getLineChanges();
+						if (!remaining || remaining.length === 0) {
+							// All blocks reverted — clean up and close
+							lastFormatOriginal = null;
+							lastFormatFormatted = null;
+							if (diffOverlayEl) {
+								diffOverlayEl.style.display = 'none';
+							}
+							clearRevertWidgets();
+							if (diffScrollDisposable) {
+								diffScrollDisposable.dispose();
+								diffScrollDisposable = null;
+							}
+							if (editor) editor.focus();
+							window.parent.postMessage({ type: 'format-diff-reverted', context: context }, '*');
+						} else {
+							buildRevertWidgets();
+						}
+					}, 300);
+				}
+
+				function revertAll() {
+					if (!lastFormatOriginal) return;
+					
+					// Simply restore the original content before formatting
+					editor.getModel().pushEditOperations(
+						[],
+						[{ range: editor.getModel().getFullModelRange(), text: lastFormatOriginal }],
+						function () { return null; }
+					);
+					
+					// Clean up
+					lastFormatOriginal = null;
+					lastFormatFormatted = null;
+					
+					// Close the diff modal
+					if (diffOverlayEl) {
+						diffOverlayEl.style.display = 'none';
+					}
+					clearRevertWidgets();
+					if (diffScrollDisposable) {
+						diffScrollDisposable.dispose();
+						diffScrollDisposable = null;
+					}
+					if (editor) editor.focus();
+					
+					window.parent.postMessage({ type: 'format-diff-reverted', context: context }, '*');
+				}
+
+				function openDiffModal(original, formatted) {
+					if (!diffOverlayEl) {
+						diffOverlayEl = document.createElement('div');
+						diffOverlayEl.className = 'diff-overlay';
+
+						var toolbar = document.createElement('div');
+						toolbar.className = 'diff-toolbar';
+
+						var revertAllBtn = document.createElement('button');
+						revertAllBtn.textContent = '↩ Revert All';
+						revertAllBtn.className = 'diff-revert-all-btn';
+						revertAllBtn.title = 'Revert all formatting changes and restore original';
+						revertAllBtn.onclick = function () { revertAll(); };
+
+						var closeBtn = document.createElement('button');
+						closeBtn.textContent = '✕ Close';
+						closeBtn.className = 'diff-close-btn';
+						closeBtn.onclick = closeDiffModal;
+
+						toolbar.appendChild(revertAllBtn);
+						toolbar.appendChild(closeBtn);
+
+						var container = document.createElement('div');
+						container.className = 'diff-container';
+
+						diffOverlayEl.appendChild(toolbar);
+						diffOverlayEl.appendChild(container);
+						document.body.appendChild(diffOverlayEl);
+
+						diffEditorInstance = monaco.editor.createDiffEditor(container, DIFF_EDITOR_OPTIONS);
+					}
+
+					diffOverlayEl.style.display = 'block';
+
+					var oldModel = diffEditorInstance.getModel();
+					if (oldModel) {
+						diffEditorInstance.setModel(null);
+						oldModel.original?.dispose();
+						oldModel.modified?.dispose();
+					}
+
+					diffEditorInstance.setModel({
+						original: monaco.editor.createModel(original, currentLang),
+						modified: monaco.editor.createModel(formatted, currentLang)
+					});
+
+					requestAnimationFrame(function() {
+						var container = diffOverlayEl.querySelector('.diff-container');
+						diffEditorInstance.layout({
+							width: container.clientWidth,
+							height: container.clientHeight
+						});
+						requestAnimationFrame(function () {
+							buildRevertWidgets();
+						});
+					});
+				}
+
+				function applyEditorConfig(cfg) {
+					var modelOpts = {};
+					if (cfg.tabSize !== undefined) modelOpts.tabSize = cfg.tabSize;
+					if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
+					if (Object.keys(modelOpts).length) editor.getModel().updateOptions(modelOpts);
+					formatOnSave = !!cfg.formatOnSave;
+					// Update Prettier printWidth if specified
+					if (cfg.printWidth !== undefined) {
+						PRETTIER_PRINT_WIDTH = cfg.printWidth;
+					}
+					// Update Prettier tabWidth and useTabs from Monaco config
+					if (cfg.tabSize !== undefined) {
+						PRETTIER_TAB_WIDTH = cfg.tabSize;
+					}
+					if (cfg.insertSpaces !== undefined) {
+						PRETTIER_USE_TABS = !cfg.insertSpaces;
+					}
+					var { tabSize, insertSpaces, formatOnSave: _fs, printWidth, ...editorOpts } = cfg;
+					editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
+				}
+
+				function runFormatWithDiff() {
+					var formatAction = editor.getAction('editor.action.formatDocument');
+					if (!formatAction || !formatAction.isSupported()) return Promise.resolve();
+					var original = editor.getValue();
+
+					return new Promise(function (resolve) {
+						var disposable = editor.onDidChangeModelContent(function () {
+							disposable.dispose();
+							clearTimeout(fallback);
+							var formatted = editor.getValue();
+							if (formatted !== original) {
+								lastFormatOriginal = original;
+								lastFormatFormatted = formatted;
+								window.parent.postMessage(
+									{ type: 'format-diff-available', context: context },
+									'*'
+								);
+							}
+							resolve();
+						});
+
+						var fallback = setTimeout(function () {
+							disposable.dispose();
+							resolve();
+						}, FORMAT_CHANGE_TIMEOUT);
+
+						formatAction.run();
+					});
+				}
+
+				function applyParams(params) {
+					if (initialized) return;
+					initialized = true;
+					context = params.context;
+					currentLang = params.lang || 'plaintext';
+					currentCommandPaletteHotkey = params.commandPaletteHotkey || null;
+					currentSettingsHotkey = params.settingsHotkey || null;
+					editorDefaults = {
+						folding: params.folding !== false,
+						lineNumbers: params.lineNumbers !== false ? 'on' : 'off',
+						minimap: { enabled: params.minimap !== false }
+					};
+
+					if (params.themeData) {
+						try {
+							monaco.editor.defineTheme(
+								params.theme,
+								JSON.parse(params.themeData)
+							);
+						} catch (e) {
+							console.warn('code-files: defineTheme failed', e);
+						}
+					}
+
+					var opts = {
+						language: params.lang || 'plaintext',
+						theme: params.theme || 'vs-dark',
+						...editorDefaults,
+						wordWrap: params.wordWrap || 'off',
+						automaticLayout: true
+					};
+
+					// Transparent background set by parent — prevents color flash on init.
+					document.body.style.background = 'transparent';
+					document.documentElement.style.background = 'transparent';
+
+					// Allow comments and trailing commas in all JSON models (needed for .jsonc config files)
+					monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+						allowComments: true,
+						trailingCommas: 'ignore'
+					});
+
+					monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+						noSemanticValidation: params.noSemanticValidation === true,
+						noSyntaxValidation: params.noSyntaxValidation === true
+					});
+					monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+						noSemanticValidation: params.noSemanticValidation === true,
+						noSyntaxValidation: params.noSyntaxValidation === true
+					});
+
+					// Configure TypeScript compiler options for inter-file navigation
+					if (params.projectRootFolder) {
+						var compilerOptions = {
+							baseUrl: 'file:///' + params.projectRootFolder,
+							moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+							allowNonTsExtensions: true,
+							target: monaco.languages.typescript.ScriptTarget.ESNext,
+							module: monaco.languages.typescript.ModuleKind.ESNext,
+							allowJs: true,
+							checkJs: false,
+							paths: {}
+						};
+						monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
+						monaco.languages.typescript.javascriptDefaults.setCompilerOptions(compilerOptions);
+					}
+
+					// Create model with file:/// URI for proper TypeScript resolution
+					var modelUri = monaco.Uri.parse('file:///' + context);
+					var existingModel = monaco.editor.getModel(modelUri);
+					var model = existingModel || monaco.editor.createModel('', params.lang || 'plaintext', modelUri);
+					opts.model = model;
+
+					editor = monaco.editor.create(document.getElementById('container'), opts);
+
+					// Intercept cross-file navigation (Ctrl+Click on imports)
+					monaco.editor.registerEditorOpener({
+						openCodeEditor: function(_source, resource, selectionOrPosition) {
+							// resource.path = '/my-project/utils.ts' (without 'file://')
+							var position = null;
+							if (selectionOrPosition && 'startLineNumber' in selectionOrPosition) {
+								position = {
+									lineNumber: selectionOrPosition.startLineNumber,
+									column: selectionOrPosition.startColumn
+								};
+							} else if (selectionOrPosition && 'lineNumber' in selectionOrPosition) {
+								position = {
+									lineNumber: selectionOrPosition.lineNumber,
+									column: selectionOrPosition.column
+								};
+							}
+							window.parent.postMessage({
+								type: 'open-file',
+								path: resource.path.replace(/^\//, ''), // vault-relative path
+								position: position,
+								context: context
+							}, '*');
+							return true; // "handled, don't open inline"
+						}
+					});
+
+					// Suppress Monaco's "Canceled" unhandled rejection when intercepting navigation
+					window.addEventListener('unhandledrejection', function(e) {
+						if (e.reason && (e.reason.name === 'Canceled' || e.reason.message === 'Canceled')) {
+							e.preventDefault();
+						}
+					});
+
+					// Register Mermaid as a custom language if not already registered
+					if (!monaco.languages.getLanguages().some(function(lang) { return lang.id === 'mermaid'; })) {
+						monaco.languages.register({ id: 'mermaid' });
+					}
+
+					monaco.languages.registerDocumentFormattingEditProvider('markdown', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'markdown',
+									plugins: [prettierPlugins.markdown],
+									proseWrap: PRETTIER_PROSE_WRAP,
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								// Format mermaid blocks inside the markdown
+								if (window.mermaidFormatter && window.mermaidFormatter.formatMarkdownMermaidBlocks) {
+									formatted = window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted);
+								}
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier format failed', e);
+								return [];
+							}
+						}
+					});
+
+					monaco.languages.registerDocumentFormattingEditProvider('mermaid', {
+						provideDocumentFormattingEdits: function(model) {
+							try {
+								if (!window.mermaidFormatter || !window.mermaidFormatter.formatMermaid) {
+									console.warn('code-files: mermaid-formatter not loaded');
+									return [];
+								}
+								var original = model.getValue();
+								var formatted = window.mermaidFormatter.formatMermaid(original);
+								if (formatted !== original) {
+									lastFormatOriginal = original;
+									lastFormatFormatted = formatted;
+									window.parent.postMessage(
+										{ type: 'format-diff-available', context: context },
+										'*'
+									);
+								}
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: mermaid format failed', e);
+								return [];
+							}
+						}
+					});
+
+					monaco.languages.registerDocumentFormattingEditProvider('typescript', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'typescript',
+									plugins: [prettierPlugins.estree, prettierPlugins.typescript],
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier typescript format failed', e);
+								return [];
+							}
+						}
+					});
+
+					monaco.languages.registerDocumentFormattingEditProvider('javascript', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'babel',
+									plugins: [prettierPlugins.babel, prettierPlugins.estree],
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier javascript format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: CSS / SCSS / Less ───────────────────────────────────────────
+					['css', 'scss', 'less'].forEach(function(lang) {
+						monaco.languages.registerDocumentFormattingEditProvider(lang, {
+							provideDocumentFormattingEdits: async function(model) {
+								try {
+									var original = model.getValue();
+									var formatted = await prettier.format(original, {
+										parser: lang,
+										plugins: [prettierPlugins.postcss],
+										printWidth: PRETTIER_PRINT_WIDTH,
+										tabWidth: PRETTIER_TAB_WIDTH,
+										useTabs: PRETTIER_USE_TABS
+									});
+									return [{ range: model.getFullModelRange(), text: formatted }];
+								} catch(e) {
+									console.warn('code-files: prettier ' + lang + ' format failed', e);
+									return [];
+								}
+							}
+						});
+					});
+
+					// ── Prettier: HTML ────────────────────────────────────────────────────────
+					monaco.languages.registerDocumentFormattingEditProvider('html', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'html',
+									plugins: [prettierPlugins.html],
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier html format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: JSON ────────────────────────────────────────────────────────
+					// Overrides Monaco's native JSON formatter for consistency with other languages
+					monaco.languages.registerDocumentFormattingEditProvider('json', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'json',
+									plugins: [prettierPlugins.babel, prettierPlugins.estree],
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier json format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: YAML ────────────────────────────────────────────────────────
+					monaco.languages.registerDocumentFormattingEditProvider('yaml', {
+						provideDocumentFormattingEdits: async function(model) {
+							// Skip formatting for .lock files (yarn.lock, package-lock.json, etc.)
+							if (context && /\.lock$/i.test(context)) {
+								return [];
+							}
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'yaml',
+									plugins: [prettierPlugins.yaml],
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier yaml format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── Prettier: GraphQL ─────────────────────────────────────────────────────
+					monaco.languages.registerDocumentFormattingEditProvider('graphql', {
+						provideDocumentFormattingEdits: async function(model) {
+							try {
+								var original = model.getValue();
+								var formatted = await prettier.format(original, {
+									parser: 'graphql',
+									plugins: [prettierPlugins.graphql],
+									printWidth: PRETTIER_PRINT_WIDTH,
+									tabWidth: PRETTIER_TAB_WIDTH,
+									useTabs: PRETTIER_USE_TABS
+								});
+								return [{ range: model.getFullModelRange(), text: formatted }];
+							} catch(e) {
+								console.warn('code-files: prettier graphql format failed', e);
+								return [];
+							}
+						}
+					});
+
+					// ── C/C++: clang-format ───────────────────────────────────────────────────
+					['c', 'cpp'].forEach(function(lang) {
+						monaco.languages.registerDocumentFormattingEditProvider(lang, {
+							provideDocumentFormattingEdits: async function(model) {
+								try {
+									if (!window.clangFormatter) {
+										console.warn('code-files: clang-formatter not loaded');
+										return [];
+									}
+									try {
+										await window.clangFormatter.init(window.__CLANG_WASM_URL__);
+										console.log('code-files: clang-formatter initialized');
+									} catch (e) {
+										console.error('code-files: clang-formatter init failed', e);
+										return [];
+									}
+									var original = model.getValue();
+									var formatted = window.clangFormatter.format(original);
+									return [{ range: model.getFullModelRange(), text: formatted }];
+								} catch(e) {
+									console.warn('code-files: clang-format ' + lang + ' format failed', e);
+									return [];
+								}
+							}
+						});
+					});
+
+					// ── Python: Ruff Formatter ────────────────────────────────────────────────
+					(async function() {
+						if (!window.ruffFormatter) {
+							console.warn('code-files: ruff-formatter not loaded');
+							return;
+						}
+
+						try {
+							await window.ruffFormatter.init(window.__RUFF_WASM_URL__);
+						} catch (e) {
+							console.error('code-files: ruff-formatter init failed', e);
+							return;
+						}
+
+						monaco.languages.registerDocumentFormattingEditProvider('python', {
+							provideDocumentFormattingEdits: function(model) {
+								try {
+									var original = model.getValue();
+									var formatted = window.ruffFormatter.format(original, null, {
+										indent_style: PRETTIER_USE_TABS ? 'tab' : 'space',
+										indent_width: PRETTIER_TAB_WIDTH,
+										line_width: PRETTIER_PRINT_WIDTH,
+										line_ending: 'lf',
+										quote_style: 'double',
+										magic_trailing_comma: 'respect'
+									});
+									
+									if (formatted !== original) {
+										lastFormatOriginal = original;
+										lastFormatFormatted = formatted;
+										window.parent.postMessage(
+											{ type: 'format-diff-available', context: context },
+											'*'
+										);
+									}
+									
+									return [{ range: model.getFullModelRange(), text: formatted }];
+								} catch(e) {
+									console.warn('code-files: ruff format failed', e);
+									return [];
+								}
+							}
+						});
+					})();
+
+					// ── Go: gofmt Formatter ───────────────────────────────────────────────────
+					(async function() {
+						if (!window.gofmtFormatter) {
+							console.warn('code-files: gofmt-formatter not loaded');
+							return;
+						}
+
+						try {
+							await window.gofmtFormatter.init(window.__GOFMT_WASM_URL__);
+						} catch (e) {
+							console.error('code-files: gofmt-formatter init failed', e);
+							return;
+						}
+
+						monaco.languages.registerDocumentFormattingEditProvider('go', {
+							provideDocumentFormattingEdits: function(model) {
+								try {
+									var original = model.getValue();
+									var formatted = window.gofmtFormatter.format(original);
+									
+									if (formatted !== original) {
+										lastFormatOriginal = original;
+										lastFormatFormatted = formatted;
+										window.parent.postMessage(
+											{ type: 'format-diff-available', context: context },
+											'*'
+										);
+									}
+									
+									return [{ range: model.getFullModelRange(), text: formatted }];
+								} catch(e) {
+									console.warn('code-files: gofmt format failed', e);
+									return [];
+								}
+							}
+						});
+					})();
+
+					if (params.editorConfig) {
+						try { applyEditorConfig(JSON.parse(params.editorConfig)); }
+						catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
+					}
+
+					// Add "Return to Default View" action if this is an unregistered extension
+					if (params.isUnregisteredExtension) {
+						editor.addAction({
+							id: 'code-files-return-to-default-view',
+							label: '↩️ Return to Default View',
+							contextMenuGroupId: 'code-files',
+							contextMenuOrder: 0,
+							run: function () {
+								window.parent.postMessage(
+									{ type: 'return-to-default-view', context: context },
+									'*'
+								);
+							}
+						});
+					}
+
+					// Alt+Z toggles word wrap and persists the setting
+					editor.addCommand(
+						monaco.KeyMod.Alt | monaco.KeyCode.KeyZ,
+						function () {
+							var current = editor.getRawOptions().wordWrap;
+							var next = current === 'on' ? 'off' : 'on';
+							editor.updateOptions({ wordWrap: next });
+							window.parent.postMessage(
+								{
+									type: 'word-wrap-toggled',
+									wordWrap: next,
+									context: context
+								},
+								'*'
+							);
+						}
+					);
+
+					editor.addAction({
+						id: 'code-files-save',
+						label: 'Save',
+						keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+						run: function () {
+							if (formatOnSave) {
+								var formatAction = editor.getAction('editor.action.formatDocument');
+								if (formatAction && formatAction.isSupported()) {
+									runFormatWithDiff().then(function () {
+										window.parent.postMessage(
+											{ type: 'save-document', context: context },
+											'*'
+										);
+									});
+									return;
+								}
+							}
+							window.parent.postMessage(
+								{ type: 'save-document', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.onDidChangeModelContent(function () {
+						// Send context along with the value so the parent can identify which editor changed
+						window.parent.postMessage(
+							{
+								type: 'change',
+								value: editor.getValue(),
+								context: context
+							},
+							'*'
+						);
+					});
+
+					// Add "Format Document" action for all file types
+					editor.addAction({
+						id: 'code-files-format-document',
+						label: '📝 Format Document',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 0.5,
+						keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
+						run: function () {
+							runFormatWithDiff();
+						}
+					});
+
+					// Add "Show Format Diff" action for all file types
+					editor.addAction({
+						id: 'code-files-show-format-diff-global',
+						label: '⟷ Show Format Diff',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 0.6,
+						run: function () {
+							if (lastFormatOriginal && lastFormatFormatted) {
+								openDiffModal(lastFormatOriginal, lastFormatFormatted);
+							}
+						}
+					});
+
+					// Add a context menu action in Monaco to open the formatter config for this file
+					editor.addAction({
+						id: 'code-files-rename-extension',
+						label: '🍋‍🟩 Rename Extension',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 1,
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-rename-extension', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.addAction({
+						id: 'code-files-change-theme',
+						label: '🍒 Change Theme',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 2,
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-theme-picker', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.addAction({
+						id: 'code-files-formatter-config',
+						label: '📐 Formatter Config',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 3,
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-formatter-config', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.addAction({
+						id: 'code-files-obsidian-settings',
+						label: '🔧 Obsidian Settings (Ctrl+,)',
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-settings', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.addAction({
+						id: 'code-files-obsidian-palette',
+						label: '🎹 Obsidian Command Palette (Ctrl+P)',
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'open-obsidian-palette', context: context },
+								'*'
+							);
+						}
+					});
+
+					editor.addAction({
+						id: 'code-files-delete-file',
+						label: '🗑️ Delete File',
+						contextMenuGroupId: 'code-files',
+						contextMenuOrder: 4,
+						keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Delete],
+						run: function () {
+							window.parent.postMessage(
+								{ type: 'delete-file', context: context },
+								'*'
+							);
+						}
+					});
+
+					// Dynamic shortcuts from Obsidian hotkey config.
+					// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
+					// so it works regardless of keyboard layout and follows user-configured hotkeys.
+					editor.onKeyDown(function (e) {
+						var mod = e.ctrlKey || e.metaKey;
+						if (!mod) return;
+						var key = e.browserEvent.key;
+
+						if (currentCommandPaletteHotkey) {
+							var hk = currentCommandPaletteHotkey;
+							var needsShift = hk.modifiers.includes('Shift');
+							var needsAlt = hk.modifiers.includes('Alt');
+							var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+							if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+								e.preventDefault();
+								e.stopPropagation();
+								window.parent.postMessage({ type: 'open-obsidian-palette', context: context }, '*');
+								return;
+							}
+						}
+
+						if (currentSettingsHotkey) {
+							var hk = currentSettingsHotkey;
+							var needsShift = hk.modifiers.includes('Shift');
+							var needsAlt = hk.modifiers.includes('Alt');
+							var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+							if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+								e.preventDefault();
+								e.stopPropagation();
+								window.parent.postMessage({ type: 'open-settings', context: context }, '*');
+							}
+						}
+					});
+
+
+				}
+
+				// Signal that Monaco is fully loaded and ready to receive 'init'.
+				// This must fire before the message listener is set up — the parent
+				// will respond with 'init' + 'get-languages' + 'change-value' in sequence.
+				window.parent.postMessage({ type: 'ready' }, '*');
+
+				window.addEventListener('message', function (e) {
+					var data = e.data;
+					if (!data || !data.type) return;
+
+					switch (data.type) {
+						case 'init':
+							applyParams(data);
+							window._initialized = true;
+							if (window._pendingProjectFiles) {
+								var files = window._pendingProjectFiles;
+								for (var i = 0; i < files.length; i++) {
+									var file = files[i];
+									var uri = monaco.Uri.parse('file:///' + file.path);
+									monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri.toString());
+									monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri.toString());
+									if (!monaco.editor.getModel(uri)) {
+										monaco.editor.createModel(file.content, undefined, uri);
+									}
+								}
+								window._pendingProjectFiles = null;
+							}
+							break;
+						case 'change-value':
+							if (editor) editor.setValue(data.value || '');
+							break;
+						case 'change-language':
+							if (editor)
+								monaco.editor.setModelLanguage(
+									editor.getModel(),
+									data.language
+								);
+							break;
+						case 'change-theme':
+							if (editor) {
+								if (data.themeData) {
+									try {
+										monaco.editor.defineTheme(
+											data.theme,
+											JSON.parse(data.themeData)
+										);
+									} catch (e) {
+										console.warn('code-files: defineTheme failed', e);
+									}
+								}
+								monaco.editor.setTheme(data.theme);
+							}
+							break;
+						case 'change-editor-config':
+							if (editor) {
+								try { applyEditorConfig(JSON.parse(data.config)); }
+								catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
+							}
+							break;
+						case 'change-options':
+							if (editor && typeof data.noSemanticValidation === 'boolean') {
+								monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
+									{
+										noSemanticValidation: data.noSemanticValidation,
+										noSyntaxValidation: data.noSyntaxValidation
+									}
+								);
+								monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
+									{
+										noSemanticValidation: data.noSemanticValidation,
+										noSyntaxValidation: data.noSyntaxValidation
+									}
+								);
+							}
+							break;
+						case 'change-word-wrap':
+							if (editor) editor.updateOptions({ wordWrap: data.wordWrap });
+							break;
+						case 'change-background':
+							document.body.style.background = data.background;
+							document.documentElement.style.background = data.background;
+							if (data.theme) monaco.editor.setTheme(data.theme);
+							break;
+						case 'focus':
+							if (editor) editor.focus();
+							break;
+						case 'scroll-to-position':
+							if (editor && data.position) {
+								editor.setPosition(data.position);
+								editor.revealPositionInCenter(data.position);
+							}
+							break;
+						case 'trigger-show-diff':
+							if (lastFormatOriginal && lastFormatFormatted) {
+								openDiffModal(lastFormatOriginal, lastFormatFormatted);
+							}
+							break;
+						case 'update-hotkeys':
+							if (data.commandPaletteHotkey) currentCommandPaletteHotkey = data.commandPaletteHotkey;
+							if (data.settingsHotkey) currentSettingsHotkey = data.settingsHotkey;
+							break;
+						case 'load-project-files':
+							// Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
+							// If Monaco isn't initialized yet, queue the files for later.
+							if (!window._initialized) {
+								window._pendingProjectFiles = data.files;
+							} else {
+								// Empty array = clear all project files (user cleared the project root folder)
+								if (data.files.length === 0) {
+									// Dispose all models except the current editor's model and diff editor models
+									// to free memory and remove stale project files from IntelliSense
+									var currentModel = editor ? editor.getModel() : null;
+									var allModels = monaco.editor.getModels();
+									for (var i = 0; i < allModels.length; i++) {
+										if (allModels[i] !== currentModel && allModels[i] !== diffEditorInstance?.getModel()?.original && allModels[i] !== diffEditorInstance?.getModel()?.modified) {
+											allModels[i].dispose();
+										}
+									}
+									// Clear extra libs to remove all project files from TypeScript language service
+									// This makes unresolved imports show red squiggles again
+									monaco.languages.typescript.typescriptDefaults.setExtraLibs([]);
+									monaco.languages.typescript.javascriptDefaults.setExtraLibs([]);
+								} else {
+									// Load new project files into Monaco's TypeScript language service
+									for (var i = 0; i < data.files.length; i++) {
+										var file = data.files[i];
+										var uri = monaco.Uri.parse('file:///' + file.path);
+										// addExtraLib registers the file content with TypeScript for IntelliSense
+										monaco.languages.typescript.typescriptDefaults.addExtraLib(file.content, uri.toString());
+										monaco.languages.typescript.javascriptDefaults.addExtraLib(file.content, uri.toString());
+										// createModel allows Ctrl+Click navigation to open the file
+										if (!monaco.editor.getModel(uri)) {
+											monaco.editor.createModel(file.content, undefined, uri);
+										}
+									}
+								}
+							}
+							break;
+					}
+				});
+			});
+		</script>
+	</body>
+</html>

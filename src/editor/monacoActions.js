@@ -2,11 +2,8 @@
 // All custom actions registered in Monaco's context menu and command palette
 
 // Global variables shared with monacoEditor.html
-var editor;
-var context;
-var formatOnSave;
-var currentCommandPaletteHotkey;
-var currentSettingsHotkey;
+// (editor, context, formatOnSave, currentCommandPaletteHotkey, currentSettingsHotkey are defined in monacoEditor.html)
+// (Functions like runFormatWithDiff, openDiffModal, lastFormatOriginal, lastFormatFormatted are in monacoFormatters.js and monacoDiff.js)
 
 function registerActions(params) {
 	// Add "Return to Default View" action if this is an unregistered extension

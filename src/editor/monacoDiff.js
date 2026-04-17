@@ -2,11 +2,7 @@
 // Handles side-by-side diff view and block-by-block revert functionality
 
 // Global variables shared with monacoEditor.html
-var editor;
-var context;
-var currentLang;
-var lastFormatOriginal;
-var lastFormatFormatted;
+// (editor, context, currentLang, lastFormatOriginal, lastFormatFormatted are defined in monacoEditor.html)
 
 // Diff editor singleton - created once, reused
 var diffEditorInstance = null;

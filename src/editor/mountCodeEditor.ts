@@ -148,6 +148,9 @@ export const mountCodeEditor = async (
 	const vsBase = res('vs').replace(/\?.*$/, ''); // Strip timestamp for use as base path
 	const configJsUrl = res('monacoHtml.js');
 	const configCssUrl = res('monacoHtml.css');
+	const diffJsUrl = res('monacoDiff.js');
+	const formattersJsUrl = res('monacoFormatters.js');
+	const actionsJsUrl = res('monacoActions.js');
 	const prettierBase = res('formatters/prettier-standalone.js');
 	const prettierMarkdownUrl = res('formatters/prettier-markdown.js');
 	const prettierEstreeUrl = res('formatters/prettier-estree.js');
@@ -172,17 +175,22 @@ export const mountCodeEditor = async (
 		const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
 		if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
 			const mods = custom[0].modifiers;
-			return { 
-				modifiers: Array.isArray(mods) ? mods : [mods], 
-				key: custom[0].key 
+			return {
+				modifiers: Array.isArray(mods) ? mods : [mods],
+				key: custom[0].key
 			};
 		}
 		const cmd = plugin.app.commands?.commands?.[commandId];
-		if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+		if (
+			cmd?.hotkeys &&
+			cmd.hotkeys.length > 0 &&
+			cmd.hotkeys[0].modifiers &&
+			cmd.hotkeys[0].key
+		) {
 			const mods = cmd.hotkeys[0].modifiers;
-			return { 
-				modifiers: Array.isArray(mods) ? mods : [mods], 
-				key: cmd.hotkeys[0].key 
+			return {
+				modifiers: Array.isArray(mods) ? mods : [mods],
+				key: cmd.hotkeys[0].key
 			};
 		}
 		return null;
@@ -250,6 +258,9 @@ export const mountCodeEditor = async (
 		.replace("'./vs'", `'${vsBase}'`)
 		.replace('"./vs/loader.js"', `"${vsBase}/loader.js"`)
 		.replace('"./monacoHtml.js"', `"${configJsUrl}"`)
+		.replace('"./monacoDiff.js"', `"${diffJsUrl}"`)
+		.replace('"./monacoFormatters.js"', `"${formattersJsUrl}"`)
+		.replace('"./monacoActions.js"', `"${actionsJsUrl}"`)
 		.replace('<link rel="stylesheet" href="./monacoHtml.css" />', '');
 	const cssUrl = `${vsBase}/editor/editor.main.css`;
 	let cssText = await (await fetch(cssUrl)).text();
@@ -302,6 +313,9 @@ function parseEditorConfig(str) {
 <script src="${gofmtFormatterUrl}"></script>
 <script>window.__GOFMT_WASM_URL__ = '${gofmtWasmUrl}';</script>
 <script src="${configJsUrl}"></script>
+<script src="${diffJsUrl}"></script>
+<script src="${formattersJsUrl}"></script>
+<script src="${actionsJsUrl}"></script>
 <style>${cssText}</style>
 <style>${configCssText}</style>
 <script>

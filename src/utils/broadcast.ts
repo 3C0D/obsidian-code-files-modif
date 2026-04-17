@@ -132,71 +132,104 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  * Called when settings modal closes to detect hotkey changes made by the user.
  * For inactive views, they'll get new hotkeys on next activation via onLoadFile.
  * For the active view, performs a soft reload preserving content and cursor position.
- * 
+ *
  * @param plugin - The plugin instance
  */
 export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
-	const getHotkey = (commandId: string): { modifiers: string[]; key: string } | null => {
+	const getHotkey = (
+		commandId: string
+	): { modifiers: string[]; key: string } | null => {
 		// Check custom hotkeys first (user-defined in settings)
 		const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
 		if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
 			const mods = custom[0].modifiers;
-			return { 
-				modifiers: Array.isArray(mods) ? mods : [mods], 
-				key: custom[0].key 
+			return {
+				modifiers: Array.isArray(mods) ? mods : [mods],
+				key: custom[0].key
 			};
 		}
 		// Fall back to default command hotkeys
 		const cmd = plugin.app.commands?.commands?.[commandId];
-		if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+		if (
+			cmd?.hotkeys &&
+			cmd.hotkeys.length > 0 &&
+			cmd.hotkeys[0].modifiers &&
+			cmd.hotkeys[0].key
+		) {
 			const mods = cmd.hotkeys[0].modifiers;
-			return { 
-				modifiers: Array.isArray(mods) ? mods : [mods], 
-				key: cmd.hotkeys[0].key 
+			return {
+				modifiers: Array.isArray(mods) ? mods : [mods],
+				key: cmd.hotkeys[0].key
 			};
 		}
 		return null;
 	};
 
-	const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
-	const paletteHotkey = getHotkey('command-palette:open') ?? { modifiers: ['Mod'], key: 'p' };
+	const settingsHotkey = getHotkey('app:open-settings') ?? {
+		modifiers: ['Mod'],
+		key: ','
+	};
+	const paletteHotkey = getHotkey('command-palette:open') ?? {
+		modifiers: ['Mod'],
+		key: 'p'
+	};
 	const currentHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey });
 
 	// Compare with last known state to detect changes
 	if (currentHotkeys !== plugin._lastHotkeys) {
 		plugin._lastHotkeys = currentHotkeys;
-		
+
 		const views = getCodeEditorViews(plugin.app);
 		const activeLeaf = plugin.app.workspace.activeLeaf;
-		
+
 		// Reload the active view to apply new hotkeys immediately
 		for (const view of views) {
 			if (view.leaf === activeLeaf && view.file && view.editor) {
 				// Save current content before reload (preserves unsaved changes)
 				const currentContent = view.editor.getValue();
-				
+
 				// Destroy and remount editor (like onRename does)
 				view.editor.destroy();
 				view.contentEl.empty();
-				
+
 				// Remount with current content
 				await view.mountEditor(view.file);
 				view.contentEl.append(view.editor!.iframe);
-				
+
 				// Restore content if it was modified
 				if (currentContent !== view.data) {
 					view.editor!.setValue(currentContent);
 				}
-				
+
 				// Show notice to user
-				const settingsStr = settingsHotkey.modifiers
-					.map(m => m === 'Mod' && Platform.isWin ? 'Ctrl' : m === 'Mod' ? 'Cmd' : m)
-					.join('+') + '+' + settingsHotkey.key;
-				const paletteStr = paletteHotkey.modifiers
-					.map(m => m === 'Mod' && Platform.isWin ? 'Ctrl' : m === 'Mod' ? 'Cmd' : m)
-					.join('+') + '+' + paletteHotkey.key;
-				new Notice(`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr})`);
-				
+				const settingsStr =
+					settingsHotkey.modifiers
+						.map((m) =>
+							m === 'Mod' && Platform.isWin
+								? 'Ctrl'
+								: m === 'Mod'
+									? 'Cmd'
+									: m
+						)
+						.join('+') +
+					'+' +
+					settingsHotkey.key;
+				const paletteStr =
+					paletteHotkey.modifiers
+						.map((m) =>
+							m === 'Mod' && Platform.isWin
+								? 'Ctrl'
+								: m === 'Mod'
+									? 'Cmd'
+									: m
+						)
+						.join('+') +
+					'+' +
+					paletteHotkey.key;
+				new Notice(
+					`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr})`
+				);
+
 				break;
 			}
 		}

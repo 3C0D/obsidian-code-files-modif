@@ -23,27 +23,40 @@ export default class CodeFilesPlugin extends Plugin {
 		this._modalClosePatch = patchModalClose();
 
 		// Initialize _lastHotkeys with current hotkey state to enable change detection
-		const getHotkey = (commandId: string): { modifiers: string[]; key: string } | null => {
+		const getHotkey = (
+			commandId: string
+		): { modifiers: string[]; key: string } | null => {
 			const custom = this.app.hotkeyManager.getHotkeys(commandId);
 			if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
 				const mods = custom[0].modifiers;
-				return { 
-					modifiers: Array.isArray(mods) ? mods : [mods], 
-					key: custom[0].key 
+				return {
+					modifiers: Array.isArray(mods) ? mods : [mods],
+					key: custom[0].key
 				};
 			}
 			const cmd = this.app.commands?.commands?.[commandId];
-			if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+			if (
+				cmd?.hotkeys &&
+				cmd.hotkeys.length > 0 &&
+				cmd.hotkeys[0].modifiers &&
+				cmd.hotkeys[0].key
+			) {
 				const mods = cmd.hotkeys[0].modifiers;
-				return { 
-					modifiers: Array.isArray(mods) ? mods : [mods], 
-					key: cmd.hotkeys[0].key 
+				return {
+					modifiers: Array.isArray(mods) ? mods : [mods],
+					key: cmd.hotkeys[0].key
 				};
 			}
 			return null;
 		};
-		const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
-		const paletteHotkey = getHotkey('command-palette:open') ?? { modifiers: ['Mod'], key: 'p' };
+		const settingsHotkey = getHotkey('app:open-settings') ?? {
+			modifiers: ['Mod'],
+			key: ','
+		};
+		const paletteHotkey = getHotkey('command-palette:open') ?? {
+			modifiers: ['Mod'],
+			key: 'p'
+		};
 		this._lastHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey });
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
