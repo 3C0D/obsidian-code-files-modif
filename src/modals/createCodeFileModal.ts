@@ -70,7 +70,7 @@ export class CreateCodeFileModal extends Modal {
 			this.fileExtension = ext;
 		});
 
-		// 'diff' button to add/remove extensions on the fly
+		// button to add/remove extensions on the fly
 		const manageBtn = new ButtonComponent(contentEl);
 		manageBtn.setIcon('diff');
 		manageBtn.setTooltip('Edit extensions — add or remove');
@@ -160,12 +160,12 @@ export class CreateCodeFileModal extends Modal {
 		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');
-			void CodeEditorView.openVaultFile(existingFile, this.plugin);
+			void CodeEditorView.openVaultFile(existingFile, this.plugin, true);
 			return;
 		}
 
 		const newFile = await this.app.vault.create(newPath, '');
-		void CodeEditorView.openFile(newFile, this.plugin);
+		void CodeEditorView.openFile(newFile, this.plugin, true);
 	}
 
 	onClose(): void {

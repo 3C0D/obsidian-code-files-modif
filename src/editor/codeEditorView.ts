@@ -473,9 +473,13 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
-	/** Opens a vault file in the current leaf. */
-	static async openVaultFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
-		const leaf = plugin.app.workspace.getLeaf(false);
+	/** Opens a vault file in a leaf (new tab or current leaf based on parameter). */
+	static async openVaultFile(
+		file: TFile,
+		plugin: CodeFilesPlugin,
+		newTab = false
+	): Promise<void> {
+		const leaf = plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
 		await leaf.setViewState({
 			type: viewType,
 			state: { file: file.path },
@@ -503,9 +507,13 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/** Opens any file in Monaco. */
-	static async openFile(file: TFile, plugin: CodeFilesPlugin): Promise<void> {
+	static async openFile(
+		file: TFile,
+		plugin: CodeFilesPlugin,
+		newTab = false
+	): Promise<void> {
 		if (plugin.app.vault.getAbstractFileByPath(file.path)) {
-			await CodeEditorView.openVaultFile(file, plugin);
+			await CodeEditorView.openVaultFile(file, plugin, newTab);
 		} else {
 			await CodeEditorView.openExternalFile(file.path, plugin);
 		}
