@@ -92,8 +92,10 @@
 				// Mutable hotkey state — updated by 'update-hotkeys' without reloading the editor
 				currentCommandPaletteHotkey = null;
 				currentSettingsHotkey = null;
+				currentDeleteFileHotkey = null;
 
 				function applyEditorConfig(cfg) {
+					if (!editor || !cfg) return;
 					var modelOpts = {};
 					if (cfg.tabSize !== undefined) modelOpts.tabSize = cfg.tabSize;
 					if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
@@ -151,7 +153,8 @@
 					currentLang = params.lang || 'plaintext';
 					currentCommandPaletteHotkey = params.commandPaletteHotkey || null;
 					currentSettingsHotkey = params.settingsHotkey || null;
-					editorDefaults = {
+				currentDeleteFileHotkey = params.deleteFileHotkey || null;
+				editorDefaults = {
 						folding: params.folding !== false,
 						lineNumbers: params.lineNumbers !== false ? 'on' : 'off',
 						minimap: { enabled: params.minimap !== false }
@@ -376,7 +379,8 @@
 						case 'update-hotkeys':
 							if (data.commandPaletteHotkey) currentCommandPaletteHotkey = data.commandPaletteHotkey;
 							if (data.settingsHotkey) currentSettingsHotkey = data.settingsHotkey;
-							break;
+					if (data.deleteFileHotkey) currentDeleteFileHotkey = data.deleteFileHotkey;
+					break;
 						case 'load-project-files':
 							// Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
 							// If Monaco isn't initialized yet, queue the files for later.

@@ -2,7 +2,7 @@
 // All custom actions registered in Monaco's context menu and command palette
 
 // Global variables shared with monacoEditor.html
-// (editor, context, formatOnSave, currentCommandPaletteHotkey, currentSettingsHotkey are defined in monacoEditor.html)
+// (editor, context, formatOnSave, currentCommandPaletteHotkey, currentSettingsHotkey, currentDeleteFileHotkey are defined in monacoEditor.html)
 // (Functions like runFormatWithDiff, openDiffModal, lastFormatOriginal, lastFormatFormatted are in monacoFormatters.js and monacoDiff.js)
 
 function registerActions(params) {
@@ -156,7 +156,6 @@ function registerActions(params) {
 		label: '🗑️ Delete File',
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 4,
-		keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Delete],
 		run: function () {
 			window.parent.postMessage(
 				{ type: 'delete-file', context: context },
@@ -169,11 +168,10 @@ function registerActions(params) {
 	// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
 	// so it works regardless of keyboard layout and follows user-configured hotkeys.
 	editor.onKeyDown(function (e) {
-		var mod = e.ctrlKey || e.metaKey;
-		if (!mod) return;
 		var key = e.browserEvent.key;
 
-		if (currentCommandPaletteHotkey) {
+		// Check command palette hotkey (requires Mod)
+		if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
 			var hk = currentCommandPaletteHotkey;
 			var needsShift = hk.modifiers.includes('Shift');
 			var needsAlt = hk.modifiers.includes('Alt');
@@ -186,7 +184,8 @@ function registerActions(params) {
 			}
 		}
 
-		if (currentSettingsHotkey) {
+		// Check settings hotkey (requires Mod)
+		if (currentSettingsHotkey && (e.ctrlKey || e.metaKey)) {
 			var hk = currentSettingsHotkey;
 			var needsShift = hk.modifiers.includes('Shift');
 			var needsAlt = hk.modifiers.includes('Alt');
@@ -195,6 +194,22 @@ function registerActions(params) {
 				e.preventDefault();
 				e.stopPropagation();
 				window.parent.postMessage({ type: 'open-settings', context: context }, '*');
+				return;
+			}
+		}
+
+		// Check delete file hotkey (may or may not require Mod)
+		if (currentDeleteFileHotkey) {
+			var hk = currentDeleteFileHotkey;
+			var needsMod = hk.modifiers.includes('Mod') || hk.modifiers.includes('Ctrl') || hk.modifiers.includes('Meta');
+			var needsShift = hk.modifiers.includes('Shift');
+			var needsAlt = hk.modifiers.includes('Alt');
+			var hasMod = e.ctrlKey || e.metaKey;
+			var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			if (keyMatch && hasMod === needsMod && e.shiftKey === needsShift && e.altKey === needsAlt) {
+				e.preventDefault();
+				e.stopPropagation();
+				window.parent.postMessage({ type: 'delete-file', context: context }, '*');
 			}
 		}
 	});

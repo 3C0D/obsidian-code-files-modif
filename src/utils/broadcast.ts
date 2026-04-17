@@ -173,7 +173,11 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		modifiers: ['Mod'],
 		key: 'p'
 	};
-	const currentHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey });
+	const deleteFileHotkey = getHotkey('code-files:delete-file') ?? {
+		modifiers: ['Ctrl'],
+		key: 'Delete'
+	};
+	const currentHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });
 
 	// Compare with last known state to detect changes
 	if (currentHotkeys !== plugin._lastHotkeys) {
@@ -181,6 +185,17 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 
 		const views = getCodeEditorViews(plugin.app);
 		const activeLeaf = plugin.app.workspace.activeLeaf;
+
+		// Broadcast hotkey updates to all inactive views
+		for (const view of views) {
+			if (view.leaf !== activeLeaf && view.editor) {
+				view.editor.send('update-hotkeys', {
+					commandPaletteHotkey: paletteHotkey,
+					settingsHotkey: settingsHotkey,
+					deleteFileHotkey: deleteFileHotkey
+				});
+			}
+		}
 
 		// Reload the active view to apply new hotkeys immediately
 		for (const view of views) {
@@ -226,8 +241,20 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 						.join('+') +
 					'+' +
 					paletteHotkey.key;
+				const deleteStr =
+					deleteFileHotkey.modifiers
+						.map((m) =>
+							m === 'Mod' && Platform.isWin
+								? 'Ctrl'
+								: m === 'Mod'
+									? 'Cmd'
+									: m
+						)
+						.join('+') +
+					'+' +
+					deleteFileHotkey.key;
 				new Notice(
-					`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr})`
+					`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
 				);
 
 				break;

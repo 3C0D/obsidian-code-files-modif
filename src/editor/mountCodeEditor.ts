@@ -197,6 +197,10 @@ export const mountCodeEditor = async (
 	};
 	const commandPaletteHotkey = getObsidianHotkey('command-palette:open');
 	const settingsHotkey = getObsidianHotkey('app:open-settings');
+	const deleteFileHotkey = getObsidianHotkey('code-files:delete-file') ?? {
+		modifiers: ['Ctrl'],
+		key: 'Delete'
+	};
 
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal
@@ -224,7 +228,8 @@ export const mountCodeEditor = async (
 		noSyntaxValidation: !plugin.settings.syntaxValidation,
 		projectRootFolder: plugin.settings.projectRootFolder,
 		commandPaletteHotkey: commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' },
-		settingsHotkey: settingsHotkey ?? { modifiers: ['Mod'], key: ',' }
+		settingsHotkey: settingsHotkey ?? { modifiers: ['Mod'], key: ',' },
+		deleteFileHotkey: deleteFileHotkey
 	};
 	// find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
 	const extMatch = codeContext.match(/\.([^.]+)$/);
