@@ -89,7 +89,7 @@ export class RenameExtensionModal extends Modal {
 		this.restoreFocus?.();
 	}
 
-	/** 
+	/**
 	 * Extracts the extension from a filename.
 	 * Handles dotfiles (like .env, .pythonconfig) where the extension is the full name without the leading dot.
 	 */
@@ -103,7 +103,7 @@ export class RenameExtensionModal extends Modal {
 		return lastDot > 0 ? filename.slice(lastDot + 1) : '';
 	}
 
-	/** 
+	/**
 	 * Renames the file with the new filename (name + extension).
 	 * Handles dotfiles (.env, .pythonconfig) and normal files (myfile.py).
 	 * Registers unknown extensions with Code Files if user confirms.
@@ -120,7 +120,7 @@ export class RenameExtensionModal extends Modal {
 		const newPath = this.file.parent
 			? `${this.file.parent.path}/${newFilename}`
 			: newFilename;
-		
+
 		if (newPath === this.file.path) {
 			this.close();
 			return;
@@ -128,7 +128,7 @@ export class RenameExtensionModal extends Modal {
 
 		// Extract extension from new filename
 		const ext = this.getExtension(newFilename);
-		
+
 		// Register with CodeFiles if extension exists and is unknown to both CodeFiles and Obsidian
 		if (ext) {
 			const isKnown =

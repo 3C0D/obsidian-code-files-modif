@@ -108,7 +108,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Maximum file size')
-			.setDesc('Maximum file size in MB for opening files in Monaco (default: 10 MB)')
+			.setDesc(
+				'Maximum file size in MB for opening files in Monaco (default: 10 MB)'
+			)
 			.addText((text) =>
 				text
 					.setPlaceholder('10')

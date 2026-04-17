@@ -8,7 +8,7 @@
     "editor.defaultFormatter": "yzhang.markdown-all-in-one"
   },
   "editor.formatOnSave": true,
-  
+
   // Disable extensions that could interfere with test sample files
   "extensions.ignoreRecommendations": false,
   "python.linting.enabled": false,

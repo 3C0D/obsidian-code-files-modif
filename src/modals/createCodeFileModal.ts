@@ -109,7 +109,7 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		let cleanName = this.fileName.trim();
-		
+
 		// If no filename provided, create a file with just the extension (e.g., ".prettierrc")
 		if (!cleanName) {
 			cleanName = `.${ext}`;
@@ -118,13 +118,13 @@ export class CreateCodeFileModal extends Modal {
 				const modal = new Modal(this.app);
 				modal.titleEl.setText('Create file without name?');
 				modal.contentEl.createEl('p', { text: `Create file: ${cleanName}` });
-				const btnContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
-				new ButtonComponent(btnContainer)
-					.setButtonText('Cancel')
-					.onClick(() => {
-						modal.close();
-						resolve(false);
-					});
+				const btnContainer = modal.contentEl.createDiv({
+					cls: 'modal-button-container'
+				});
+				new ButtonComponent(btnContainer).setButtonText('Cancel').onClick(() => {
+					modal.close();
+					resolve(false);
+				});
 				new ButtonComponent(btnContainer)
 					.setButtonText('Create')
 					.setCta()
@@ -134,7 +134,7 @@ export class CreateCodeFileModal extends Modal {
 					});
 				modal.open();
 			});
-			
+
 			if (!confirmed) return;
 		} else {
 			// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
@@ -154,7 +154,9 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		this.close();
-		const newPath = normalizePath(`${this.parent.path}/${cleanName}${cleanName.startsWith('.') ? '' : `.${ext}`}`);
+		const newPath = normalizePath(
+			`${this.parent.path}/${cleanName}${cleanName.startsWith('.') ? '' : `.${ext}`}`
+		);
 		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');

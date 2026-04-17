@@ -841,7 +841,6 @@
 
 						try {
 							await window.gofmtFormatter.init(window.__GOFMT_WASM_URL__);
-							console.log('code-files: gofmt-formatter initialized');
 						} catch (e) {
 							console.error('code-files: gofmt-formatter init failed', e);
 							return;
@@ -1047,27 +1046,39 @@
 						}
 					});
 
-					// Ctrl+P opens Obsidian command palette
-					editor.addCommand(
-						monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP,
-						function () {
-							window.parent.postMessage(
-								{ type: 'open-obsidian-palette', context: context },
-								'*'
-							);
-						}
-					);
+					// Dynamic shortcuts from Obsidian hotkey config.
+					// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
+					// so it works regardless of keyboard layout and follows user-configured hotkeys.
+					editor.onKeyDown(function (e) {
+						var mod = e.ctrlKey || e.metaKey;
+						if (!mod) return;
+						var key = e.browserEvent.key;
 
-					// Ctrl+, opens Obsidian settings (intercepted before Monaco can consume it)
-					editor.addCommand(
-						monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma,
-						function () {
-							window.parent.postMessage(
-								{ type: 'open-settings', context: context },
-								'*'
-							);
+						if (params.commandPaletteHotkey) {
+							var hk = params.commandPaletteHotkey;
+							var needsShift = hk.modifiers.includes('Shift');
+							var needsAlt = hk.modifiers.includes('Alt');
+							var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+							if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+								e.preventDefault();
+								e.stopPropagation();
+								window.parent.postMessage({ type: 'open-obsidian-palette', context: context }, '*');
+								return;
+							}
 						}
-					);
+
+						if (params.settingsHotkey) {
+							var hk = params.settingsHotkey;
+							var needsShift = hk.modifiers.includes('Shift');
+							var needsAlt = hk.modifiers.includes('Alt');
+							var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+							if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+								e.preventDefault();
+								e.stopPropagation();
+								window.parent.postMessage({ type: 'open-settings', context: context }, '*');
+							}
+						}
+					});
 
 
 				}

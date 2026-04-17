@@ -233,13 +233,13 @@ export function getExtensionConfigTemplate(ext: string): string {
 
 	// If extension has a template, use it
 	if (templates[ext]) return templates[ext];
-	
+
 	// Otherwise, check if extension maps to a different language and use that template
 	const language = staticMap[ext] ?? 'plaintext';
 	if (language !== ext && language !== 'plaintext' && templates[language]) {
 		return templates[language];
 	}
-	
+
 	return DEFAULT_EXTENSION_CONFIG;
 }
 
@@ -306,7 +306,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
 	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
-	extraExtensions: [''],  // Empty string handles files without extension (.env, .gitignore, LICENSE, README, etc.)
+	extraExtensions: [''], // Empty string handles files without extension (.env, .gitignore, LICENSE, README, etc.)
 	maxFileSize: 10,
 	projectRootFolder: '',
 	projectRootFolderColor: '',

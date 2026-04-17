@@ -8,7 +8,7 @@ import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_SETTINGS,
 	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG,
+	DEFAULT_EXTENSION_CONFIG
 } from '../types/types.ts';
 import { staticMap } from '../utils/getLanguage.ts';
 
@@ -112,19 +112,24 @@ export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string 
 	const globalCfg = parseEditorConfig(
 		plugin.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
 	) as Record<string, unknown>;
-	
+
 	if (!ext) return JSON.stringify(globalCfg);
-	
+
 	// Get the Monaco language for this extension
 	const language = staticMap[ext] ?? 'plaintext';
-	
+
 	// Apply language config as fallback (if extension maps to a different language)
-	const languageCfg = (language !== ext && language !== 'plaintext')
-		? (parseEditorConfig(plugin.settings.editorConfigs[language] ?? '{}') as Record<string, unknown>)
-		: {};
-	
+	const languageCfg =
+		language !== ext && language !== 'plaintext'
+			? (parseEditorConfig(
+					plugin.settings.editorConfigs[language] ?? '{}'
+				) as Record<string, unknown>)
+			: {};
+
 	// Apply extension-specific config (highest priority)
-	const extCfg = parseEditorConfig(plugin.settings.editorConfigs[ext] ?? '{}') as Record<string, unknown>;
-	
+	const extCfg = parseEditorConfig(
+		plugin.settings.editorConfigs[ext] ?? '{}'
+	) as Record<string, unknown>;
+
 	return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
 }

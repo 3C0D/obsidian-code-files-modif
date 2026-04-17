@@ -14,12 +14,12 @@ import type { TFile } from 'obsidian';
 export function getEmptyFileExtension(file: TFile): string {
 	// If file has an extension, use it
 	if (file.extension) return file.extension;
-	
+
 	// If file name starts with a dot (like .env, .gitignore), use the name without the dot as extension
 	if (file.name.startsWith('.')) {
 		return file.name.slice(1);
 	}
-	
+
 	// Otherwise, no extension (like LICENSE, README)
 	return '';
 }

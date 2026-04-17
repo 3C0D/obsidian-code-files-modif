@@ -164,11 +164,36 @@ export const mountCodeEditor = async (
 	const gofmtFormatterUrl = res('formatters/gofmt-formatter.js');
 	const gofmtWasmUrl = res('formatters/gofmt.wasm');
 
+	// Reads Obsidian's configured hotkey for a command, falling back to the command's default hotkeys.
+	const getObsidianHotkey = (
+		commandId: string
+	): { modifiers: string[]; key: string } | null => {
+		const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
+		if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
+			const mods = custom[0].modifiers;
+			return { 
+				modifiers: Array.isArray(mods) ? mods : [mods], 
+				key: custom[0].key 
+			};
+		}
+		const cmd = plugin.app.commands?.commands?.[commandId];
+		if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+			const mods = cmd.hotkeys[0].modifiers;
+			return { 
+				modifiers: Array.isArray(mods) ? mods : [mods], 
+				key: cmd.hotkeys[0].key 
+			};
+		}
+		return null;
+	};
+	const commandPaletteHotkey = getObsidianHotkey('command-palette:open');
+	const settingsHotkey = getObsidianHotkey('app:open-settings');
+
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal
 	// - settings-editor-config: config editor in the plugin settings tab
 	// - modal-editor.*: code fence editor modals (keep line numbers, disable minimap only)
-	const initParams: Record<string, string | boolean> = {
+	const initParams: Record<string, unknown> = {
 		context: codeContext,
 		lang: language,
 		theme: theme.replace(/[^a-z0-9\-]/gi, '-'),
@@ -188,7 +213,9 @@ export const mountCodeEditor = async (
 		// Monaco uses negative flags (noSemanticValidation, noSyntaxValidation), but settings use positive flags
 		noSemanticValidation: !plugin.settings.semanticValidation,
 		noSyntaxValidation: !plugin.settings.syntaxValidation,
-		projectRootFolder: plugin.settings.projectRootFolder
+		projectRootFolder: plugin.settings.projectRootFolder,
+		commandPaletteHotkey: commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' },
+		settingsHotkey: settingsHotkey ?? { modifiers: ['Mod'], key: ',' }
 	};
 	// find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
 	const extMatch = codeContext.match(/\.([^.]+)$/);

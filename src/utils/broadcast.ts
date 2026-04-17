@@ -58,17 +58,18 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
 	const views = getCodeEditorViews(plugin.app);
-	const targets = ext === '*' 
-		? views 
-		: views.filter((v) => {
-			if (!v.file) return false;
-			const fileExt = getEmptyFileExtension(v.file);
-			// Match if extension is exactly ext
-			if (fileExt === ext) return true;
-			// Match if extension maps to ext as a language
-			const language = staticMap[fileExt] ?? 'plaintext';
-			return language === ext;
-		});
+	const targets =
+		ext === '*'
+			? views
+			: views.filter((v) => {
+					if (!v.file) return false;
+					const fileExt = getEmptyFileExtension(v.file);
+					// Match if extension is exactly ext
+					if (fileExt === ext) return true;
+					// Match if extension maps to ext as a language
+					const language = staticMap[fileExt] ?? 'plaintext';
+					return language === ext;
+				});
 	for (const view of targets) {
 		const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
 		const config = buildMergedConfig(plugin, fileExt);

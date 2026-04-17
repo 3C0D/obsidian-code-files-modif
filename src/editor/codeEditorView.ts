@@ -248,7 +248,8 @@ export class CodeEditorView extends TextFileView {
 		// Add snippet controls ONLY when editing a CSS snippet file
 		// Added LAST so they appear on the LEFT
 		const isSnippetFile =
-			file.path.includes('.obsidian/snippets') && getEmptyFileExtension(file) === 'css';
+			file.path.includes('.obsidian/snippets') &&
+			getEmptyFileExtension(file) === 'css';
 		if (isSnippetFile) {
 			const snippetName = file.basename;
 			const exists = snippetExists(this.plugin.app, snippetName);
