@@ -101,7 +101,6 @@ In `monacoEditor.html`, initialize WASM and register the formatter:
 
     try {
         await window.ruffFormatter.init(window.__RUFF_WASM_URL__);
-        console.log('code-files: ruff-formatter initialized');
     } catch (e) {
         console.error('code-files: ruff-formatter init failed', e);
         return;
@@ -178,6 +177,14 @@ No stable npm package with browser-ready WASM build exists for rustfmt. The offi
 - `templates/format-test-samples-for-obsidian/` - Test files for each language
 - `README.md` - Updated supported languages list
 - `types.ts` - Updated language-specific config templates
+
+## Broadcasting Config to Files Without Extension
+
+When adding formatters for files without extension (like `.prettierrc`), ensure config changes are broadcast correctly.
+
+**See:** [Files Without Extension - Editor Configuration](files-without-extension.md#editor-configuration-for-files-without-extension)
+
+The key fix: use `getEmptyFileExtension()` instead of `file.extension` in `broadcastEditorConfig()` to match the fake extension used for config storage.
 
 ## Testing
 

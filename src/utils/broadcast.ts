@@ -9,6 +9,7 @@
 import type CodeFilesPlugin from '../main.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
+import { getEmptyFileExtension } from './fileUtils.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -51,9 +52,9 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
 	const views = getCodeEditorViews(plugin.app);
-	const targets = ext === '*' ? views : views.filter((v) => v.file?.extension === ext);
+	const targets = ext === '*' ? views : views.filter((v) => v.file && getEmptyFileExtension(v.file) === ext);
 	for (const view of targets) {
-		const fileExt = view.file?.extension ?? '';
+		const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
 		const config = buildMergedConfig(plugin, fileExt);
 		view.editor?.send('change-editor-config', { config });
 	}

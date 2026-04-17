@@ -56,7 +56,7 @@ export const DEFAULT_EDITOR_CONFIG = `{
     "insertSpaces": false,
 
     // --- On Save / On Type ---
-    "formatOnSave": true,
+    "formatOnSave": false,
     "formatOnType": false,
     "trimAutoWhitespace": true,
     "trimTrailingWhitespace": true,

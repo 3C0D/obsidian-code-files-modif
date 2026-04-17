@@ -43,6 +43,77 @@ All files with `file.extension === ""` open in Monaco:
 ### Language Detection
 Falls back to `plaintext` since these files aren't in `staticMap`.
 
+## Editor Configuration for Files Without Extension
+
+### The Challenge
+
+Files like `.prettierrc`, `.env`, or `LICENSE` need per-file editor configuration (tabSize, formatOnSave, etc.), but they all share `file.extension = ""`. The plugin uses a mapping system to assign unique "fake extensions" for configuration purposes.
+
+### How It Works
+
+**Step 1: Extension Mapping** (`getEmptyFileExtension` in `fileUtils.ts`)
+
+Maps files without extension to unique identifiers:
+- `.prettierrc` → `"prettierrc"`
+- `.env` → `"env"`
+- `LICENSE` → `"license"`
+- `.gitignore` → `"gitignore"`
+
+This allows each file type to have its own editor config.
+
+**Step 2: Language Detection** (`getLanguage` in `getLanguage.ts`)
+
+Maps fake extensions to Monaco language IDs:
+```typescript
+prettierrc: 'json',
+env: 'plaintext',
+gitignore: 'plaintext'
+```
+
+**Step 3: Configuration Cascade** (`buildMergedConfig` in `settingsUtils.ts`)
+
+Merges global config with per-extension overrides:
+```typescript
+buildMergedConfig(plugin, 'prettierrc')
+// Returns: global config + prettierrc-specific overrides
+```
+
+### Broadcasting Config Changes
+
+**The Bug (Fixed):**
+
+When changing editor config for `.prettierrc`, the settings modal would save the config under key `"prettierrc"`, but `broadcastEditorConfig` was filtering views by `file.extension` (which is `""` for `.prettierrc`), so the config never reached the open editor.
+
+**The Fix:** (`broadcast.ts`)
+
+Use `getEmptyFileExtension()` instead of `file.extension` when broadcasting:
+
+```typescript
+export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
+    const views = getCodeEditorViews(plugin.app);
+    const targets = ext === '*' ? views : views.filter((v) => v.file && getEmptyFileExtension(v.file) === ext);
+    for (const view of targets) {
+        const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
+        const config = buildMergedConfig(plugin, fileExt);
+        view.editor?.send('change-editor-config', { config });
+    }
+}
+```
+
+This ensures:
+- Config saved under `"prettierrc"` is broadcast to files with `getEmptyFileExtension(file) === "prettierrc"`
+- Each file type receives its correct configuration
+- Format settings (tabSize, formatOnSave) apply immediately when closing the settings modal
+
+### Testing
+
+1. Open `.prettierrc` in Monaco
+2. Open Editor Settings (gear icon)
+3. Change `tabSize` from 4 to 2
+4. Close settings modal
+5. Format document (Shift+Alt+F)
+6. Verify formatting uses 2-space indentation
+
 ## Current Limitation
 
 **Requires external plugin:** Files starting with `.` are hidden by Obsidian by default. Users need a plugin like "Show Hidden Files" to see them in the file explorer.

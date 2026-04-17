@@ -796,7 +796,6 @@
 
 						try {
 							await window.ruffFormatter.init(window.__RUFF_WASM_URL__);
-							console.log('code-files: ruff-formatter initialized');
 						} catch (e) {
 							console.error('code-files: ruff-formatter init failed', e);
 							return;
@@ -873,7 +872,7 @@
 					})();
 
 					if (params.editorConfig) {
-						try { applyEditorConfig(parseEditorConfig(params.editorConfig)); }
+						try { applyEditorConfig(JSON.parse(params.editorConfig)); }
 						catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
 					}
 
@@ -1127,7 +1126,7 @@
 							break;
 						case 'change-editor-config':
 							if (editor) {
-								try { applyEditorConfig(parseEditorConfig(data.config)); }
+								try { applyEditorConfig(JSON.parse(data.config)); }
 								catch (e) { console.warn('code-files: invalid editorConfig JSON', e); }
 							}
 							break;
