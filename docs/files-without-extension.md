@@ -78,6 +78,58 @@ buildMergedConfig(plugin, 'prettierrc')
 // Returns: global config + prettierrc-specific overrides
 ```
 
+### Configuration Cascade with Language Fallback
+
+**New Feature:** Extensions that map to a different Monaco language automatically inherit that language's config as a fallback.
+
+**Example:** `.clangformat` maps to `yaml` language
+
+**Cascade order:**
+1. Global config (`*`)
+2. Language config (`yaml`) — if extension maps to a different language
+3. Extension config (`clangformat`) — highest priority
+
+**Implementation:**
+
+`buildMergedConfig` in `settingsUtils.ts`:
+```typescript
+const language = staticMap[ext] ?? 'plaintext';
+const languageCfg = (language !== ext && language !== 'plaintext')
+    ? parseEditorConfig(plugin.settings.editorConfigs[language] ?? '{}')
+    : {};
+return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
+```
+
+`getExtensionConfigTemplate` in `types.ts`:
+```typescript
+const language = staticMap[ext] ?? 'plaintext';
+if (language !== ext && language !== 'plaintext' && templates[language]) {
+    return templates[language];
+}
+```
+
+`broadcastEditorConfig` in `broadcast.ts`:
+```typescript
+const targets = views.filter((v) => {
+    const fileExt = getEmptyFileExtension(v.file);
+    if (fileExt === ext) return true;
+    const language = staticMap[fileExt] ?? 'plaintext';
+    return language === ext;  // Also broadcast to extensions that map to this language
+});
+```
+
+**Benefits:**
+- `.clangformat` inherits YAML config (tabSize: 2, insertSpaces: true)
+- `.prettierrc` inherits JSON config (tabSize: 2)
+- Changing `yaml` config broadcasts to all YAML files AND `.clangformat`
+- No duplicate config needed for extensions that share a language
+
+**Testing:**
+1. Create `.clangformat` file
+2. Open Editor Settings → shows YAML template (tabSize: 2)
+3. Change YAML config → applies to `.clangformat` immediately
+4. Create `.clangformat` specific config → overrides YAML config
+
 ### Broadcasting Config Changes
 
 **The Bug (Fixed):**

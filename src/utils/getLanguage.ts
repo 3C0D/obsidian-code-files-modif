@@ -6,6 +6,7 @@
  */
 
 // Static map of file extensions to Monaco language IDs.
+// Exported for use in config template fallback logic
 export const staticMap: Record<string, string> = {
 	js: 'javascript',
 	es6: 'javascript',
@@ -118,11 +119,11 @@ export const staticMap: Record<string, string> = {
 	stylelintrc: 'json',
 	swcrc: 'json',
 	clangformat: 'yaml',
+	pythonconfig: 'python',
+	pycarrer: 'python'
 };
 
 /** Returns the Monaco language id for a given file extension. */
 export function getLanguage(extension: string): string {
 	return staticMap[extension] ?? 'plaintext';
 }
-
-

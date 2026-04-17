@@ -2,14 +2,15 @@
  * Settings persistence and editor config management.
  * Handles loading/saving plugin settings with deep merge for editorConfigs.
  * Provides parseEditorConfig (strips comments and trailing commas from JSONC)
- * and buildMergedConfig (cascades default → global → per-extension).
+ * and buildMergedConfig (cascades default → global → language → extension).
  */
 import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_SETTINGS,
 	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG
+	DEFAULT_EXTENSION_CONFIG,
 } from '../types/types.ts';
+import { staticMap } from '../utils/getLanguage.ts';
 
 /**
  * Parses JSONC (JSON with Comments) by stripping comments and trailing commas.
@@ -97,20 +98,33 @@ export function saveEditorConfig(
 
 /**
  * Returns the merged editor config (global `*`
- * + per-extension override) as a JSON string.
+ * + language fallback + per-extension override) as a JSON string.
  *
  * This is the single source of truth for the
- * cascade: default → global → extension.
+ * cascade: default → global → language → extension.
+ *
+ * Example: for `.clangformat` (ext='clangformat', language='yaml'):
+ * 1. Start with global config (*)
+ * 2. Apply yaml config if it exists (language fallback)
+ * 3. Apply clangformat config if it exists (extension override)
  */
 export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string {
 	const globalCfg = parseEditorConfig(
 		plugin.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
 	) as Record<string, unknown>;
-	const extCfg = ext
-		? (parseEditorConfig(plugin.settings.editorConfigs[ext] ?? '{}') as Record<
-				string,
-				unknown
-			>)
+	
+	if (!ext) return JSON.stringify(globalCfg);
+	
+	// Get the Monaco language for this extension
+	const language = staticMap[ext] ?? 'plaintext';
+	
+	// Apply language config as fallback (if extension maps to a different language)
+	const languageCfg = (language !== ext && language !== 'plaintext')
+		? (parseEditorConfig(plugin.settings.editorConfigs[language] ?? '{}') as Record<string, unknown>)
 		: {};
-	return JSON.stringify({ ...globalCfg, ...extCfg });
+	
+	// Apply extension-specific config (highest priority)
+	const extCfg = parseEditorConfig(plugin.settings.editorConfigs[ext] ?? '{}') as Record<string, unknown>;
+	
+	return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
 }

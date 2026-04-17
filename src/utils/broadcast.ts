@@ -10,6 +10,7 @@ import type CodeFilesPlugin from '../main.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getEmptyFileExtension } from './fileUtils.ts';
+import { staticMap } from './getLanguage.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -44,15 +45,30 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
 
 /**
  * Sends the merged editor config (global `'*'`
- * + per-extension override) to open iframes.
+ * + language fallback + per-extension override) to open iframes.
+ *
  * When `ext` is `'*'`, all open views are updated
  * because a global change affects every extension.
- * Otherwise only views whose file extension matches
- * are targeted.
+ *
+ * Otherwise, targets views whose file extension matches `ext`
+ * OR whose file extension maps to `ext` as a language.
+ * Example: changing 'yaml' config broadcasts to both:
+ * - Files with extension 'yaml'
+ * - Files with extension 'clangformat' (which maps to yaml language)
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
 	const views = getCodeEditorViews(plugin.app);
-	const targets = ext === '*' ? views : views.filter((v) => v.file && getEmptyFileExtension(v.file) === ext);
+	const targets = ext === '*' 
+		? views 
+		: views.filter((v) => {
+			if (!v.file) return false;
+			const fileExt = getEmptyFileExtension(v.file);
+			// Match if extension is exactly ext
+			if (fileExt === ext) return true;
+			// Match if extension maps to ext as a language
+			const language = staticMap[fileExt] ?? 'plaintext';
+			return language === ext;
+		});
 	for (const view of targets) {
 		const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
 		const config = buildMergedConfig(plugin, fileExt);

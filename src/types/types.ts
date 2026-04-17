@@ -1,3 +1,5 @@
+import { staticMap } from '../utils/getLanguage.ts';
+
 export interface MyPluginSettings {
 	/** File extensions registered with Obsidian to open in Monaco */
 	extensions: string[];
@@ -89,6 +91,9 @@ export const DEFAULT_EXTENSION_CONFIG = `{
 /**
  * Returns a language-specific config template with commented suggestions.
  * Used when creating a new per-extension config to provide helpful defaults.
+ *
+ * If the extension maps to a different Monaco language (e.g., clangformat → yaml),
+ * returns the template for that language as a fallback.
  *
  * @param ext - File extension WITHOUT the leading dot (e.g. 'ts', 'md', 'json')
  * @returns A JSON string with commented suggestions for this extension
@@ -226,7 +231,16 @@ export function getExtensionConfigTemplate(ext: string): string {
 }`
 	};
 
-	return templates[ext] || DEFAULT_EXTENSION_CONFIG;
+	// If extension has a template, use it
+	if (templates[ext]) return templates[ext];
+	
+	// Otherwise, check if extension maps to a different language and use that template
+	const language = staticMap[ext] ?? 'plaintext';
+	if (language !== ext && language !== 'plaintext' && templates[language]) {
+		return templates[language];
+	}
+	
+	return DEFAULT_EXTENSION_CONFIG;
 }
 
 /** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
