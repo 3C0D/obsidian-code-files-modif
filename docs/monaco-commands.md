@@ -118,36 +118,129 @@ case 'change-editor-config':
     break;
 ```
 
-## Obsidian Shortcuts in Monaco
+## Obsidian Shortcuts in Monaco — Dynamic Hotkey System
 
-Monaco captures all keyboard events. To reactivate Obsidian shortcuts, we intercept them in Monaco and forward them to Obsidian via postMessage.
+Monaco captures all keyboard events. To allow Obsidian shortcuts (Settings, Command Palette, Delete File) to work inside Monaco, we intercept them and forward to Obsidian via postMessage.
 
-### Dynamic Hotkey Synchronization
+### Why Dynamic?
 
-**Problem:** Users can change Obsidian hotkeys in settings, but Monaco keybindings are registered statically at editor creation and cannot be updated dynamically.
+Users can change Obsidian hotkeys in settings. Monaco keybindings are registered statically at editor creation and cannot be updated. Solution: use `onKeyDown` with `browserEvent.key` to detect actual key presses, compare against current Obsidian hotkey config, and reload editor when hotkeys change.
 
-**Solution:** Automatic detection and view reload when hotkeys change.
+### Implementation Steps (Example: Command Palette)
 
-#### Implementation
-
-**1. Initialize with Current Hotkeys**
-**Location:** `main.ts` → `onload()`
-```typescript
-// Store initial hotkey state on plugin load
-const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
-this._lastHotkeys = JSON.stringify({ settingsHotkey });
+#### 1. Declare Global Variable
+**Location:** `monacoEditor.html` (line 95)
+```javascript
+currentCommandPaletteHotkey = null;
 ```
 
-**2. Detect Changes on Settings Close**
-**Location:** `mountCodeEditor.ts` → `open-settings` handler
+#### 2. Initialize from Params
+**Location:** `monacoEditor.html` → `applyParams()` (line 153)
+```javascript
+currentCommandPaletteHotkey = params.commandPaletteHotkey || null;
+```
+
+#### 3. Read Hotkey from Obsidian
+**Location:** `mountCodeEditor.ts` (lines 168-191)
+```typescript
+const getObsidianHotkey = (
+    commandId: string
+): { modifiers: string[]; key: string } | null => {
+    const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
+    if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
+        const mods = custom[0].modifiers;
+        return {
+            modifiers: Array.isArray(mods) ? mods : [mods],
+            key: custom[0].key
+        };
+    }
+    const cmd = plugin.app.commands?.commands?.[commandId];
+    if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
+        const mods = cmd.hotkeys[0].modifiers;
+        return {
+            modifiers: Array.isArray(mods) ? mods : [mods],
+            key: cmd.hotkeys[0].key
+        };
+    }
+    return null;
+};
+const commandPaletteHotkey = getObsidianHotkey('command-palette:open');
+```
+
+#### 4. Pass to Monaco via initParams
+**Location:** `mountCodeEditor.ts` (line 218)
+```typescript
+commandPaletteHotkey: commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' },
+```
+
+#### 5. Intercept Keypress in Monaco
+**Location:** `monacoActions.js` → `editor.onKeyDown()` (lines 171-184)
+```javascript
+if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
+    var hk = currentCommandPaletteHotkey;
+    var needsShift = hk.modifiers.includes('Shift');
+    var needsAlt = hk.modifiers.includes('Alt');
+    var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+    if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.parent.postMessage({ type: 'open-obsidian-palette', context: context }, '*');
+        return;
+    }
+}
+```
+
+#### 6. Handle Message in Parent
+**Location:** `mountCodeEditor.ts` → `onMessage` (lines 425-437)
+```typescript
+case 'open-obsidian-palette': {
+    if (data.context === codeContext) {
+        const cmdPalette = plugin.app.internalPlugins.getPluginById('command-palette');
+        if (!cmdPalette) break;
+        const modal = cmdPalette.instance.modal;
+        const old = modal.onClose;
+        modal.onClose = () => {
+            modal.onClose = old;
+            send('focus', {});
+        };
+        modal.open();
+    }
+    break;
+}
+```
+
+#### 7. Add Action for F1 Palette
+**Location:** `monacoActions.js` (lines 145-153)
+```javascript
+editor.addAction({
+    id: 'code-files-obsidian-palette',
+    label: '🎹 Obsidian Command Palette (Ctrl+P)',
+    run: function () {
+        window.parent.postMessage(
+            { type: 'open-obsidian-palette', context: context },
+            '*'
+        );
+    }
+});
+```
+
+### Hotkey Change Detection
+
+#### 1. Initialize State on Plugin Load
+**Location:** `main.ts` → `onload()` (lines 54-63)
+```typescript
+const commandPaletteHotkey = getHotkey('command-palette:open') ?? { modifiers: ['Mod'], key: 'p' };
+this._lastHotkeys = JSON.stringify({ commandPaletteHotkey });
+```
+
+#### 2. Detect Changes on Settings Close
+**Location:** `mountCodeEditor.ts` → `open-settings` handler (lines 357-369)
 ```typescript
 case 'open-settings': {
     if (data.context === codeContext) {
-        // Patch settings modal onClose to detect hotkey changes
         const old = plugin.app.setting.onClose;
         plugin.app.setting.onClose = () => {
             plugin.app.setting.onClose = old;
-            // Wait 200ms for Obsidian to save hotkey changes
             setTimeout(() => {
                 void broadcastHotkeys(plugin);
             }, 200);
@@ -159,87 +252,64 @@ case 'open-settings': {
 }
 ```
 
-**3. Reload Active View if Hotkey Changed**
-**Location:** `broadcast.ts` → `broadcastHotkeys()`
+#### 3. Broadcast Updates to Inactive Views
+**Location:** `broadcast.ts` → `broadcastHotkeys()` (lines 195-203)
 ```typescript
-export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
-    const settingsHotkey = getHotkey('app:open-settings') ?? { modifiers: ['Mod'], key: ',' };
-    const currentHotkeys = JSON.stringify({ settingsHotkey });
-    
-    // Compare with last known state
-    if (currentHotkeys !== plugin._lastHotkeys) {
-        plugin._lastHotkeys = currentHotkeys;
-        
-        const views = getCodeEditorViews(plugin.app);
-        const activeLeaf = plugin.app.workspace.activeLeaf;
-        
-        // Reload active view to apply new hotkeys immediately
-        for (const view of views) {
-            if (view.leaf === activeLeaf && view.file && view.editor) {
-                // Save current content (preserves unsaved changes)
-                const currentContent = view.editor.getValue();
-                
-                // Destroy and remount editor with new hotkeys
-                view.editor.destroy();
-                view.contentEl.empty();
-                await (view as CodeEditorView).mountEditor(view.file);
-                view.contentEl.append(view.editor!.iframe);
-                
-                // Restore content if modified
-                if (currentContent !== view.data) {
-                    view.editor!.setValue(currentContent);
-                }
-                break;
-            }
-        }
+for (const view of views) {
+    if (view.leaf !== activeLeaf && view.editor) {
+        view.editor.send('update-hotkeys', {
+            commandPaletteHotkey: paletteHotkey,
+            settingsHotkey: settingsHotkey,
+            deleteFileHotkey: deleteFileHotkey
+        });
     }
 }
 ```
 
-#### Behavior
-
-- **Active view:** Reloaded immediately when hotkey changes (preserves content, loses undo/redo history)
-- **Inactive views:** Updated automatically on next activation (via `onLoadFile`)
-- **Content preservation:** Unsaved changes are preserved during reload
-- **History limitation:** Undo/redo history is lost on reload (Monaco limitation — keybindings cannot be changed without recreating the editor)
-
-#### User Experience
-
-1. User opens Obsidian settings from Monaco (Ctrl+,)
-2. User changes the settings hotkey (e.g., Ctrl+, → Alt+Mod+O)
-3. User closes settings modal
-4. Active Monaco view reloads automatically with new hotkey
-5. New hotkey works immediately (Alt+Mod+O opens settings)
-6. Inactive views get new hotkeys when user switches to them
-
-### Example: Ctrl+, for Settings
-**Location:** `monacoEditor.html`
+#### 4. Receive Update in Monaco
+**Location:** `monacoEditor.html` → message listener (lines 327-331)
 ```javascript
-// Initialize hotkeys from params
-var currentSettingsHotkey = params.settingsHotkey || { modifiers: ['Mod'], key: ',' };
-
-// Register command with initial hotkey
-editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Comma, function() {
-    window.parent.postMessage({ type: 'open-settings', context: context }, '*');
-});
+case 'update-hotkeys':
+    if (data.commandPaletteHotkey) currentCommandPaletteHotkey = data.commandPaletteHotkey;
+    if (data.settingsHotkey) currentSettingsHotkey = data.settingsHotkey;
+    if (data.deleteFileHotkey) currentDeleteFileHotkey = data.deleteFileHotkey;
+    break;
 ```
 
-**Location:** `mountCodeEditor.ts`
+#### 5. Reload Active View
+**Location:** `broadcast.ts` → `broadcastHotkeys()` (lines 206-227)
 ```typescript
-case 'open-settings': {
-    if (data.context === codeContext) {
-        // Patch onClose to detect hotkey changes
-        const old = plugin.app.setting.onClose;
-        plugin.app.setting.onClose = () => {
-            plugin.app.setting.onClose = old;
-            setTimeout(() => void broadcastHotkeys(plugin), 200);
-            send('focus', {});
-        };
-        plugin.app.setting.open();
+for (const view of views) {
+    if (view.leaf === activeLeaf && view.file && view.editor) {
+        const currentContent = view.editor.getValue();
+        view.editor.destroy();
+        view.contentEl.empty();
+        await view.mountEditor(view.file);
+        view.contentEl.append(view.editor!.iframe);
+        if (currentContent !== view.data) {
+            view.editor!.setValue(currentContent);
+        }
+        new Notice(`Editor hotkeys reloaded (...)`);
+        break;
     }
-    break;
 }
 ```
+
+### Summary: Files Modified for Each Hotkey
+
+| File | What to Add |
+|------|-------------|
+| `monacoEditor.html` | Declare global variable (line 95), initialize in `applyParams()` (line 153), handle `update-hotkeys` message (line 327) |
+| `monacoActions.js` | Add `onKeyDown` handler (line 171), add `addAction` for F1 palette (line 145) |
+| `mountCodeEditor.ts` | Read hotkey with `getObsidianHotkey()` (line 192), pass in `initParams` (line 218), handle postMessage (line 425) |
+| `main.ts` | Initialize `_lastHotkeys` (line 63) |
+| `broadcast.ts` | Add hotkey to comparison (line 180), broadcast to inactive views (line 199), reload active view (line 229) |
+
+### Behavior
+
+- **Active view:** Reloaded immediately when hotkey changes (preserves content, loses undo/redo)
+- **Inactive views:** Updated via `update-hotkeys` message without reload
+- **New views:** Get current hotkeys from `initParams` on mount
 
 ---
 

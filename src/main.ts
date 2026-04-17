@@ -57,7 +57,11 @@ export default class CodeFilesPlugin extends Plugin {
 			modifiers: ['Mod'],
 			key: 'p'
 		};
-		this._lastHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey });
+		const deleteFileHotkey = getHotkey('app:delete-file') ?? {
+			modifiers: ['Ctrl'],
+			key: 'Delete'
+		};
+		this._lastHotkeys = JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 		initExtensions(this);

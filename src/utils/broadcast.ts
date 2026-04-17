@@ -173,7 +173,7 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		modifiers: ['Mod'],
 		key: 'p'
 	};
-	const deleteFileHotkey = getHotkey('code-files:delete-file') ?? {
+	const deleteFileHotkey = getHotkey('app:delete-file') ?? {
 		modifiers: ['Ctrl'],
 		key: 'Delete'
 	};

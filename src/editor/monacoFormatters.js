@@ -224,7 +224,6 @@ function registerFormatters() {
 					}
 					try {
 						await window.clangFormatter.init(window.__CLANG_WASM_URL__);
-						console.log('code-files: clang-formatter initialized');
 					} catch (e) {
 						console.error('code-files: clang-formatter init failed', e);
 						return [];
