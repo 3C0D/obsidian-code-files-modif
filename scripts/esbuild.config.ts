@@ -130,6 +130,12 @@ async function createBuildContext(
 					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
 					const configJsSrc = path.join(pluginDir, 'src/editor/monacoHtml.js');
 					const configJsTarget = path.join(buildPath, 'monacoHtml.js');
+					const formattersJsSrc = path.join(pluginDir, 'src/editor/monacoFormatters.js');
+					const formattersJsTarget = path.join(buildPath, 'monacoFormatters.js');
+					const diffJsSrc = path.join(pluginDir, 'src/editor/monacoDiff.js');
+					const diffJsTarget = path.join(buildPath, 'monacoDiff.js');
+					const actionsJsSrc = path.join(pluginDir, 'src/editor/monacoActions.js');
+					const actionsJsTarget = path.join(buildPath, 'monacoActions.js');
 					const configCssSrc = path.join(
 						pluginDir,
 						'src/editor/monacoHtml.css'
@@ -274,6 +280,9 @@ async function createBuildContext(
 					await copyFile(clangWasmSrc, clangWasmTarget);
 					await copyFile(htmlSrc, htmlTarget);
 					await copyFile(configJsSrc, configJsTarget);
+					await copyFile(formattersJsSrc, formattersJsTarget);
+					await copyFile(diffJsSrc, diffJsTarget);
+					await copyFile(actionsJsSrc, actionsJsTarget);
 					await copyFile(configCssSrc, configCssTarget);
 					await cp(themesSrc, themesTarget, { recursive: true });
 					// if real or build
