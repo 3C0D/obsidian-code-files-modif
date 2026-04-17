@@ -12,6 +12,7 @@ import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getEmptyFileExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
+import { getObsidianHotkey } from './hotkeyUtils.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -136,44 +137,15 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  * @param plugin - The plugin instance
  */
 export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
-	const getHotkey = (
-		commandId: string
-	): { modifiers: string[]; key: string } | null => {
-		// Check custom hotkeys first (user-defined in settings)
-		const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
-		if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
-			const mods = custom[0].modifiers;
-			return {
-				modifiers: Array.isArray(mods) ? mods : [mods],
-				key: custom[0].key
-			};
-		}
-		// Fall back to default command hotkeys
-		const cmd = plugin.app.commands?.commands?.[commandId];
-		if (
-			cmd?.hotkeys &&
-			cmd.hotkeys.length > 0 &&
-			cmd.hotkeys[0].modifiers &&
-			cmd.hotkeys[0].key
-		) {
-			const mods = cmd.hotkeys[0].modifiers;
-			return {
-				modifiers: Array.isArray(mods) ? mods : [mods],
-				key: cmd.hotkeys[0].key
-			};
-		}
-		return null;
-	};
-
-	const settingsHotkey = getHotkey('app:open-settings') ?? {
+	const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings') ?? {
 		modifiers: ['Mod'],
 		key: ','
 	};
-	const paletteHotkey = getHotkey('command-palette:open') ?? {
+	const paletteHotkey = getObsidianHotkey(plugin.app, 'command-palette:open') ?? {
 		modifiers: ['Mod'],
 		key: 'p'
 	};
-	const deleteFileHotkey = getHotkey('app:delete-file') ?? {
+	const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file') ?? {
 		modifiers: ['Ctrl'],
 		key: 'Delete'
 	};
