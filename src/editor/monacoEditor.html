@@ -85,6 +85,9 @@
 				var currentLang = 'plaintext';
 				// Guard against applyParams being called twice (e.g. if 'init' arrives more than once)
 				var initialized = false;
+				// Mutable hotkey state — updated by 'update-hotkeys' without reloading the editor
+				var currentCommandPaletteHotkey = null;
+				var currentSettingsHotkey = null;
 				// Diff editor singleton - created once, reused
 				var diffEditorInstance = null;
 				var diffOverlayEl = null;
@@ -460,6 +463,8 @@
 					initialized = true;
 					context = params.context;
 					currentLang = params.lang || 'plaintext';
+					currentCommandPaletteHotkey = params.commandPaletteHotkey || null;
+					currentSettingsHotkey = params.settingsHotkey || null;
 					editorDefaults = {
 						folding: params.folding !== false,
 						lineNumbers: params.lineNumbers !== false ? 'on' : 'off',
@@ -1054,8 +1059,8 @@
 						if (!mod) return;
 						var key = e.browserEvent.key;
 
-						if (params.commandPaletteHotkey) {
-							var hk = params.commandPaletteHotkey;
+						if (currentCommandPaletteHotkey) {
+							var hk = currentCommandPaletteHotkey;
 							var needsShift = hk.modifiers.includes('Shift');
 							var needsAlt = hk.modifiers.includes('Alt');
 							var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
@@ -1067,8 +1072,8 @@
 							}
 						}
 
-						if (params.settingsHotkey) {
-							var hk = params.settingsHotkey;
+						if (currentSettingsHotkey) {
+							var hk = currentSettingsHotkey;
 							var needsShift = hk.modifiers.includes('Shift');
 							var needsAlt = hk.modifiers.includes('Alt');
 							var keyMatch = key.toLowerCase() === hk.key.toLowerCase();

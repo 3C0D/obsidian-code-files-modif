@@ -12,8 +12,6 @@ import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getEmptyFileExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
-import type { FileExplorerView } from 'obsidian-typings';
-import type { CodeEditorView } from '../editor/codeEditorView.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -176,7 +174,7 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 				// Save current content before reload (preserves unsaved changes)
 				const currentContent = view.editor.getValue();
 				
-				// Destroy and remount editor (preserves undo/redo history)
+				// Destroy and remount editor (like onRename does)
 				view.editor.destroy();
 				view.contentEl.empty();
 				
