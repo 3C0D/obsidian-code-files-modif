@@ -18,44 +18,39 @@ import type CodeFilesPlugin from '../main.ts';
 import { viewType } from '../types/types.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
+import { around } from 'monkey-around';
 
-export function patchOpenFile(
-	plugin: CodeFilesPlugin
-): () => void {
+export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 	// require() instead of static import: TypeScript would reject
 	// reassigning proto.openFile on a typed class.
 	const WorkspaceLeaf = require('obsidian').WorkspaceLeaf;
-	const proto = WorkspaceLeaf.prototype;
-	const original = proto.openFile;
 
-	proto.openFile = function (
+	const uninstaller = around(WorkspaceLeaf.prototype, {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		file: any,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		...args: any[]
-	) {
-		// Only intercept files with no Obsidian extension (dotfiles)
-		if (file && !file.extension) {
-			const ext = getExtension(file.name);
-			if (ext) {
-				const activeExts = getActiveExtensions(
-					plugin.settings
-				);
-				if (activeExts.includes(ext)) {
-					// Redirect to Monaco instead of OS handler
-					return this.setViewState({
-						type: viewType,
-						state: { file: file.path },
-						active: true
-					});
+		openFile(next: any) {
+			return function (
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				file: any,
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				...args: any[]
+			) {
+				// Only intercept files with no Obsidian extension (dotfiles)
+				if (file && !file.extension) {
+					const ext = getExtension(file.name);
+					if (ext && getActiveExtensions(plugin.settings).includes(ext)) {
+						// Redirect to Monaco instead of OS handler
+						return this.setViewState({
+							type: viewType,
+							state: { file: file.path },
+							active: true
+						});
+					}
 				}
-			}
+				// Fall through to original Obsidian behavior
+				return next.call(this, file, ...args);
+			};
 		}
-		// Fall through to original Obsidian behavior
-		return original.call(this, file, ...args);
-	};
+	});
 
-	return () => {
-		proto.openFile = original;
-	};
+	return uninstaller;
 }

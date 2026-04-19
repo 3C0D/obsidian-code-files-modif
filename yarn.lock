@@ -2575,6 +2575,11 @@ monaco-themes@latest:
   dependencies:
     fast-plist "^0.1.3"
 
+monkey-around@latest:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/monkey-around/-/monkey-around-3.0.0.tgz#35980bd3bbab9f7dece97c786fe2c8970f879643"
+  integrity sha512-jL6uY2lEAoaHxZep1cNRkCZjoIWY4g5VYCjriEWmcyHU7w8NU1+JH57xE251UVTohK0lCxMjv0ZV4ByDLIXEpw==
+
 ms@^2.1.3:
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
