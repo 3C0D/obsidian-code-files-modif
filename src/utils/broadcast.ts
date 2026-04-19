@@ -10,7 +10,7 @@ import { Notice, Platform } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
-import { getEmptyFileExtension } from './fileUtils.ts';
+import { getExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
 import { getObsidianHotkey, parseHotkeyOverride } from './hotkeyUtils.ts';
 
@@ -65,7 +65,7 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
 			? views
 			: views.filter((v) => {
 					if (!v.file) return false;
-					const fileExt = getEmptyFileExtension(v.file);
+					const fileExt = getExtension(v.file.name);
 					// Match if extension is exactly ext
 					if (fileExt === ext) return true;
 					// Match if extension maps to ext as a language
@@ -73,7 +73,7 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
 					return language === ext;
 				});
 	for (const view of targets) {
-		const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
+		const fileExt = view.file ? getExtension(view.file.name) : '';
 		const config = buildMergedConfig(plugin, fileExt);
 		view.editor?.send('change-editor-config', { config });
 	}

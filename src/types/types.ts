@@ -312,7 +312,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
 	allExtensions: true,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
-	extraExtensions: [''], // Empty string handles files without extension (.env, .gitignore, LICENSE, README, etc.)
+	extraExtensions: [],
 	maxFileSize: 10,
 	projectRootFolder: '',
 	projectRootFolderColor: '',

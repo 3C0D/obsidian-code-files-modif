@@ -24,9 +24,9 @@ import {
 	registerExtension,
 	unregisterExtension,
 	syncRegisteredExts,
-	getActiveExtensions,
-	getExtension
+	getActiveExtensions
 } from '../utils/extensionUtils.ts';
+import { getExtension } from '../utils/fileUtils.ts';
 
 /**
  * Registers two context menus:

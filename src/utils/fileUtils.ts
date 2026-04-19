@@ -1,13 +1,15 @@
 /**
  * File utilities for handling extensions and file names.
  */
-import type { TFile } from 'obsidian';
-import { getExtension } from './extensionUtils.ts';
 
 /**
- * Returns the effective extension of a TFile, handling dotfiles (.env → "env").
+ * Extracts the extension from a filename.
+ * Handles dotfiles (.env → "env") and normal files (myfile.py → "py").
  * Returns empty string for files without extension that don't start with a dot (like LICENSE, README).
  */
-export function getEmptyFileExtension(file: TFile): string {
-	return getExtension(file.name);
+export function getExtension(filename: string): string {
+	if (filename.startsWith('.') && !filename.includes('.', 1)) return filename.slice(1);
+	const lastDot = filename.lastIndexOf('.');
+	return lastDot > 0 ? filename.slice(lastDot + 1) : '';
 }
+

@@ -13,9 +13,9 @@ import {
 	getCodeEditorViews,
 	addExtension,
 	registerExtension,
-	syncRegisteredExts,
-	getExtension
+	syncRegisteredExts
 } from '../utils/extensionUtils.ts';
+import { getExtension } from '../utils/fileUtils.ts';
 
 /** Prompts the user to rename a file (name + extension), updating the file and reloading the view. */
 export class RenameExtensionModal extends Modal {

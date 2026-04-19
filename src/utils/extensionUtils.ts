@@ -10,7 +10,7 @@ import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/types.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
-import { getEmptyFileExtension } from './fileUtils.ts';
+import { getExtension } from './fileUtils.ts';
 
 /** Returns all known code extensions, minus exclusions. */
 export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
@@ -47,6 +47,11 @@ export function getActiveExtensions(settings: MyPluginSettings): string[] {
  * @returns true if the extension was added, false if blocked (native or already registered)
  */
 export function addExtension(settings: MyPluginSettings, ext: string): boolean {
+	// Block empty string
+	if (!ext) {
+		console.warn('code-files: cannot add empty extension');
+		return false;
+	}
 	// Block native extensions
 	if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
 		console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
@@ -97,16 +102,6 @@ export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	}
 }
 
-/**
- * Extracts the extension from a filename.
- * Handles dotfiles (.env → "env") and normal files (myfile.py → "py").
- */
-export function getExtension(filename: string): string {
-	if (filename.startsWith('.') && !filename.includes('.', 1)) return filename.slice(1);
-	const lastDot = filename.lastIndexOf('.');
-	return lastDot > 0 ? filename.slice(lastDot + 1) : '';
-}
-
 export function isCodeFilesExtension(app: App, ext: string): boolean {
 	return app.viewRegistry.typeByExtension[ext] === viewType;
 }
@@ -136,7 +131,7 @@ export function unregisterExtension(plugin: CodeFilesPlugin, ext: string): void 
 		plugin.app.viewRegistry.unregisterExtensions([ext]);
 		plugin.app.workspace.getLeavesOfType(viewType).forEach((leaf) => {
 			const view = leaf.view as CodeEditorView;
-			if (view.file && getEmptyFileExtension(view.file) === ext) leaf.detach();
+			if (view.file && getExtension(view.file.name) === ext) leaf.detach();
 		});
 	} catch (e) {
 		console.log(`code-files: could not unregister extension "${ext}":`, e);
