@@ -258,6 +258,7 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 - **Use extended extensions list** — auto-register a broad curated list vs. manual management
 - **Manage extensions** — add or remove extensions; changes take effect immediately
 - **Editor Config** — same JSON editor as the gear panel, with extension picker
+- **Monaco Hotkey Overrides** — by default, Monaco uses your Obsidian shortcuts for Command Palette, Settings, and Delete File. If these conflict with Monaco's built-in shortcuts, you can override them here.
 
 ---
 

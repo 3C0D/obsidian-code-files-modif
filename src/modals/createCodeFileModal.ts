@@ -109,39 +109,47 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		let cleanName = this.fileName.trim();
+		let finalPath: string;
 
-		// If no filename provided, create a file with just the extension (e.g., ".prettierrc")
-		if (!cleanName) {
-			cleanName = `.${ext}`;
-			// Confirm with user before creating extension-only file
-			const confirmed = await new Promise<boolean>((resolve) => {
-				const modal = new Modal(this.app);
-				modal.titleEl.setText('Create file without name?');
-				modal.contentEl.createEl('p', { text: `Create file: ${cleanName}` });
-				const btnContainer = modal.contentEl.createDiv({
-					cls: 'modal-button-container'
-				});
-				new ButtonComponent(btnContainer).setButtonText('Cancel').onClick(() => {
-					modal.close();
-					resolve(false);
-				});
-				new ButtonComponent(btnContainer)
-					.setButtonText('Create')
-					.setCta()
-					.onClick(() => {
-						modal.close();
-						resolve(true);
-					});
-				modal.open();
-			});
-
-			if (!confirmed) return;
+		// Hidden file typed directly in the name field (e.g. ".prettierrc")
+		if (cleanName.startsWith('.') && !cleanName.slice(1).includes('.')) {
+			finalPath = normalizePath(`${this.parent.path}/${cleanName}`);
 		} else {
-			// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
-			if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
-				cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
-			} else if (cleanName.endsWith('.')) {
-				cleanName = cleanName.slice(0, -1);
+			if (!cleanName) {
+				cleanName = `.${ext}`;
+				const confirmed = await new Promise<boolean>((resolve) => {
+					const modal = new Modal(this.app);
+					modal.titleEl.setText('Create file without name?');
+					modal.contentEl.createEl('p', { text: `Create file: ${cleanName}` });
+					const btnContainer = modal.contentEl.createDiv({
+						cls: 'modal-button-container'
+					});
+					new ButtonComponent(btnContainer)
+						.setButtonText('Cancel')
+						.onClick(() => {
+							modal.close();
+							resolve(false);
+						});
+					new ButtonComponent(btnContainer)
+						.setButtonText('Create')
+						.setCta()
+						.onClick(() => {
+							modal.close();
+							resolve(true);
+						});
+					modal.open();
+				});
+
+				if (!confirmed) return;
+				finalPath = normalizePath(`${this.parent.path}/${cleanName}`);
+			} else {
+				// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
+				if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+					cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
+				} else if (cleanName.endsWith('.')) {
+					cleanName = cleanName.slice(0, -1);
+				}
+				finalPath = normalizePath(`${this.parent.path}/${cleanName}.${ext}`);
 			}
 		}
 
@@ -154,9 +162,7 @@ export class CreateCodeFileModal extends Modal {
 		}
 
 		this.close();
-		const newPath = normalizePath(
-			`${this.parent.path}/${cleanName}${cleanName.startsWith('.') ? '' : `.${ext}`}`
-		);
+		const newPath = finalPath;
 		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 		if (existingFile && existingFile instanceof TFile) {
 			new Notice('File already exists');
@@ -164,7 +170,31 @@ export class CreateCodeFileModal extends Modal {
 			return;
 		}
 
-		const newFile = await this.app.vault.create(newPath, '');
+		const basename = newPath.split('/').pop() ?? '';
+		let newFile: TFile | null = null;
+		try {
+			if (basename.startsWith('.')) {
+				const adapter = this.app.vault.adapter;
+				await adapter.write(newPath, '');
+				await (adapter as any).reconcileFileInternal(
+					(adapter as any).getRealPath(newPath),
+					newPath
+				);
+				await new Promise(resolve => setTimeout(resolve, 50));
+				newFile = this.app.vault.getFileByPath(newPath);
+			} else {
+				newFile = await this.app.vault.create(newPath, '');
+			}
+		} catch (e) {
+			console.error(e);
+			new Notice(`Failed to create file: ${newPath}`);
+			return;
+		}
+
+		if (!newFile) {
+			new Notice(`Failed to create file: ${newPath}`);
+			return;
+		}
 		void CodeEditorView.openFile(newFile, this.plugin, true);
 	}
 

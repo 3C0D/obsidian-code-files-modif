@@ -97,6 +97,16 @@ export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	}
 }
 
+/**
+ * Extracts the extension from a filename.
+ * Handles dotfiles (.env → "env") and normal files (myfile.py → "py").
+ */
+export function getExtension(filename: string): string {
+	if (filename.startsWith('.') && !filename.includes('.', 1)) return filename.slice(1);
+	const lastDot = filename.lastIndexOf('.');
+	return lastDot > 0 ? filename.slice(lastDot + 1) : '';
+}
+
 export function isCodeFilesExtension(app: App, ext: string): boolean {
 	return app.viewRegistry.typeByExtension[ext] === viewType;
 }

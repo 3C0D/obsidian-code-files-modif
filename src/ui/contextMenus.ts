@@ -24,7 +24,8 @@ import {
 	registerExtension,
 	unregisterExtension,
 	syncRegisteredExts,
-	getActiveExtensions
+	getActiveExtensions,
+	getExtension
 } from '../utils/extensionUtils.ts';
 
 /**
@@ -159,7 +160,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 
 /** Builds the submenu items for files in the file explorer. */
 function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[] {
-	const ext = file.extension;
+	const ext = getExtension(file.name);
 	const items: MenuItems[] = [];
 
 	// Check if extension is registered and if it's native to Obsidian
