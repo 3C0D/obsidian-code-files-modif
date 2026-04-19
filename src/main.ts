@@ -12,7 +12,11 @@ import { registerCommands } from './ui/commands.ts';
 import { registerContextMenus } from './ui/contextMenus.ts';
 import { patchModalClose } from './utils/modalPatch.ts';
 import { patchOpenFile } from './utils/openFilePatch.ts';
-import { updateProjectFolderHighlight } from './utils/explorerUtils.ts';
+import { 
+	updateProjectFolderHighlight,
+	setupExplorerBadges,
+	cleanupExplorerBadges
+} from './utils/explorerUtils.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
@@ -40,6 +44,8 @@ export default class CodeFilesPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(() => {
 			updateProjectFolderHighlight(this);
 		});
+		
+		setupExplorerBadges(this);
 	}
 
 	onunload(): void {
@@ -47,6 +53,7 @@ export default class CodeFilesPlugin extends Plugin {
 		this._modalClosePatch = null;
 		this._openFilePatch?.();
 		this._openFilePatch = null;
+		cleanupExplorerBadges();
 		this.ribbonIconEl?.remove();
 	}
 
