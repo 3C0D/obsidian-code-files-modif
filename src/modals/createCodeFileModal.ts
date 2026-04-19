@@ -21,12 +21,22 @@ import {
 	addExtension,
 	registerExtension
 } from '../utils/extensionUtils.ts';
+import type { DataAdapterEx } from 'obsidian-typings';
+import { getDataAdapterEx } from 'obsidian-typings/implementations';
+
+interface DataAdapterWithInternal extends DataAdapterEx {
+	reconcileFileInternal(realPath: string, normalizedPath: string): Promise<void>;
+}
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
 	fileName = 'My Code File';
 	fileExtension = '';
 	parent: TFolder;
+
+	getAdapter(): DataAdapterWithInternal {
+		return getDataAdapterEx(this.app) as DataAdapterWithInternal;
+	}
 
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -163,21 +173,41 @@ export class CreateCodeFileModal extends Modal {
 
 		this.close();
 		const newPath = finalPath;
-		const existingFile = this.app.vault.getAbstractFileByPath(newPath);
-		if (existingFile && existingFile instanceof TFile) {
-			new Notice('File already exists');
-			void CodeEditorView.openVaultFile(existingFile, this.plugin, true);
+		const basename = newPath.split('/').pop() ?? '';
+		const adapter = this.getAdapter();
+
+		if (await adapter.exists(newPath)) {
+			// If it's a hidden file (e.g. .prettierrc), Obsidian's vault mechanism doesn't track it by default.
+			// This means getAbstractFileByPath will return null even if it exists on disk.
+			// We manually call reconcileFileInternal to force Obsidian to add it to the vault cache 
+			// so we can properly open it as a TFile.
+			if (basename.startsWith('.') && !this.app.vault.getAbstractFileByPath(newPath)) {
+				await adapter.reconcileFileInternal(
+					adapter.getRealPath(newPath),
+					newPath
+				);
+				// Give the vault a bit of time to update its cache
+				await new Promise(resolve => setTimeout(resolve, 50));
+			}
+
+			const existingFile = this.app.vault.getAbstractFileByPath(newPath);
+			if (existingFile && existingFile instanceof TFile) {
+				new Notice('File already exists, opening...');
+				void CodeEditorView.openVaultFile(existingFile, this.plugin, true);
+			} else {
+				new Notice('File already exists but could not be opened');
+			}
 			return;
 		}
 
-		const basename = newPath.split('/').pop() ?? '';
 		let newFile: TFile | null = null;
 		try {
 			if (basename.startsWith('.')) {
-				const adapter = this.app.vault.adapter;
 				await adapter.write(newPath, '');
-				await (adapter as any).reconcileFileInternal(
-					(adapter as any).getRealPath(newPath),
+				// Again, for hidden files we just created, the vault won't see them automatically.
+				// We force reconciliation so getFileByPath can successfully return the newly created TFile.
+				await adapter.reconcileFileInternal(
+					adapter.getRealPath(newPath),
 					newPath
 				);
 				await new Promise(resolve => setTimeout(resolve, 50));

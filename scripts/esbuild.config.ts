@@ -333,7 +333,23 @@ async function createBuildContext(
 		treeShaking: true,
 		outdir: buildPath,
 		outbase: path.join(pluginDir, 'src'),
-		plugins
+		plugins: [
+			{
+				name: 'obsidian-typings-implementations',
+				setup(build: esbuild.PluginBuild): void {
+					build.onResolve(
+						{ filter: /^obsidian-typings\/implementations$/ },
+						() => ({
+							path: path.resolve(
+								pluginDir,
+								'node_modules/obsidian-typings/dist/cjs/implementations.cjs'
+							)
+						})
+					);
+				}
+			},
+			...plugins
+		]
 	});
 }
 
