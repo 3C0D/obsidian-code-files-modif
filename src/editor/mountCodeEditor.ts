@@ -15,6 +15,8 @@ import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride } from '../utils/hotkeyUtils.ts';
 import { CodeEditorView } from './codeEditorView.ts';
 import { broadcastHotkeys } from '../utils/broadcast.ts';
+import { readProjectFiles } from '../utils/projectUtils.ts';
+import { around } from 'monkey-around';
 
 const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 
@@ -111,29 +113,11 @@ export const mountCodeEditor = async (
 	 * Called once on editor init (on 'ready' message).
 	 *
 	 * @param send - Callback to post a message to the Monaco iframe.
-	 *               Called once with type 'load-project-files' and payload { files },
-	 *               where files is an array of { path, content } objects.
 	 */
 	async function loadProjectFiles(
 		send: (type: string, payload: Record<string, unknown>) => void
 	): Promise<void> {
-		// relative path
-		const root = plugin.settings.projectRootFolder;
-		if (!root) return;
-
-		const files: { path: string; content: string }[] = [];
-		for (const file of plugin.app.vault.getFiles()) {
-			if (!file.path.startsWith(root + '/')) continue;
-			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
-			try {
-				files.push({
-					path: file.path,
-					content: await plugin.app.vault.cachedRead(file)
-				});
-			} catch {
-				/* skip unreadable files */
-			}
-		}
+		const files = await readProjectFiles(plugin);
 		send('load-project-files', { files });
 	}
 
@@ -311,6 +295,11 @@ function parseEditorConfig(str) {
 <style>${cssText}</style>
 <style>${configCssText}</style>
 <script>
+// Monkey-patch appendChild to intercept dynamic <link> insertions from Monaco.
+// This is necessary because Monaco attempts to inject its CSS via <link rel="stylesheet">
+// which is blocked by Obsidian's CSP in child frames (iframes).
+// By dropping the <link> nodes and keeping only the inline <style> below,
+// we satisfy both Monaco's loading logic and Obsidian's security policy.
 const _orig = Element.prototype.appendChild;
 Element.prototype.appendChild = function(node) {
     if (node.tagName === 'LINK' && node.rel === 'stylesheet') return node;
@@ -385,16 +374,22 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-settings': {
 				if (data.context === codeContext) {
-					// Patch settings modal onClose to detect hotkey changes
-					// Wait 200ms after close to ensure Obsidian has saved the new hotkeys
-					const old = plugin.app.setting.onClose;
-					plugin.app.setting.onClose = () => {
-						plugin.app.setting.onClose = old;
-						setTimeout(() => {
-							void broadcastHotkeys(plugin);
-						}, 200);
-						send('focus', {});
-					};
+					// Patch settings modal onClose to detect hotkey changes safely via monkey-around.
+					// This ensures we always restore the original method and don't overwrite other patches.
+					// Wait 200ms after close to ensure Obsidian has saved the new hotkeys.
+					const uninstall = around(plugin.app.setting, {
+						onClose(old) {
+							return function () {
+								const result = old.apply(this);
+								uninstall();
+								setTimeout(() => {
+									void broadcastHotkeys(plugin);
+								}, 200);
+								send('focus', {});
+								return result;
+							};
+						}
+					});
 					plugin.app.setting.open();
 				}
 				break;
@@ -417,16 +412,21 @@ Element.prototype.appendChild = function(node) {
 			}
 			case 'open-obsidian-palette': {
 				if (data.context === codeContext) {
-					// Patch onClose to refocus Monaco when command palette closes
+					// Patch onClose to refocus Monaco when command palette closes safely via monkey-around.
 					const cmdPalette =
 						plugin.app.internalPlugins.getPluginById('command-palette');
 					if (!cmdPalette) break;
 					const modal = cmdPalette.instance.modal;
-					const old = modal.onClose;
-					modal.onClose = () => {
-						modal.onClose = old;
-						send('focus', {});
-					};
+					const uninstall = around(modal, {
+						onClose(old) {
+							return function () {
+								const result = old.apply(this);
+								uninstall();
+								send('focus', {});
+								return result;
+							};
+						}
+					});
 					modal.open();
 				}
 				break;
@@ -521,7 +521,9 @@ Element.prototype.appendChild = function(node) {
 					plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
 
 					if (position) {
-						// Wait for Monaco to mount in new tabs (150ms empirical delay)
+						// Wait for Monaco to mount in new tabs.
+						// Code smell: 150ms is an empirical delay to ensure Monaco is ready
+						// to receive the 'scroll-to-position' command after it is opened in a new tab.
 						setTimeout(
 							() => {
 								if (

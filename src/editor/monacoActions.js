@@ -26,8 +26,8 @@ function registerActions(params) {
 	editor.addCommand(
 		monaco.KeyMod.Alt | monaco.KeyCode.KeyZ,
 		function () {
-			var current = editor.getRawOptions().wordWrap;
-			var next = current === 'on' ? 'off' : 'on';
+			const current = editor.getRawOptions().wordWrap;
+			const next = current === 'on' ? 'off' : 'on';
 			editor.updateOptions({ wordWrap: next });
 			window.parent.postMessage(
 				{
@@ -46,7 +46,7 @@ function registerActions(params) {
 		keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
 		run: function () {
 			if (formatOnSave) {
-				var formatAction = editor.getAction('editor.action.formatDocument');
+				const formatAction = editor.getAction('editor.action.formatDocument');
 				if (formatAction && formatAction.isSupported()) {
 					runFormatWithDiff().then(function () {
 						window.parent.postMessage(
@@ -168,14 +168,14 @@ function registerActions(params) {
 	// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
 	// so it works regardless of keyboard layout and follows user-configured hotkeys.
 	editor.onKeyDown(function (e) {
-		var key = e.browserEvent.key;
+		const key = e.browserEvent.key;
 
 		// Check command palette hotkey (requires Mod)
 		if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
-			var hk = currentCommandPaletteHotkey;
-			var needsShift = hk.modifiers.includes('Shift');
-			var needsAlt = hk.modifiers.includes('Alt');
-			var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			const hk = currentCommandPaletteHotkey;
+			const needsShift = hk.modifiers.includes('Shift');
+			const needsAlt = hk.modifiers.includes('Alt');
+			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
 			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();
@@ -186,10 +186,10 @@ function registerActions(params) {
 
 		// Check settings hotkey (requires Mod)
 		if (currentSettingsHotkey && (e.ctrlKey || e.metaKey)) {
-			var hk = currentSettingsHotkey;
-			var needsShift = hk.modifiers.includes('Shift');
-			var needsAlt = hk.modifiers.includes('Alt');
-			var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			const hk = currentSettingsHotkey;
+			const needsShift = hk.modifiers.includes('Shift');
+			const needsAlt = hk.modifiers.includes('Alt');
+			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
 			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();
@@ -200,12 +200,12 @@ function registerActions(params) {
 
 		// Check delete file hotkey (may or may not require Mod)
 		if (currentDeleteFileHotkey) {
-			var hk = currentDeleteFileHotkey;
-			var needsMod = hk.modifiers.includes('Mod') || hk.modifiers.includes('Ctrl') || hk.modifiers.includes('Meta');
-			var needsShift = hk.modifiers.includes('Shift');
-			var needsAlt = hk.modifiers.includes('Alt');
-			var hasMod = e.ctrlKey || e.metaKey;
-			var keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			const hk = currentDeleteFileHotkey;
+			const needsMod = hk.modifiers.includes('Mod') || hk.modifiers.includes('Ctrl') || hk.modifiers.includes('Meta');
+			const needsShift = hk.modifiers.includes('Shift');
+			const needsAlt = hk.modifiers.includes('Alt');
+			const hasMod = e.ctrlKey || e.metaKey;
+			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
 			if (keyMatch && hasMod === needsMod && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();

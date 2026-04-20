@@ -120,10 +120,12 @@ export class CreateCodeFileModal extends Modal {
 
 		let cleanName = this.fileName.trim();
 		let finalPath: string;
+		let isHiddenFromName = false;
 
 		// Hidden file typed directly in the name field (e.g. ".prettierrc")
 		if (cleanName.startsWith('.') && !cleanName.slice(1).includes('.')) {
 			finalPath = normalizePath(`${this.parent.path}/${cleanName}`);
+			isHiddenFromName = true;
 		} else {
 			if (!cleanName) {
 				cleanName = `.${ext}`;
@@ -163,8 +165,13 @@ export class CreateCodeFileModal extends Modal {
 			}
 		}
 
-		// If the extension is not registered yet, register it on the fly
-		if (!getActiveExtensions(this.plugin.settings).includes(ext)) {
+		// If the extension is not registered yet, register it on the fly.
+		// Skip registration if the primary intent was a hidden file typed in the name field
+		// (e.g. user typed ".prettierrc" in name and "json" happened to be in the extension field).
+		if (
+			!isHiddenFromName &&
+			!getActiveExtensions(this.plugin.settings).includes(ext)
+		) {
 			addExtension(this.plugin.settings, ext);
 			registerExtension(this.plugin, ext);
 			await this.plugin.saveSettings();
@@ -189,7 +196,8 @@ export class CreateCodeFileModal extends Modal {
 					adapter.getRealPath(newPath),
 					newPath
 				);
-				// Give the vault a bit of time to update its cache
+				// Code smell: We must wait a few ms for Obsidian's vault cache to reflect
+				// the reconciliation before getAbstractFileByPath can see it.
 				await new Promise((resolve) => setTimeout(resolve, 50));
 			}
 
@@ -214,6 +222,7 @@ export class CreateCodeFileModal extends Modal {
 					adapter.getRealPath(newPath),
 					newPath
 				);
+				// Code smell: Wait for vault cache synchronization (see note above).
 				await new Promise((resolve) => setTimeout(resolve, 50));
 				newFile = this.app.vault.getFileByPath(newPath);
 			} else {

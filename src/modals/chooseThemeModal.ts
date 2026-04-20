@@ -9,17 +9,12 @@ import type CodeFilesPlugin from '../main.ts';
 import { getThemes, loadThemes } from '../utils/themeUtils.ts';
 import { broadcastBrightness } from '../utils/broadcast.ts';
 
-/** Cached list of all available themes, populated on first modal open. */
-let ALL_THEMES: string[] = [];
-
 /** SuggestModal to pick a Monaco editor theme with live preview.
  *  Navigating the list applies the theme instantly to the editor.
  *  Confirming saves it; closing without confirming restores the original theme. */
 export class ChooseThemeModal extends SuggestModal<string> {
 	private originalTheme: string;
 	private confirmed = false;
-	/** Tracks whether themes have been loaded from themelist.json to avoid redundant fetches. */
-	private themesLoaded = false;
 
 	/**
 	 * @param plugin - The plugin instance
@@ -58,15 +53,9 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		});
 	}
 
-	/** Loads themes from themelist.json before opening the modal to ensure suggestions are available.
-	 *  Themes are loaded only once per session and cached in ALL_THEMES. */
+	/** Loads themes from themelist.json before opening the modal to ensure suggestions are available. */
 	async onOpen(): Promise<void> {
-		if (!this.themesLoaded) {
-			await loadThemes(this.plugin);
-			// Prepend 'default' which follows Obsidian's theme (light/dark)
-			ALL_THEMES = ['default', ...getThemes()];
-			this.themesLoaded = true;
-		}
+		await loadThemes(this.plugin);
 		super.onOpen();
 		setTimeout(() => {
 			// Remove all semi-transparent overlays so the editor remains fully visible while previewing themes
@@ -118,7 +107,8 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		const current = this.plugin.settings.theme;
 		const recent = this.plugin.settings.recentThemes.filter((t) => t !== current);
 		const priority = [current, ...recent];
-		const filtered = ALL_THEMES.filter((t) => t.toLowerCase().includes(q));
+		const allThemes = ['default', ...getThemes()];
+		const filtered = allThemes.filter((t) => t.toLowerCase().includes(q));
 		return [
 			...priority.filter((t) => filtered.includes(t)),
 			...filtered.filter((t) => !priority.includes(t))

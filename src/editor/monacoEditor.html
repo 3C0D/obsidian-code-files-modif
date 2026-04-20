@@ -77,7 +77,7 @@
 		<script src="./monacoFormatters.js"></script>
 		<script src="./monacoActions.js"></script>
 		<script>
-			<!-- Step 4: async-load Monaco itself, all init code runs in the callback -->
+			// Step 4: async-load Monaco itself, all init code runs in the callback
 			require(['vs/editor/editor.main'], function () {
 				// Declare as globals (without var) so that extracted functions in external scripts can access them
 				editor = null;
@@ -153,8 +153,8 @@
 					currentLang = params.lang || 'plaintext';
 					currentCommandPaletteHotkey = params.commandPaletteHotkey || null;
 					currentSettingsHotkey = params.settingsHotkey || null;
-				currentDeleteFileHotkey = params.deleteFileHotkey || null;
-				editorDefaults = {
+					currentDeleteFileHotkey = params.deleteFileHotkey || null;
+					editorDefaults = {
 						folding: params.folding !== false,
 						lineNumbers: params.lineNumbers !== false ? 'on' : 'off',
 						minimap: { enabled: params.minimap !== false }
@@ -308,7 +308,9 @@
 							}
 							break;
 						case 'change-value':
-							if (editor) editor.setValue(data.value || '');
+							if (editor && editor.getValue() !== (data.value || '')) {
+								editor.setValue(data.value || '');
+							}
 							break;
 						case 'change-language':
 							if (editor)

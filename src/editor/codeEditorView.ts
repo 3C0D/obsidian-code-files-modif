@@ -292,7 +292,8 @@ export class CodeEditorView extends TextFileView {
 				track.createDiv({ cls: 'code-files-toggle-thumb' });
 				this.snippetToggleAction = toggleEl;
 
-				// Listen for external snippet state changes (from Obsidian settings)
+				// Listen for external snippet state changes (from Obsidian settings).
+				// This reassigns the handler after it was nulled during previous cleanup() (e.g. on rename).
 				this.unregisterSnippetHandler = registerSnippetChangeHandler(
 					this.plugin.app,
 					snippetName,
@@ -444,12 +445,9 @@ export class CodeEditorView extends TextFileView {
 	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
-		if (this.diffTimer) clearTimeout(this.diffTimer);
-		this.diffAction?.remove();
-		this.diffAction = null;
-		this.diffTimer = null;
-		this.codeEditor?.destroy();
+		this.cleanup();
 		this.contentEl.empty();
+		// this.data remains valid after path change; no disk reload needed here
 		await this.mountEditor(file);
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
@@ -495,6 +493,7 @@ export class CodeEditorView extends TextFileView {
 	): Promise<void> {
 		// Snippets are outside the vault — TFile is constructed manually
 		// because the adapter path is not indexed in the vault.
+		// Workaround: constructors TFile manually via Obsidian's internal API since the file isn't in vault cache.
 		// @ts-expect-error: TFile constructor is internal API
 		const file = new TFile(plugin.app.vault, filePath);
 		const leaf = plugin.app.workspace.getLeaf(true);

@@ -10,7 +10,7 @@ import { normalizePath, Notice, SuggestModal } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView } from 'obsidian-typings';
-import * as fs from 'fs';
+import { getDataAdapterEx } from 'obsidian-typings/implementations';
 
 /** Extensions to exclude from hidden files list (binary executables, archives, and files that can't be opened as text) */
 const EXCLUDED_EXTENSIONS = [
@@ -122,11 +122,11 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 			const stat = await this.plugin.app.vault.adapter.stat(subFolder);
 			if (!stat) continue;
 			// Check for symlinks on desktop only (fs.lstatSync not available on mobile)
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const maybeLstat = (fs as any)?.lstatSync;
+			const fs = (window as any).require?.('fs');
+			const maybeLstat = fs?.lstatSync;
 			if (maybeLstat) {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const basePath = (this.plugin.app.vault.adapter as any).basePath;
+				const adapter = getDataAdapterEx(this.app);
+				const basePath = adapter.basePath;
 				if (basePath) {
 					try {
 						const abs = normalizePath(`${basePath}/${subFolder}`);
@@ -143,7 +143,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 	private async loadHiddenFiles(): Promise<void> {
 		try {
 			const explorerPaths = this.getExplorerPaths();
-			const rootPath = this.folder?.path ?? '/';
+			const rootPath = this.folder?.path ?? '';
 			await this.scanFolder(rootPath, explorerPaths);
 
 			if (this.hiddenFiles.length === 0) {

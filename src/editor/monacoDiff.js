@@ -204,14 +204,6 @@ function revertBlock(change) {
 	if (editor && editor.getModel()) {
 		editor.getModel().pushEditOperations([], [edit], function () { return null; });
 		lastFormatFormatted = editor.getValue();
-	} else {
-		var newContent = modModel.getValue();
-		editor.getModel().pushEditOperations(
-			[],
-			[{ range: editor.getModel().getFullModelRange(), text: newContent }],
-			function () { return null; }
-		);
-		lastFormatFormatted = newContent;
 	}
 
 	setTimeout(function () {

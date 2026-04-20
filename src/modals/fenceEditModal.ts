@@ -116,9 +116,8 @@ export class FenceEditModal extends Modal {
 		this.modalEl.style.width = '90vw';
 		this.modalEl.style.height = '90vh';
 
-		this.modalEl.querySelector<HTMLDivElement>(
-			'.modal-close-button'
-		)!.style.background = 'var(--modal-background)';
+		const closeBtn = this.modalEl.querySelector<HTMLDivElement>('.modal-close-button');
+		if (closeBtn) closeBtn.style.background = 'var(--modal-background)';
 	}
 
 	onClose(): void {

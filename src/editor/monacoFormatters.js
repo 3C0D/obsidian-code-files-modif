@@ -15,6 +15,13 @@ function registerFormatters() {
 		monaco.languages.register({ id: 'mermaid' });
 	}
 
+	/**
+	 * NOTE: Prettier formatters (Markdown, TS/JS, CSS, etc.) do NOT update lastFormatOriginal
+	 * or send 'format-diff-available' messages directly. This task is delegated to
+	 * runFormatWithDiff() in monacoEditor.html, which handles the diff tracking logic
+	 * for all formatters that use Monaco's native provideDocumentFormattingEdits API.
+	 */
+
 	monaco.languages.registerDocumentFormattingEditProvider('markdown', {
 		provideDocumentFormattingEdits: async function (model) {
 			try {

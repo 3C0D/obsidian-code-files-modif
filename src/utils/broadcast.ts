@@ -12,6 +12,7 @@ import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
+import { readProjectFiles } from './projectUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride, formatHotkey } from './hotkeyUtils.ts';
 
 /**
@@ -102,22 +103,7 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
  *    previously loaded files
  */
 export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<void> {
-	const root = plugin.settings.projectRootFolder;
-	const files: { path: string; content: string }[] = [];
-	if (root) {
-		for (const file of plugin.app.vault.getFiles()) {
-			if (!file.path.startsWith(root + '/')) continue;
-			if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
-			try {
-				files.push({
-					path: file.path,
-					content: await plugin.app.vault.cachedRead(file)
-				});
-			} catch {
-				/* skip */
-			}
-		}
-	}
+	const files = await readProjectFiles(plugin);
 	for (const view of getCodeEditorViews(plugin.app)) {
 		view.editor?.send('load-project-files', { files });
 	}
