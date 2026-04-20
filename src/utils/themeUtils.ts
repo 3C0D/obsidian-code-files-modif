@@ -7,6 +7,13 @@ let _themes: string[] = [];
 
 export const getThemes = (): string[] => _themes;
 
+/**
+ * Loads available Monaco themes from the plugin's bundled theme list.
+ * Populates the internal `_themes` array with theme names on first call.
+ *
+ * @param plugin
+ * @returns A Promise that resolves when themes have been loaded (or failed).
+ */
 export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
 	if (_themes.length > 0) return;
 	try {
@@ -26,6 +33,8 @@ export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
 /** Registers a listener that updates Monaco's theme when Obsidian switches dark/light mode.
  *  Only active when theme is set to 'default'. Returns a cleanup function to unregister.
  *
+ * @param plugin
+ * @param codeEditor
  * @returns () => void - function to unregister the event listener
  * */
 export function registerThemeChangeHandler(

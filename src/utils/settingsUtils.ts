@@ -7,8 +7,7 @@
 import type CodeFilesPlugin from '../main.ts';
 import {
 	DEFAULT_SETTINGS,
-	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG
+	DEFAULT_EDITOR_CONFIG
 } from '../types/variables.ts';
 import { staticMap } from '../utils/getLanguage.ts';
 
@@ -27,7 +26,8 @@ import { staticMap } from '../utils/getLanguage.ts';
  * @returns Parsed JavaScript object
  * @throws {SyntaxError} If the JSON is invalid after stripping comments
  *
- * @internal
+ * @internal - has a JS duplicate injected into the Monaco iframe (mountCodeEditor.ts).
+ * Keep both in sync if regex patterns change.
  */
 export function parseEditorConfig(str: string): unknown {
 	return JSON.parse(
@@ -63,7 +63,6 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 
 /**
  * Saves a raw editor config string for the given key.
- * Deletes the override if it matches the default for that key.
  *
  * @param plugin - The plugin instance
  * @param key - File extension WITHOUT the leading dot (e.g. 'ts', 'md'), or '*' for global config
@@ -71,33 +70,24 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
  * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
  */
 export function saveEditorConfig(
-	plugin: CodeFilesPlugin,
-	key: string,
-	value: string
+    plugin: CodeFilesPlugin,
+    key: string,
+    value: string
 ): boolean {
-	const defaultForKey = key === '*' ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
-	try {
-		parseEditorConfig(value);
-		const previous = plugin.settings.editorConfigs[key];
-		// Early exit if nothing changed (trimming both sides for accurate comparison)
-		if (previous?.trim() === value.trim()) return false;
-		// Delete global override if value matches default (comparing parsed objects)
-		if (
-			key === '*' &&
-			JSON.stringify(parseEditorConfig(value)) ===
-				JSON.stringify(parseEditorConfig(defaultForKey))
-		) {
-			if (!('*' in plugin.settings.editorConfigs)) return false;
-			// Back to default: no need to persist
-			delete plugin.settings.editorConfigs[key];
-			return true;
-		}
-		// Changed and non-default: persist and let the caller broadcast
-		plugin.settings.editorConfigs[key] = value;
-		return true;
-	} catch {
-		return false;
-	}
+    try {
+        // Validate only — throws if JSON is invalid, value is stored as-is with its comments
+        parseEditorConfig(value);
+
+        const previous = plugin.settings.editorConfigs[key];
+        // Early exit if nothing changed (comparing raw strings including comments)
+        if (previous?.trim() === value.trim()) return false;
+
+        // Persist as-is (with comments) and let the caller broadcast
+        plugin.settings.editorConfigs[key] = value;
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
