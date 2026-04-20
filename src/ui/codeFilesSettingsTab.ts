@@ -380,5 +380,40 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			'app:delete-file',
 			'deleteFileHotkeyOverride'
 		);
+
+		// -- Hidden Files -----------------------------------------------------
+		containerEl.createEl('h3', { text: 'Hidden Files' });
+
+		new Setting(containerEl)
+			.setName('Excluded folders')
+			.setDesc('Hidden folders to never show (comma-separated)')
+			.addText((text) =>
+				text
+					.setPlaceholder('.git, node_modules, .trash')
+					.setValue(this.plugin.settings.excludedFolders.join(', '))
+					.onChange(async (value) => {
+						this.plugin.settings.excludedFolders = value
+							.split(',')
+							.map((s) => s.trim())
+							.filter((s) => s.length > 0);
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName('Excluded extensions')
+			.setDesc('Hidden file extensions to exclude (without dot, comma-separated)')
+			.addText((text) =>
+				text
+					.setPlaceholder('tmp, log, cache')
+					.setValue(this.plugin.settings.excludedExtensions.join(', '))
+					.onChange(async (value) => {
+						this.plugin.settings.excludedExtensions = value
+							.split(',')
+							.map((s) => s.trim())
+							.filter((s) => s.length > 0);
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }

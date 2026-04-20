@@ -270,7 +270,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	lastSelectedConfigExtension: '',
 	commandPaletteHotkeyOverride: '',
 	settingsHotkeyOverride: '',
-	deleteFileHotkeyOverride: ''
+	deleteFileHotkeyOverride: '',
+	excludedFolders: ['.git', 'node_modules', '.trash'],
+	revealedFiles: {}
 };
 
 /** Obsidian view type identifier for the Monaco editor */

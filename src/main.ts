@@ -17,6 +17,12 @@ import {
 	setupExplorerBadges,
 	cleanupExplorerBadges
 } from './utils/explorerUtils.ts';
+import {
+	patchAdapter,
+	cleanStaleRevealedFiles,
+	restoreRevealedFiles,
+	decorateFolders
+} from './utils/hiddenFilesUtils.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
@@ -43,9 +49,15 @@ export default class CodeFilesPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(() => {
 			updateProjectFolderHighlight(this);
+			void cleanStaleRevealedFiles(this).then(() => restoreRevealedFiles(this)).then(() => decorateFolders(this));
 		});
 
 		setupExplorerBadges(this);
+
+		this.register(patchAdapter(this));
+		this.registerEvent(this.app.vault.on('create', () => decorateFolders(this)));
+		this.registerEvent(this.app.vault.on('delete', () => decorateFolders(this)));
+		this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));
 	}
 
 	onunload(): void {

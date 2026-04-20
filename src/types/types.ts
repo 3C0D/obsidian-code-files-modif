@@ -46,6 +46,10 @@ export interface MyPluginSettings {
 	settingsHotkeyOverride: string;
 	/** Override for delete file hotkey (empty string = use Obsidian default) */
 	deleteFileHotkeyOverride: string;
+	/** Hidden folders to never show */
+	excludedFolders: string[];
+	/** Record of revealed hidden files per folder */
+	revealedFiles: Record<string, string[]>;
 }
 
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */
