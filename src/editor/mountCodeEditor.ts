@@ -522,7 +522,7 @@ Element.prototype.appendChild = function(node) {
 
 					if (position) {
 						// Wait for Monaco to mount in new tabs.
-						// Code smell: 150ms is an empirical delay to ensure Monaco is ready
+						// empirical delay, no clean alternative: 150ms is an empirical delay to ensure Monaco is ready
 						// to receive the 'scroll-to-position' command after it is opened in a new tab.
 						setTimeout(
 							() => {

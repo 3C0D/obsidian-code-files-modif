@@ -196,7 +196,7 @@ export class CreateCodeFileModal extends Modal {
 					adapter.getRealPath(newPath),
 					newPath
 				);
-				// Code smell: We must wait a few ms for Obsidian's vault cache to reflect
+				// empirical delay, no clean alternative: We must wait a few ms for Obsidian's vault cache to reflect
 				// the reconciliation before getAbstractFileByPath can see it.
 				await new Promise((resolve) => setTimeout(resolve, 50));
 			}
@@ -222,7 +222,7 @@ export class CreateCodeFileModal extends Modal {
 					adapter.getRealPath(newPath),
 					newPath
 				);
-				// Code smell: Wait for vault cache synchronization (see note above).
+				// empirical delay, no clean alternative: Wait for vault cache synchronization (see note above).
 				await new Promise((resolve) => setTimeout(resolve, 50));
 				newFile = this.app.vault.getFileByPath(newPath);
 			} else {
