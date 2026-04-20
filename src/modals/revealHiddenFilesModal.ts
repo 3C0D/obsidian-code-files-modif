@@ -1,6 +1,12 @@
-import { Modal, type App } from 'obsidian';
+import { Modal, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { type HiddenItem, scanHiddenFiles, cleanStaleRevealedFiles, revealFiles, hideFilesInFolder } from '../utils/hiddenFilesUtils.ts';
+import {
+	type HiddenItem,
+	scanHiddenFiles,
+	cleanStaleRevealedFiles,
+	revealFiles,
+	hideFilesInFolder
+} from '../utils/hiddenFilesUtils.ts';
 
 export class RevealHiddenFilesModal extends Modal {
 	plugin: CodeFilesPlugin;
@@ -12,10 +18,11 @@ export class RevealHiddenFilesModal extends Modal {
 	constructor(plugin: CodeFilesPlugin, folderPath: string) {
 		super(plugin.app);
 		this.plugin = plugin;
-		this.folderPath = folderPath;
-		this.items = scanHiddenFiles(plugin, folderPath);
+		this.folderPath = normalizePath(folderPath);
+		if (this.folderPath === '/') this.folderPath = '';
+		this.items = scanHiddenFiles(plugin, this.folderPath);
 		void cleanStaleRevealedFiles(plugin);
-		const revealed = plugin.settings.revealedFiles[folderPath] || [];
+		const revealed = plugin.settings.revealedFiles[this.folderPath] || [];
 		this.initialRevealed = new Set(revealed);
 		this.selected = new Set(revealed);
 	}
@@ -26,13 +33,18 @@ export class RevealHiddenFilesModal extends Modal {
 		contentEl.addClass('hidden-files-modal');
 
 		contentEl.createEl('h2', { text: 'Hidden files' });
-		contentEl.createEl('p', { text: \`Folder: \${this.folderPath || '(root)'}\` });
+		contentEl.createEl('p', { text: `Folder: ${this.folderPath || '(root)'}` });
 
 		const desc = contentEl.createEl('p', { cls: 'hidden-files-desc' });
-		desc.setText('Check a file to reveal it in the explorer. Uncheck to hide it again. Click Apply to confirm.');
+		desc.setText(
+			'Check a file to reveal it in the explorer. Uncheck to hide it again. Click Apply to confirm.'
+		);
 
 		if (this.items.length === 0) {
-			contentEl.createEl('p', { text: 'No hidden files found', cls: 'hidden-files-empty' });
+			contentEl.createEl('p', {
+				text: 'No hidden files found',
+				cls: 'hidden-files-empty'
+			});
 			return;
 		}
 
@@ -40,7 +52,7 @@ export class RevealHiddenFilesModal extends Modal {
 
 		const masterEl = listEl.createDiv({ cls: 'hidden-file-item hidden-file-master' });
 		const masterCheckbox = masterEl.createEl('input', { type: 'checkbox' });
-		masterCheckbox.checked = this.items.every(item => this.selected.has(item.path));
+		masterCheckbox.checked = this.items.every((item) => this.selected.has(item.path));
 		masterCheckbox.indeterminate = !masterCheckbox.checked && this.selected.size > 0;
 		masterEl.createSpan({ cls: 'hidden-file-name', text: 'All' });
 
@@ -55,41 +67,52 @@ export class RevealHiddenFilesModal extends Modal {
 			checkbox.addEventListener('change', () => {
 				if (checkbox.checked) this.selected.add(item.path);
 				else this.selected.delete(item.path);
-				masterCheckbox.checked = this.items.every(i => this.selected.has(i.path));
-				masterCheckbox.indeterminate = !masterCheckbox.checked && this.selected.size > 0;
+				masterCheckbox.checked = this.items.every((i) =>
+					this.selected.has(i.path)
+				);
+				masterCheckbox.indeterminate =
+					!masterCheckbox.checked && this.selected.size > 0;
 			});
 
 			const icon = itemEl.createSpan({ cls: 'hidden-file-icon' });
 			icon.textContent = item.isFolder ? '📁' : '📄';
 			itemEl.createSpan({ cls: 'hidden-file-name', text: item.name });
 			if (!item.isFolder) {
-				itemEl.createSpan({ cls: 'hidden-file-size', text: this.formatSize(item.size) });
+				itemEl.createSpan({
+					cls: 'hidden-file-size',
+					text: this.formatSize(item.size)
+				});
 			}
 		}
 
 		masterCheckbox.addEventListener('change', () => {
-			if (masterCheckbox.checked) this.items.forEach(i => this.selected.add(i.path));
-			else this.items.forEach(i => this.selected.delete(i.path));
-			itemCheckboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+			if (masterCheckbox.checked)
+				this.items.forEach((i) => this.selected.add(i.path));
+			else this.items.forEach((i) => this.selected.delete(i.path));
+			itemCheckboxes.forEach((cb) => (cb.checked = masterCheckbox.checked));
 		});
 
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
-		buttonContainer.createEl('button', { text: 'Apply', cls: 'mod-cta' })
+		buttonContainer
+			.createEl('button', { text: 'Apply', cls: 'mod-cta' })
 			.addEventListener('click', async () => {
 				const toReveal = this.items
-					.map(i => i.path)
-					.filter(p => this.selected.has(p) && !this.initialRevealed.has(p));
+					.map((i) => i.path)
+					.filter((p) => this.selected.has(p) && !this.initialRevealed.has(p));
 				const toHide = this.items
-					.map(i => i.path)
-					.filter(p => !this.selected.has(p) && this.initialRevealed.has(p));
+					.map((i) => i.path)
+					.filter((p) => !this.selected.has(p) && this.initialRevealed.has(p));
 
-				if (toReveal.length > 0) void revealFiles(this.plugin, this.folderPath, toReveal);
-				if (toHide.length > 0) void hideFilesInFolder(this.plugin, this.folderPath, toHide);
+				if (toReveal.length > 0)
+					void revealFiles(this.plugin, this.folderPath, toReveal);
+				if (toHide.length > 0)
+					void hideFilesInFolder(this.plugin, this.folderPath, toHide);
 				this.close();
 			});
 
-		buttonContainer.createEl('button', { text: 'Cancel' })
+		buttonContainer
+			.createEl('button', { text: 'Cancel' })
 			.addEventListener('click', () => this.close());
 	}
 
@@ -99,5 +122,7 @@ export class RevealHiddenFilesModal extends Modal {
 		return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 	}
 
-	onClose(): void { this.contentEl.empty(); }
+	onClose(): void {
+		this.contentEl.empty();
+	}
 }

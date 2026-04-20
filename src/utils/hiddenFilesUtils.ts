@@ -1,4 +1,4 @@
-import { Notice, setIcon } from 'obsidian';
+import { Notice, setIcon, normalizePath } from 'obsidian';
 import type { DataAdapterEx, FileExplorerView, FolderTreeItem } from 'obsidian-typings';
 import { around } from 'monkey-around';
 import type CodeFilesPlugin from '../main.ts';
@@ -17,7 +17,7 @@ export interface HiddenItem {
 let _bypassPatch = false;
 
 function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
-	return (plugin.app.vault.adapter as unknown) as DataAdapterWithInternal;
+	return plugin.app.vault.adapter as unknown as DataAdapterWithInternal;
 }
 
 function getBasePath(plugin: CodeFilesPlugin): string {
@@ -30,7 +30,11 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	// Prevent Obsidian from auto-deleting revealed dotfiles
 	return around(adapter, {
 		reconcileDeletion(next) {
-			return async function(this: DataAdapterEx, realPath: string, normalizedPath: string) {
+			return async function (
+				this: DataAdapterEx,
+				realPath: string,
+				normalizedPath: string
+			) {
 				const basename = normalizedPath.split('/').pop() || '';
 				// Block deletion of dotfiles unless explicitly requested via hideFilesInFolder
 				if (basename.startsWith('.') && !_bypassPatch) {
@@ -51,21 +55,25 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 	if (!fs || !pathNode) return;
 
 	for (const [folderPath, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
-		const valid = itemPaths.filter(itemPath => {
-			try {
-				fs.statSync(pathNode.join(basePath, itemPath));
-				return true;
-			} catch {
-				return false;
-			}
-		});
+		let normFolderPath = normalizePath(folderPath);
+		if (normFolderPath === '/') normFolderPath = '';
 
-		if (valid.length !== itemPaths.length) {
+		const valid = itemPaths
+			.map((p) => normalizePath(p))
+			.filter((normItemPath) => {
+				try {
+					fs.statSync(pathNode.join(basePath, normItemPath));
+					return true;
+				} catch {
+					return false;
+				}
+			});
+
+		if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
 			changed = true;
-			if (valid.length === 0) {
-				delete plugin.settings.revealedFiles[folderPath];
-			} else {
-				plugin.settings.revealedFiles[folderPath] = valid;
+			delete plugin.settings.revealedFiles[folderPath];
+			if (valid.length > 0) {
+				plugin.settings.revealedFiles[normFolderPath] = valid;
 			}
 		}
 	}
@@ -124,7 +132,12 @@ export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
 	}
 }
 
-export function scanHiddenFiles(plugin: CodeFilesPlugin, folderPath: string): HiddenItem[] {
+export function scanHiddenFiles(
+	plugin: CodeFilesPlugin,
+	folderPath: string
+): HiddenItem[] {
+	folderPath = normalizePath(folderPath);
+	if (folderPath === '/') folderPath = '';
 	const basePath = getBasePath(plugin);
 	const fs = window.require?.('fs');
 	const pathNode = window.require?.('path');
@@ -141,7 +154,9 @@ export function scanHiddenFiles(plugin: CodeFilesPlugin, folderPath: string): Hi
 			if (!entry.startsWith('.')) continue;
 
 			const entryPath = pathNode.join(fullPath, entry);
-			const relativePath = folderPath ? \`\${folderPath}/\${entry}\` : entry;
+			const relativePath = normalizePath(
+				folderPath ? `${folderPath}/${entry}` : entry
+			);
 
 			try {
 				const stat = fs.statSync(entryPath);
@@ -186,7 +201,14 @@ export function scanHiddenFiles(plugin: CodeFilesPlugin, folderPath: string): Hi
 	return items;
 }
 
-export async function revealFiles(plugin: CodeFilesPlugin, folderPath: string, itemPaths: string[]): Promise<void> {
+export async function revealFiles(
+	plugin: CodeFilesPlugin,
+	folderPath: string,
+	itemPaths: string[]
+): Promise<void> {
+	folderPath = normalizePath(folderPath);
+	if (folderPath === '/') folderPath = '';
+	itemPaths = itemPaths.map((p) => normalizePath(p));
 	const adapter = getAdapter(plugin);
 	const basePath = getBasePath(plugin);
 	const fs = window.require?.('fs');
@@ -195,18 +217,19 @@ export async function revealFiles(plugin: CodeFilesPlugin, folderPath: string, i
 	if (!fs || !pathNode) return;
 
 	for (const itemPath of itemPaths) {
-		const fullPath = pathNode.join(basePath, itemPath);
+		const normItemPath = normalizePath(itemPath);
+		const fullPath = pathNode.join(basePath, normItemPath);
 		try {
 			const stat = fs.statSync(fullPath);
-			const realPath = adapter.getRealPath(itemPath);
+			const realPath = adapter.getRealPath(normItemPath);
 			if (stat.isDirectory()) {
-				await adapter.reconcileFolderCreation(realPath, itemPath);
+				await adapter.reconcileFolderCreation(realPath, normItemPath);
 			} else {
 				// Call reconcileFileInternal directly to bypass dotfile guard
-				await adapter.reconcileFileInternal(realPath, itemPath);
+				await adapter.reconcileFileInternal(realPath, normItemPath);
 			}
 		} catch (e) {
-			console.error(\`Reveal error \${itemPath}:\`, e);
+			console.error(`Reveal error ${itemPath}:`, e);
 		}
 	}
 
@@ -214,10 +237,17 @@ export async function revealFiles(plugin: CodeFilesPlugin, folderPath: string, i
 	plugin.settings.revealedFiles[folderPath] = [...new Set([...existing, ...itemPaths])];
 	await plugin.saveSettings();
 	decorateFolders(plugin);
-	new Notice(\`\${itemPaths.length} item(s) revealed\`);
+	new Notice(`${itemPaths.length} item(s) revealed`);
 }
 
-export async function hideFilesInFolder(plugin: CodeFilesPlugin, folderPath: string, itemPaths: string[]): Promise<void> {
+export async function hideFilesInFolder(
+	plugin: CodeFilesPlugin,
+	folderPath: string,
+	itemPaths: string[]
+): Promise<void> {
+	folderPath = normalizePath(folderPath);
+	if (folderPath === '/') folderPath = '';
+	itemPaths = itemPaths.map((p) => normalizePath(p));
 	const adapter = getAdapter(plugin);
 
 	// Temporarily allow deletion of dotfiles
@@ -229,16 +259,16 @@ export async function hideFilesInFolder(plugin: CodeFilesPlugin, folderPath: str
 	_bypassPatch = false;
 
 	const remaining = (plugin.settings.revealedFiles[folderPath] || []).filter(
-		p => !itemPaths.includes(p)
+		(p) => !itemPaths.includes(p)
 	);
-	
+
 	if (remaining.length > 0) {
 		plugin.settings.revealedFiles[folderPath] = remaining;
 	} else {
 		delete plugin.settings.revealedFiles[folderPath];
 	}
-	
+
 	await plugin.saveSettings();
 	decorateFolders(plugin);
-	new Notice(\`\${itemPaths.length} file(s) hidden\`);
+	new Notice(`${itemPaths.length} file(s) hidden`);
 }

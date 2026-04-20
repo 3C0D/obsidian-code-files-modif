@@ -122,6 +122,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 			const stat = await this.plugin.app.vault.adapter.stat(subFolder);
 			if (!stat) continue;
 			// Check for symlinks on desktop only (fs.lstatSync not available on mobile)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const fs = (window as any).require?.('fs');
 			const maybeLstat = fs?.lstatSync;
 			if (maybeLstat) {
