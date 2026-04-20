@@ -56,8 +56,6 @@ export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
 let explorerObserver: MutationObserver | null = null;
 let debounceTimeout: NodeJS.Timeout | null = null;
 
-
-
 /* Le rôle de l'observer est précis : Obsidian rend le file explorer de façon **lazy**, c'est-à-dire que les items d'un dossier ne sont ajoutés au DOM que quand on l'expand. Sans l'observer, `updateBadges` tourne une fois au chargement et manque tous les fichiers dans des dossiers repliés.
 
 Le `layout-change` et `rename` ne couvrent pas ce cas : ils ne se déclenchent pas quand l'utilisateur clique sur un triangle pour ouvrir un sous-dossier.
@@ -69,8 +67,6 @@ Le `layout-change` et `rename` ne couvrent pas ce cas : ils ne se déclenchent p
 **Bug restant dans ta version corrigée :** le `else { explorerObserver.disconnect() }` est correct car le `observe()` juste en dessous le relance, mais si `layout-change` se déclenche avant qu'un observer existe, le `if (!explorerObserver)` crée l'instance sans l'observer (les leaves peuvent ne pas être prêtes). Ce cas est déjà couvert par le `onLayoutReady` en bas, donc pas de problème en pratique.
 
 Conclusion : garde l'observer, il est justifié. Si tu veux le retirer, remplace-le par un listener sur l'event Obsidian `'file-explorer:open-folder'` s'il existe, mais la MutationObserver est la solution la plus robuste ici. */
-
-
 
 /**
  * Ensures dotfiles (.env, .gitignore) show their extension as a badge in the

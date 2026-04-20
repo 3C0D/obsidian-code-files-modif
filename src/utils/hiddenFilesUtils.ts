@@ -1,5 +1,10 @@
 import { Notice, setIcon, normalizePath } from 'obsidian';
-import type { DataAdapterEx, FileExplorerView, FolderTreeItem } from 'obsidian-typings';
+import {
+	type DataAdapterEx,
+	type FileExplorerView,
+	type FolderTreeItem
+} from 'obsidian-typings';
+import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { around } from 'monkey-around';
 import type CodeFilesPlugin from '../main.ts';
 
@@ -17,7 +22,7 @@ export interface HiddenItem {
 let _bypassPatch = false;
 
 function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
-	return plugin.app.vault.adapter as unknown as DataAdapterWithInternal;
+	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
 
 function getBasePath(plugin: CodeFilesPlugin): string {
@@ -167,8 +172,9 @@ export function scanHiddenFiles(
 				}
 
 				if (!isFolder) {
+					// remove the leading dot (e.g. '.env' -> 'env')
 					const ext = entry.substring(1);
-					// Removed the dot when testing for extensions
+					// get the actual extension (e.g. 'env' -> 'env', '.prettierrc' -> 'prettierrc')
 					const actualExt = ext.split('.').pop() || ext;
 					if (plugin.settings.excludedExtensions.includes(actualExt)) {
 						continue;

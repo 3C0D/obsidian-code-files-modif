@@ -6,8 +6,6 @@
 import { Platform, type App } from 'obsidian';
 import type { HotkeyConfig } from '../types/types.ts';
 
-
-
 /**
  * Reads the configured hotkey for a given Obsidian command.
  * Checks custom user hotkeys first, then falls back to command defaults.

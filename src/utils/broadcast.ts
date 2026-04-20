@@ -156,7 +156,9 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		plugin._lastHotkeys = currentHotkeys;
 
 		const views = getCodeEditorViews(plugin.app);
-		const activeView = views.find((v) => v.leaf === plugin.app.workspace.getMostRecentLeaf());
+		const activeView = views.find(
+			(v) => v.leaf === plugin.app.workspace.getMostRecentLeaf()
+		);
 
 		for (const view of views) {
 			if (!view.editor) continue;

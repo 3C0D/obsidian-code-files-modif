@@ -1,4 +1,12 @@
-import { Plugin, PluginSettingTab, Setting, TFolder, Modal, Notice, setIcon } from 'obsidian';
+import {
+	Plugin,
+	PluginSettingTab,
+	Setting,
+	TFolder,
+	Modal,
+	Notice,
+	setIcon
+} from 'obsidian';
 import type { App } from 'obsidian';
 import type { DataAdapterEx, FileExplorerView, FolderTreeItem } from 'obsidian-typings';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
@@ -43,15 +51,9 @@ export default class ShowHiddenFilesPlugin extends Plugin {
 			this.decorateFolders();
 		});
 
-		this.registerEvent(
-			this.app.vault.on('create', () => this.decorateFolders())
-		);
-		this.registerEvent(
-			this.app.vault.on('delete', () => this.decorateFolders())
-		);
-		this.registerEvent(
-			this.app.vault.on('rename', () => this.decorateFolders())
-		);
+		this.registerEvent(this.app.vault.on('create', () => this.decorateFolders()));
+		this.registerEvent(this.app.vault.on('delete', () => this.decorateFolders()));
+		this.registerEvent(this.app.vault.on('rename', () => this.decorateFolders()));
 
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu, file) => {
@@ -95,7 +97,11 @@ export default class ShowHiddenFilesPlugin extends Plugin {
 		this.register(
 			around(adapter, {
 				reconcileDeletion(next) {
-					return async function(this: DataAdapterEx, realPath: string, normalizedPath: string) {
+					return async function (
+						this: DataAdapterEx,
+						realPath: string,
+						normalizedPath: string
+					) {
 						const basename = normalizedPath.split('/').pop() || '';
 						// Block deletion of dotfiles unless explicitly requested via hideFilesInFolder
 						if (basename.startsWith('.') && !self._bypassPatch) {
@@ -112,8 +118,10 @@ export default class ShowHiddenFilesPlugin extends Plugin {
 		const basePath = this.getBasePath();
 		let changed = false;
 
-		for (const [folderPath, itemPaths] of Object.entries(this.settings.revealedFiles)) {
-			const valid = itemPaths.filter(itemPath => {
+		for (const [folderPath, itemPaths] of Object.entries(
+			this.settings.revealedFiles
+		)) {
+			const valid = itemPaths.filter((itemPath) => {
 				try {
 					fs.statSync(path.join(basePath, itemPath));
 					return true;
@@ -243,24 +251,26 @@ export default class ShowHiddenFilesPlugin extends Plugin {
 
 		for (const itemPath of itemPaths) {
 			const fullPath = path.join(basePath, itemPath);
-				try {
-					const stat = fs.statSync(fullPath);
-					const realPath = adapter.getRealPath(itemPath);
-					if (stat.isDirectory()) {
-						await adapter.reconcileFolderCreation(realPath, itemPath);
-					} else {
-						// Call reconcileFileInternal directly to bypass dotfile guard
-						await adapter.reconcileFileInternal(realPath, itemPath);
-						const registered = this.app.vault.getFileByPath(itemPath);
-						console.log('registered after reveal:', itemPath, registered);
-					}
-				} catch (e) {
-					console.error(`Reveal error ${itemPath}:`, e);
+			try {
+				const stat = fs.statSync(fullPath);
+				const realPath = adapter.getRealPath(itemPath);
+				if (stat.isDirectory()) {
+					await adapter.reconcileFolderCreation(realPath, itemPath);
+				} else {
+					// Call reconcileFileInternal directly to bypass dotfile guard
+					await adapter.reconcileFileInternal(realPath, itemPath);
+					const registered = this.app.vault.getFileByPath(itemPath);
+					console.log('registered after reveal:', itemPath, registered);
 				}
+			} catch (e) {
+				console.error(`Reveal error ${itemPath}:`, e);
+			}
 		}
 
 		const existing = this.settings.revealedFiles[folderPath] ?? [];
-		this.settings.revealedFiles[folderPath] = [...new Set([...existing, ...itemPaths])];
+		this.settings.revealedFiles[folderPath] = [
+			...new Set([...existing, ...itemPaths])
+		];
 		await this.saveSettings();
 		this.decorateFolders();
 		new Notice(`${itemPaths.length} item(s) revealed`);
@@ -278,15 +288,15 @@ export default class ShowHiddenFilesPlugin extends Plugin {
 		this._bypassPatch = false;
 
 		const remaining = (this.settings.revealedFiles[folderPath] || []).filter(
-			path => !itemPaths.includes(path)
+			(path) => !itemPaths.includes(path)
 		);
-		
+
 		if (remaining.length > 0) {
 			this.settings.revealedFiles[folderPath] = remaining;
 		} else {
 			delete this.settings.revealedFiles[folderPath];
 		}
-		
+
 		await this.saveSettings();
 		this.decorateFolders();
 		new Notice(`${itemPaths.length} file(s) hidden`);
@@ -320,10 +330,15 @@ class HiddenFilesModal extends Modal {
 		contentEl.createEl('p', { text: `Folder: ${this.folderPath || '(root)'}` });
 
 		const desc = contentEl.createEl('p', { cls: 'hidden-files-desc' });
-		desc.setText('Check a file to reveal it in the explorer. Uncheck to hide it again. Click Apply to confirm.');
+		desc.setText(
+			'Check a file to reveal it in the explorer. Uncheck to hide it again. Click Apply to confirm.'
+		);
 
 		if (this.items.length === 0) {
-			contentEl.createEl('p', { text: 'No hidden files found', cls: 'hidden-files-empty' });
+			contentEl.createEl('p', {
+				text: 'No hidden files found',
+				cls: 'hidden-files-empty'
+			});
 			return;
 		}
 
@@ -331,7 +346,7 @@ class HiddenFilesModal extends Modal {
 
 		const masterEl = listEl.createDiv({ cls: 'hidden-file-item hidden-file-master' });
 		const masterCheckbox = masterEl.createEl('input', { type: 'checkbox' });
-		masterCheckbox.checked = this.items.every(item => this.selected.has(item.path));
+		masterCheckbox.checked = this.items.every((item) => this.selected.has(item.path));
 		masterCheckbox.indeterminate = !masterCheckbox.checked && this.selected.size > 0;
 		masterEl.createSpan({ cls: 'hidden-file-name', text: 'All' });
 
@@ -346,41 +361,52 @@ class HiddenFilesModal extends Modal {
 			checkbox.addEventListener('change', () => {
 				if (checkbox.checked) this.selected.add(item.path);
 				else this.selected.delete(item.path);
-				masterCheckbox.checked = this.items.every(i => this.selected.has(i.path));
-				masterCheckbox.indeterminate = !masterCheckbox.checked && this.selected.size > 0;
+				masterCheckbox.checked = this.items.every((i) =>
+					this.selected.has(i.path)
+				);
+				masterCheckbox.indeterminate =
+					!masterCheckbox.checked && this.selected.size > 0;
 			});
 
 			const icon = itemEl.createSpan({ cls: 'hidden-file-icon' });
 			icon.textContent = item.isFolder ? '📁' : '📄';
 			itemEl.createSpan({ cls: 'hidden-file-name', text: item.name });
 			if (!item.isFolder) {
-				itemEl.createSpan({ cls: 'hidden-file-size', text: this.formatSize(item.size) });
+				itemEl.createSpan({
+					cls: 'hidden-file-size',
+					text: this.formatSize(item.size)
+				});
 			}
 		}
 
 		masterCheckbox.addEventListener('change', () => {
-			if (masterCheckbox.checked) this.items.forEach(i => this.selected.add(i.path));
-			else this.items.forEach(i => this.selected.delete(i.path));
-			itemCheckboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+			if (masterCheckbox.checked)
+				this.items.forEach((i) => this.selected.add(i.path));
+			else this.items.forEach((i) => this.selected.delete(i.path));
+			itemCheckboxes.forEach((cb) => (cb.checked = masterCheckbox.checked));
 		});
 
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
-		buttonContainer.createEl('button', { text: 'Apply', cls: 'mod-cta' })
+		buttonContainer
+			.createEl('button', { text: 'Apply', cls: 'mod-cta' })
 			.addEventListener('click', async () => {
 				const toReveal = this.items
-					.map(i => i.path)
-					.filter(p => this.selected.has(p) && !this.initialRevealed.has(p));
+					.map((i) => i.path)
+					.filter((p) => this.selected.has(p) && !this.initialRevealed.has(p));
 				const toHide = this.items
-					.map(i => i.path)
-					.filter(p => !this.selected.has(p) && this.initialRevealed.has(p));
+					.map((i) => i.path)
+					.filter((p) => !this.selected.has(p) && this.initialRevealed.has(p));
 
-				if (toReveal.length > 0) await this.plugin.revealFiles(this.folderPath, toReveal);
-				if (toHide.length > 0) await this.plugin.hideFilesInFolder(this.folderPath, toHide);
+				if (toReveal.length > 0)
+					await this.plugin.revealFiles(this.folderPath, toReveal);
+				if (toHide.length > 0)
+					await this.plugin.hideFilesInFolder(this.folderPath, toHide);
 				this.close();
 			});
 
-		buttonContainer.createEl('button', { text: 'Cancel' })
+		buttonContainer
+			.createEl('button', { text: 'Cancel' })
 			.addEventListener('click', () => this.close());
 	}
 
@@ -390,7 +416,9 @@ class HiddenFilesModal extends Modal {
 		return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 	}
 
-	onClose(): void { this.contentEl.empty(); }
+	onClose(): void {
+		this.contentEl.empty();
+	}
 }
 
 class HiddenFilesSettingTab extends PluginSettingTab {

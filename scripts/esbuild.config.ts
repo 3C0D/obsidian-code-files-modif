@@ -52,6 +52,7 @@ const EXTERNAL_DEPS = [
 	'@lezer/common',
 	'@lezer/highlight',
 	'@lezer/lr',
+	'obsidian-typings',
 	...builtins
 ];
 

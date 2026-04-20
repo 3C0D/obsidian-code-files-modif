@@ -105,9 +105,9 @@ export class RevealHiddenFilesModal extends Modal {
 					.filter((p) => !this.selected.has(p) && this.initialRevealed.has(p));
 
 				if (toReveal.length > 0)
-					void revealFiles(this.plugin, this.folderPath, toReveal);
+					await revealFiles(this.plugin, this.folderPath, toReveal);
 				if (toHide.length > 0)
-					void hideFilesInFolder(this.plugin, this.folderPath, toHide);
+					await hideFilesInFolder(this.plugin, this.folderPath, toHide);
 				this.close();
 			});
 

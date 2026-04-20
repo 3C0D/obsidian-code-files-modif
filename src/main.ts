@@ -47,9 +47,11 @@ export default class CodeFilesPlugin extends Plugin {
 		registerContextMenus(this);
 		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));
 
-		this.app.workspace.onLayoutReady(() => {
+		this.app.workspace.onLayoutReady(async () => {
 			updateProjectFolderHighlight(this);
-			void cleanStaleRevealedFiles(this).then(() => restoreRevealedFiles(this)).then(() => decorateFolders(this));
+			await cleanStaleRevealedFiles(this);
+			await restoreRevealedFiles(this);
+			await decorateFolders(this);
 		});
 
 		setupExplorerBadges(this);
