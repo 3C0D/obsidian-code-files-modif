@@ -116,7 +116,7 @@ export function registerExtension(plugin: CodeFilesPlugin, ext: string): void {
 		try {
 			plugin.registerExtensions([ext], viewType);
 		} catch (e) {
-			console.log(`code-files: could not register extension "${ext}":`, e);
+			console.warn(`code-files: could not register extension "${ext}":`, e);
 		}
 	}
 }
@@ -134,7 +134,7 @@ export function unregisterExtension(plugin: CodeFilesPlugin, ext: string): void 
 			if (view.file && getExtension(view.file.name) === ext) leaf.detach();
 		});
 	} catch (e) {
-		console.log(`code-files: could not unregister extension "${ext}":`, e);
+		console.warn(`code-files: could not unregister extension "${ext}":`, e);
 	}
 }
 

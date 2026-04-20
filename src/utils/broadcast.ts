@@ -12,7 +12,7 @@ import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
-import { getObsidianHotkey, parseHotkeyOverride } from './hotkeyUtils.ts';
+import { getObsidianHotkey, parseHotkeyOverride, formatHotkey } from './hotkeyUtils.ts';
 
 /**
  * Sends a postMessage to each open Monaco iframe
@@ -124,11 +124,6 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
 }
 
 /**
- * Retrieves current Obsidian hotkey for opening settings and compares with previous value.
- * If changed, reloads all open CodeEditor views to apply new hotkey.
- * Called when settings modal closes.
- */
-/**
  * Checks if Obsidian hotkeys have changed and broadcasts updates to all open Monaco editors.
  * Called when settings modal closes to detect hotkey changes made by the user.
  * For inactive views, they'll get new hotkeys on next activation via onLoadFile.
@@ -175,22 +170,13 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		plugin._lastHotkeys = currentHotkeys;
 
 		const views = getCodeEditorViews(plugin.app);
-		const activeLeaf = plugin.app.workspace.getLeaf(false);
+		const activeView = views.find((v) => v.leaf === plugin.app.workspace.getMostRecentLeaf());
 
-		// Broadcast hotkey updates to all inactive views
 		for (const view of views) {
-			if (view.leaf !== activeLeaf && view.editor) {
-				view.editor.send('update-hotkeys', {
-					commandPaletteHotkey: finalPaletteHotkey,
-					settingsHotkey: finalSettingsHotkey,
-					deleteFileHotkey: finalDeleteFileHotkey
-				});
-			}
-		}
+			if (!view.editor) continue;
 
-		// Reload the active view to apply new hotkeys immediately
-		for (const view of views) {
-			if (view.leaf === activeLeaf && view.file && view.editor) {
+			if (view === activeView && view.file) {
+				// Reload the active view to apply new hotkeys immediately
 				// Save current content before reload (preserves unsaved changes)
 				const currentContent = view.editor.getValue();
 
@@ -206,50 +192,23 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 				if (currentContent !== view.data) {
 					view.editor!.setValue(currentContent);
 				}
-
-				// Show notice to user
-				const settingsStr =
-					finalSettingsHotkey.modifiers
-						.map((m) =>
-							m === 'Mod' && Platform.isWin
-								? 'Ctrl'
-								: m === 'Mod'
-									? 'Cmd'
-									: m
-						)
-						.join('+') +
-					'+' +
-					finalSettingsHotkey.key;
-				const paletteStr =
-					finalPaletteHotkey.modifiers
-						.map((m) =>
-							m === 'Mod' && Platform.isWin
-								? 'Ctrl'
-								: m === 'Mod'
-									? 'Cmd'
-									: m
-						)
-						.join('+') +
-					'+' +
-					finalPaletteHotkey.key;
-				const deleteStr =
-					finalDeleteFileHotkey.modifiers
-						.map((m) =>
-							m === 'Mod' && Platform.isWin
-								? 'Ctrl'
-								: m === 'Mod'
-									? 'Cmd'
-									: m
-						)
-						.join('+') +
-					'+' +
-					finalDeleteFileHotkey.key;
-				new Notice(
-					`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
-				);
-
-				break;
+			} else {
+				// Broadcast hotkey updates to all other views
+				view.editor.send('update-hotkeys', {
+					commandPaletteHotkey: finalPaletteHotkey,
+					settingsHotkey: finalSettingsHotkey,
+					deleteFileHotkey: finalDeleteFileHotkey
+				});
 			}
 		}
+
+		// Show notice to user using resolved hotkey strings
+		const settingsStr = formatHotkey(finalSettingsHotkey, true);
+		const paletteStr = formatHotkey(finalPaletteHotkey, true);
+		const deleteStr = formatHotkey(finalDeleteFileHotkey, true);
+
+		new Notice(
+			`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
+		);
 	}
 }

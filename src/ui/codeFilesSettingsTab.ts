@@ -317,19 +317,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		): void => {
 			const obsidianHotkey = getObsidianHotkey(this.plugin.app, commandId);
 			// Display Obsidian hotkey with platform-specific modifier names (Ctrl on Windows, Cmd on Mac)
-			const defaultStr = obsidianHotkey
-				? obsidianHotkey.modifiers
-						.map((m) =>
-							m === 'Mod' && Platform.isWin
-								? 'Ctrl'
-								: m === 'Mod'
-									? 'Cmd'
-									: m
-						)
-						.join('+') +
-					'+' +
-					obsidianHotkey.key
-				: '';
+			const defaultStr = obsidianHotkey ? formatHotkey(obsidianHotkey, true) : '';
 			const currentOverride = this.plugin.settings[overrideKey];
 
 			new Setting(containerEl)
@@ -371,19 +359,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						const formatted = formatHotkey(parsed);
 						this.plugin.settings[overrideKey] = formatted;
 						// Display with platform-specific modifier for user clarity
-						const displayFormatted =
-							parsed.modifiers
-								.map((m) =>
-									m === 'Mod' && Platform.isWin
-										? 'Ctrl'
-										: m === 'Mod'
-											? 'Cmd'
-											: m
-								)
-								.join('+') +
-							'+' +
-							parsed.key;
-						text.setValue(displayFormatted);
+						text.setValue(formatHotkey(parsed, true));
 						await this.plugin.saveSettings();
 					});
 				});

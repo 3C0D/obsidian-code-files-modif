@@ -3,7 +3,7 @@
  * Used to sync Obsidian's native shortcuts (command palette, settings, delete file)
  * with Monaco editor instances running in isolated iframes.
  */
-import type { App } from 'obsidian';
+import { Platform, type App } from 'obsidian';
 
 export interface HotkeyConfig {
 	modifiers: string[];
@@ -96,12 +96,17 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
 
 /**
  * Formats a HotkeyConfig as a display string (e.g., "Mod+P").
- * Note: This returns the raw modifier names (including 'Mod').
- * Edge case: If the key itself is "+", the output will be "Mod++".
- * For user-facing display, use Platform.isWin to convert 'Mod' → 'Ctrl' or 'Cmd'.
+ *
+ * @param config - The hotkey configuration
+ * @param resolveMod - If true, replaces 'Mod' with 'Ctrl' or 'Cmd' based on platform
+ * @returns Formatted hotkey string
  */
-export function formatHotkey(config: HotkeyConfig): string {
-	return [...config.modifiers, config.key].join('+');
+export function formatHotkey(config: HotkeyConfig, resolveMod: boolean = false): string {
+	let mods = config.modifiers;
+	if (resolveMod) {
+		mods = mods.map((m) => (m === 'Mod' ? (Platform.isWin ? 'Ctrl' : 'Cmd') : m));
+	}
+	return [...mods, config.key].join('+');
 }
 
 /**

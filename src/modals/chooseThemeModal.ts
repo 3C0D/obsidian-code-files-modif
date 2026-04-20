@@ -6,7 +6,7 @@
  */
 import { SuggestModal } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { themes, loadThemes } from '../utils/themeUtils.ts';
+import { getThemes, loadThemes } from '../utils/themeUtils.ts';
 import { broadcastBrightness } from '../utils/broadcast.ts';
 
 /** Cached list of all available themes, populated on first modal open. */
@@ -64,7 +64,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		if (!this.themesLoaded) {
 			await loadThemes(this.plugin);
 			// Prepend 'default' which follows Obsidian's theme (light/dark)
-			ALL_THEMES = ['default', ...themes];
+			ALL_THEMES = ['default', ...getThemes()];
 			this.themesLoaded = true;
 		}
 		super.onOpen();

@@ -14,8 +14,8 @@ import { getLanguage } from './getLanguage.ts';
  * read/write access to the fence body.
  */
 export class FenceEditContext {
-	private start = 0;
-	private end = 0;
+	private start: number;
+	private end: number;
 	private editor: Editor;
 
 	private constructor(editor: Editor, start: number, end: number) {
@@ -77,7 +77,7 @@ export class FenceEditContext {
 		return this.editor;
 	}
 
-	getBounds(): number[] {
+	getBounds(): [number, number] {
 		return [this.start, this.end];
 	}
 
