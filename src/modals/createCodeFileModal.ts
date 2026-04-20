@@ -179,15 +179,18 @@ export class CreateCodeFileModal extends Modal {
 		if (await adapter.exists(newPath)) {
 			// If it's a hidden file (e.g. .prettierrc), Obsidian's vault mechanism doesn't track it by default.
 			// This means getAbstractFileByPath will return null even if it exists on disk.
-			// We manually call reconcileFileInternal to force Obsidian to add it to the vault cache 
+			// We manually call reconcileFileInternal to force Obsidian to add it to the vault cache
 			// so we can properly open it as a TFile.
-			if (basename.startsWith('.') && !this.app.vault.getAbstractFileByPath(newPath)) {
+			if (
+				basename.startsWith('.') &&
+				!this.app.vault.getAbstractFileByPath(newPath)
+			) {
 				await adapter.reconcileFileInternal(
 					adapter.getRealPath(newPath),
 					newPath
 				);
 				// Give the vault a bit of time to update its cache
-				await new Promise(resolve => setTimeout(resolve, 50));
+				await new Promise((resolve) => setTimeout(resolve, 50));
 			}
 
 			const existingFile = this.app.vault.getAbstractFileByPath(newPath);
@@ -203,6 +206,7 @@ export class CreateCodeFileModal extends Modal {
 		let newFile: TFile | null = null;
 		try {
 			if (basename.startsWith('.')) {
+				// Create the file using the adapter's write method (works for hidden files)
 				await adapter.write(newPath, '');
 				// Again, for hidden files we just created, the vault won't see them automatically.
 				// We force reconciliation so getFileByPath can successfully return the newly created TFile.
@@ -210,7 +214,7 @@ export class CreateCodeFileModal extends Modal {
 					adapter.getRealPath(newPath),
 					newPath
 				);
-				await new Promise(resolve => setTimeout(resolve, 50));
+				await new Promise((resolve) => setTimeout(resolve, 50));
 				newFile = this.app.vault.getFileByPath(newPath);
 			} else {
 				newFile = await this.app.vault.create(newPath, '');

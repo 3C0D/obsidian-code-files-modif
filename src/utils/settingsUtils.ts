@@ -9,7 +9,7 @@ import {
 	DEFAULT_SETTINGS,
 	DEFAULT_EDITOR_CONFIG,
 	DEFAULT_EXTENSION_CONFIG
-} from '../types/types.ts';
+} from '../types/variables.ts';
 import { staticMap } from '../utils/getLanguage.ts';
 
 /**
@@ -79,10 +79,14 @@ export function saveEditorConfig(
 	try {
 		parseEditorConfig(value);
 		const previous = plugin.settings.editorConfigs[key];
-		// Early exit if nothing changed
-		if (previous?.trim() === value) return false;
-		// Delete global override if value matches default
-		if (key === '*' && value === defaultForKey.trim()) {
+		// Early exit if nothing changed (trimming both sides for accurate comparison)
+		if (previous?.trim() === value.trim()) return false;
+		// Delete global override if value matches default (comparing parsed objects)
+		if (
+			key === '*' &&
+			JSON.stringify(parseEditorConfig(value)) ===
+				JSON.stringify(parseEditorConfig(defaultForKey))
+		) {
 			if (!('*' in plugin.settings.editorConfigs)) return false;
 			// Back to default: no need to persist
 			delete plugin.settings.editorConfigs[key];
@@ -109,9 +113,15 @@ export function saveEditorConfig(
  * 3. Apply clangformat config if it exists (extension override)
  */
 export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string {
-	const globalCfg = parseEditorConfig(
-		plugin.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
-	) as Record<string, unknown>;
+	let globalCfg: Record<string, unknown>;
+	try {
+		globalCfg = parseEditorConfig(
+			plugin.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
+		) as Record<string, unknown>;
+	} catch {
+		// Fallback to default if persistent config is corrupted
+		globalCfg = parseEditorConfig(DEFAULT_EDITOR_CONFIG) as Record<string, unknown>;
+	}
 
 	if (!ext) return JSON.stringify(globalCfg);
 

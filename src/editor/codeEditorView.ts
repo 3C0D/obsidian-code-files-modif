@@ -14,7 +14,8 @@ import { normalizePath, TextFileView } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import { getLanguage } from '../utils/getLanguage.ts';
-import { viewType, type CodeEditorInstance } from '../types/types.ts';
+import type { CodeEditorInstance } from '../types/types.ts';
+import { viewType } from '../types/variables.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
@@ -25,7 +26,7 @@ import {
 } from '../utils/snippetUtils.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
-import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/types.ts';
+import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/variables.ts';
 import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
 
@@ -248,8 +249,7 @@ export class CodeEditorView extends TextFileView {
 		// Add snippet controls ONLY when editing a CSS snippet file
 		// Added LAST so they appear on the LEFT
 		const isSnippetFile =
-			file.path.includes('.obsidian/snippets') &&
-			getExtension(file.name) === 'css';
+			file.path.includes('.obsidian/snippets') && getExtension(file.name) === 'css';
 		if (isSnippetFile) {
 			const snippetName = file.basename;
 			const exists = snippetExists(this.plugin.app, snippetName);

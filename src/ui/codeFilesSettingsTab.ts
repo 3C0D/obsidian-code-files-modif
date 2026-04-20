@@ -11,7 +11,7 @@ import { debounce, Platform, PluginSettingTab, Setting, TextComponent } from 'ob
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
-import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG } from '../types/types.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG } from '../types/variables.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import { getActiveExtensions, reregisterExtensions } from '../utils/extensionUtils.ts';
 import { saveEditorConfig } from '../utils/settingsUtils.ts';
@@ -310,7 +310,10 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		const createHotkeyOverrideSetting = (
 			name: string,
 			commandId: string,
-			overrideKey: 'commandPaletteHotkeyOverride' | 'settingsHotkeyOverride' | 'deleteFileHotkeyOverride'
+			overrideKey:
+				| 'commandPaletteHotkeyOverride'
+				| 'settingsHotkeyOverride'
+				| 'deleteFileHotkeyOverride'
 		): void => {
 			const obsidianHotkey = getObsidianHotkey(this.plugin.app, commandId);
 			// Display Obsidian hotkey with platform-specific modifier names (Ctrl on Windows, Cmd on Mac)
@@ -324,8 +327,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 									: m
 						)
 						.join('+') +
-						'+' +
-						obsidianHotkey.key
+					'+' +
+					obsidianHotkey.key
 				: '';
 			const currentOverride = this.plugin.settings[overrideKey];
 
@@ -368,15 +371,16 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						const formatted = formatHotkey(parsed);
 						this.plugin.settings[overrideKey] = formatted;
 						// Display with platform-specific modifier for user clarity
-						const displayFormatted = parsed.modifiers
-							.map((m) =>
-								m === 'Mod' && Platform.isWin
-									? 'Ctrl'
-									: m === 'Mod'
-										? 'Cmd'
-										: m
-							)
-							.join('+') +
+						const displayFormatted =
+							parsed.modifiers
+								.map((m) =>
+									m === 'Mod' && Platform.isWin
+										? 'Ctrl'
+										: m === 'Mod'
+											? 'Cmd'
+											: m
+								)
+								.join('+') +
 							'+' +
 							parsed.key;
 						text.setValue(displayFormatted);

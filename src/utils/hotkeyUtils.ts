@@ -18,10 +18,7 @@ export interface HotkeyConfig {
  * @param commandId - The command ID (e.g. 'app:open-settings', 'command-palette:open')
  * @returns Hotkey config with modifiers and key, or null if not found
  */
-export function getObsidianHotkey(
-	app: App,
-	commandId: string
-): HotkeyConfig | null {
+export function getObsidianHotkey(app: App, commandId: string): HotkeyConfig | null {
 	// Check custom hotkeys first (user-defined in settings)
 	const custom = app.hotkeyManager.getHotkeys(commandId);
 	if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
@@ -76,25 +73,18 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
 		const lower = part.toLowerCase();
 		if (
 			lower === 'ctrl' ||
-			lower === 'shift' ||
-			lower === 'alt' ||
-			lower === 'mod' ||
-			lower === 'meta' ||
 			lower === 'cmd' ||
-			lower === 'command'
+			lower === 'command' ||
+			lower === 'meta' ||
+			lower === 'mod'
 		) {
-			// Normalize all primary modifiers to 'Mod' for cross-platform consistency
-			if (lower === 'ctrl' || lower === 'command' || lower === 'cmd' || lower === 'meta') {
-				modifiers.push('Mod');
-			} else if (lower === 'shift' || lower === 'alt') {
-				// Keep Shift and Alt as-is (capitalized)
-				modifiers.push(part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
-			} else {
-				// 'mod' already normalized
-				modifiers.push('Mod');
-			}
+			modifiers.push('Mod');
+		} else if (lower === 'shift') {
+			modifiers.push('Shift');
+		} else if (lower === 'alt') {
+			modifiers.push('Alt');
 		} else {
-			// Last non-modifier part is the key
+			// Last non-modifier part is assumed to be the key
 			key = part;
 		}
 	}
@@ -107,6 +97,7 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
 /**
  * Formats a HotkeyConfig as a display string (e.g., "Mod+P").
  * Note: This returns the raw modifier names (including 'Mod').
+ * Edge case: If the key itself is "+", the output will be "Mod++".
  * For user-facing display, use Platform.isWin to convert 'Mod' → 'Ctrl' or 'Cmd'.
  */
 export function formatHotkey(config: HotkeyConfig): string {

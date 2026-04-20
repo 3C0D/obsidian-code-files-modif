@@ -159,7 +159,8 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 	const finalSettingsHotkey =
 		parseHotkeyOverride(plugin.settings.settingsHotkeyOverride) ?? settingsHotkey;
 	const finalPaletteHotkey =
-		parseHotkeyOverride(plugin.settings.commandPaletteHotkeyOverride) ?? paletteHotkey;
+		parseHotkeyOverride(plugin.settings.commandPaletteHotkeyOverride) ??
+		paletteHotkey;
 	const finalDeleteFileHotkey =
 		parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
 

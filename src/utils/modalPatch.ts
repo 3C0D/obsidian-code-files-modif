@@ -1,4 +1,5 @@
 import { around } from 'monkey-around';
+import { Modal } from 'obsidian';
 
 /**
  * Monkey-patches Modal.prototype.open to prevent "n.instanceOf is not a function" crashes.
@@ -7,16 +8,10 @@ import { around } from 'monkey-around';
  * causing a crash. This patch blurs the iframe before Obsidian saves the active element.
  * Returns an unpatch function to restore original behavior on plugin unload.
  */
-export function patchModalClose(): () => void {
-	// require() instead of static import: TypeScript would reject reassigning
-	// proto.open on a typed class. require() returns any, bypassing that check.
-	const Modal = require('obsidian').Modal;
-
+export function patchModalOpen(): () => void {
 	const uninstaller = around(Modal.prototype, {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		open(next: any) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			return function (this: any, ...args: unknown[]) {
+		open(next: Modal['open']) {
+			return function (this: Modal) {
 				const active = document.activeElement;
 
 				// Only act if an iframe currently has focus (i.e. Monaco editor is active).
@@ -31,8 +26,8 @@ export function patchModalClose(): () => void {
 					document.body.focus();
 				}
 
-				// Call the original open() with the original context and arguments.
-				return next.apply(this, args);
+				// Call the original open() with the original context.
+				return next.call(this);
 			};
 		}
 	});

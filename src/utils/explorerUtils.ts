@@ -59,14 +59,14 @@ let debounceTimeout: NodeJS.Timeout | null = null;
 /**
  * Ensures dotfiles (.env, .gitignore) show their extension as a badge in the
  * file explorer, matching Obsidian's native behavior for regular files.
- * Uses a lightweight debounced MutationObserver on the file explorer's 
+ * Uses a lightweight debounced MutationObserver on the file explorer's
  * container to catch folder expansions dynamically.
  */
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 	const updateBadges = () => {
 		const activeExts = getActiveExtensions(plugin.settings);
 		const leaves = plugin.app.workspace.getLeavesOfType('file-explorer');
-		
+
 		for (const leaf of leaves) {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const view = leaf.view as any;
@@ -128,7 +128,7 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 
 	plugin.registerEvent(plugin.app.workspace.on('layout-change', reattachObservers));
 	plugin.registerEvent(plugin.app.vault.on('rename', debouncedUpdate));
-	
+
 	// Initial attach if layout is already ready
 	if (plugin.app.workspace.layoutReady) {
 		reattachObservers();

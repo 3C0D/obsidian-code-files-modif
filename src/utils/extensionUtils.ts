@@ -6,7 +6,7 @@
  */
 import type { App } from 'obsidian';
 import type { MyPluginSettings } from '../types/types.ts';
-import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/types.ts';
+import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';

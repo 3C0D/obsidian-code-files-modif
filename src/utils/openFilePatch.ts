@@ -14,25 +14,20 @@
  * Returns an unpatch function to restore original behavior on
  * plugin unload.
  */
+import { around } from 'monkey-around';
+import { WorkspaceLeaf, type OpenViewState, TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { viewType } from '../types/types.ts';
+import { viewType } from '../types/variables.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
-import { around } from 'monkey-around';
 
 export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
-	// require() instead of static import: TypeScript would reject
-	// reassigning proto.openFile on a typed class.
-	const WorkspaceLeaf = require('obsidian').WorkspaceLeaf;
-
 	const uninstaller = around(WorkspaceLeaf.prototype, {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		openFile(next: any) {
-			return function (
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				file: any,
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				...args: any[]
+		openFile(next: WorkspaceLeaf['openFile']) {
+			return async function (
+				this: WorkspaceLeaf,
+				file: TFile,
+				openState?: OpenViewState
 			) {
 				// Only intercept files with no Obsidian extension (dotfiles)
 				if (file && !file.extension) {
@@ -47,7 +42,7 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 					}
 				}
 				// Fall through to original Obsidian behavior
-				return next.call(this, file, ...args);
+				return next.call(this, file, openState);
 			};
 		}
 	});

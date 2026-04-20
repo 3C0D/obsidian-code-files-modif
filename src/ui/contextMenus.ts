@@ -15,7 +15,7 @@ import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
 import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItems } from '../types/types.ts';
-import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/types.ts';
+import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {

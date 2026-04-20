@@ -2,7 +2,7 @@ import { Plugin } from 'obsidian';
 import { CodeEditorView } from './editor/codeEditorView.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/types.ts';
-import { viewType } from './types/types.ts';
+import { viewType } from './types/variables.ts';
 
 import { initExtensions } from './utils/extensionUtils.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
@@ -10,9 +10,9 @@ import { serializeMonacoHotkeys } from './utils/hotkeyUtils.ts';
 import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
 import { registerContextMenus } from './ui/contextMenus.ts';
-import { patchModalClose } from './utils/modalPatch.ts';
+import { patchModalOpen } from './utils/modalPatch.ts';
 import { patchOpenFile } from './utils/openFilePatch.ts';
-import { 
+import {
 	updateProjectFolderHighlight,
 	setupExplorerBadges,
 	cleanupExplorerBadges
@@ -22,13 +22,13 @@ export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
 	ribbonIconEl: HTMLElement | null = null;
 	_registeredExts: Set<string> = new Set();
-	private _modalClosePatch: (() => void) | null = null;
+	private _modalOpenPatch: (() => void) | null = null;
 	private _openFilePatch: (() => void) | null = null;
 	_lastHotkeys?: string;
 
 	async onload(): Promise<void> {
 		await loadSettings(this);
-		this._modalClosePatch = patchModalClose();
+		this._modalOpenPatch = patchModalOpen();
 		this._openFilePatch = patchOpenFile(this);
 
 		// Initialize _lastHotkeys with current hotkey state to enable change detection
@@ -44,13 +44,13 @@ export default class CodeFilesPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(() => {
 			updateProjectFolderHighlight(this);
 		});
-		
+
 		setupExplorerBadges(this);
 	}
 
 	onunload(): void {
-		this._modalClosePatch?.();
-		this._modalClosePatch = null;
+		this._modalOpenPatch?.();
+		this._modalOpenPatch = null;
 		this._openFilePatch?.();
 		this._openFilePatch = null;
 		cleanupExplorerBadges();

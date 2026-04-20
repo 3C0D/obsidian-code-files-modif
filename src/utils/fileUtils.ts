@@ -12,4 +12,3 @@ export function getExtension(filename: string): string {
 	const lastDot = filename.lastIndexOf('.');
 	return lastDot > 0 ? filename.slice(lastDot + 1) : '';
 }
-

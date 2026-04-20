@@ -6,7 +6,7 @@
  */
 import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { DEFAULT_EDITOR_CONFIG, getExtensionConfigTemplate } from '../types/types.ts';
+import { DEFAULT_EDITOR_CONFIG, getExtensionConfigTemplate } from '../types/variables.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';

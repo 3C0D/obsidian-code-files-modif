@@ -178,15 +178,16 @@ export const mountCodeEditor = async (
 	};
 
 	// Apply overrides if they exist (overrides are stored as 'Mod' internally for cross-platform consistency)
-	const finalCommandPaletteHotkey =
-		parseHotkeyOverride(plugin.settings.commandPaletteHotkeyOverride) ??
+	const finalCommandPaletteHotkey = parseHotkeyOverride(
+		plugin.settings.commandPaletteHotkeyOverride
+	) ??
 		commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' };
-	const finalSettingsHotkey =
-		parseHotkeyOverride(plugin.settings.settingsHotkeyOverride) ??
+	const finalSettingsHotkey = parseHotkeyOverride(
+		plugin.settings.settingsHotkeyOverride
+	) ??
 		settingsHotkey ?? { modifiers: ['Mod'], key: ',' };
 	const finalDeleteFileHotkey =
-		parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ??
-		deleteFileHotkey;
+		parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
 
 	// Disable minimap and line numbers for config editors (modal + settings tab)
 	// - editor-settings-config: config editor in the gear icon modal
