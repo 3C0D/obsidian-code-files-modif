@@ -22,7 +22,7 @@ export interface HiddenItem {
 let _bypassPatch = false;
 
 function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
-	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
+	return getDataAdapterEx(plugin.app) as DataAdapterWithInternal;
 }
 
 function getBasePath(plugin: CodeFilesPlugin): string {

@@ -52,7 +52,6 @@ const EXTERNAL_DEPS = [
 	'@lezer/common',
 	'@lezer/highlight',
 	'@lezer/lr',
-	'obsidian-typings',
 	...builtins
 ];
 
@@ -338,6 +337,16 @@ async function createBuildContext(
 			{
 				name: 'obsidian-typings-implementations',
 				setup(build: esbuild.PluginBuild): void {
+					// Redirect bare 'obsidian-typings' to empty module (types only, erased at runtime)
+					build.onResolve({ filter: /^obsidian-typings$/ }, () => ({
+						path: 'obsidian-typings',
+						namespace: 'empty-module'
+					}));
+					build.onLoad({ filter: /.*/, namespace: 'empty-module' }, () => ({
+						contents: '',
+						loader: 'js'
+					}));
+					// Existing handler
 					build.onResolve(
 						{ filter: /^obsidian-typings\/implementations$/ },
 						() => ({

@@ -107,3 +107,17 @@
 .code-files-project-root-folder {
   color: var(--code-files-project-root-color, #c644cf) !important;
 }
+
+.hidden-files-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  scale: 0.75;
+  color: #10b981;
+}
+
+.hidden-file-size {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.85em;
+}

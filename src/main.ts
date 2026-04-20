@@ -23,6 +23,7 @@ import {
 	restoreRevealedFiles,
 	decorateFolders
 } from './utils/hiddenFilesUtils.ts';
+import { patchMenuOverlay } from './utils/menuPatch.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
@@ -36,6 +37,7 @@ export default class CodeFilesPlugin extends Plugin {
 		await loadSettings(this);
 		this._modalOpenPatch = patchModalOpen();
 		this._openFilePatch = patchOpenFile(this);
+		patchMenuOverlay(this);
 
 		// Initialize _lastHotkeys with current hotkey state to enable change detection
 		this._lastHotkeys = serializeMonacoHotkeys(this.app);
