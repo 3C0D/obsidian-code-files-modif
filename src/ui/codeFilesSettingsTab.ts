@@ -7,7 +7,7 @@
  * - Project root folder highlight color customization
  */
 import type { App } from 'obsidian';
-import { debounce, Platform, PluginSettingTab, Setting, TextComponent } from 'obsidian';
+import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';

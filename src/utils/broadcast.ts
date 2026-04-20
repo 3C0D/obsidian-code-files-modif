@@ -6,7 +6,7 @@
  * - broadcastEditorConfig: merged editor config (tabSize, formatOnSave, etc.)
  * - broadcastProjectFiles: loads TS/JS files from project root for IntelliSense and cross-file navigation
  */
-import { Notice, Platform } from 'obsidian';
+import { Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';

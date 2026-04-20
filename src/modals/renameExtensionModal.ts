@@ -158,7 +158,7 @@ export class RenameExtensionModal extends Modal {
 			leaves.find((l) => {
 				const view = l.view;
 				if (view instanceof FileView && view.file)
-					return view.file.path === newPath;
+					return view.file === this.file;
 				return false;
 			}) ?? this.plugin.app.workspace.getMostRecentLeaf();
 

@@ -89,3 +89,8 @@ export interface CodeEditorInstance {
 }
 
 export type MenuItems = { title: string; icon: string; action: () => void };
+
+export interface HotkeyConfig {
+	modifiers: string[];
+	key: string;
+}

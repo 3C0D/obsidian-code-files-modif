@@ -15,7 +15,7 @@
  * plugin unload.
  */
 import { around } from 'monkey-around';
-import { WorkspaceLeaf, type OpenViewState, TFile } from 'obsidian';
+import { WorkspaceLeaf, type OpenViewState, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { viewType } from '../types/variables.ts';
 import { getActiveExtensions } from './extensionUtils.ts';

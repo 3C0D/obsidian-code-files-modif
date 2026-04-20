@@ -4,11 +4,9 @@
  * with Monaco editor instances running in isolated iframes.
  */
 import { Platform, type App } from 'obsidian';
+import type { HotkeyConfig } from '../types/types.ts';
 
-export interface HotkeyConfig {
-	modifiers: string[];
-	key: string;
-}
+
 
 /**
  * Reads the configured hotkey for a given Obsidian command.
