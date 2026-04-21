@@ -94,7 +94,15 @@ export interface CodeEditorInstance {
 
 export type MenuItems = { title: string; icon: string; action: () => void };
 
+/**
+ * Hotkey configuration object.
+ * 
+ * @property modifiers - Array of modifier keys (e.g. ['Mod', 'Shift'])
+ * @property key - The main key (e.g. 'a')
+ */
 export interface HotkeyConfig {
+	/** Array of modifier keys (e.g. ['Mod', 'Shift']) */
 	modifiers: string[];
+	/** The main key (e.g. 'a') */
 	key: string;
 }

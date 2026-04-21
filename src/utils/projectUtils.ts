@@ -1,3 +1,6 @@
+/**
+ * Defines a project folder used to establish communication between files in this folder.
+ */
 import type CodeFilesPlugin from '../main.ts';
 
 /**

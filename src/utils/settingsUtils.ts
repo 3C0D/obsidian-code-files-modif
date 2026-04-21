@@ -5,10 +5,7 @@
  * and buildMergedConfig (cascades default → global → language → extension).
  */
 import type CodeFilesPlugin from '../main.ts';
-import {
-	DEFAULT_SETTINGS,
-	DEFAULT_EDITOR_CONFIG
-} from '../types/variables.ts';
+import { DEFAULT_SETTINGS, DEFAULT_EDITOR_CONFIG } from '../types/variables.ts';
 import { staticMap } from '../utils/getLanguage.ts';
 
 /**
@@ -70,24 +67,24 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
  * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
  */
 export function saveEditorConfig(
-    plugin: CodeFilesPlugin,
-    key: string,
-    value: string
+	plugin: CodeFilesPlugin,
+	key: string,
+	value: string
 ): boolean {
-    try {
-        // Validate only — throws if JSON is invalid, value is stored as-is with its comments
-        parseEditorConfig(value);
+	try {
+		// Validate only — throws if JSON is invalid, value is stored as-is with its comments
+		parseEditorConfig(value);
 
-        const previous = plugin.settings.editorConfigs[key];
-        // Early exit if nothing changed (comparing raw strings including comments)
-        if (previous?.trim() === value.trim()) return false;
+		const previous = plugin.settings.editorConfigs[key];
+		// Early exit if nothing changed (comparing raw strings including comments)
+		if (previous?.trim() === value.trim()) return false;
 
-        // Persist as-is (with comments) and let the caller broadcast
-        plugin.settings.editorConfigs[key] = value;
-        return true;
-    } catch {
-        return false;
-    }
+		// Persist as-is (with comments) and let the caller broadcast
+		plugin.settings.editorConfigs[key] = value;
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -96,6 +93,8 @@ export function saveEditorConfig(
  *
  * This is the single source of truth for the
  * cascade: default → global → language → extension.
+ * Internally parses JSONC strings into objects (stripping comments) to merge them,
+ * then re-serializes to a clean JSON string ready for postMessage consumption.
  *
  * Example: for `.clangformat` (ext='clangformat', language='yaml'):
  * 1. Start with global config (*)
@@ -103,33 +102,32 @@ export function saveEditorConfig(
  * 3. Apply clangformat config if it exists (extension override)
  */
 export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string {
-	let globalCfg: Record<string, unknown>;
-	try {
-		globalCfg = parseEditorConfig(
-			plugin.settings.editorConfigs['*'] ?? DEFAULT_EDITOR_CONFIG
-		) as Record<string, unknown>;
-	} catch {
-		// Fallback to default if persistent config is corrupted
-		globalCfg = parseEditorConfig(DEFAULT_EDITOR_CONFIG) as Record<string, unknown>;
-	}
+    // Parse a stored JSONC config string, falling back to an empty object if missing or corrupted
+    const safeParse = (raw: string | undefined, fallback: string = '{}'): Record<string, unknown> => {
+        try {
+            return parseEditorConfig(raw ?? fallback) as Record<string, unknown>;
+        } catch {
+            return {};
+        }
+    };
 
-	if (!ext) return JSON.stringify(globalCfg);
+    // Global config (*) — fallback to DEFAULT_EDITOR_CONFIG if missing or corrupted
+    const globalCfg = safeParse(plugin.settings.editorConfigs['*'], DEFAULT_EDITOR_CONFIG);
 
-	// Get the Monaco language for this extension
-	const language = staticMap[ext] ?? 'plaintext';
+    // No extension (e.g. extensionless files like LICENSE/README, or extensionless internal context) — global config only
+    if (!ext) return JSON.stringify(globalCfg);
 
-	// Apply language config as fallback (if extension maps to a different language)
-	const languageCfg =
-		language !== ext && language !== 'plaintext'
-			? (parseEditorConfig(
-					plugin.settings.editorConfigs[language] ?? '{}'
-				) as Record<string, unknown>)
-			: {};
+    // Get the Monaco language for this extension
+    const language = staticMap[ext] ?? 'plaintext';
 
-	// Apply extension-specific config (highest priority)
-	const extCfg = parseEditorConfig(
-		plugin.settings.editorConfigs[ext] ?? '{}'
-	) as Record<string, unknown>;
+    // Apply language config as fallback (if extension maps to a different language, e.g. jsonc → json)
+    const languageCfg =
+        language !== ext && language !== 'plaintext' && plugin.settings.editorConfigs[language]
+            ? safeParse(plugin.settings.editorConfigs[language])
+            : {};
 
-	return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
+    // Apply extension-specific config (highest priority)
+    const extCfg = safeParse(plugin.settings.editorConfigs[ext]);
+
+    return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
 }

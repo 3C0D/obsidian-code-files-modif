@@ -141,36 +141,27 @@ currentCommandPaletteHotkey = params.commandPaletteHotkey || null;
 ```
 
 #### 3. Read Hotkey from Obsidian
-**Location:** `mountCodeEditor.ts` (lines 168-191)
+**Location:** `mountCodeEditor.ts` (lines 164-170)
 ```typescript
-const getObsidianHotkey = (
-    commandId: string
-): { modifiers: string[]; key: string } | null => {
-    const custom = plugin.app.hotkeyManager.getHotkeys(commandId);
-    if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
-        const mods = custom[0].modifiers;
-        return {
-            modifiers: Array.isArray(mods) ? mods : [mods],
-            key: custom[0].key
-        };
-    }
-    const cmd = plugin.app.commands?.commands?.[commandId];
-    if (cmd?.hotkeys && cmd.hotkeys.length > 0 && cmd.hotkeys[0].modifiers && cmd.hotkeys[0].key) {
-        const mods = cmd.hotkeys[0].modifiers;
-        return {
-            modifiers: Array.isArray(mods) ? mods : [mods],
-            key: cmd.hotkeys[0].key
-        };
-    }
-    return null;
+import { getObsidianHotkey } from '../utils/hotkeyUtils.ts';
+
+const commandPaletteHotkey = getObsidianHotkey(plugin.app, 'command-palette:open');
+const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings');
+const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file') ?? {
+    modifiers: ['Mod'],
+    key: 'Delete'
 };
-const commandPaletteHotkey = getObsidianHotkey('command-palette:open');
 ```
 
 #### 4. Pass to Monaco via initParams
-**Location:** `mountCodeEditor.ts` (line 218)
+**Location:** `mountCodeEditor.ts` (lines 181-192)
 ```typescript
-commandPaletteHotkey: commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' },
+// Apply overrides if they exist (overrides are stored as 'Mod' internally)
+const finalCommandPaletteHotkey = parseHotkeyOverride(
+    plugin.settings.commandPaletteHotkeyOverride
+) ?? commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' };
+
+// ... same for settings and delete file
 ```
 
 #### 5. Intercept Keypress in Monaco

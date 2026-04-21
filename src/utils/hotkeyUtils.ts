@@ -1,7 +1,9 @@
 /**
- * Utility functions for reading and managing Obsidian hotkeys.
- * Used to sync Obsidian's native shortcuts (command palette, settings, delete file)
- * with Monaco editor instances running in isolated iframes.
+ * Utility functions for handling Obsidian hotkeys, including:
+ * - Retrieving configured hotkeys for specific commands
+ * - Parsing user-defined hotkey override strings
+ * - Formatting hotkeys for display
+ * - Serializing relevant hotkeys for change detection
  */
 import { Platform, type App } from 'obsidian';
 import type { HotkeyConfig } from '../types/types.ts';
@@ -122,7 +124,7 @@ export function serializeMonacoHotkeys(app: App): string {
 		key: 'p'
 	};
 	const deleteFileHotkey = getObsidianHotkey(app, 'app:delete-file') ?? {
-		modifiers: ['Ctrl'],
+		modifiers: ['Mod'],
 		key: 'Delete'
 	};
 	return JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });

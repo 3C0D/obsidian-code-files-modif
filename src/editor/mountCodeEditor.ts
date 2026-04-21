@@ -165,7 +165,7 @@ export const mountCodeEditor = async (
 	const commandPaletteHotkey = getObsidianHotkey(plugin.app, 'command-palette:open');
 	const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings');
 	const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file') ?? {
-		modifiers: ['Ctrl'],
+		modifiers: ['Mod'],
 		key: 'Delete'
 	};
 

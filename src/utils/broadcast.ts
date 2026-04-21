@@ -132,7 +132,7 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		key: 'p'
 	};
 	const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file') ?? {
-		modifiers: ['Ctrl'],
+		modifiers: ['Mod'],
 		key: 'Delete'
 	};
 
