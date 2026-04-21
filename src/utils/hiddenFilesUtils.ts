@@ -33,6 +33,11 @@ function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
 	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
 
+/** Maximum file size in MB for opening in Monaco (configurable in settings) */
+export function getMaxFileSize(plugin: CodeFilesPlugin): number {
+	return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
+}
+
 /**
  * Patches Obsidian's DataAdapter to prevent the automatic removal of dotfiles from the UI.
  * Obsidian's internal reconciliation often tries to "clean up" (delete from view) files
@@ -242,7 +247,13 @@ export async function scanHiddenFiles(
 			let size = 0;
 			try {
 				const stat = await adapter.stat(entryPath);
-				if (stat) size = stat.size;
+				if (stat) {
+					size = stat.size;
+					// Skip files larger than the maximum file size
+					if (size > getMaxFileSize(plugin)) {
+						continue;
+					}
+				}
 			} catch {
 				/* ignore stat errors */
 			}
