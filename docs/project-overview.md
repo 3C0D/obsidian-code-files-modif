@@ -34,10 +34,12 @@
 - **Safe filtering**: Excludes executables, archives, databases
 
 ### 6. **Dynamic Extension Management**
-- **Two modes**: Manual list or extended Monaco-supported list
+- **Unified system**: Base list + user additions/exclusions
+- **Two modes**: Manual (curated list) or Extended (all Monaco-supported)
+- **Persistent customizations**: Added/excluded extensions survive mode switches
 - **Runtime changes**: Add/remove extensions without restart
 - **On-the-fly registration**: Add extensions during file creation
-- **Flexible switching**: Toggle between manual/extended modes anytime in setting tabs
+- **Flexible switching**: Toggle between manual/extended modes anytime in settings
 
 ### 7. **50+ Themes with Live Preview**
 - **Real-time preview**: Hover themes to see changes instantly

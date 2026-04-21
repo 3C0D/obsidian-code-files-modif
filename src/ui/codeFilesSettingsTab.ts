@@ -11,9 +11,9 @@ import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
-import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG } from '../types/variables.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_EXTENSION_CONFIG, DEFAULT_SETTINGS } from '../types/variables.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
-import { getActiveExtensions, reregisterExtensions } from '../utils/extensionUtils.ts';
+import { getActiveExtensions, reregisterExtensions, getAllMonacoExtensions } from '../utils/extensionUtils.ts';
 import { saveEditorConfig } from '../utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
@@ -69,20 +69,19 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Use extended extensions list')
 			.setDesc(
-				'Register a broad curated list of extensions. Each mode (manual/extended) keeps its own independent list when toggling.'
+				'Register a broad curated list of extensions. Customizations (added/excluded extensions) are preserved when switching modes.'
 			)
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.allExtensions)
 					.onChange(async (value) => {
 						this.plugin.settings.allExtensions = value;
-						// When switching from extended to manual mode, merge extraExtensions into extensions
-						if (!value) {
-							for (const ext of this.plugin.settings.extraExtensions) {
-								if (!this.plugin.settings.extensions.includes(ext))
-									this.plugin.settings.extensions.push(ext);
-							}
-							this.plugin.settings.extraExtensions = [];
+						if (value) {
+							// Switching to extended mode: set extensions[] to all Monaco extensions
+							this.plugin.settings.extensions = getAllMonacoExtensions();
+						} else {
+							// Switching to manual mode: reset extensions[] to default list
+							this.plugin.settings.extensions = [...DEFAULT_SETTINGS.extensions];
 						}
 						await reregisterExtensions(this.plugin);
 						this.display();
@@ -413,6 +412,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 							.map((s) => s.trim())
 							.filter((s) => s.length > 0);
 						await this.plugin.saveSettings();
+						await reregisterExtensions(this.plugin);
 					})
 			);
 	}

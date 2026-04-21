@@ -45,8 +45,25 @@ dynamicMap (Monaco) > staticMap (fallback) > 'plaintext'
 - `dynamicMap` — from `monaco.languages.getLanguages()`, persisted in `data.json`
 
 ## Extension Management
-- **Manual mode**: `settings.extensions[]`
-- **Extended mode**: `getAllMonacoExtensions()` + exclusions
+
+**Unified System:**
+- `extensions[]` — base list (changes only when switching modes)
+- `extraExtensions[]` — user additions (common to both modes)
+- `excludedExtensions[]` — user exclusions (common to both modes)
+- Active extensions = `(extensions + extraExtensions) - excludedExtensions`
+
+**Two Modes:**
+- **Manual mode** (`allExtensions: false`): `extensions[]` = curated default list
+- **Extended mode** (`allExtensions: true`): `extensions[]` = all Monaco-supported extensions
+
+**Mode Switching:**
+- Switching to extended: `extensions = getAllMonacoExtensions()` (all staticMap keys)
+- Switching to manual: `extensions = DEFAULT_SETTINGS.extensions` (curated list)
+- Customizations (`extraExtensions`, `excludedExtensions`) persist across mode switches
+
+**Runtime Operations:**
+- `addExtension()`: removes from `excludedExtensions`, adds to `extraExtensions` if not in base
+- `removeExtension()`: adds to `excludedExtensions`, removes from `extraExtensions`
 - `reregisterExtensions()` diffs changes to avoid re-registering identical extensions
 
 ## Editor Config

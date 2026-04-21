@@ -73,14 +73,6 @@ export class FenceEditContext {
 		return { content, language, langKey };
 	}
 
-	getEditor(): Editor {
-		return this.editor;
-	}
-
-	getBounds(): [number, number] {
-		return [this.start, this.end];
-	}
-
 	replaceFenceContent(value: string): void {
 		this.editor.replaceRange(
 			`${value}\n`,

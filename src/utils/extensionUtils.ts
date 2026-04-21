@@ -12,38 +12,30 @@ import type { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { getExtension } from './fileUtils.ts';
 
-/** Returns all known code extensions, minus exclusions. */
-export function getAllMonacoExtensions(excludedExtensions: string[]): string[] {
-	const excluded = new Set(excludedExtensions);
-	return Object.keys(staticMap).filter((ext) => !excluded.has(ext));
+/** Returns all known code extensions from staticMap. */
+export function getAllMonacoExtensions(): string[] {
+	return Object.keys(staticMap);
 }
 
 /**
- * Returns the list of extensions currently handled
- * by the plugin, depending on the active mode:
- * - Manual: user-curated `extensions[]`
- * - Extended: all Monaco extensions minus excluded,
- *   plus any extras the user added.
+ * Returns the list of extensions currently handled by the plugin.
+ * Unified logic: (extensions + extraExtensions) - excludedExtensions
+ * Works the same way in both manual and extended modes.
  * Uses Set to guarantee uniqueness.
  */
 export function getActiveExtensions(settings: MyPluginSettings): string[] {
-	if (settings.allExtensions) {
-		return [
-			...new Set([
-				...getAllMonacoExtensions(settings.excludedExtensions),
-				...settings.extraExtensions
-			])
-		];
-	}
-	return [...new Set(settings.extensions)];
+	const base = new Set([...settings.extensions, ...settings.extraExtensions]);
+	const excluded = new Set(settings.excludedExtensions);
+	return [...base].filter((ext) => !excluded.has(ext));
 }
 
 /**
- * Adds an extension to all relevant lists to maintain consistency
- * across manual and extended modes.
- * Uses Set to prevent duplicates.
+ * Adds an extension to the active list.
+ * Unified logic for both manual and extended modes:
+ * - Remove from excludedExtensions if present
+ * - Add to extraExtensions only if not already in base extensions
+ *
  * Blocks native Obsidian extensions and already registered extensions.
- * Only adds to extraExtensions if the extension is not part of the default Monaco extensions.
  * @returns true if the extension was added, false if blocked (native or already registered)
  */
 export function addExtension(settings: MyPluginSettings, ext: string): boolean {
@@ -64,42 +56,32 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
 		return false;
 	}
 
-	// Add to manual extensions list
-	settings.extensions = [...new Set([...settings.extensions, ext])];
-
-	// Only add to extraExtensions if it's not part of the default Monaco extensions
-	if (!(ext in staticMap)) {
-		settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
-	}
-
-	// Remove from excluded if present
+	// Remove from excludedExtensions if present
 	const excluded = new Set(settings.excludedExtensions);
 	excluded.delete(ext);
 	settings.excludedExtensions = [...excluded];
+
+	// Add to extraExtensions only if not already in base extensions
+	if (!settings.extensions.includes(ext)) {
+		settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
+	}
 
 	return true;
 }
 
 /**
- * Removes an extension from all relevant lists to maintain consistency
- * across manual and extended modes.
- * Uses Set to prevent duplicates.
- * Only adds to excludedExtensions if the extension was part of the default Monaco extensions.
+ * Removes an extension from the active list.
+ * Unified logic for both manual and extended modes:
+ * - Add to excludedExtensions
+ * - Remove from extraExtensions if present
  */
 export function removeExtension(settings: MyPluginSettings, ext: string): void {
-	// Remove from both main lists
-	const exts = new Set(settings.extensions);
-	exts.delete(ext);
-	settings.extensions = [...exts];
-
+	// Add to excludedExtensions
+	settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
+	// Remove from extraExtensions if present
 	const extras = new Set(settings.extraExtensions);
 	extras.delete(ext);
 	settings.extraExtensions = [...extras];
-
-	// Only add to excluded list if it was part of the default Monaco extensions
-	if (ext in staticMap) {
-		settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
-	}
 }
 
 export function isCodeFilesExtension(app: App, ext: string): boolean {
