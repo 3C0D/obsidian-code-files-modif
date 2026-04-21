@@ -1,17 +1,20 @@
 import { Modal, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {
-	type HiddenItem,
 	scanHiddenFiles,
 	cleanStaleRevealedFiles,
 	revealFiles,
 	hideFilesInFolder
 } from '../utils/hiddenFilesUtils.ts';
+import type { HiddenItem } from '../types/types.ts';
 
+/**
+ * Modal to scan, reveal, and hide dotfiles within a specific folder.
+ */
 export class RevealHiddenFilesModal extends Modal {
 	plugin: CodeFilesPlugin;
 	folderPath: string;
-	items: HiddenItem[];
+	items: HiddenItem[] = [];
 	private initialRevealed: Set<string>;
 	selected: Set<string>;
 
@@ -20,17 +23,33 @@ export class RevealHiddenFilesModal extends Modal {
 		this.plugin = plugin;
 		this.folderPath = normalizePath(folderPath);
 		if (this.folderPath === '/') this.folderPath = '';
-		this.items = scanHiddenFiles(plugin, this.folderPath);
-		void cleanStaleRevealedFiles(plugin);
+		
 		const revealed = plugin.settings.revealedFiles[this.folderPath] || [];
 		this.initialRevealed = new Set(revealed);
 		this.selected = new Set(revealed);
 	}
 
-	onOpen(): void {
+	async onOpen(): Promise<void> {
+		this.renderLoading();
+		
+		// Perform async data loading
+		this.items = await scanHiddenFiles(this.plugin, this.folderPath);
+		await cleanStaleRevealedFiles(this.plugin);
+		
+		this.render();
+	}
+
+	private renderLoading(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('hidden-files-modal');
+		contentEl.createEl('h2', { text: 'Hidden files' });
+		contentEl.createEl('p', { text: 'Scanning folder...' });
+	}
+
+	private render(): void {
+		const { contentEl } = this;
+		contentEl.empty();
 
 		contentEl.createEl('h2', { text: 'Hidden files' });
 		contentEl.createEl('p', { text: `Folder: ${this.folderPath || '(root)'}` });
@@ -98,16 +117,20 @@ export class RevealHiddenFilesModal extends Modal {
 			.createEl('button', { text: 'Apply', cls: 'mod-cta' })
 			.addEventListener('click', async () => {
 				const toReveal = this.items
-					.map((i) => i.path)
-					.filter((p) => this.selected.has(p) && !this.initialRevealed.has(p));
+					.filter((item) => this.selected.has(item.path))
+					.map((item) => item.path);
+				
 				const toHide = this.items
-					.map((i) => i.path)
-					.filter((p) => !this.selected.has(p) && this.initialRevealed.has(p));
+					.filter((item) => !this.selected.has(item.path) && this.initialRevealed.has(item.path))
+					.map((item) => item.path);
 
-				if (toReveal.length > 0)
-					await revealFiles(this.plugin, this.folderPath, toReveal);
-				if (toHide.length > 0)
+				if (toHide.length > 0) {
 					await hideFilesInFolder(this.plugin, this.folderPath, toHide);
+				}
+				if (toReveal.length > 0) {
+					await revealFiles(this.plugin, this.folderPath, toReveal);
+				}
+				
 				this.close();
 			});
 
@@ -116,13 +139,16 @@ export class RevealHiddenFilesModal extends Modal {
 			.addEventListener('click', () => this.close());
 	}
 
-	formatSize(bytes: number): string {
-		if (bytes < 1024) return bytes + ' B';
-		if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-		return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+	private formatSize(bytes: number): string {
+		if (bytes === 0) return '0 B';
+		const k = 1024;
+		const sizes = ['B', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 	}
 
 	onClose(): void {
-		this.contentEl.empty();
+		const { contentEl } = this;
+		contentEl.empty();
 	}
 }

@@ -1,9 +1,13 @@
 /**
- * Utility functions for handling Obsidian hotkeys, including:
- * - Retrieving configured hotkeys for specific commands
- * - Parsing user-defined hotkey override strings
- * - Formatting hotkeys for display
- * - Serializing relevant hotkeys for change detection
+ * Utility functions for handling Obsidian hotkeys in the context of the Monaco editor.
+ *
+ * Data Flow Direction:
+ * 1. Obsidian -> Logic: getObsidianHotkey() reads shortcuts from Obsidian and returns a HotkeyConfig.
+ * 2. UI -> Logic: parseHotkeyOverride() converts user-typed strings (Settings Tab) into a HotkeyConfig.
+ * 3. Logic -> UI: formatHotkey() converts a HotkeyConfig back to readable strings for display.
+ * 4. Logic -> Comparison: serializeMonacoHotkeys() groups essential shortcuts (Palette, Settings, Delete) into a JSON string to detect configuration changes and trigger editor reloads.
+ * 5. Parent -> Monaco: Hotkeys are sent to the Monaco iframe via postMessage (init/update).
+ * 6. Monaco -> Parent: When a hotkey is pressed, Monaco sends a message back to trigger the Obsidian action.
  */
 import { Platform, type App } from 'obsidian';
 import type { HotkeyConfig } from '../types/types.ts';

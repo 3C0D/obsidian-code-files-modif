@@ -30,15 +30,7 @@ let _bypassPatch = false;
  * @internal
  */
 function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
-	return getDataAdapterEx(plugin.app) as DataAdapterWithInternal;
-}
-
-/**
- * Retrieves the absolute base path of the vault on the local file system.
- * @internal
- */
-function getBasePath(plugin: CodeFilesPlugin): string {
-	return getAdapter(plugin).basePath;
+	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
 
 /**
@@ -73,34 +65,31 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 }
 
 /**
- * Cleans up the list of revealed files by removing those that no longer exist on disk.
- * Also normalizes paths in the settings to ensure consistency.
+ * Cleans up the list of revealed files by removing entries that no longer exist on disk.
+ * Also normalizes paths in settings to ensure consistency.
+ *
+ * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
+ *
+ * @param plugin - The plugin instance.
  */
 export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
-	const basePath = getBasePath(plugin);
+	const adapter = getAdapter(plugin);
 	let changed = false;
-	const fs = window.require?.('fs');
-	const pathNode = window.require?.('path');
-
-	if (!fs || !pathNode) return;
 
 	for (const [folderPath, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
 		let normFolderPath = normalizePath(folderPath);
 		if (normFolderPath === '/') normFolderPath = '';
 
-		// Verify each revealed file still exists physically
-		const valid = itemPaths
-			.map((p) => normalizePath(p))
-			.filter((normItemPath) => {
-				try {
-					fs.statSync(pathNode.join(basePath, normItemPath));
-					return true;
-				} catch {
-					return false;
-				}
-			});
+		// Verify each revealed file still exists using the cross-platform adapter
+		const valid: string[] = [];
+		for (const p of itemPaths) {
+			const normItemPath = normalizePath(p);
+			if (await adapter.exists(normItemPath)) {
+				valid.push(normItemPath);
+			}
+		}
 
-		// Update settings if any path was normalized or removed
+		// Update settings if any path was normalized or a stale entry was removed
 		if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
 			changed = true;
 			delete plugin.settings.revealedFiles[folderPath];
@@ -116,29 +105,46 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 /**
  * Re-reveals all files stored in the plugin settings.
  * This is called on plugin startup to restore the user's view.
+ *
+ * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  */
 export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const adapter = getAdapter(plugin);
-	const basePath = getBasePath(plugin);
-	const fs = window.require?.('fs');
-	const pathNode = window.require?.('path');
-
-	if (!fs || !pathNode) return;
 
 	for (const [_, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
 		for (const itemPath of itemPaths) {
 			const realPath = adapter.getRealPath(itemPath);
-			const fullPath = pathNode.join(basePath, itemPath);
 			try {
-				const stat = fs.statSync(fullPath);
-				// Manually trigger Obsidian's internal reconciliation to add the item back to the UI
-				if (stat.isDirectory()) {
+				const stat = await adapter.stat(itemPath);
+				if (!stat) continue;
+
+				// Manually trigger Obsidian's internal reconciliation to add the item back to the UI.
+				// Pattern: use reconcileFileInternal if available (Desktop),
+				// otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
+				if (stat.type === 'folder') {
 					await adapter.reconcileFolderCreation(realPath, itemPath);
 				} else {
-					await adapter.reconcileFileInternal(realPath, itemPath);
+					if (adapter.reconcileFileInternal) {
+						await adapter.reconcileFileInternal(realPath, itemPath);
+					} else if (
+						adapter.fs?.stat &&
+						adapter.reconcileFileChanged &&
+						adapter.getFullRealPath
+					) {
+						const fsStat = await adapter.fs.stat(
+							adapter.getFullRealPath(realPath)
+						);
+						if (fsStat.type === 'file') {
+							await adapter.reconcileFileChanged(
+								realPath,
+								itemPath,
+								fsStat
+							);
+						}
+					}
 				}
 			} catch {
-				// File or folder no longer exists
+				// File or folder no longer exists or access denied
 			}
 		}
 	}
@@ -177,70 +183,76 @@ export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
  * Scans a folder on the physical file system to find hidden items (starting with a dot).
  * Respects exclusion settings for folders and extensions.
  *
+ * This version is fully cross-platform (Desktop & Mobile) as it uses Obsidian's
+ * internal listRecursive method which bypasses the default dotfile filtering.
+ *
  * @param plugin - The plugin instance.
  * @param folderPath - Normalized path of the folder to scan.
  * @returns Array of found hidden items.
  */
-export function scanHiddenFiles(
+export async function scanHiddenFiles(
 	plugin: CodeFilesPlugin,
 	folderPath: string
-): HiddenItem[] {
+): Promise<HiddenItem[]> {
 	folderPath = normalizePath(folderPath);
 	if (folderPath === '/') folderPath = '';
-	const basePath = getBasePath(plugin);
-	const fs = window.require?.('fs');
-	const pathNode = window.require?.('path');
+
+	const adapter = getAdapter(plugin);
 	const items: HiddenItem[] = [];
 
-	if (!fs || !pathNode) return items;
-
-	const fullPath = pathNode.join(basePath, folderPath);
-
 	try {
-		const entries = fs.readdirSync(fullPath);
+		// listRecursive is an internal Obsidian method that returns ALL files/folders,
+		// including those starting with a dot.
+		if (!adapter.listRecursive) return items;
+		const { files, folders } = await adapter.listRecursive('');
 
-		for (const entry of entries) {
-			// Only process files/folders starting with a dot
-			if (!entry.startsWith('.')) continue;
+		const allEntries = [
+			...files.map((p) => ({ path: p, isFolder: false })),
+			...folders.map((p) => ({ path: p, isFolder: true }))
+		];
 
-			const entryPath = pathNode.join(fullPath, entry);
-			const relativePath = normalizePath(
-				folderPath ? `${folderPath}/${entry}` : entry
-			);
+		for (const entry of allEntries) {
+			const entryPath = normalizePath(entry.path);
+			const basename = entryPath.split('/').pop() || '';
 
-			try {
-				const stat = fs.statSync(entryPath);
-				const isFolder = stat.isDirectory();
+			// Only process items starting with a dot
+			if (!basename.startsWith('.')) continue;
 
-				// Filter out excluded folders
-				if (isFolder && plugin.settings.excludedFolders.includes(entry)) {
+			// Check if the item is directly inside the requested folder
+			const parentPath = entryPath.substring(0, entryPath.lastIndexOf('/')) || '';
+			if (parentPath !== folderPath) continue;
+
+			// Filter out excluded folders
+			if (entry.isFolder && plugin.settings.excludedFolders.includes(basename)) {
+				continue;
+			}
+
+			if (!entry.isFolder) {
+				// Handle extensions for hidden files (e.g. '.env' -> 'env')
+				const ext = basename.substring(1);
+				const actualExt = ext.split('.').pop() || ext;
+
+				// Filter out excluded extensions
+				if (plugin.settings.excludedExtensions.includes(actualExt)) {
 					continue;
 				}
-
-				if (!isFolder) {
-					// Handle extensions for hidden files (e.g. '.env' -> 'env')
-					const ext = entry.substring(1);
-					const actualExt = ext.split('.').pop() || ext;
-
-					// Filter out excluded extensions
-					if (plugin.settings.excludedExtensions.includes(actualExt)) {
-						continue;
-					}
-					// Safety: Skip very large files (>10MB) to avoid performance issues
-					if (stat.size > 10 * 1024 * 1024) {
-						continue;
-					}
-				}
-
-				items.push({
-					name: entry,
-					path: relativePath,
-					isFolder,
-					size: stat.size
-				});
-			} catch {
-				// Ignore permission errors or broken symlinks
 			}
+
+			// Get stats for size (best effort)
+			let size = 0;
+			try {
+				const stat = await adapter.stat(entryPath);
+				if (stat) size = stat.size;
+			} catch {
+				/* ignore stat errors */
+			}
+
+			items.push({
+				name: basename,
+				path: entryPath,
+				isFolder: entry.isFolder,
+				size
+			});
 		}
 
 		// Sort: folders first, then alphabetically
@@ -262,6 +274,8 @@ export function scanHiddenFiles(
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to reveal.
+ *
+ * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  */
 export async function revealFiles(
 	plugin: CodeFilesPlugin,
@@ -272,25 +286,39 @@ export async function revealFiles(
 	if (folderPath === '/') folderPath = '';
 	itemPaths = itemPaths.map((p) => normalizePath(p));
 	const adapter = getAdapter(plugin);
-	const basePath = getBasePath(plugin);
-	const fs = window.require?.('fs');
-	const pathNode = window.require?.('path');
-
-	if (!fs || !pathNode) return;
 
 	for (const itemPath of itemPaths) {
 		const normItemPath = normalizePath(itemPath);
-		const fullPath = pathNode.join(basePath, normItemPath);
 		try {
-			const stat = fs.statSync(fullPath);
+			const stat = await adapter.stat(normItemPath);
+			if (!stat) continue;
+
 			const realPath = adapter.getRealPath(normItemPath);
 
-			// Force Obsidian to "see" and display the item
-			if (stat.isDirectory()) {
+			// Force Obsidian to "see" and display the item.
+			// Pattern: use reconcileFileInternal if available (Desktop),
+			// otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
+			if (stat.type === 'folder') {
 				await adapter.reconcileFolderCreation(realPath, normItemPath);
 			} else {
-				// We call reconcileFileInternal directly to force-add the file to the vault cache
-				await adapter.reconcileFileInternal(realPath, normItemPath);
+				if (adapter.reconcileFileInternal) {
+					await adapter.reconcileFileInternal(realPath, normItemPath);
+				} else if (
+					adapter.fs?.stat &&
+					adapter.reconcileFileChanged &&
+					adapter.getFullRealPath
+				) {
+					const fsStat = await adapter.fs.stat(
+						adapter.getFullRealPath(realPath)
+					);
+					if (fsStat.type === 'file') {
+						await adapter.reconcileFileChanged(
+							realPath,
+							normItemPath,
+							fsStat
+						);
+					}
+				}
 			}
 		} catch (e) {
 			console.error(`Reveal error ${itemPath}:`, e);
@@ -312,6 +340,9 @@ export async function revealFiles(
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to hide.
+ *
+ * Note: getRealPath() is a FileSystemAdapter method (Desktop). On Mobile,
+ * this function may have limited behavior depending on the adapter implementation.
  */
 export async function hideFilesInFolder(
 	plugin: CodeFilesPlugin,

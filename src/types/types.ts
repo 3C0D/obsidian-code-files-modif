@@ -50,7 +50,11 @@ export interface MyPluginSettings {
 	deleteFileHotkeyOverride: string;
 	/** Hidden folders to never show */
 	excludedFolders: string[];
-	/** Record of revealed hidden files per folder */
+	/**
+	 * Map of revealed hidden files (dotfiles) in the file explorer.
+	 * Key: Normalized path of the parent folder.
+	 * Value: Array of normalized paths of revealed files within that folder.
+	 */
 	revealedFiles: Record<string, string[]>;
 }
 
@@ -112,11 +116,41 @@ export interface HotkeyConfig {
 /**
  * Extended DataAdapter interface including internal Obsidian methods.
  *
- * @property reconcileFileInternal - Internal Obsidian method to reconcile a file change
+ * @property reconcileFileInternal    - Internal Obsidian method to reconcile a file change
+ * @property reconcileDeletion        - Internal Obsidian method to reconcile a file deletion
+ * @property reconcileFolderCreation  - Internal Obsidian method to reconcile a folder creation
+ * @property reconcileFileChanged     - Internal Obsidian method to reconcile a file modification
+ * @property listRecursive            - Internal method to list all files and folders (including dotfiles)
+ * @property fs                       - Internal file system access (Mobile/Desktop abstraction)
+ * @property getFullRealPath          - Get the full physical path on disk
  */
-export interface DataAdapterWithInternal extends DataAdapterEx {
+export interface DataAdapterWithInternal extends Omit<
+	DataAdapterEx,
+	'listRecursive' | 'getFullRealPath'
+> {
 	/** Internal Obsidian method to reconcile a file change */
-	reconcileFileInternal(realPath: string, normalizedPath: string): Promise<void>;
+	reconcileFileInternal?(realPath: string, normalizedPath: string): Promise<void>;
+	/** Internal Obsidian method to reconcile a file deletion */
+	reconcileDeletion(realPath: string, normalizedPath: string): Promise<void>;
+	/** Internal Obsidian method to reconcile a folder creation */
+	reconcileFolderCreation(realPath: string, normalizedPath: string): Promise<void>;
+	/** Internal Obsidian method to reconcile a file modification */
+	reconcileFileChanged?(
+		realPath: string,
+		normalizedPath: string,
+		stat: { type: 'file' | 'folder'; size: number; mtime: number }
+	): Promise<void>;
+	/** Internal method to list all files and folders (including dotfiles) */
+	listRecursive?(path: string): Promise<{ files: string[]; folders: string[] }>;
+	/** Internal file system access (Mobile/Desktop abstraction) */
+	fs?: {
+		/** Stat a file or folder using internal fs */
+		stat(
+			path: string
+		): Promise<{ type: 'file' | 'folder'; size: number; mtime: number }>;
+	};
+	/** Get the full physical path on disk */
+	getFullRealPath?(path: string): string;
 }
 
 /**
