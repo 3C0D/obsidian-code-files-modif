@@ -1,3 +1,5 @@
+import type { DataAdapterEx } from 'obsidian-typings';
+
 export interface MyPluginSettings {
 	/** File extensions registered with Obsidian to open in Monaco */
 	extensions: string[];
@@ -96,7 +98,7 @@ export type MenuItems = { title: string; icon: string; action: () => void };
 
 /**
  * Hotkey configuration object.
- * 
+ *
  * @property modifiers - Array of modifier keys (e.g. ['Mod', 'Shift'])
  * @property key - The main key (e.g. 'a')
  */
@@ -105,4 +107,39 @@ export interface HotkeyConfig {
 	modifiers: string[];
 	/** The main key (e.g. 'a') */
 	key: string;
+}
+
+/**
+ * Extended DataAdapter interface including internal Obsidian methods.
+ *
+ * @property reconcileFileInternal - Internal Obsidian method to reconcile a file change
+ */
+export interface DataAdapterWithInternal extends DataAdapterEx {
+	/** Internal Obsidian method to reconcile a file change */
+	reconcileFileInternal(realPath: string, normalizedPath: string): Promise<void>;
+}
+
+/**
+ * Represents a hidden item found during a file system scan.
+ *
+ * @property name     - The file or folder name (including the leading dot)
+ * @property path     - The normalized path relative to the vault root
+ * @property isFolder - Whether the item is a folder
+ * @property size     - File size in bytes
+ */
+export interface HiddenItem {
+	/** The file or folder name (including the leading dot) */
+	name: string;
+	/** The normalized path relative to the vault root */
+	path: string;
+	/** Whether the item is a folder */
+	isFolder: boolean;
+	/** File size in bytes */
+	size: number;
+}
+
+export interface HiddenFileSuggestion {
+	name: string;
+	path: string;
+	size: number;
 }

@@ -21,12 +21,9 @@ import {
 	addExtension,
 	registerExtension
 } from '../utils/extensionUtils.ts';
-import type { DataAdapterEx } from 'obsidian-typings';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
+import type { DataAdapterWithInternal } from '../types/types.ts';
 
-interface DataAdapterWithInternal extends DataAdapterEx {
-	reconcileFileInternal(realPath: string, normalizedPath: string): Promise<void>;
-}
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {

@@ -11,6 +11,7 @@ import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView } from 'obsidian-typings';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
+import type { HiddenFileSuggestion } from '../types/types.ts';
 
 /** Extensions to exclude from hidden files list (binary executables, archives, and files that can't be opened as text) */
 const EXCLUDED_EXTENSIONS = [
@@ -49,12 +50,6 @@ const EXCLUDED_EXTENSIONS = [
 /** Maximum file size in MB for opening in Monaco (configurable in settings) */
 function getMaxFileSize(plugin: CodeFilesPlugin): number {
 	return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
-}
-
-interface HiddenFileSuggestion {
-	name: string;
-	path: string;
-	size: number;
 }
 
 /** Modal for choosing hidden files in a folder to open in Monaco.

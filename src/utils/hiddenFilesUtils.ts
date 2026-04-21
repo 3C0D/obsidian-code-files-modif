@@ -1,38 +1,58 @@
+/**
+ * Manages hidden files (dotfiles) exclusively from folders in the Obsidian file explorer.
+ * When a folder contains revealed hidden files, a badge with a green eye icon is added to it.
+ *
+ * Mechanisms:
+ * 1. Patch Obsidian's data adapter to prevent automatic deletion of revealed dotfiles.
+ * 2. Scan for and reveal/hide dotfiles via folder context menus.
+ * 3. Persist and restore revealed files state across sessions.
+ */
+
 import { Notice, setIcon, normalizePath } from 'obsidian';
 import {
-	type DataAdapterEx,
 	type FileExplorerView,
-	type FolderTreeItem
+	type FolderTreeItem,
+	type DataAdapterEx
 } from 'obsidian-typings';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { around } from 'monkey-around';
 import type CodeFilesPlugin from '../main.ts';
+import type { DataAdapterWithInternal, HiddenItem } from '../types/types.ts';
 
-interface DataAdapterWithInternal extends DataAdapterEx {
-	reconcileFileInternal(realPath: string, normalizedPath: string): Promise<void>;
-}
-
-export interface HiddenItem {
-	name: string;
-	path: string;
-	isFolder: boolean;
-	size: number;
-}
-
+/**
+ * Global flag used to temporarily bypass the deletion patch.
+ * Set to true when the user explicitly chooses to hide a previously revealed file.
+ */
 let _bypassPatch = false;
 
+/**
+ * Retrieves the platform-specific data adapter.
+ * @internal
+ */
 function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
 	return getDataAdapterEx(plugin.app) as DataAdapterWithInternal;
 }
 
+/**
+ * Retrieves the absolute base path of the vault on the local file system.
+ * @internal
+ */
 function getBasePath(plugin: CodeFilesPlugin): string {
 	return getAdapter(plugin).basePath;
 }
 
+/**
+ * Patches Obsidian's DataAdapter to prevent the automatic removal of dotfiles from the UI.
+ * Obsidian's internal reconciliation often tries to "clean up" (delete from view) files
+ * that shouldn't be there according to its default rules.
+ *
+ * @param plugin - The plugin instance.
+ * @returns A function to unpatch the adapter.
+ */
 export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	const adapter = getAdapter(plugin);
 
-	// Prevent Obsidian from auto-deleting revealed dotfiles
+	// Prevent Obsidian from auto-deleting revealed dotfiles during its internal reconciliation
 	return around(adapter, {
 		reconcileDeletion(next) {
 			return async function (
@@ -41,7 +61,8 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				normalizedPath: string
 			) {
 				const basename = normalizedPath.split('/').pop() || '';
-				// Block deletion of dotfiles unless explicitly requested via hideFilesInFolder
+				// Block automatic deletion of dotfiles unless _bypassPatch is active
+				// (which means the user explicitly clicked "Hide")
 				if (basename.startsWith('.') && !_bypassPatch) {
 					return;
 				}
@@ -51,6 +72,10 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	});
 }
 
+/**
+ * Cleans up the list of revealed files by removing those that no longer exist on disk.
+ * Also normalizes paths in the settings to ensure consistency.
+ */
 export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const basePath = getBasePath(plugin);
 	let changed = false;
@@ -63,6 +88,7 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 		let normFolderPath = normalizePath(folderPath);
 		if (normFolderPath === '/') normFolderPath = '';
 
+		// Verify each revealed file still exists physically
 		const valid = itemPaths
 			.map((p) => normalizePath(p))
 			.filter((normItemPath) => {
@@ -74,6 +100,7 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 				}
 			});
 
+		// Update settings if any path was normalized or removed
 		if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
 			changed = true;
 			delete plugin.settings.revealedFiles[folderPath];
@@ -86,6 +113,10 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 	if (changed) await plugin.saveSettings();
 }
 
+/**
+ * Re-reveals all files stored in the plugin settings.
+ * This is called on plugin startup to restore the user's view.
+ */
 export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const adapter = getAdapter(plugin);
 	const basePath = getBasePath(plugin);
@@ -100,18 +131,22 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
 			const fullPath = pathNode.join(basePath, itemPath);
 			try {
 				const stat = fs.statSync(fullPath);
+				// Manually trigger Obsidian's internal reconciliation to add the item back to the UI
 				if (stat.isDirectory()) {
 					await adapter.reconcileFolderCreation(realPath, itemPath);
 				} else {
 					await adapter.reconcileFileInternal(realPath, itemPath);
 				}
 			} catch {
-				// file no longer exists
+				// File or folder no longer exists
 			}
 		}
 	}
 }
 
+/**
+ * Adds visual badges (eye icon) to folders in the file explorer that contain revealed hidden files.
+ */
 export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
 	const explorer = plugin.app.workspace.getLeavesOfType('file-explorer')[0];
 	if (!explorer) return;
@@ -128,6 +163,7 @@ export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
 		const selfEl = (item as FolderTreeItem).selfEl;
 		const existing = selfEl.querySelector('.hidden-files-badge');
 
+		// Add or remove the eye icon badge based on whether the folder has revealed files
 		if (hasRevealed && !existing) {
 			const badge = selfEl.createSpan({ cls: 'hidden-files-badge' });
 			setIcon(badge, 'eye');
@@ -137,6 +173,14 @@ export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
 	}
 }
 
+/**
+ * Scans a folder on the physical file system to find hidden items (starting with a dot).
+ * Respects exclusion settings for folders and extensions.
+ *
+ * @param plugin - The plugin instance.
+ * @param folderPath - Normalized path of the folder to scan.
+ * @returns Array of found hidden items.
+ */
 export function scanHiddenFiles(
 	plugin: CodeFilesPlugin,
 	folderPath: string
@@ -156,6 +200,7 @@ export function scanHiddenFiles(
 		const entries = fs.readdirSync(fullPath);
 
 		for (const entry of entries) {
+			// Only process files/folders starting with a dot
 			if (!entry.startsWith('.')) continue;
 
 			const entryPath = pathNode.join(fullPath, entry);
@@ -167,18 +212,21 @@ export function scanHiddenFiles(
 				const stat = fs.statSync(entryPath);
 				const isFolder = stat.isDirectory();
 
+				// Filter out excluded folders
 				if (isFolder && plugin.settings.excludedFolders.includes(entry)) {
 					continue;
 				}
 
 				if (!isFolder) {
-					// remove the leading dot (e.g. '.env' -> 'env')
+					// Handle extensions for hidden files (e.g. '.env' -> 'env')
 					const ext = entry.substring(1);
-					// get the actual extension (e.g. 'env' -> 'env', '.prettierrc' -> 'prettierrc')
 					const actualExt = ext.split('.').pop() || ext;
+
+					// Filter out excluded extensions
 					if (plugin.settings.excludedExtensions.includes(actualExt)) {
 						continue;
 					}
+					// Safety: Skip very large files (>10MB) to avoid performance issues
 					if (stat.size > 10 * 1024 * 1024) {
 						continue;
 					}
@@ -191,10 +239,11 @@ export function scanHiddenFiles(
 					size: stat.size
 				});
 			} catch {
-				// ignore permission errors
+				// Ignore permission errors or broken symlinks
 			}
 		}
 
+		// Sort: folders first, then alphabetically
 		items.sort((a, b) => {
 			if (a.isFolder && !b.isFolder) return -1;
 			if (!a.isFolder && b.isFolder) return 1;
@@ -207,6 +256,13 @@ export function scanHiddenFiles(
 	return items;
 }
 
+/**
+ * Reveals specified hidden files in the Obsidian UI.
+ *
+ * @param plugin - The plugin instance.
+ * @param folderPath - The parent folder path.
+ * @param itemPaths - Array of relative paths to reveal.
+ */
 export async function revealFiles(
 	plugin: CodeFilesPlugin,
 	folderPath: string,
@@ -228,10 +284,12 @@ export async function revealFiles(
 		try {
 			const stat = fs.statSync(fullPath);
 			const realPath = adapter.getRealPath(normItemPath);
+
+			// Force Obsidian to "see" and display the item
 			if (stat.isDirectory()) {
 				await adapter.reconcileFolderCreation(realPath, normItemPath);
 			} else {
-				// Call reconcileFileInternal directly to bypass dotfile guard
+				// We call reconcileFileInternal directly to force-add the file to the vault cache
 				await adapter.reconcileFileInternal(realPath, normItemPath);
 			}
 		} catch (e) {
@@ -239,13 +297,22 @@ export async function revealFiles(
 		}
 	}
 
+	// Persist the revealed state in settings
 	const existing = plugin.settings.revealedFiles[folderPath] ?? [];
 	plugin.settings.revealedFiles[folderPath] = [...new Set([...existing, ...itemPaths])];
 	await plugin.saveSettings();
+
 	decorateFolders(plugin);
 	new Notice(`${itemPaths.length} item(s) revealed`);
 }
 
+/**
+ * Hides previously revealed hidden files from the Obsidian UI.
+ *
+ * @param plugin - The plugin instance.
+ * @param folderPath - The parent folder path.
+ * @param itemPaths - Array of relative paths to hide.
+ */
 export async function hideFilesInFolder(
 	plugin: CodeFilesPlugin,
 	folderPath: string,
@@ -256,14 +323,16 @@ export async function hideFilesInFolder(
 	itemPaths = itemPaths.map((p) => normalizePath(p));
 	const adapter = getAdapter(plugin);
 
-	// Temporarily allow deletion of dotfiles
+	// Temporarily allow reconcileDeletion to work for dotfiles
 	_bypassPatch = true;
 	for (const filePath of itemPaths) {
 		const realPath = adapter.getRealPath(filePath);
+		// Trigger a deletion reconciliation which removes the item from the vault's internal list
 		await adapter.reconcileDeletion(realPath, filePath);
 	}
 	_bypassPatch = false;
 
+	// Remove from persisted settings
 	const remaining = (plugin.settings.revealedFiles[folderPath] || []).filter(
 		(p) => !itemPaths.includes(p)
 	);
