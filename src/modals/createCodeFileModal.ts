@@ -24,7 +24,6 @@ import {
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/types.ts';
 
-
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
 	fileName = 'My Code File';
@@ -32,7 +31,7 @@ export class CreateCodeFileModal extends Modal {
 	parent: TFolder;
 
 	getAdapter(): DataAdapterWithInternal {
-		return getDataAdapterEx(this.app) as DataAdapterWithInternal;
+		return getDataAdapterEx(this.app) as unknown as DataAdapterWithInternal;
 	}
 
 	constructor(
@@ -189,7 +188,7 @@ export class CreateCodeFileModal extends Modal {
 				basename.startsWith('.') &&
 				!this.app.vault.getAbstractFileByPath(newPath)
 			) {
-				await adapter.reconcileFileInternal(
+				await adapter.reconcileFileInternal?.(
 					adapter.getRealPath(newPath),
 					newPath
 				);
@@ -215,7 +214,7 @@ export class CreateCodeFileModal extends Modal {
 				await adapter.write(newPath, '');
 				// Again, for hidden files we just created, the vault won't see them automatically.
 				// We force reconciliation so getFileByPath can successfully return the newly created TFile.
-				await adapter.reconcileFileInternal(
+				await adapter.reconcileFileInternal?.(
 					adapter.getRealPath(newPath),
 					newPath
 				);

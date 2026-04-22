@@ -10,7 +10,7 @@ export function isSnippetEnabled(app: App, name: string): boolean {
 	return app.customCss.enabledSnippets.has(name);
 }
 
-/** 
+/**
  * Registers a listener that syncs the toggle UI when the snippet state changes externally (e.g. from Obsidian settings).
  *
  * @param app - the Obsidian app instance

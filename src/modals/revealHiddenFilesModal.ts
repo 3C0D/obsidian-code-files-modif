@@ -23,7 +23,7 @@ export class RevealHiddenFilesModal extends Modal {
 		this.plugin = plugin;
 		this.folderPath = normalizePath(folderPath);
 		if (this.folderPath === '/') this.folderPath = '';
-		
+
 		const revealed = plugin.settings.revealedFiles[this.folderPath] || [];
 		this.initialRevealed = new Set(revealed);
 		this.selected = new Set(revealed);
@@ -31,11 +31,11 @@ export class RevealHiddenFilesModal extends Modal {
 
 	async onOpen(): Promise<void> {
 		this.renderLoading();
-		
+
 		// Perform async data loading
 		this.items = await scanHiddenFiles(this.plugin, this.folderPath);
 		await cleanStaleRevealedFiles(this.plugin);
-		
+
 		this.render();
 	}
 
@@ -119,9 +119,13 @@ export class RevealHiddenFilesModal extends Modal {
 				const toReveal = this.items
 					.filter((item) => this.selected.has(item.path))
 					.map((item) => item.path);
-				
+
 				const toHide = this.items
-					.filter((item) => !this.selected.has(item.path) && this.initialRevealed.has(item.path))
+					.filter(
+						(item) =>
+							!this.selected.has(item.path) &&
+							this.initialRevealed.has(item.path)
+					)
 					.map((item) => item.path);
 
 				if (toHide.length > 0) {
@@ -130,7 +134,7 @@ export class RevealHiddenFilesModal extends Modal {
 				if (toReveal.length > 0) {
 					await revealFiles(this.plugin, this.folderPath, toReveal);
 				}
-				
+
 				this.close();
 			});
 
