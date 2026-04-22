@@ -206,67 +206,38 @@ export async function scanHiddenFiles(
 	const items: HiddenItem[] = [];
 
 	try {
-		// listRecursive is an internal Obsidian method that returns ALL files/folders,
-		// including those starting with a dot.
-		if (!adapter.listRecursive) return items;
-		const { files, folders } = await adapter.listRecursive('');
-
-		const allEntries = [
-			...files.map((p) => ({ path: p, isFolder: false })),
-			...folders.map((p) => ({ path: p, isFolder: true }))
-		];
-
-		for (const entry of allEntries) {
-			const entryPath = normalizePath(entry.path);
-			const basename = entryPath.split('/').pop() || '';
-
-			// Only process items starting with a dot
-			if (!basename.startsWith('.')) continue;
-
-			// Check if the item is directly inside the requested folder
-			const parentPath = entryPath.substring(0, entryPath.lastIndexOf('/')) || '';
-			if (parentPath !== folderPath) continue;
-
-			// Filter out excluded folders
-			if (entry.isFolder && plugin.settings.excludedFolders.includes(basename)) {
-				continue;
-			}
-
-			if (!entry.isFolder) {
-				// Handle extensions for hidden files (e.g. '.env' -> 'env')
-				const ext = basename.substring(1);
-				const actualExt = ext.split('.').pop() || ext;
-
-				// Filter out excluded extensions
-				if (plugin.settings.excludedExtensions.includes(actualExt)) {
+		const listRecursive = async (dir: string): Promise<void> => {
+			const listed = await adapter.list(dir || '');
+			for (const filePath of [...listed.files, ...listed.folders]) {
+				const entryPath = normalizePath(filePath);
+				const isFolder = listed.folders.includes(filePath);
+				const basename = entryPath.split('/').pop() || '';
+				if (!basename.startsWith('.')) continue;
+				const parentPath =
+					entryPath.substring(0, entryPath.lastIndexOf('/')) || '';
+				if (parentPath !== folderPath) continue;
+				if (isFolder && plugin.settings.excludedFolders.includes(basename))
 					continue;
+				if (!isFolder) {
+					const ext =
+						basename.substring(1).split('.').pop() || basename.substring(1);
+					if (plugin.settings.excludedExtensions.includes(ext)) continue;
 				}
-			}
-
-			// Get stats for size (best effort)
-			let size = 0;
-			try {
-				const stat = await adapter.stat(entryPath);
-				if (stat) {
-					size = stat.size;
-					// Skip files larger than the maximum file size
-					if (size > getMaxFileSize(plugin)) {
-						continue;
+				let size = 0;
+				try {
+					const stat = await adapter.stat(entryPath);
+					if (stat) {
+						size = stat.size;
+						if (size > getMaxFileSize(plugin)) continue;
 					}
+				} catch {
+					/* ignore stat errors */
 				}
-			} catch {
-				/* ignore stat errors */
+				items.push({ name: basename, path: entryPath, isFolder, size });
 			}
+		};
+		await listRecursive(folderPath);
 
-			items.push({
-				name: basename,
-				path: entryPath,
-				isFolder: entry.isFolder,
-				size
-			});
-		}
-
-		// Sort: folders first, then alphabetically
 		items.sort((a, b) => {
 			if (a.isFolder && !b.isFolder) return -1;
 			if (!a.isFolder && b.isFolder) return 1;
