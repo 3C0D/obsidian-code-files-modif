@@ -31,6 +31,11 @@ import {
 	parseHotkeyOverride,
 	formatHotkey
 } from '../utils/hotkeyUtils.ts';
+import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
+import {
+	handleNewRegisteredExtensions,
+	hideAutoRevealedDotfiles
+} from '../utils/hiddenFilesUtils.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	private codeEditor: CodeEditorInstance | null = null;
@@ -252,7 +257,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		// Initialize Monaco editor
 		void (async () => {
-			const { mountCodeEditor } = await import('../editor/mountCodeEditor.ts');
 			this.codeEditor = await mountCodeEditor(
 				this.plugin,
 				'json',
@@ -407,17 +411,11 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						this.plugin.settings.autoRevealRegisteredDotfiles = value;
 						await this.plugin.saveSettings();
 						if (value) {
-							const { getActiveExtensions } =
-								await import('../utils/extensionUtils.ts');
-							const { handleNewRegisteredExtensions } =
-								await import('../utils/hiddenFilesUtils.ts');
 							await handleNewRegisteredExtensions(
 								this.plugin,
 								getActiveExtensions(this.plugin.settings)
 							);
 						} else {
-							const { hideAutoRevealedDotfiles } =
-								await import('../utils/hiddenFilesUtils.ts');
 							await hideAutoRevealedDotfiles(this.plugin);
 						}
 					})
