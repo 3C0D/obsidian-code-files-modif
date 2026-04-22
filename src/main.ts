@@ -6,6 +6,10 @@ import { viewType } from './types/variables.ts';
 
 import { initExtensions, getActiveExtensions } from './utils/extensionUtils.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
+import {
+	ensureDetectAllExtensions,
+	showDetectAllExtensionsNotice
+} from './utils/vaultConfigUtils.ts';
 import { serializeMonacoHotkeys } from './utils/hotkeyUtils.ts';
 import { updateRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
@@ -36,7 +40,9 @@ export default class CodeFilesPlugin extends Plugin {
 	_lastHotkeys?: string;
 
 	async onload(): Promise<void> {
+		console.log('Code Files Plugin loaded');
 		await loadSettings(this);
+		const needsDetectNotice = ensureDetectAllExtensions(this);
 		this._modalOpenPatch = patchModalOpen();
 		this._openFilePatch = patchOpenFile(this);
 		patchMenuOverlay(this);
@@ -52,6 +58,9 @@ export default class CodeFilesPlugin extends Plugin {
 		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));
 
 		this.app.workspace.onLayoutReady(async () => {
+			if (needsDetectNotice) {
+				showDetectAllExtensionsNotice();
+			}
 			updateProjectFolderHighlight(this);
 			await cleanStaleRevealedFiles(this);
 			await restoreRevealedFiles(this);

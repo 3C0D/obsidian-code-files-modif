@@ -11,7 +11,7 @@ import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
-import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
+// import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
 import { RevealHiddenFilesModal } from '../modals/revealHiddenFilesModal.ts';
 import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
@@ -130,11 +130,11 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			icon: 'eye',
 			action: () => new RevealHiddenFilesModal(plugin, folder.path).open()
 		},
-		{
-			title: 'Open Hidden Files in Monaco',
-			icon: 'eye-off',
-			action: () => new ChooseHiddenFileModal(plugin, folder).open()
-		},
+		// {
+		// 	title: 'Open Hidden Files in Monaco',
+		// 	icon: 'eye-off',
+		// 	action: () => new ChooseHiddenFileModal(plugin, folder).open()
+		// },
 		{
 			title: 'Define as Project Root Folder',
 			icon: 'folder-tree',
