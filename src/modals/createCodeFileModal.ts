@@ -50,51 +50,16 @@ export class CreateCodeFileModal extends Modal {
 		contentEl.style.flexDirection = 'column';
 		contentEl.style.gap = '8px';
 
-		// Tip about extension management
-		contentEl.createEl('div', {
-			text: 'Tip: Use the +/− button to manage registered extensions without creating a file',
-			attr: {
-				style: 'color: var(--text-muted); font-size: 0.85em; font-style: italic; margin-bottom: 4px;'
-			}
-		});
+		// Row 1: Manage extensions
+		const manageRow = contentEl.createEl('div');
+		manageRow.style.display = 'flex';
+		manageRow.style.alignItems = 'center';
+		manageRow.style.gap = '8px';
+		manageRow.createEl('span', { text: 'Manage extensions' });
 
-		// Input row
-		const inputRow = contentEl.createEl('div');
-		inputRow.style.display = 'flex';
-		inputRow.style.alignItems = 'center';
-
-		// File name input — constrained width to leave room for other controls
-		const fileNameInput = new TextComponent(inputRow);
-		fileNameInput.inputEl.style.width = '200px';
-		fileNameInput.inputEl.style.marginRight = '10px';
-		fileNameInput.setValue(this.fileName);
-		fileNameInput.onChange((value) => {
-			this.fileName = value;
-		});
-
-		// Extension input with autocomplete from registered extensions
-		const extInput = new TextComponent(inputRow);
-		extInput.setPlaceholder('.ext');
-		extInput.inputEl.title =
-			'Type to filter registered extensions, or enter a new one — it will be registered automatically on Create.';
-		extInput.setValue('');
-		extInput.inputEl.style.width = '80px';
-		extInput.inputEl.style.marginRight = '4px';
-		extInput.onChange((value) => {
-			this.fileExtension = value.replace(/^\./, '');
-		});
-
-		// Attach autocomplete — selecting a suggestion fills the input and updates fileExtension
-		new ExtensionSuggest(this.plugin, extInput.inputEl, (ext) => {
-			extInput.setValue(ext);
-			this.fileExtension = ext;
-		});
-
-		// button to add/remove extensions on the fly
-		const manageBtn = new ButtonComponent(inputRow);
+		const manageBtn = new ButtonComponent(manageRow);
 		manageBtn.setIcon('diff');
-		manageBtn.setTooltip('Edit extensions — add or remove');
-		manageBtn.buttonEl.style.marginRight = '10px';
+		manageBtn.setTooltip('Add or remove registered extensions');
 		manageBtn.onClick(() => {
 			new ChooseExtensionModal(this.plugin, (newExt) => {
 				if (newExt) {
@@ -104,7 +69,37 @@ export class CreateCodeFileModal extends Modal {
 			}).open();
 		});
 
-		// Create button
+		// Row 2: Create file
+		const inputRow = contentEl.createEl('div');
+		inputRow.style.display = 'flex';
+		inputRow.style.alignItems = 'center';
+		inputRow.style.gap = '4px';
+
+		const fileNameInput = new TextComponent(inputRow);
+		fileNameInput.inputEl.style.width = '200px';
+		fileNameInput.setValue(this.fileName);
+		fileNameInput.onChange((value) => {
+			this.fileName = value;
+		});
+
+		const extInput = new TextComponent(inputRow);
+		extInput.setPlaceholder('.ext');
+		extInput.inputEl.title =
+			'Type to filter registered extensions, or enter a new one — it will be registered automatically on Create.';
+		extInput.inputEl.style.width = '80px';
+		extInput.onChange((value) => {
+			this.fileExtension = value.replace(/^\./, '');
+		});
+
+		new ExtensionSuggest(this.plugin, extInput.inputEl, (ext) => {
+			extInput.setValue(ext);
+			this.fileExtension = ext;
+		});
+
+		const cancelButton = new ButtonComponent(inputRow);
+		cancelButton.setButtonText('Cancel');
+		cancelButton.onClick(() => this.close());
+
 		const submitButton = new ButtonComponent(inputRow);
 		submitButton.setCta();
 		submitButton.setButtonText('Create');
