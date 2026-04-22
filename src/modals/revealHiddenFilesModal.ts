@@ -24,17 +24,39 @@ export class RevealHiddenFilesModal extends Modal {
 		this.folderPath = normalizePath(folderPath);
 		if (this.folderPath === '/') this.folderPath = '';
 
-		const revealed = plugin.settings.revealedFiles[this.folderPath] || [];
-		this.initialRevealed = new Set(revealed);
-		this.selected = new Set(revealed);
+		// Initialize as empty sets; they will be populated from clean settings in onOpen()
+		this.initialRevealed = new Set();
+		this.selected = new Set();
 	}
 
 	async onOpen(): Promise<void> {
 		this.renderLoading();
 
-		// Perform async data loading
-		this.items = await scanHiddenFiles(this.plugin, this.folderPath);
+		// Clean up stale files before scanning to ensure settings are up-to-date
 		await cleanStaleRevealedFiles(this.plugin);
+
+		// Re-initialize selections from the cleaned settings
+		const revealed = this.plugin.settings.revealedFiles[this.folderPath] || [];
+		this.initialRevealed = new Set(revealed);
+		this.selected = new Set(revealed);
+
+		// Perform scan for currently existing hidden files
+		const allItems = await scanHiddenFiles(this.plugin, this.folderPath);
+
+		// Exclude files already managed by auto-reveal (registered extensions)
+		if (this.plugin.settings.autoRevealRegisteredDotfiles) {
+			const { getActiveExtensions } = await import('../utils/extensionUtils.ts');
+			const { getExtension } = await import('../utils/fileUtils.ts');
+			const activeExts = getActiveExtensions(this.plugin.settings);
+
+			this.items = allItems.filter((item) => {
+				if (item.isFolder) return true;
+				const ext = getExtension(item.name);
+				return !ext || !activeExts.includes(ext);
+			});
+		} else {
+			this.items = allItems;
+		}
 
 		this.render();
 	}
@@ -133,6 +155,16 @@ export class RevealHiddenFilesModal extends Modal {
 				}
 				if (toReveal.length > 0) {
 					await revealFiles(this.plugin, this.folderPath, toReveal);
+				}
+
+				// If nothing selected, ensure the folder entry is fully cleared
+				if (this.selected.size === 0) {
+					delete this.plugin.settings.revealedFiles[this.folderPath];
+					await this.plugin.saveSettings();
+					const { decorateFolders } = await import(
+						'../utils/hiddenFilesUtils.ts'
+					);
+					decorateFolders(this.plugin);
 				}
 
 				this.close();
