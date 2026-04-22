@@ -4,7 +4,7 @@ import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/types.ts';
 import { viewType } from './types/variables.ts';
 
-import { initExtensions } from './utils/extensionUtils.ts';
+import { initExtensions, getActiveExtensions } from './utils/extensionUtils.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
 import { serializeMonacoHotkeys } from './utils/hotkeyUtils.ts';
 import { updateRibbonIcon } from './ui/ribbonIcon.ts';
@@ -19,9 +19,11 @@ import {
 } from './utils/explorerUtils.ts';
 import {
 	patchAdapter,
+	patchRegisterExtensions,
 	cleanStaleRevealedFiles,
 	restoreRevealedFiles,
-	decorateFolders
+	decorateFolders,
+	handleNewRegisteredExtensions
 } from './utils/hiddenFilesUtils.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 
@@ -53,12 +55,20 @@ export default class CodeFilesPlugin extends Plugin {
 			updateProjectFolderHighlight(this);
 			await cleanStaleRevealedFiles(this);
 			await restoreRevealedFiles(this);
+			// Re-trigger auto-reveal for all currently registered extensions
+			if (this.settings.autoRevealRegisteredDotfiles) {
+				await handleNewRegisteredExtensions(
+					this,
+					getActiveExtensions(this.settings)
+				);
+			}
 			await decorateFolders(this);
 		});
 
 		setupExplorerBadges(this);
 
 		this.register(patchAdapter(this));
+		this.register(patchRegisterExtensions(this));
 		this.registerEvent(this.app.vault.on('create', () => decorateFolders(this)));
 		this.registerEvent(this.app.vault.on('delete', () => decorateFolders(this)));
 		this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));

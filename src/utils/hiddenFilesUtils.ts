@@ -16,6 +16,7 @@ import {
 } from 'obsidian-typings';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { around } from 'monkey-around';
+import type { Plugin } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { DataAdapterWithInternal, HiddenItem } from '../types/types.ts';
 
@@ -70,6 +71,80 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 }
 
 /**
+ * Patches Plugin.registerExtensions to automatically clean revealedFiles and auto-reveal
+ * dotfiles whenever extensions are registered (startup or dynamically).
+ *
+ * @param plugin - The plugin instance.
+ * @returns A function to unpatch.
+ */
+export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
+	return around(plugin as Plugin, {
+		registerExtensions(next) {
+			return function (this: Plugin, extensions: string[], vType: string) {
+				const result = next.call(this, extensions, vType);
+				// After an extension is registered, clean revealedFiles and auto-reveal
+				if (plugin.app.workspace.layoutReady) {
+					void handleNewRegisteredExtensions(plugin, extensions);
+				}
+				return result;
+			};
+		}
+	});
+}
+
+/**
+ * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
+ * dotfiles matching the new extensions.
+ */
+export async function handleNewRegisteredExtensions(
+	plugin: CodeFilesPlugin,
+	extensions: string[]
+): Promise<void> {
+	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
+
+	const { getExtension } = await import('./fileUtils.ts');
+	const extSet = new Set(extensions);
+
+	// For each folder in revealedFiles, remove entries now auto-managed
+	let changed = false;
+	for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
+		const cleaned = paths.filter((p) => {
+			const ext = getExtension(p.split('/').pop() || '');
+			return !ext || !extSet.has(ext);
+		});
+		if (cleaned.length !== paths.length) {
+			changed = true;
+			if (cleaned.length > 0) {
+				plugin.settings.revealedFiles[folderPath] = cleaned;
+			} else {
+				delete plugin.settings.revealedFiles[folderPath];
+			}
+		}
+	}
+	if (changed) await plugin.saveSettings();
+
+	// Auto-reveal dotfiles matching the new extensions
+	if (plugin.settings.autoRevealRegisteredDotfiles) {
+		const allFolders = plugin.app.vault.getAllFolders();
+		for (const folder of allFolders) {
+			const items = await scanHiddenFiles(plugin, folder.path);
+			const toReveal = items
+				.filter((item) => {
+					if (item.isFolder) return false;
+					const ext = getExtension(item.name);
+					return ext && extSet.has(ext);
+				})
+				.map((item) => item.path);
+			if (toReveal.length > 0) {
+				await revealFiles(plugin, folder.path, toReveal, true, false);
+			}
+		}
+	}
+
+	decorateFolders(plugin);
+}
+
+/**
  * Cleans up the list of revealed files by removing entries that no longer exist on disk.
  * Also normalizes paths in settings to ensure consistency.
  *
@@ -105,6 +180,37 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 	}
 
 	if (changed) await plugin.saveSettings();
+}
+
+/**
+ * Automatically reveals dotfiles whose extensions are registered with Code Files.
+ * Scans the entire vault for hidden files and reveals those matching active extensions.
+ * Called on plugin startup after restoreRevealedFiles.
+ */
+export async function autoRevealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise<void> {
+	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
+
+	const { getActiveExtensions } = await import('./extensionUtils.ts');
+	const { getExtension } = await import('./fileUtils.ts');
+	const activeExts = getActiveExtensions(plugin.settings);
+
+	const allFolders = plugin.app.vault.getAllFolders();
+	for (const folder of allFolders) {
+		const items = await scanHiddenFiles(plugin, folder.path);
+		const toReveal = items
+			.filter((item) => {
+				if (item.isFolder) return false;
+				const ext = getExtension(item.name);
+				if (!ext || !activeExts.includes(ext)) return false;
+				const revealed = plugin.settings.revealedFiles[folder.path] || [];
+				return !revealed.includes(item.path);
+			})
+			.map((item) => item.path);
+
+		if (toReveal.length > 0) {
+			await revealFiles(plugin, folder.path, toReveal, true, false);
+		}
+	}
 }
 
 /**
@@ -256,13 +362,17 @@ export async function scanHiddenFiles(
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to reveal.
+ * @param silent - If true, don't show a notice (for auto-reveal)
+ * @param persist - If true, save to revealedFiles settings (manual reveal only)
  *
  * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  */
 export async function revealFiles(
 	plugin: CodeFilesPlugin,
 	folderPath: string,
-	itemPaths: string[]
+	itemPaths: string[],
+	silent = false,
+	persist = true
 ): Promise<void> {
 	folderPath = normalizePath(folderPath);
 	if (folderPath === '/') folderPath = '';
@@ -307,13 +417,19 @@ export async function revealFiles(
 		}
 	}
 
-	// Persist the revealed state in settings
-	const existing = plugin.settings.revealedFiles[folderPath] ?? [];
-	plugin.settings.revealedFiles[folderPath] = [...new Set([...existing, ...itemPaths])];
-	await plugin.saveSettings();
+	// Persist the revealed state in settings (only for manual reveals)
+	if (persist) {
+		const existing = plugin.settings.revealedFiles[folderPath] ?? [];
+		plugin.settings.revealedFiles[folderPath] = [
+			...new Set([...existing, ...itemPaths])
+		];
+		await plugin.saveSettings();
+	}
 
 	decorateFolders(plugin);
-	new Notice(`${itemPaths.length} item(s) revealed`);
+	if (!silent) {
+		new Notice(`${itemPaths.length} item(s) revealed`);
+	}
 }
 
 /**

@@ -394,6 +394,34 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		containerEl.createEl('h3', { text: 'Hidden Files' });
 
 		new Setting(containerEl)
+			.setName('Auto-reveal registered dotfiles')
+			.setDesc(
+				'Automatically make dotfiles visible in the file explorer when their extension is registered with Code Files. ' +
+					'For example, if you register the "env" extension, .env files will become visible. ' +
+					'You can still manually reveal/hide files per folder using the context menu.'
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.autoRevealRegisteredDotfiles)
+					.onChange(async (value) => {
+						this.plugin.settings.autoRevealRegisteredDotfiles = value;
+						await this.plugin.saveSettings();
+						if (value) {
+							const { getActiveExtensions } = await import(
+								'../utils/extensionUtils.ts'
+							);
+							const { handleNewRegisteredExtensions } = await import(
+								'../utils/hiddenFilesUtils.ts'
+							);
+							await handleNewRegisteredExtensions(
+								this.plugin,
+								getActiveExtensions(this.plugin.settings)
+							);
+						}
+					})
+			);
+
+		new Setting(containerEl)
 			.setName('Excluded folders')
 			.setDesc('Hidden folders to never show (comma-separated)')
 			.addText((text) =>

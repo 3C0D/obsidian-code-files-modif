@@ -56,6 +56,8 @@ export interface MyPluginSettings {
 	 * Value: Array of normalized paths of revealed files within that folder.
 	 */
 	revealedFiles: Record<string, string[]>;
+	/** Automatically reveal dotfiles when their extension is registered with Code Files */
+	autoRevealRegisteredDotfiles: boolean;
 }
 
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */
