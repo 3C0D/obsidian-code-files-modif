@@ -19,6 +19,8 @@ import { around } from 'monkey-around';
 import type { Plugin } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { DataAdapterWithInternal, HiddenItem } from '../types/types.ts';
+import { getExtension } from './fileUtils.ts';
+import { getActiveExtensions } from './extensionUtils.ts';
 
 /**
  * Global flag used to temporarily bypass the deletion patch.
@@ -102,7 +104,6 @@ export async function handleNewRegisteredExtensions(
 ): Promise<void> {
 	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
 
-	const { getExtension } = await import('./fileUtils.ts');
 	const extSet = new Set(extensions);
 
 	// For each folder in revealedFiles, remove entries now auto-managed
@@ -192,8 +193,6 @@ export async function autoRevealRegisteredDotfiles(
 ): Promise<void> {
 	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
 
-	const { getActiveExtensions } = await import('./extensionUtils.ts');
-	const { getExtension } = await import('./fileUtils.ts');
 	const activeExts = getActiveExtensions(plugin.settings);
 
 	const allFolders = plugin.app.vault.getAllFolders();
@@ -484,8 +483,6 @@ export async function hideFilesInFolder(
  * Called when the auto-reveal toggle is turned off.
  */
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
-	const { getActiveExtensions } = await import('./extensionUtils.ts');
-	const { getExtension } = await import('./fileUtils.ts');
 	const activeExts = getActiveExtensions(plugin.settings);
 
 	const allFolders = plugin.app.vault.getAllFolders(true);

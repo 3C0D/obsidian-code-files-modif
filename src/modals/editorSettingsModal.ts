@@ -154,14 +154,16 @@ export class EditorSettingsModal extends Modal {
 			.setName('Project Root Folder')
 			.setDesc('Base folder for inter-file navigation and imports resolution')
 			.addText((text) => {
-				text.setPlaceholder('e.g., my-project')
-					.setValue(this.plugin.settings.projectRootFolder);
-				
+				text.setPlaceholder('e.g., my-project').setValue(
+					this.plugin.settings.projectRootFolder
+				);
+
 				// Validate on blur (when user leaves the field)
 				text.inputEl.addEventListener('blur', async () => {
 					const trimmed = text.inputEl.value.trim();
 					if (trimmed) {
-						const folder = this.plugin.app.vault.getAbstractFileByPath(trimmed);
+						const folder =
+							this.plugin.app.vault.getAbstractFileByPath(trimmed);
 						if (!(folder instanceof TFolder)) {
 							new Notice('Invalid path: folder does not exist');
 							text.inputEl.value = this.plugin.settings.projectRootFolder;
@@ -173,7 +175,7 @@ export class EditorSettingsModal extends Modal {
 					await broadcastProjectFiles(this.plugin);
 					updateProjectFolderHighlight(this.plugin);
 				});
-				
+
 				new FolderSuggest(this.plugin, text.inputEl, async (folder) => {
 					this.plugin.settings.projectRootFolder = folder.path;
 					await this.plugin.saveSettings();
