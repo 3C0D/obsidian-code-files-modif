@@ -4,8 +4,11 @@ import {
 	scanHiddenFiles,
 	cleanStaleRevealedFiles,
 	revealFiles,
-	hideFilesInFolder
+	hideFilesInFolder,
+	decorateFolders
 } from '../utils/hiddenFilesUtils.ts';
+import { getActiveExtensions } from '../utils/extensionUtils.ts';
+import { getExtension } from '../utils/fileUtils.ts';
 import type { HiddenItem } from '../types/types.ts';
 
 /**
@@ -45,8 +48,6 @@ export class RevealHiddenFilesModal extends Modal {
 
 		// Exclude files already managed by auto-reveal (registered extensions)
 		if (this.plugin.settings.autoRevealRegisteredDotfiles) {
-			const { getActiveExtensions } = await import('../utils/extensionUtils.ts');
-			const { getExtension } = await import('../utils/fileUtils.ts');
 			const activeExts = getActiveExtensions(this.plugin.settings);
 
 			this.items = allItems.filter((item) => {
@@ -75,7 +76,6 @@ export class RevealHiddenFilesModal extends Modal {
 				delete this.plugin.settings.revealedFiles[this.folderPath];
 			}
 			await this.plugin.saveSettings();
-			const { decorateFolders } = await import('../utils/hiddenFilesUtils.ts');
 			decorateFolders(this.plugin);
 		}
 
@@ -182,9 +182,6 @@ export class RevealHiddenFilesModal extends Modal {
 				if (this.selected.size === 0) {
 					delete this.plugin.settings.revealedFiles[this.folderPath];
 					await this.plugin.saveSettings();
-					const { decorateFolders } = await import(
-						'../utils/hiddenFilesUtils.ts'
-					);
 					decorateFolders(this.plugin);
 				}
 
