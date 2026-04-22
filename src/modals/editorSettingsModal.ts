@@ -4,7 +4,7 @@
  * 2. Monaco JSON editor for per-extension or global formatter config (tabSize, formatOnSave, etc.)
  * Opened via the gear icon in the tab header. Changes are saved on close and broadcast to all open editors.
  */
-import { ButtonComponent, Modal, Setting, debounce } from 'obsidian';
+import { ButtonComponent, Modal, Setting, debounce, Notice, TFolder } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { DEFAULT_EDITOR_CONFIG, getExtensionConfigTemplate } from '../types/variables.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
@@ -17,6 +17,7 @@ import {
 	broadcastEditorConfig
 } from '../utils/broadcast.ts';
 import { FolderSuggest } from '../ui/folderSuggest.ts';
+import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -154,16 +155,30 @@ export class EditorSettingsModal extends Modal {
 			.setDesc('Base folder for inter-file navigation and imports resolution')
 			.addText((text) => {
 				text.setPlaceholder('e.g., my-project')
-					.setValue(this.plugin.settings.projectRootFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.projectRootFolder = value.trim();
-						await this.plugin.saveSettings();
-						await broadcastProjectFiles(this.plugin);
-					});
+					.setValue(this.plugin.settings.projectRootFolder);
+				
+				// Validate on blur (when user leaves the field)
+				text.inputEl.addEventListener('blur', async () => {
+					const trimmed = text.inputEl.value.trim();
+					if (trimmed) {
+						const folder = this.plugin.app.vault.getAbstractFileByPath(trimmed);
+						if (!(folder instanceof TFolder)) {
+							new Notice('Invalid path: folder does not exist');
+							text.inputEl.value = this.plugin.settings.projectRootFolder;
+							return;
+						}
+					}
+					this.plugin.settings.projectRootFolder = trimmed;
+					await this.plugin.saveSettings();
+					await broadcastProjectFiles(this.plugin);
+					updateProjectFolderHighlight(this.plugin);
+				});
+				
 				new FolderSuggest(this.plugin, text.inputEl, async (folder) => {
 					this.plugin.settings.projectRootFolder = folder.path;
 					await this.plugin.saveSettings();
 					await broadcastProjectFiles(this.plugin);
+					updateProjectFolderHighlight(this.plugin);
 				});
 			});
 
