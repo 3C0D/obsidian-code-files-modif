@@ -187,7 +187,9 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
  * Scans the entire vault for hidden files and reveals those matching active extensions.
  * Called on plugin startup after restoreRevealedFiles.
  */
-export async function autoRevealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise<void> {
+export async function autoRevealRegisteredDotfiles(
+	plugin: CodeFilesPlugin
+): Promise<void> {
 	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
 
 	const { getActiveExtensions } = await import('./extensionUtils.ts');
@@ -475,4 +477,32 @@ export async function hideFilesInFolder(
 	await plugin.saveSettings();
 	decorateFolders(plugin);
 	new Notice(`${itemPaths.length} file(s) hidden`);
+}
+
+/**
+ * Hides all auto-revealed dotfiles (those with registered extensions that are not manually revealed).
+ * Called when the auto-reveal toggle is turned off.
+ */
+export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
+	const { getActiveExtensions } = await import('./extensionUtils.ts');
+	const { getExtension } = await import('./fileUtils.ts');
+	const activeExts = getActiveExtensions(plugin.settings);
+
+	const allFolders = plugin.app.vault.getAllFolders(true);
+	for (const folder of allFolders) {
+		const items = await scanHiddenFiles(plugin, folder.path);
+		const toHide = items
+			.filter((item) => {
+				if (item.isFolder) return false;
+				const ext = getExtension(item.name);
+				// Only hide auto-managed ones (not in revealedFiles = not manually revealed)
+				const revealed = plugin.settings.revealedFiles[folder.path] || [];
+				return ext && activeExts.includes(ext) && !revealed.includes(item.path);
+			})
+			.map((item) => item.path);
+
+		if (toHide.length > 0) {
+			await hideFilesInFolder(plugin, folder.path, toHide);
+		}
+	}
 }

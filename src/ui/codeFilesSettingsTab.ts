@@ -407,16 +407,18 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						this.plugin.settings.autoRevealRegisteredDotfiles = value;
 						await this.plugin.saveSettings();
 						if (value) {
-							const { getActiveExtensions } = await import(
-								'../utils/extensionUtils.ts'
-							);
-							const { handleNewRegisteredExtensions } = await import(
-								'../utils/hiddenFilesUtils.ts'
-							);
+							const { getActiveExtensions } =
+								await import('../utils/extensionUtils.ts');
+							const { handleNewRegisteredExtensions } =
+								await import('../utils/hiddenFilesUtils.ts');
 							await handleNewRegisteredExtensions(
 								this.plugin,
 								getActiveExtensions(this.plugin.settings)
 							);
+						} else {
+							const { hideAutoRevealedDotfiles } =
+								await import('../utils/hiddenFilesUtils.ts');
+							await hideAutoRevealedDotfiles(this.plugin);
 						}
 					})
 			);
