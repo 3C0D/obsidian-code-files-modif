@@ -16,6 +16,8 @@ CodeEditorView → mountCodeEditor() → iframe (monacoEditor.html) → Monaco E
 - `monacoEditor.html` — Monaco instance, receives messages
 - `codeEditorView.ts` — Obsidian TextFileView wrapper
 - `getLanguage.ts` — extension → language mapping
+- `hiddenFilesUtils.ts` — hidden files scanning, reveal/hide operations
+- `hiddenFilesModal.ts` — modal for revealing/hiding dotfiles per folder
 
 ## postMessage Protocol
 
@@ -65,6 +67,25 @@ dynamicMap (Monaco) > staticMap (fallback) > 'plaintext'
 - `addExtension()`: removes from `excludedExtensions`, adds to `extraExtensions` if not in base
 - `removeExtension()`: adds to `excludedExtensions`, removes from `extraExtensions`
 - `reregisterExtensions()` diffs changes to avoid re-registering identical extensions
+
+## Hidden Files Management
+
+**Reveal System:**
+- `revealedFiles` — map of folder paths to arrays of revealed file paths
+- `scanHiddenFiles()` — scans folder for dotfiles, respects exclusions
+- `revealFiles()` — makes dotfiles visible in Obsidian's file explorer
+- `hideFilesInFolder()` — removes dotfiles from explorer
+- `decorateFolders()` — adds eye icon badge to folders with revealed files
+
+**Adapter Patching:**
+- `patchAdapter()` — prevents Obsidian from auto-deleting revealed dotfiles
+- `reconcileDeletion` override blocks deletion unless explicitly requested
+- `_bypassPatch` flag allows intentional hiding via `hideFilesInFolder()`
+
+**Persistence:**
+- Revealed files stored in `settings.revealedFiles` per folder
+- `restoreRevealedFiles()` re-registers dotfiles on plugin load
+- `cleanStaleRevealedFiles()` removes entries for deleted files
 
 ## Editor Config
 ```

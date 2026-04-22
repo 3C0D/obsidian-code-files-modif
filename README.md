@@ -124,9 +124,20 @@ A modal opens with filename, extension dropdown, and a **+** button to register 
 
 ## Opening hidden files
 
-You can open any file in Monaco, even if it's not displayed in Obsidian's file explorer:
+You can reveal and manage hidden files (dotfiles) directly in Obsidian's file explorer:
 
-- **From a specific folder**: Right-click a folder in the explorer → **Code Files → Open Hidden Files in Code Files**
+### Reveal Hidden Files in a Folder
+- **Right-click a folder** in the explorer → **Code Files → Show/Hide Hidden Files**
+- A modal lists all hidden files in that folder (files starting with `.`)
+- **Check files to reveal** them in the explorer, **uncheck to hide** them again
+- **Master checkbox**: Select/deselect all files at once
+- **Click Apply** to confirm changes
+- **Folder badge**: Folders with revealed files show an eye icon (👁️) badge
+
+### Open Hidden Files Directly
+You can also open hidden files without revealing them in the explorer:
+
+- **From a specific folder**: Right-click a folder → **Code Files → Open Hidden Files in Code Files**
 - **From entire vault**: Command palette → **"Open Hidden Files in Vault"**
 - A suggester lists all hidden files with their relative paths
 - Files are filtered by size (max 10MB) and exclude dangerous formats:
@@ -136,7 +147,12 @@ You can open any file in Monaco, even if it's not displayed in Obsidian's file e
   - Binary Office formats: `doc`, `xls`, `ppt`
   - Fonts: `ttf`, `otf`, `woff`, `woff2`, `eot`
 
-This is useful for editing configuration files like `.gitignore`, `.env`, `.dockerignore`, or any other hidden files in your vault.
+### Hidden Files Settings
+In **Obsidian Settings → Code Files → Hidden Files**:
+- **Excluded folders**: Hidden folders to never show (e.g., `.git`, `node_modules`)
+- **Excluded extensions**: Hidden file extensions to exclude (e.g., `tmp`, `log`, `cache`)
+
+This is useful for editing configuration files like `.gitignore`, `.env`, `.dockerignore`, `.prettierrc`, or any other hidden files in your vault.
 
 ---
 

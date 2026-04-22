@@ -27,11 +27,16 @@
 - **Smart tab reuse**: Opens in existing tab if file already open
 - **IntelliSense**: Full project context for code completion
 
-### 5. **Hidden Files Access**
-- **Open hidden files**: .gitignore, .env, .dockerignore, etc.
+### 5. **Hidden Files Access & Management**
+- **Reveal in explorer**: Right-click folder → "Show/Hide Hidden Files" modal
+- **Master checkbox**: Select/deselect all hidden files at once
+- **Visual indicator**: Eye icon badge on folders with revealed files
+- **Persistent state**: Revealed files remain visible across sessions
+- **Open directly**: Access hidden files without revealing them
 - **From folder**: Right-click → "Open Hidden Files in Code Files"
 - **From vault**: Command palette → "Open Hidden Files in Vault"
 - **Safe filtering**: Excludes executables, archives, databases
+- **Configurable exclusions**: Exclude specific folders/extensions in settings
 
 ### 6. **Dynamic Extension Management**
 - **Unified system**: Base list + user additions/exclusions
