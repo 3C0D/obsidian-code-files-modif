@@ -1,123 +1,138 @@
 .code-files-ext-badge {
-  display: inline-block;
-  width: auto;
-  margin-left: 6px;
-  margin-right: 4px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.75em;
-  font-weight: 600;
-  background-color: var(--background-modifier-border);
-  color: var(--text-muted);
-  vertical-align: middle;
-  line-height: 1.6;
-  pointer-events: none;
+	display: inline-block;
+	width: auto;
+	margin-left: 6px;
+	margin-right: 4px;
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 0.75em;
+	font-weight: 600;
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+	vertical-align: middle;
+	line-height: 1.6;
+	pointer-events: none;
 }
 
 .code-files-dirty-badge {
-  display: inline-block;
-  margin-left: 4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1.5px solid var(--text-muted);
-  background: transparent;
-  vertical-align: middle;
-  pointer-events: none;
-  transition: background 0.15s, border-color 0.15s;
+	display: inline-block;
+	margin-left: 4px;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	border: 1.5px solid var(--text-muted);
+	background: transparent;
+	vertical-align: middle;
+	pointer-events: none;
+	transition:
+		background 0.15s,
+		border-color 0.15s;
 }
 
 .code-files-dirty-badge.code-files-dirty-unsaved {
-  background: white;
-  border-color: white;
+	background: white;
+	border-color: white;
 }
 
 .code-files-fence-gear {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: var(--icon-color);
-  opacity: var(--icon-opacity);
-  border-radius: 4px;
-  padding: 2px;
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	color: var(--icon-color);
+	opacity: var(--icon-opacity);
+	border-radius: 4px;
+	padding: 2px;
 }
 
 .code-files-fence-gear:last-child {
-  margin-right: 30px;
+	margin-right: 30px;
 }
 
 .code-files-fence-gear:hover {
-  opacity: 1;
-  background-color: var(--background-modifier-hover);
+	opacity: 1;
+	background-color: var(--background-modifier-hover);
 }
 
 .code-files-settings-toggles {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 /* Snippet toggle switch */
 .code-files-snippet-toggle-action {
-  display: flex;
-  align-items: center;
-  padding: 0 6px;
+	display: flex;
+	align-items: center;
+	padding: 0 6px;
 }
 
 .code-files-toggle-track {
-  width: 28px;
-  height: 16px;
-  border-radius: 8px;
-  background: var(--background-modifier-border);
-  position: relative;
-  transition: background 0.2s;
-  flex-shrink: 0;
+	width: 28px;
+	height: 16px;
+	border-radius: 8px;
+	background: var(--background-modifier-border);
+	position: relative;
+	transition: background 0.2s;
+	flex-shrink: 0;
 }
 
 .code-files-toggle-track.is-on {
-  background: var(--interactive-accent);
+	background: var(--interactive-accent);
 }
 
 .code-files-toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: white;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: white;
+	transition: transform 0.2s;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .code-files-toggle-track.is-on .code-files-toggle-thumb {
-  transform: translateX(12px);
+	transform: translateX(12px);
 }
 
 /* Diff action icon - highlighted to draw attention after formatting */
 .code-files-diff-action {
-  color: var(--code-files-diff-icon-color, #ff4848);
-  animation: code-files-diff-flash 0.8s ease-in-out 3;
+	color: var(--code-files-diff-icon-color, #ff4848);
+	animation: code-files-diff-flash 0.8s ease-in-out 3;
 }
 
 @keyframes code-files-diff-flash {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.2;
+	}
 }
 
 /* Project root folder highlight */
 .code-files-project-root-folder {
-  color: var(--code-files-project-root-color, #c644cf) !important;
+	color: var(--code-files-project-root-color, #c644cf) !important;
+}
+
+/* .code-files-dotfile-badge {
+	background: rgba(255, 255, 255, 0.059);
+} */
+
+.code-files-unregistered-badge {
+	color: rgba(255, 239, 213, 0.464); 
 }
 
 .hidden-files-badge {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 4px;
-  scale: 0.75;
-  color: #10b981;
+	display: inline-flex;
+	align-items: center;
+	margin-left: 4px;
+	scale: 0.75;
+	color: #10b981a5;
 }
 
 .hidden-file-size {
-  margin-left: 6px;
-  color: var(--text-muted);
-  font-size: 0.85em;
+	margin-left: 6px;
+	color: var(--text-muted);
+	font-size: 0.85em;
 }

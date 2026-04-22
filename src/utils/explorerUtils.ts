@@ -9,6 +9,7 @@ import type { FileExplorerView, FileTreeItem } from 'obsidian-typings';
 import { TFile } from 'obsidian';
 import { getExtension } from './fileUtils.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
+import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 
 const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
 
@@ -72,6 +73,14 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 			const view = leaf.view as FileExplorerView;
 			if (!view.fileItems) continue;
 
+			// Reset unregistered badges before recomputing
+			for (const item of Object.values(view.fileItems)) {
+				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
+				selfEl
+					?.querySelector('.code-files-unregistered-badge')
+					?.classList.remove('code-files-unregistered-badge');
+			}
+
 			for (const item of Object.values(view.fileItems)) {
 				const file = (item as FileTreeItem).file;
 				if (!(file instanceof TFile)) continue;
@@ -87,6 +96,23 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 				if (tagEl && !tagEl.textContent) {
 					tagEl.textContent = ext.toUpperCase();
 					tagEl.classList.add('code-files-dotfile-badge');
+				}
+			}
+
+			// Badge for unregistered files (not native, not registered with Code Files)
+			for (const item of Object.values(view.fileItems)) {
+				const file = (item as FileTreeItem).file;
+				if (!(file instanceof TFile)) continue;
+				if (!file.extension) continue; // dotfiles already handled above
+				if (activeExts.includes(file.extension)) continue;
+				if (OBSIDIAN_NATIVE_EXTENSIONS.includes(file.extension)) continue;
+
+				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
+				if (!selfEl) continue;
+
+				const tagEl = selfEl.querySelector('.nav-file-tag');
+				if (tagEl) {
+					tagEl.classList.add('code-files-unregistered-badge');
 				}
 			}
 		}
