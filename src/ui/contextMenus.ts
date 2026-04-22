@@ -121,7 +121,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 	const items: MenuItems[] = [
 		{
-			title: 'Create Code File',
+			title: 'Create Code File | Manage extensions (+/−)',
 			icon: 'file-plus',
 			action: () => new CreateCodeFileModal(plugin, folder).open()
 		},

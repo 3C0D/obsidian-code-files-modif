@@ -47,10 +47,24 @@ export class CreateCodeFileModal extends Modal {
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.style.display = 'flex';
-		contentEl.style.alignItems = 'center';
+		contentEl.style.flexDirection = 'column';
+		contentEl.style.gap = '8px';
+
+		// Tip about extension management
+		contentEl.createEl('div', {
+			text: 'Tip: Use the +/− button to manage registered extensions without creating a file',
+			attr: {
+				style: 'color: var(--text-muted); font-size: 0.85em; font-style: italic; margin-bottom: 4px;'
+			}
+		});
+
+		// Input row
+		const inputRow = contentEl.createEl('div');
+		inputRow.style.display = 'flex';
+		inputRow.style.alignItems = 'center';
 
 		// File name input — constrained width to leave room for other controls
-		const fileNameInput = new TextComponent(contentEl);
+		const fileNameInput = new TextComponent(inputRow);
 		fileNameInput.inputEl.style.width = '200px';
 		fileNameInput.inputEl.style.marginRight = '10px';
 		fileNameInput.setValue(this.fileName);
@@ -59,7 +73,7 @@ export class CreateCodeFileModal extends Modal {
 		});
 
 		// Extension input with autocomplete from registered extensions
-		const extInput = new TextComponent(contentEl);
+		const extInput = new TextComponent(inputRow);
 		extInput.setPlaceholder('.ext');
 		extInput.inputEl.title =
 			'Type to filter registered extensions, or enter a new one — it will be registered automatically on Create.';
@@ -77,7 +91,7 @@ export class CreateCodeFileModal extends Modal {
 		});
 
 		// button to add/remove extensions on the fly
-		const manageBtn = new ButtonComponent(contentEl);
+		const manageBtn = new ButtonComponent(inputRow);
 		manageBtn.setIcon('diff');
 		manageBtn.setTooltip('Edit extensions — add or remove');
 		manageBtn.buttonEl.style.marginRight = '10px';
@@ -91,7 +105,7 @@ export class CreateCodeFileModal extends Modal {
 		});
 
 		// Create button
-		const submitButton = new ButtonComponent(contentEl);
+		const submitButton = new ButtonComponent(inputRow);
 		submitButton.setCta();
 		submitButton.setButtonText('Create');
 		submitButton.onClick(() => this.complete());
