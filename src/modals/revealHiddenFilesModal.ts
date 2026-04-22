@@ -58,6 +58,27 @@ export class RevealHiddenFilesModal extends Modal {
 			this.items = allItems;
 		}
 
+		// Remove auto-managed paths from selected/initialRevealed and from settings
+		const itemPaths = new Set(this.items.map((i) => i.path));
+		this.initialRevealed = new Set(
+			[...this.initialRevealed].filter((p) => itemPaths.has(p))
+		);
+		this.selected = new Set([...this.selected].filter((p) => itemPaths.has(p)));
+
+		// Persist the cleanup immediately
+		const current = this.plugin.settings.revealedFiles[this.folderPath] || [];
+		const cleaned = current.filter((p) => itemPaths.has(p));
+		if (cleaned.length !== current.length) {
+			if (cleaned.length > 0) {
+				this.plugin.settings.revealedFiles[this.folderPath] = cleaned;
+			} else {
+				delete this.plugin.settings.revealedFiles[this.folderPath];
+			}
+			await this.plugin.saveSettings();
+			const { decorateFolders } = await import('../utils/hiddenFilesUtils.ts');
+			decorateFolders(this.plugin);
+		}
+
 		this.render();
 	}
 
