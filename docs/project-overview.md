@@ -7,7 +7,7 @@
 - VS Code's complete editor embedded locally in Obsidian
 - Syntax highlighting for 80+ languages
 - Professional features: line numbers, minimap, folding, word wrap
-- No external dependencies — 17.5MB local bundle
+- No external dependencies — **21.4 MB** local bundle
 
 ### 2. **Advanced Code Formatting with Diff Control**
 
@@ -134,7 +134,7 @@
 **Key Evolution:** Migrated from external iframe to local Monaco integration, overcoming CSP restrictions and achieving complete offline functionality.
 
 - **Monaco Editor** — VS Code's editor embedded locally via iframe
-- **Local Assets** — 17.5MB bundle (no CDN, no internet required)
+- **Local Assets** — **21.4 MB** bundle (no CDN, no internet required)
 - **postMessage Communication** — iframe ↔ Obsidian integration
 - **Custom Build System** — esbuild with specialized asset handling
 
@@ -198,12 +198,19 @@ yarn real   # Install to production vault
 
 ## Package Size
 
-**~17.5 MB total**
+**~21.4 MB total**
 
 - Monaco Editor: ~12 MB
 - Themes: ~2 MB
-- Formatters: ~2 MB
+- Formatters (Prettier, Mermaid, Ruff, gofmt, clang-format): ~5 MB
 - Plugin code: ~1 MB
+- Other assets and overhead: ~1.4 MB
+
+Formatters contribute significantly to the total size. The plugin is fully offline with no external dependencies.
+
+- Other assets and overhead: ~1.4 MB
+
+Formatters contribute significantly to the total size. The plugin is fully offline with no external dependencies.
 
 ## Why This Approach?
 

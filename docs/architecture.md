@@ -20,7 +20,7 @@ CodeEditorView → mountCodeEditor() → iframe (monacoEditor.html) → Monaco E
 - `codeEditorView.ts` — Obsidian TextFileView wrapper
 - `getLanguage.ts` — extension → language mapping
 - `hiddenFilesUtils.ts` — hidden files scanning, reveal/hide operations
-- `hiddenFilesModal.ts` — modal for revealing/hiding dotfiles per folder
+- `revealHiddenFilesModal.ts` — modal for revealing/hiding dotfiles per folder
 
 ## postMessage Protocol
 
@@ -47,11 +47,12 @@ CodeEditorView → mountCodeEditor() → iframe (monacoEditor.html) → Monaco E
 ## Language System
 
 ```
-dynamicMap (Monaco) > staticMap (fallback) > 'plaintext'
+staticMap > 'plaintext'
 ```
 
-- `staticMap` — 80 common extensions, available at startup
-- `dynamicMap` — from `monaco.languages.getLanguages()`, persisted in `data.json`
+- `staticMap` — maps 80+ common file extensions to Monaco language IDs, available at startup
+- Unknown extensions → 'plaintext' (no syntax highlighting)
+- The map is defined in `getLanguage.ts` and used throughout the plugin
 
 ## Extension Management
 

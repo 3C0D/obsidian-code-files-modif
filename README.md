@@ -114,7 +114,7 @@ The folder set as **Project Root** for cross-file navigation is highlighted in t
 
 - **Default color**: Green (configurable)
 - **How to set**: Right-click folder → **Code Files → Define as Project Root Folder**
-- **Custom color**: In Editor Settings (⚙️), use **Project Root Folder Highlight Color** to choose any color
+- **Custom color**: In **Obsidian Settings → Code Files → Project Root Folder** section, use the color picker to choose any color
 
 ### Extension Badges
 
@@ -226,7 +226,7 @@ In **Obsidian Settings → Code Files → Hidden Files**:
 
 Hidden files are filtered by:
 
-- **Size**: Maximum 10 MB by default (configurable in Editor Settings)
+- **Size**: Maximum 10 MB by default (configurable in Plugin Settings)
 - **Dangerous formats**: Executables (exe, dll, so, dylib, app, dmg, ms), archives (zip, rar, 7z, tar, gz, bz2, xz), databases (db, sqlite, mdb), binary office formats (doc, xls, ppt), fonts (ttf, otf, woff, woff2, eot) are excluded from scanning for safety
 
 ---
@@ -350,6 +350,7 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 - **Show ribbon icon** — toggle the sidebar icon
 - **Use extended extensions list** — auto-register a broad curated list vs. manual management
 - **Manage extensions** — add or remove extensions; changes take effect immediately
+- **Maximum file size** — maximum file size in MB for opening files in Monaco (default: 10 MB, range 1-100 MB)
 - **Editor Config** — same JSON editor as the gear panel, with extension picker
 - **Monaco Hotkey Overrides** — ensure Obsidian shortcuts work inside Monaco. Configure overrides for:
     - **Command Palette** (default: Ctrl+P / Cmd+P)
@@ -440,6 +441,24 @@ See `docs/prettier-markdown-formatting.md` for details on how Prettier markdown 
 See `docs/mermaid-formatting.md` for details on how Mermaid diagram formatting is implemented.
 
 See `docs/cross-file-navigation.md` for details on how TypeScript/JavaScript cross-file navigation is implemented.
+
+---
+
+## Package Size
+
+**Current size: ~21.4 MB**
+
+The plugin bundle includes:
+
+- Monaco Editor: ~12 MB
+- Themes: ~2 MB
+- Formatters (Prettier, Mermaid, Ruff, gofmt, clang-format): ~5 MB
+- Plugin code: ~1 MB
+- Other assets and overhead: ~1.4 MB
+
+Formatters are the main contributors to the increased size compared to the initial estimate. The plugin remains completely offline with no external dependencies.
+
+---
 
 ### Adding New Formatters
 

@@ -1,10 +1,13 @@
 # Files Without Extension Support
 
 ## Summary
+
 Files without extension (`.env`, `.gitignore`, `LICENSE`, `README`, etc.) automatically open in Monaco by registering empty string `""` as an extension in `extraExtensions`. This is the only modification needed.
 
 ## The Problem
+
 Obsidian's file system treats files without extension as having `file.extension = ""` (empty string):
+
 - `.env` → `file.extension = ""`
 - `LICENSE` → `file.extension = ""`
 - `.gitignore` → `file.extension = ""`
@@ -12,14 +15,17 @@ Obsidian's file system treats files without extension as having `file.extension 
 These files cannot be registered individually because they all share the same "extension" (none).
 
 ## The Solution
+
 Register `""` (empty string) as an extension in `extraExtensions`:
 
 **Location:** `types.ts` - `DEFAULT_SETTINGS`
+
 ```typescript
-extraExtensions: ['']  // Handles all files without extension
+extraExtensions: ['']; // Handles all files without extension
 ```
 
 **Why `extraExtensions`?**
+
 - Works in both manual and extended modes
 - Always included regardless of mode toggle
 - Merged with other extensions via `getActiveExtensions()`
@@ -27,6 +33,7 @@ extraExtensions: ['']  // Handles all files without extension
 ## How It Works
 
 When Obsidian tries to open a file:
+
 1. Checks `file.extension` → returns `""`
 2. Looks up `""` in registered extensions
 3. Finds `viewType = 'code-editor'` registered for `""`
@@ -35,12 +42,15 @@ When Obsidian tries to open a file:
 ## Behavior
 
 ### Automatic Opening
+
 All files with `file.extension === ""` open in Monaco:
+
 - `.env`, `.gitignore`, `.dockerignore`
 - `LICENSE`, `README`, `Makefile`
 - Any file starting with `.` and no extension
 
 ### Language Detection
+
 Falls back to `plaintext` since these files aren't in `staticMap`.
 
 ## Editor Configuration for Files Without Extension
@@ -54,6 +64,7 @@ Files like `.prettierrc`, `.env`, or `LICENSE` need per-file editor configuratio
 **Step 1: Extension Mapping** (`getEmptyFileExtension` in `fileUtils.ts`)
 
 Maps files without extension to unique identifiers:
+
 - `.prettierrc` → `"prettierrc"`
 - `.env` → `"env"`
 - `LICENSE` → `"license"`
@@ -64,6 +75,7 @@ This allows each file type to have its own editor config.
 **Step 2: Language Detection** (`getLanguage` in `getLanguage.ts`)
 
 Maps fake extensions to Monaco language IDs:
+
 ```typescript
 prettierrc: 'json',
 env: 'plaintext',
@@ -73,8 +85,9 @@ gitignore: 'plaintext'
 **Step 3: Configuration Cascade** (`buildMergedConfig` in `settingsUtils.ts`)
 
 Merges global config with per-extension overrides:
+
 ```typescript
-buildMergedConfig(plugin, 'prettierrc')
+buildMergedConfig(plugin, 'prettierrc');
 // Returns: global config + prettierrc-specific overrides
 ```
 
@@ -85,6 +98,7 @@ buildMergedConfig(plugin, 'prettierrc')
 **Example:** `.clangformat` maps to `yaml` language
 
 **Cascade order:**
+
 1. Global config (`*`)
 2. Language config (`yaml`) — if extension maps to a different language
 3. Extension config (`clangformat`) — highest priority
@@ -92,39 +106,45 @@ buildMergedConfig(plugin, 'prettierrc')
 **Implementation:**
 
 `buildMergedConfig` in `settingsUtils.ts`:
+
 ```typescript
 const language = staticMap[ext] ?? 'plaintext';
-const languageCfg = (language !== ext && language !== 'plaintext')
-    ? parseEditorConfig(plugin.settings.editorConfigs[language] ?? '{}')
-    : {};
+const languageCfg =
+	language !== ext && language !== 'plaintext'
+		? parseEditorConfig(plugin.settings.editorConfigs[language] ?? '{}')
+		: {};
 return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
 ```
 
 `getExtensionConfigTemplate` in `types.ts`:
+
 ```typescript
 const language = staticMap[ext] ?? 'plaintext';
 if (language !== ext && language !== 'plaintext' && templates[language]) {
-    return templates[language];
+	return templates[language];
 }
 ```
 
 `broadcastEditorConfig` in `broadcast.ts`:
+
 ```typescript
 const targets = views.filter((v) => {
-    const fileExt = getEmptyFileExtension(v.file);
-    if (fileExt === ext) return true;
-    const language = staticMap[fileExt] ?? 'plaintext';
-    return language === ext;  // Also broadcast to extensions that map to this language
+	const fileExt = getEmptyFileExtension(v.file);
+	if (fileExt === ext) return true;
+	const language = staticMap[fileExt] ?? 'plaintext';
+	return language === ext; // Also broadcast to extensions that map to this language
 });
 ```
 
 **Benefits:**
+
 - `.clangformat` inherits YAML config (tabSize: 2, insertSpaces: true)
 - `.prettierrc` inherits JSON config (tabSize: 2)
 - Changing `yaml` config broadcasts to all YAML files AND `.clangformat`
 - No duplicate config needed for extensions that share a language
 
 **Testing:**
+
 1. Create `.clangformat` file
 2. Open Editor Settings → shows YAML template (tabSize: 2)
 3. Change YAML config → applies to `.clangformat` immediately
@@ -142,17 +162,21 @@ Use `getEmptyFileExtension()` instead of `file.extension` when broadcasting:
 
 ```typescript
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
-    const views = getCodeEditorViews(plugin.app);
-    const targets = ext === '*' ? views : views.filter((v) => v.file && getEmptyFileExtension(v.file) === ext);
-    for (const view of targets) {
-        const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
-        const config = buildMergedConfig(plugin, fileExt);
-        view.editor?.send('change-editor-config', { config });
-    }
+	const views = getCodeEditorViews(plugin.app);
+	const targets =
+		ext === '*'
+			? views
+			: views.filter((v) => v.file && getEmptyFileExtension(v.file) === ext);
+	for (const view of targets) {
+		const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
+		const config = buildMergedConfig(plugin, fileExt);
+		view.editor?.send('change-editor-config', { config });
+	}
 }
 ```
 
 This ensures:
+
 - Config saved under `"prettierrc"` is broadcast to files with `getEmptyFileExtension(file) === "prettierrc"`
 - Each file type receives its correct configuration
 - Format settings (tabSize, formatOnSave) apply immediately when closing the settings modal
@@ -192,18 +216,24 @@ void CodeEditorView.openFile(newFile, this.plugin);
 5. Format document (Shift+Alt+F)
 6. Verify formatting uses 2-space indentation
 
-## Current Limitation
+## Current Status
 
-**Requires external plugin:** Files starting with `.` are hidden by Obsidian by default. Users need a plugin like "Show Hidden Files" to see them in the file explorer.
+The plugin now handles dotfiles natively through the **Reveal Hidden Files** system:
 
-**Future consideration:** Add "Open Hidden Files" command directly in Code Files plugin.
+### Built-in Dotfile Management
 
-## Testing
+- **Auto-reveal**: When a dotfile extension (e.g., `.env`, `.gitignore`) is registered with Code Files, it is automatically made visible in the Obsidian file explorer.
+- **Manual control**: The "Reveal Hidden Files" modal (`.re` quick action or folder context menu) allows scanning and manually revealing/hiding dotfiles per folder.
+- **Patch layer**: `openFilePatch.ts` intercepts Obsidian's file opening to ensure dotfiles open in Monaco when registered.
+- **No external plugin required**: The Code Files plugin fully manages dotfile visibility without any third-party dependencies.
 
-1. Install "Show Hidden Files" plugin (or similar)
-2. Create `.env` file in vault
-3. Click on `.env` → opens automatically in Monaco
-4. Create `LICENSE` file → opens automatically in Monaco
+### To See Dotfiles in Explorer
+
+1. Register the extension in Code Files settings (e.g., add `env` for `.env` files)
+2. The dotfile automatically becomes visible in the explorer (if "Auto-reveal registered dotfiles" is enabled, which is the default)
+3. Click to open — it opens directly in Monaco
+
+For bulk operations, open the Reveal Hidden Files modal via quick action (`.re`) or folder context menu.
 
 ---
 
