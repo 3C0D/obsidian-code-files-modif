@@ -52,8 +52,10 @@ export function getMaxFileSize(plugin: CodeFilesPlugin): number {
 export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	const adapter = getAdapter(plugin);
 
-	// Prevent Obsidian from auto-deleting revealed dotfiles during its internal reconciliation
-	return around(adapter, {
+	// Save original reconcileDeletion before patching
+	plugin._origReconcileDeletion = adapter.reconcileDeletion.bind(adapter);
+
+	const unpatch = around(adapter, {
 		reconcileDeletion(next) {
 			return async function (
 				this: DataAdapterEx,
@@ -70,28 +72,60 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 			};
 		}
 	});
+
+	return () => {
+		unpatch();
+		plugin._origReconcileDeletion = null;
+	};
 }
 
 /**
- * Patches Plugin.registerExtensions to automatically clean revealedFiles and auto-reveal
- * dotfiles whenever extensions are registered (startup or dynamically).
+ * Patches Plugin.registerExtensions (via monkey-around) and viewRegistry.unregisterExtensions
+ * (via direct patch) to keep dotfile visibility in sync with extension registration state.
+ *
+ * - On register: cleans revealedFiles and auto-reveals dotfiles for the new extensions.
+ * - On unregister: hides dotfiles for removed extensions, unless explicitly in revealedFiles.
  *
  * @param plugin - The plugin instance.
- * @returns A function to unpatch.
+ * @returns A function to unpatch both patches.
  */
 export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
-	return around(plugin as Plugin, {
+	const viewRegistry = plugin.app.viewRegistry;
+	const origUnregister = viewRegistry.unregisterExtensions.bind(viewRegistry);
+
+	viewRegistry.unregisterExtensions = (extensions: string[]) => {
+		origUnregister(extensions);
+		const revealedPaths = new Set(
+			Object.values(plugin.settings.revealedFiles).flat()
+		);
+
+		const adapter = getAdapter(plugin);
+		for (const file of plugin.app.vault.getFiles()) {
+			if (!extensions.includes(getExtension(file.name) ?? '')) continue;
+			if (file.extension) continue; // Only dotfiles
+			if (revealedPaths.has(file.path)) continue;
+			const orig =
+				plugin._origReconcileDeletion ?? adapter.reconcileDeletion.bind(adapter);
+			orig(adapter.getRealPath(file.path), file.path).catch(console.error);
+		}
+	};
+
+	const unAroundRegister = around(plugin as Plugin, {
 		registerExtensions(next) {
-			return function (this: Plugin, extensions: string[], vType: string) {
-				const result = next.call(this, extensions, vType);
-				// After an extension is registered, clean revealedFiles and auto-reveal
+			return function (this: Plugin, exts: string[], vType: string) {
+				const result = next.call(this, exts, vType);
 				if (plugin.app.workspace.layoutReady) {
-					void handleNewRegisteredExtensions(plugin, extensions);
+					void handleNewRegisteredExtensions(plugin, exts);
 				}
 				return result;
 			};
 		}
 	});
+
+	return () => {
+		unAroundRegister();
+		viewRegistry.unregisterExtensions = origUnregister;
+	};
 }
 
 /**

@@ -38,6 +38,8 @@ export default class CodeFilesPlugin extends Plugin {
 	private _modalOpenPatch: (() => void) | null = null;
 	private _openFilePatch: (() => void) | null = null;
 	_lastHotkeys?: string;
+	_origReconcileDeletion: ((realPath: string, path: string) => Promise<void>) | null =
+		null;
 
 	async onload(): Promise<void> {
 		console.log('Code Files Plugin loaded');
