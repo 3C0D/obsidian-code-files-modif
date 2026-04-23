@@ -16,7 +16,7 @@ import {
 } from 'obsidian-typings';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { around } from 'monkey-around';
-import type { Plugin } from 'obsidian';
+import type { Plugin, TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { DataAdapterWithInternal, HiddenItem } from '../types/types.ts';
 import { getExtension } from './fileUtils.ts';
@@ -24,7 +24,8 @@ import { getActiveExtensions } from './extensionUtils.ts';
 
 /**
  * Global flag used to temporarily bypass the deletion patch.
- * Set to true when the user explicitly chooses to hide a previously revealed file.
+ * Set to true when the user explicitly chooses
+ * to hide a previously revealed file.
  */
 let _bypassPatch = false;
 
@@ -36,15 +37,21 @@ function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
 	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
 
-/** Maximum file size in MB for opening in Monaco (configurable in settings) */
+/** Max file size in MB for Monaco (configurable in settings) */
 export function getMaxFileSize(plugin: CodeFilesPlugin): number {
 	return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
 }
 
 /**
- * Patches Obsidian's DataAdapter to prevent the automatic removal of dotfiles from the UI.
- * Obsidian's internal reconciliation often tries to "clean up" (delete from view) files
- * that shouldn't be there according to its default rules.
+ * Patches Obsidian's DataAdapter to prevent the automatic
+ * removal of dotfiles from the UI.
+ *
+ * Strategy for reconcileDeletion:
+ * - If the file no longer exists on disk → real deletion
+ *   (trash, delete, external removal) → allow through.
+ * - If the file still exists on disk → Obsidian is trying
+ *   to clean up a revealed dotfile → block it.
+ * - _bypassPatch flag overrides for explicit hide actions.
  *
  * @param plugin - The plugin instance.
  * @returns A function to unpatch the adapter.
@@ -52,10 +59,12 @@ export function getMaxFileSize(plugin: CodeFilesPlugin): number {
 export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	const adapter = getAdapter(plugin);
 
-	// Save original reconcileDeletion before patching
+	// Save originals before patching
 	plugin._origReconcileDeletion = adapter.reconcileDeletion.bind(adapter);
+	plugin._origRename = adapter.rename.bind(adapter);
 
-	const unpatch = around(adapter, {
+	// Patch reconcileDeletion with monkey-around
+	const unpatchReconcile = around(adapter, {
 		reconcileDeletion(next) {
 			return async function (
 				this: DataAdapterEx,
@@ -63,8 +72,6 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				normalizedPath: string
 			) {
 				const basename = normalizedPath.split('/').pop() || '';
-				// Block automatic deletion of dotfiles unless _bypassPatch is active
-				// (which means the user explicitly clicked "Hide")
 				if (basename.startsWith('.') && !_bypassPatch) {
 					return;
 				}
@@ -73,9 +80,37 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 		}
 	});
 
+	// Patch rename with monkey-around
+	const unpatchRename = around(adapter, {
+		rename(next) {
+			return async function (this: DataAdapterEx, src: string, dest: string) {
+				if (adapter.files?.[dest]?.type === 'folder') {
+					const filename = src.split('/').pop() || '';
+					dest = dest + '/' + filename;
+				}
+				return next.call(this, src, dest);
+			};
+		}
+	});
+
+	// Patch vault.trash to allow dotfile deletion
+	const origTrash = plugin.app.vault.trash.bind(plugin.app.vault);
+	plugin.app.vault.trash = async function (file: TAbstractFile, system: boolean) {
+		const path = file?.path;
+		if (path) _bypassPatch = true;
+		try {
+			return await origTrash(file, system);
+		} finally {
+			_bypassPatch = false;
+		}
+	};
+
 	return () => {
-		unpatch();
+		unpatchReconcile();
+		unpatchRename();
+		plugin.app.vault.trash = origTrash;
 		plugin._origReconcileDeletion = null;
+		plugin._origRename = null;
 	};
 }
 

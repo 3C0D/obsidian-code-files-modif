@@ -40,6 +40,7 @@ export default class CodeFilesPlugin extends Plugin {
 	_lastHotkeys?: string;
 	_origReconcileDeletion: ((realPath: string, path: string) => Promise<void>) | null =
 		null;
+	_origRename: ((src: string, dest: string) => Promise<void>) | null = null;
 
 	async onload(): Promise<void> {
 		console.log('Code Files Plugin loaded');
