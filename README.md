@@ -15,8 +15,8 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Built-In Hidden Files** — no external plugin needed. Auto-reveal registered dotfiles in explorer (configurable). Bulk reveal/hide via Reveal Hidden Files modal (folder context menu)
 - **Dynamic Extension Management** — add/remove extensions at runtime. Quick actions via right-click in explorer: Register Extension / Unregister Extension
 - **Two Extension Modes** — Manual (curated list) or Extended (all 80+ Monaco languages auto-registered). Exclusions and custom additions are preserved when switching modes
-- **Create Code Files Modal** — interactive modal with extension autosuggest, supports dotfiles and extensionless files (LICENSE, .env), auto-registers new extensions
-- **Files Without Extension** — full support for dotfiles and extensionless files (.env, .gitignore, LICENSE, README) with per-file editor config and syntax highlighting
+- **Create Code Files Modal** — interactive modal with extension autosuggest, supports dotfiles files (.env), auto-registers new extensions
+- **Files Without Extension** — extensionless files (LICENSE, README) can be open with "Open in Monaco Editor" in file/editor context menu and palette. It can also open any unregistered file.
 - **Per-Extension & Global Config** — JSONC editor config (tabSize, insertSpaces, formatOnSave, printWidth, etc.) with global fallback and language-level inheritance
 - **Editor Settings Modal** — inline Monaco JSON editor with live preview, accessible via ⚙️ gear icon in tab header
 - **AutoSave (OFF by default)** — visual dirty indicator (circle in tab header); prevents accidental saves. Format on save optional
@@ -181,9 +181,8 @@ When **Auto-reveal registered dotfiles** is enabled (default: on):
 
 ### Open Hidden Files Without Revealing
 
-You can open dotfiles directly in Monaco without making them visible in the explorer:
+You can open dotfiles in the vault directly in Monaco:
 
-- Right-click a folder → **Code Files → Open Hidden Files in Code Files**
 - Command palette → **"Open Hidden Files in Vault"**
 - A suggester lists all hidden files with their relative paths
 

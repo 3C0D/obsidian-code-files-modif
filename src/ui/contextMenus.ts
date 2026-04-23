@@ -129,13 +129,12 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 			title: 'Reveal/Hide Hidden Files',
 			icon: 'eye',
 			action: () => new RevealHiddenFilesModal(plugin, folder.path).open()
-		},
-		// {
-		// 	title: 'Open Hidden Files in Monaco',
-		// 	icon: 'eye-off',
-		// 	action: () => new ChooseHiddenFileModal(plugin, folder).open()
-		// },
-		{
+		}
+	];
+
+	// Show "Define" only if this folder isn't already the project root
+	if (plugin.settings.projectRootFolder !== folder.path) {
+		items.push({
 			title: 'Define as Project Root Folder',
 			icon: 'folder-tree',
 			action: async () => {
@@ -144,9 +143,8 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 				updateProjectFolderHighlight(plugin);
 				await broadcastProjectFiles(plugin);
 			}
-		}
-	];
-
+		});
+	}
 	// Show "Clear" only if this folder is already the project root
 	if (plugin.settings.projectRootFolder === folder.path) {
 		items.push({
