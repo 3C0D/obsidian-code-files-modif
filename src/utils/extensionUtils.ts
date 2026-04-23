@@ -72,16 +72,19 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
 /**
  * Removes an extension from the active list.
  * Unified logic for both manual and extended modes:
- * - Add to excludedExtensions
- * - Remove from extraExtensions if present
+ * - If in extraExtensions, just remove it — no need to exclude
+ * - If in base extensions, must add to excludedExtensions to override
  */
 export function removeExtension(settings: MyPluginSettings, ext: string): void {
-	// Add to excludedExtensions
+	// If in extraExtensions, just remove it — no need to exclude
+	if (settings.extraExtensions.includes(ext)) {
+		const extras = new Set(settings.extraExtensions);
+		extras.delete(ext);
+		settings.extraExtensions = [...extras];
+		return;
+	}
+	// If in base extensions, must add to excludedExtensions to override
 	settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
-	// Remove from extraExtensions if present
-	const extras = new Set(settings.extraExtensions);
-	extras.delete(ext);
-	settings.extraExtensions = [...extras];
 }
 
 export function isCodeFilesExtension(app: App, ext: string): boolean {
