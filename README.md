@@ -4,21 +4,25 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 
 ## Features
 
-- **Monaco Editor** — full VS Code editor embedded in Obsidian, loaded locally (no external dependency)
-- **Syntax highlighting** — automatic language detection from file extension
-- **50+ themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview
-- **Format Diff & Selective Revert** — format code with Prettier and view all changes side-by-side. Includes a block-by-block revert tool directly in the gutter (similar to VS Code)
-- **Markdown formatting** — format markdown files with Prettier (Shift+Alt+F or formatOnSave)
-- **Mermaid formatting** — format Mermaid diagram files with mermaid-formatter (Shift+Alt+F or formatOnSave). Also formats ` ```mermaid ` code blocks inside markdown files.
-- **Multi-language formatting** — format JavaScript, TypeScript, CSS, SCSS, Less, HTML, JSON, YAML, GraphQL, Python, Go, C, and C++ files (Shift+Alt+F or formatOnSave)
-- **Cross-file navigation** — Ctrl+Click on TypeScript/JavaScript imports to jump to definitions in other files
-- **Code block editing** — open any code fence in a full Monaco modal from the editor context menu
-- **Create code files** — ribbon icon, right-click in the explorer, or command palette. They open automatically in Monaco.
-- **Open any file in Monaco** — open any file type in the Monaco editor via command palette or context menu
-- **Edit CSS snippets** — open and edit Obsidian CSS snippets directly from the command palette
-- **Dynamic extension management** — add or remove file extensions at runtime, no restart needed
-- **Per-extension/global formatter config** — customize editor options (tabSize, insertSpaces, formatOnSave, formatOnType, etc.)
-- **File Explorer Badges** — visual indicators: extension tags on dotfiles, unregistered file styling, project root folder highlight
+- **Full Monaco Editor** — VS Code's editor embedded locally in Obsidian, with syntax highlighting (80+ languages), folding, line numbers, minimap, and validation
+- **50+ Themes** — Dracula, Monokai, Nord, Tomorrow Night, and more, with live preview in theme picker
+- **Multi-Language Formatting** — Prettier (JS, TS, CSS, HTML, JSON, YAML, Markdown, GraphQL), Mermaid, Ruff (Python), gofmt (Go), clang-format (C/C++). Trigger: Shift+Alt+F or formatOnSave
+- **Format Diff & Selective Revert** — view side-by-side diff after formatting; revert individual blocks or all changes with one click
+- **Cross-File Navigation** — Ctrl+Click on TS/JS imports to jump to definitions. Requires Project Root Folder (right-click folder → Code Files → Define as Project Root). Project root highlighted in explorer (color customizable)
+- **Project Root Folder** — mark any folder as project root; all TS/JS files from that folder are loaded into Monaco's TypeScript service for IntelliSense
+- **File Explorer Visual Indicators** — uppercase label on registered dotfiles (ENV, GITIGNORE), muted "unregistered" label on unknown extensions, project root highlight, subtle background tint for registered dotfiles
+- **Extended Mode** — toggle "Use extended extensions list" in settings to automatically register all Monaco-supported extensions (80+ languages). Exclusions and custom additions are preserved when switching modes.
+- **Built-In Hidden Files** — no external plugin needed. Auto-reveal registered dotfiles in explorer (configurable). Bulk reveal/hide via Reveal Hidden Files modal (`.re` quick action or folder context menu → Code Files → Reveal/Hide Hidden Files)
+- **Dynamic Extension Management** — add/remove extensions at runtime. Quick actions: right-click file in explorer → Code Files → Register Extension / Unregister Extension
+- **Create Code Files Modal** — interactive modal with extension autosuggest. Rename extensions, create files without extension (LICENSE, .env), auto-registers new extensions
+- **Files Without Extension** — full support for dotfiles and extensionless files (.env, .gitignore, LICENSE, README). Automatic mapping to configuration profiles, per-file editor config, and syntax highlighting via fake extension system.
+- **Per-Extension & Global Config** — JSONC editor config (tabSize, insertSpaces, formatOnSave, printWidth, etc.) with global fallback and language-level inheritance
+- **Editor Settings Modal** — inline Monaco JSON editor with live preview; accessible via ⚙️ gear icon in tab header
+- **AutoSave (OFF by default)** — visual dirty indicator (circle in tab header); prevents accidental saves. Format on save optional
+- **Code Block Editing** — open any code fence in full Monaco modal from editor context menu
+- **Open Any File in Monaco** — command palette or right-click → "Open in Monaco Editor"
+- **Popout Windows** — secondary windows support (Ctrl+Shift+Alt+Click)
+- **Dynamic Hotkey Sync** — Monaco hotkeys automatically update when Obsidian hotkey settings change (no reload needed). Some hotkeys can be overridden in the Code Files Settings Tab.
 
 ---
 
@@ -49,9 +53,9 @@ Prettier formatting is available for:
 - **Go** (gofmt) — official Go formatter
 - **C/C++** (clang-format) — LLVM's official formatter
 
-### Test Samples
+### Test Samples _(Developer/contributor only)_
 
-The `templates/format-test-samples-for-obsidian/` folder contains example files with intentional formatting errors to test the formatter. **Copy this folder to your Obsidian vault** to try formatting on different file types.
+The `templates/format-test-samples-for-obsidian/` folder (included in the plugin's source repository) contains example files with intentional formatting errors to test the formatter. **Copy this folder to your Obsidian vault** to try formatting on different file types.
 
 ### Format Diff Viewer
 
@@ -87,7 +91,7 @@ Navigate between TypeScript and JavaScript files in your project:
 1. **Via context menu** (recommended):
     - Right-click any folder in the file explorer
     - Select **Code Files → Define as Project Root Folder**
-    - The folder name will be highlighted in green in the explorer
+    - The folder name will be highlighted with a colored highlight (default purple/rose matching Obsidian's accent color) in the explorer
     - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
 
 2. **Via Editor Settings**:
@@ -96,11 +100,9 @@ Navigate between TypeScript and JavaScript files in your project:
 
 Monaco will load all TS/JS files from that folder for IntelliSense and navigation.
 
-**Example:** If your project is in `templates/my-project/`, set it as Project Root Folder. Now you can Ctrl+Click on any import to open the source file at the exact definition.
-
 **Note:** Without setting the Project Root Folder, cross-file navigation (Ctrl+Click on imports) will not work.
 
-See `docs/cross-file-navigation.md` for implementation details and troubleshooting.
+See `docs/cross-file-navigation.md` for implementation details and troubleshooting. _(Developer only)_
 
 ---
 
@@ -112,23 +114,34 @@ Code Files adds visual cues in the Obsidian file explorer to help you understand
 
 The folder set as **Project Root** for cross-file navigation is highlighted in the file explorer:
 
-- **Default color**: Green (configurable)
+- **Default color**: Purple/rose (matches Obsidian's accent color; configurable)
 - **How to set**: Right-click folder → **Code Files → Define as Project Root Folder**
 - **Custom color**: In **Obsidian Settings → Code Files → Project Root Folder** section, use the color picker to choose any color
 
-### Extension Badges
+### File Explorer Visual Indicators
 
-Files show badges in the file explorer to indicate their Code Files status:
+![File Explorer Badges](assets/Hidden_files.png)
 
-- **Dotfiles with registered extensions** (`.env`, `.gitignore`, etc.) → display an **extension badge** showing the extension in uppercase (e.g., "ENV", "GITIGNORE")
-    - This indicates the file will open automatically in Monaco
-    - The badge color matches Obsidian's native file tagging style
-- **Regular files with unregistered extensions** → receive a **muted "unregistered" badge**
-    - This indicates the file extension is not registered with Code Files (and not native to Obsidian)
-    - The file will open in Obsidian's default editor unless you manually choose "Open in Monaco Editor"
-- **Native Obsidian extensions** (`.md`, `.canvas`, etc.) → no badge (handled by Obsidian itself)
+<small>Explorer indicators — folder "Test" (green eye icon = revealed); `eslint.config.mts` — yellow label (MTS extension visible via "Detect all file extensions" but NOT registered); `.babelrc` — darker background (extension registered with Code Files); `.gitignore` — no label (dotfile revealed but NOT registered with Code Files).</small>
 
-Badges update automatically when you register or unregister extensions, providing instant visual feedback.
+**Notes:**
+
+- Registered dotfiles like `.babelrc` appear automatically if **auto-reveal** is enabled (no manual action needed).
+- The folder eye icon appears **only** for folders that contain dotfiles **explicitly revealed** via the modal (checkbox checked). If you uncheck all manually-revealed dotfiles in a folder, the eye icon disappears. Dotfiles that are auto-revealed via registered extensions do not trigger the eye icon.
+
+### Auto-Reveal Hidden Files
+
+- When "Auto-reveal registered dotfiles" is enabled (default), any dotfile whose extension is registered with Code Files automatically becomes visible in the explorer
+- No external "Show Hidden Files" plugin needed — handled entirely by Code Files
+- Manual control via **Reveal Hidden Files** modal (see below)
+
+### Extended Mode
+
+- Toggle "Use extended extensions list" in settings to enable **Extended Mode**
+- Automatically registers all Monaco-supported extensions (80+ languages)
+- All code files open in Monaco without manual extension management
+- Excluded extensions are still respected; you can add extra custom extensions
+- Useful if you work with many languages and want zero configuration
 
 ---
 
@@ -163,13 +176,14 @@ The plugin automatically enables Obsidian's **"Detect all file extensions"** set
 ### Reveal Hidden Files in a Folder
 
 - **Right-click a folder** in the explorer → **Code Files → Reveal/Hide Hidden Files**
+- **Quick action**: Press `.re` (dot-reveal) for instant access (configurable in Settings → Plugin Hotkeys)
 - A modal lists all hidden files in that folder (files starting with `.`)
 - **Two-column layout**:
     - **Left column (Reveal)** — Check files to reveal them in the explorer, uncheck to hide them again
     - **Right column (Register)** — Check to register the file's extension with Code Files (makes it open automatically in Monaco)
 - **Master checkboxes**: "All" in each column selects/deselects all items in that column
 - **Click Apply** to confirm changes
-- **Folder badge**: Folders with revealed files show an eye icon (👁️) badge
+- **Folder indicator**: Folders with revealed files show an eye icon (👁️)
 
 ### How Auto-Reveal Works
 

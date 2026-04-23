@@ -52,7 +52,7 @@
 
 ### 6. **File Explorer Visual Indicators**
 
-- **Project root highlight**: Folder set as Project Root is highlighted (default green; customizable via setting)
+- **Project root highlight**: Folder set as Project Root is highlighted (default purple/rose matching Obsidian accent; customizable via setting)
 - **Extension badges**:
     - Dotfiles with registered extensions show an uppercase extension badge (e.g., "ENV", "GITIGNORE")
     - Regular files with unregistered (non-native) extensions show a muted "unregistered" badge
