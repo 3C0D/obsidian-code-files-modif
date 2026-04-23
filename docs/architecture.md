@@ -119,6 +119,16 @@ dynamicMap (Monaco) > staticMap (fallback) > 'plaintext'
 - Allows on-the-fly extension registration via "register as .ext" checkboxes
 - Master checkboxes control all items in each column
 
+## File Explorer Badges
+
+**Visual Indicators:**
+
+- `updateProjectFolderHighlight()` — highlights the Project Root folder in the file explorer (color via `projectRootFolderColor` setting)
+- `setupExplorerBadges()` — adds badges to file entries:
+    - **Dotfiles with registered extensions** → uppercase extension badge (e.g., "ENV", "GITIGNORE")
+    - **Files with unregistered extensions** (non-native) → muted "unregistered" badge
+    - Badges update automatically when extensions are registered or unregistered
+
 ## Editor Config
 
 ```

@@ -1,0 +1,91 @@
+diff --git a/docs/project-overview.md b/docs/project-overview.md
+index 7635591..998dda5 100644
+--- a/docs/project-overview.md
++++ b/docs/project-overview.md
+@@ -50,7 +50,16 @@
+ - **Safe filtering**: Excludes executables, archives, databases, binary office formats, fonts (configurable max size)
+ - **Configurable exclusions**: Exclude specific folders (`.git`, `node_modules`) and extensions (`tmp`, `log`, `cache`) in settings
+ 
+-### 6. **Dynamic Extension Management**
++### 6. **File Explorer Visual Indicators**
++
++- **Project root highlight**: Folder set as Project Root is highlighted (default green; customizable via setting)
++- **Extension badges**:
++    - Dotfiles with registered extensions show an uppercase extension badge (e.g., "ENV", "GITIGNORE")
++    - Regular files with unregistered (non-native) extensions show a muted "unregistered" badge
++    - Native Obsidian files (`.md`, `.canvas`) show no badge
++- Badges update automatically when extensions are registered or unregistered
++
++### 7. **Dynamic Extension Management**
+ 
+ - **Unified system**: Base list + user additions/exclusions
+ - **Two modes**: Manual (curated list) or Extended (all Monaco-supported)
+@@ -59,21 +68,21 @@
+ - **On-the-fly registration**: Add extensions during file creation
+ - **Flexible switching**: Toggle between manual/extended modes anytime in settings
+ 
+-### 7. **50+ Themes with Live Preview**
++### 8. **50+ Themes with Live Preview**
+ 
+ - **Real-time preview**: Hover themes to see changes instantly
+ - **Brightness control**: Adjust independently of Obsidian theme
+ - **Popular themes**: Dracula, Monokai, Nord, Tomorrow Night, etc.
+ - **Theme picker**: Accessible from tab header palette icon
+ 
+-### 8. **Popout Window Support**
++### 9. **Popout Window Support**
+ 
+ - **Secondary windows**: Views can open in separate windows
+ - **Keyboard shortcut**: Ctrl+Shift+Alt+Click
+ - **Full functionality**: All features work in popout windows
+ - **Navigation preserved**: History maintained across windows
+ 
+-### 9. **Comprehensive Settings System**
++### 10. **Comprehensive Settings System**
+ 
+ - **Gear icon access**: Settings directly from editor view
+ - **Global settings**: Apply to all file types (\*)
+@@ -81,36 +90,37 @@
+ - **Obsidian Settings tab**: Plugin-wide configuration
+ - **JSON editor**: JSONC support with comments
+ 
+-### 10. **Enhanced Shortcuts & Navigation**
++### 11. **Enhanced Shortcuts & Navigation**
+ 
+ - **Obsidian shortcuts preserved**: Ctrl+P (command palette), Ctrl+, (settings)
+ - **Alt+Z**: Toggle word wrap (persisted setting)
+ - **F1**: Monaco command palette with all actions
++- **Dynamic hotkey sync**: Monaco hotkeys automatically update when Obsidian hotkey settings change (reloads editor seamlessly)
+ - **Navigation history**: Back/forward buttons work between view types
+ - **Focus restoration**: Automatic focus return after modal close
+ 
+-### 11. **Advanced Code Block Editing**
++### 12. **Advanced Code Block Editing**
+ 
+ - **Full Monaco modal**: Edit markdown code fences in complete editor
+ - **Context menu**: Right-click in code fence ÔåÆ "Edit Code Block"
+ - **All languages**: Syntax highlighting and formatting in modal
+ - **Changes preserved**: Automatic write-back to markdown
+ 
+-### 12. **CSS Snippet Integration**
++### 13. **CSS Snippet Integration**
+ 
+ - **Direct editing**: Open Obsidian CSS snippets from command palette
+ - **Snippet controls**: Enable/disable toggle in tab header
+ - **Folder access**: Open snippets folder from editor
+ - **Live updates**: Changes apply immediately to Obsidian
+ 
+-### 13. **Professional Diff Viewer**
++### 14. **Professional Diff Viewer**
+ 
+ - **VS Code-like interface**: Native Monaco diff editor
+ - **Inline markers**: Syntax highlighting in diff view
+ - **Interactive widgets**: Hover-activated revert buttons
+ - **10-second indicator**: Diff icon appears after formatting
+ 
+-### 14. **Flexible File Creation**
++### 15. **Flexible File Creation**
+ 
+ - **Multiple entry points**: Ribbon icon, folder context menu, command palette
+ - **Extension suggester**: Dropdown with validation on Enter
+

@@ -18,6 +18,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Edit CSS snippets** — open and edit Obsidian CSS snippets directly from the command palette
 - **Dynamic extension management** — add or remove file extensions at runtime, no restart needed
 - **Per-extension/global formatter config** — customize editor options (tabSize, insertSpaces, formatOnSave, formatOnType, etc.)
+- **File Explorer Badges** — visual indicators: extension tags on dotfiles, unregistered file styling, project root folder highlight
 
 ---
 
@@ -100,6 +101,34 @@ Monaco will load all TS/JS files from that folder for IntelliSense and navigatio
 **Note:** Without setting the Project Root Folder, cross-file navigation (Ctrl+Click on imports) will not work.
 
 See `docs/cross-file-navigation.md` for implementation details and troubleshooting.
+
+---
+
+## File Explorer Visual Indicators
+
+Code Files adds visual cues in the Obsidian file explorer to help you understand which files will open in Monaco:
+
+### Project Root Folder Highlight
+
+The folder set as **Project Root** for cross-file navigation is highlighted in the file explorer:
+
+- **Default color**: Green (configurable)
+- **How to set**: Right-click folder → **Code Files → Define as Project Root Folder**
+- **Custom color**: In Editor Settings (⚙️), use **Project Root Folder Highlight Color** to choose any color
+
+### Extension Badges
+
+Files show badges in the file explorer to indicate their Code Files status:
+
+- **Dotfiles with registered extensions** (`.env`, `.gitignore`, etc.) → display an **extension badge** showing the extension in uppercase (e.g., "ENV", "GITIGNORE")
+    - This indicates the file will open automatically in Monaco
+    - The badge color matches Obsidian's native file tagging style
+- **Regular files with unregistered extensions** → receive a **muted "unregistered" badge**
+    - This indicates the file extension is not registered with Code Files (and not native to Obsidian)
+    - The file will open in Obsidian's default editor unless you manually choose "Open in Monaco Editor"
+- **Native Obsidian extensions** (`.md`, `.canvas`, etc.) → no badge (handled by Obsidian itself)
+
+Badges update automatically when you register or unregister extensions, providing instant visual feedback.
 
 ---
 
@@ -322,7 +351,12 @@ Changes save automatically when the panel closes. Per-extension config merges wi
 - **Use extended extensions list** — auto-register a broad curated list vs. manual management
 - **Manage extensions** — add or remove extensions; changes take effect immediately
 - **Editor Config** — same JSON editor as the gear panel, with extension picker
-- **Monaco Hotkey Overrides** — by default, Monaco uses your Obsidian shortcuts for Command Palette, Settings, and Delete File. If these conflict with Monaco's built-in shortcuts, you can override them here.
+- **Monaco Hotkey Overrides** — ensure Obsidian shortcuts work inside Monaco. Configure overrides for:
+    - **Command Palette** (default: Ctrl+P / Cmd+P)
+    - **Settings** (default: Ctrl+, / Cmd+,)
+    - **Delete File** (default: Ctrl+Delete / Cmd+Delete)
+      Changes require Monaco to reload the editor view to take effect.
+- **Project Root Folder Highlight Color** — customize the color used to highlight the project root folder in the file explorer
 
 ---
 
@@ -351,6 +385,12 @@ Extensions control which file types open in Monaco.
 
 - **Manual** — maintain your own list
 - **Extended** — broad curated list auto-registered. You can still exclude or add extras.
+
+**Quick actions via file explorer context menu:**
+
+- **Register Extension** — for any file with an unregistered, non-native extension: right-click → Code Files → **Register Extension** to add it to your registered list
+- **Unregister Extension** — for any file with a registered custom extension: right-click → Code Files → **Unregister Extension** to remove it
+- Changes take effect immediately
 
 Extensions can also be added on the fly from the **Create Code File** modal or **Rename (Name.ext)** dialog.
 
