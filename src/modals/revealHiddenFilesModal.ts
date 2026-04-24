@@ -1,7 +1,7 @@
 import { Modal, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {
-	scanHiddenFiles,
+	scanDotEntries,
 	cleanStaleRevealedFiles,
 	revealFiles,
 	hideFilesInFolder,
@@ -50,7 +50,7 @@ export class RevealHiddenFilesModal extends Modal {
 		this.selectedForRegistration = new Set();
 
 		// Perform scan for currently existing hidden files
-		const allItems = await scanHiddenFiles(this.plugin, this.folderPath);
+		const allItems = await scanDotEntries(this.plugin, this.folderPath);
 
 		// Exclude files already managed by auto-reveal (registered extensions)
 		if (this.plugin.settings.autoRevealRegisteredDotfiles) {

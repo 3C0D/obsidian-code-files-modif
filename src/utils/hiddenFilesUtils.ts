@@ -3,9 +3,14 @@
  * When a folder contains revealed hidden files, a badge with a green eye icon is added to it.
  *
  * Mechanisms:
- * 1. Patch Obsidian's data adapter to prevent automatic deletion of revealed dotfiles.
+ * 1. Patch Obsidian's data adapter to prevent automatic deletion of revealed dotfiles,
+ *    and to fix drag-and-drop destination path for dotfiles moved into folders.
  * 2. Scan for and reveal/hide dotfiles via folder context menus.
+ *    Files exceeding the Monaco size limit are excluded from scan results.
  * 3. Persist and restore revealed files state across sessions.
+ * 4. Patch extension registration to keep dotfile visibility in sync with registered extensions.
+ *
+ * N.B: adapter.fs is a platform abstraction over native mobile APIs (no Node.js fs on iOS/Android)
  */
 
 import { Notice, setIcon, normalizePath } from 'obsidian';
@@ -80,7 +85,8 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 		}
 	});
 
-	// Patch rename with monkey-around
+	// Fix drag-and-drop(rename error): Obsidian passes the target folder as dest instead of
+	// the full destination path, resulting in a wrong rename target for dotfiles.
 	const unpatchRename = around(adapter, {
 		rename(next) {
 			return async function (this: DataAdapterEx, src: string, dest: string) {
@@ -94,21 +100,27 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	});
 
 	// Patch vault.trash to allow dotfile deletion
-	const origTrash = plugin.app.vault.trash.bind(plugin.app.vault);
-	plugin.app.vault.trash = async function (file: TAbstractFile, system: boolean) {
-		const path = file?.path;
-		if (path) _bypassPatch = true;
-		try {
-			return await origTrash(file, system);
-		} finally {
-			_bypassPatch = false;
+	const unpatchTrash = around(plugin.app.vault, {
+		trash(next) {
+			return async function (
+				this: typeof plugin.app.vault,
+				file: TAbstractFile,
+				system: boolean
+			) {
+				if (file?.path) _bypassPatch = true;
+				try {
+					return await next.call(this, file, system);
+				} finally {
+					_bypassPatch = false;
+				}
+			};
 		}
-	};
+	});
 
 	return () => {
 		unpatchReconcile();
 		unpatchRename();
-		plugin.app.vault.trash = origTrash;
+		unpatchTrash();
 		plugin._origReconcileDeletion = null;
 		plugin._origRename = null;
 	};
@@ -126,31 +138,33 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
  */
 export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
 	const viewRegistry = plugin.app.viewRegistry;
-	const origUnregister = viewRegistry.unregisterExtensions.bind(viewRegistry);
-
-	viewRegistry.unregisterExtensions = (extensions: string[]) => {
-		origUnregister(extensions);
-		const revealedPaths = new Set(
-			Object.values(plugin.settings.revealedFiles).flat()
-		);
-
-		const adapter = getAdapter(plugin);
-		for (const file of plugin.app.vault.getFiles()) {
-			if (!extensions.includes(getExtension(file.name) ?? '')) continue;
-			if (file.extension) continue; // Only dotfiles
-			if (revealedPaths.has(file.path)) continue;
-			const orig =
-				plugin._origReconcileDeletion ?? adapter.reconcileDeletion.bind(adapter);
-			orig(adapter.getRealPath(file.path), file.path).catch(console.error);
+	const unAroundUnregister = around(viewRegistry, {
+		unregisterExtensions(next) {
+			return function (this: typeof viewRegistry, extensions: string[]) {
+				next.call(this, extensions);
+				const revealedPaths = new Set(
+					Object.values(plugin.settings.revealedFiles).flat()
+				);
+				const adapter = getAdapter(plugin);
+				for (const file of plugin.app.vault.getFiles()) {
+					if (!extensions.includes(getExtension(file.name) ?? '')) continue;
+					if (file.extension) continue; // Only dotfiles
+					if (revealedPaths.has(file.path)) continue;
+					const orig =
+						plugin._origReconcileDeletion ??
+						adapter.reconcileDeletion.bind(adapter);
+					orig(adapter.getRealPath(file.path), file.path).catch(console.error);
+				}
+			};
 		}
-	};
+	});
 
 	const unAroundRegister = around(plugin as Plugin, {
 		registerExtensions(next) {
 			return function (this: Plugin, exts: string[], vType: string) {
 				const result = next.call(this, exts, vType);
 				if (plugin.app.workspace.layoutReady) {
-					void handleNewRegisteredExtensions(plugin, exts);
+					void syncAutoRevealedDotfiles(plugin, exts);
 				}
 				return result;
 			};
@@ -159,7 +173,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
 
 	return () => {
 		unAroundRegister();
-		viewRegistry.unregisterExtensions = origUnregister;
+		unAroundUnregister();
 	};
 }
 
@@ -167,7 +181,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
  * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
  * dotfiles matching the new extensions.
  */
-export async function handleNewRegisteredExtensions(
+export async function syncAutoRevealedDotfiles(
 	plugin: CodeFilesPlugin,
 	extensions: string[]
 ): Promise<void> {
@@ -180,7 +194,7 @@ export async function handleNewRegisteredExtensions(
 	for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
 		const cleaned = paths.filter((p) => {
 			const ext = getExtension(p.split('/').pop() || '');
-			return !ext || !extSet.has(ext);
+			return !ext || !extSet.has(ext); // keep extension-less files (LICENSE, README) — not extension-managed
 		});
 		if (cleaned.length !== paths.length) {
 			changed = true;
@@ -197,7 +211,7 @@ export async function handleNewRegisteredExtensions(
 	if (plugin.settings.autoRevealRegisteredDotfiles) {
 		const allFolders = plugin.app.vault.getAllFolders();
 		for (const folder of allFolders) {
-			const items = await scanHiddenFiles(plugin, folder.path);
+			const items = await scanDotEntries(plugin, folder.path);
 			const toReveal = items
 				.filter((item) => {
 					if (item.isFolder) return false;
@@ -266,7 +280,7 @@ export async function autoRevealRegisteredDotfiles(
 
 	const allFolders = plugin.app.vault.getAllFolders();
 	for (const folder of allFolders) {
-		const items = await scanHiddenFiles(plugin, folder.path);
+		const items = await scanDotEntries(plugin, folder.path);
 		const toReveal = items
 			.filter((item) => {
 				if (item.isFolder) return false;
@@ -361,17 +375,19 @@ export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
 }
 
 /**
- * Scans a folder on the physical file system to find hidden items (starting with a dot).
+ * Scans a folder on the physical file system to find dotfiles and dot-folders
+ * (names starting with a dot). Direct children only.
  * Respects exclusion settings for folders and extensions.
+ * Files exceeding the Monaco size limit are excluded.
  *
- * This version is fully cross-platform (Desktop & Mobile) as it uses Obsidian's
- * internal listRecursive method which bypasses the default dotfile filtering.
+ * Uses Obsidian's DataAdapter API to bypass default dotfile filtering,
+ * making it cross-platform (Desktop & Mobile).
  *
  * @param plugin - The plugin instance.
  * @param folderPath - Normalized path of the folder to scan.
- * @returns Array of found hidden items.
+ * @returns Array of found dot-entries, sorted: folders first, then files, alphabetically.
  */
-export async function scanHiddenFiles(
+export async function scanDotEntries(
 	plugin: CodeFilesPlugin,
 	folderPath: string
 ): Promise<HiddenItem[]> {
@@ -382,7 +398,13 @@ export async function scanHiddenFiles(
 	const items: HiddenItem[] = [];
 
 	try {
-		const listRecursive = async (dir: string): Promise<void> => {
+		/**
+		 * Lists direct dot-children (files and folders starting with a dot)
+		 * of the given directory, without recursing into subdirectories.
+		 * Ignores exclusion settings for folders and extensions.
+		 * Files exceeding the Monaco size limit are excluded.
+		 */
+		const listDotChildren = async (dir: string): Promise<void> => {
 			const listed = await adapter.list(dir || '');
 			for (const filePath of [...listed.files, ...listed.folders]) {
 				const entryPath = normalizePath(filePath);
@@ -412,7 +434,7 @@ export async function scanHiddenFiles(
 				items.push({ name: basename, path: entryPath, isFolder, size });
 			}
 		};
-		await listRecursive(folderPath);
+		await listDotChildren(folderPath);
 
 		items.sort((a, b) => {
 			if (a.isFolder && !b.isFolder) return -1;
@@ -553,22 +575,23 @@ export async function hideFilesInFolder(
  */
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
 	const activeExts = getActiveExtensions(plugin.settings);
+	// flat because Object.values returns an array of arrays
+	const revealedPaths = new Set(Object.values(plugin.settings.revealedFiles).flat());
 
-	const allFolders = plugin.app.vault.getAllFolders(true);
-	for (const folder of allFolders) {
-		const items = await scanHiddenFiles(plugin, folder.path);
-		const toHide = items
-			.filter((item) => {
-				if (item.isFolder) return false;
-				const ext = getExtension(item.name);
-				// Only hide auto-managed ones (not in revealedFiles = not manually revealed)
-				const revealed = plugin.settings.revealedFiles[folder.path] || [];
-				return ext && activeExts.includes(ext) && !revealed.includes(item.path);
-			})
-			.map((item) => item.path);
+	const toHide = new Map<string, string[]>();
 
-		if (toHide.length > 0) {
-			await hideFilesInFolder(plugin, folder.path, toHide);
-		}
+	for (const file of plugin.app.vault.getFiles()) {
+		// dotfiles have extension ""
+		if (file.extension) continue; // only dotfiles
+		const ext = getExtension(file.name);
+		if (!ext || !activeExts.includes(ext)) continue;
+		if (revealedPaths.has(file.path)) continue;
+		const folder = file.parent?.path ?? '';
+		if (!toHide.has(folder)) toHide.set(folder, []);
+		toHide.get(folder)!.push(file.path);
+	}
+
+	for (const [folderPath, paths] of toHide) {
+		await hideFilesInFolder(plugin, folderPath, paths);
 	}
 }

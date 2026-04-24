@@ -27,7 +27,7 @@ import {
 	cleanStaleRevealedFiles,
 	restoreRevealedFiles,
 	decorateFolders,
-	handleNewRegisteredExtensions
+	syncAutoRevealedDotfiles
 } from './utils/hiddenFilesUtils.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 
@@ -67,12 +67,10 @@ export default class CodeFilesPlugin extends Plugin {
 			updateProjectFolderHighlight(this);
 			await cleanStaleRevealedFiles(this);
 			await restoreRevealedFiles(this);
-			// Re-trigger auto-reveal for all currently registered extensions
+			// Re-trigger auto-reveal for all currently registered extensions.
+			// registerExtensions is called before layoutReady, so the around patch skips it.
 			if (this.settings.autoRevealRegisteredDotfiles) {
-				await handleNewRegisteredExtensions(
-					this,
-					getActiveExtensions(this.settings)
-				);
+				await syncAutoRevealedDotfiles(this, getActiveExtensions(this.settings));
 			}
 			await decorateFolders(this);
 		});

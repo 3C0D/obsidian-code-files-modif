@@ -34,7 +34,7 @@ import {
 } from '../utils/hotkeyUtils.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import {
-	handleNewRegisteredExtensions,
+	syncAutoRevealedDotfiles,
 	hideAutoRevealedDotfiles
 } from '../utils/hiddenFilesUtils.ts';
 
@@ -241,7 +241,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			// Load the appropriate config
 			const key = global ? '*' : selectedExt;
 			const cfg = this.plugin.settings.editorConfigs?.[key];
-			const defaultCfg = global ? DEFAULT_EDITOR_CONFIG : getExtensionConfigTemplate(selectedExt);
+			const defaultCfg = global
+				? DEFAULT_EDITOR_CONFIG
+				: getExtensionConfigTemplate(selectedExt);
 			if (this.codeEditor) {
 				this.codeEditor.setValue(cfg ?? defaultCfg);
 			}
@@ -423,7 +425,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						this.plugin.settings.autoRevealRegisteredDotfiles = value;
 						await this.plugin.saveSettings();
 						if (value) {
-							await handleNewRegisteredExtensions(
+							await syncAutoRevealedDotfiles(
 								this.plugin,
 								getActiveExtensions(this.plugin.settings)
 							);

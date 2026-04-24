@@ -85,7 +85,7 @@ staticMap > 'plaintext'
 **Reveal System:**
 
 - `revealedFiles` — map of folder paths to arrays of revealed file paths
-- `scanHiddenFiles()` — scans folder for dotfiles, respects exclusion settings
+- `scanDotEntries ()` — scans folder for dotfiles, respects exclusion settings
 - `revealFiles()` — makes dotfiles visible in Obsidian's file explorer
 - `hideFilesInFolder()` — removes dotfiles from explorer
 - `decorateFolders()` — adds eye icon badge to folders with revealed files
@@ -93,7 +93,7 @@ staticMap > 'plaintext'
 **Auto-Reveal System:**
 
 - `autoRevealRegisteredDotfiles` setting (default: true)
-- `handleNewRegisteredExtensions()` — auto-reveals existing dotfiles when an extension is registered
+- `syncAutoRevealedDotfiles ()` — auto-reveals existing dotfiles when an extension is registered
 - `autoRevealRegisteredDotfiles()` — scans entire vault on startup to reveal dotfiles with active extensions
 - `hideAutoRevealedDotfiles()` — hides all auto-managed files when the feature is disabled
 - Auto-managed files are filtered from the hidden files modal UI
