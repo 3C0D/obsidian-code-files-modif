@@ -143,8 +143,12 @@ Similar registration for Go and C/C++, with language-specific options.
 ### 6. Update Documentation
 
 - `README.md`: Add to "Supported Languages" section
-- `types.ts`: Update language-specific config templates
-- Test files: Create `templates/format-test-samples-for-obsidian/sample.{py,go,c,cpp}`
+- `src/types/variables.ts`: 
+  - Add extension(s) to `FORMATTABLE_EXTENSIONS` array
+  - Add config template ONLY for the **base language** in `getExtensionConfigTemplate()` (e.g., `ts`, `json`, `cpp`)
+  - **Do NOT add templates for variant extensions** (e.g., `mts`, `jsonc`, `cc`) — the fallback mechanism at the end of `getExtensionConfigTemplate()` automatically uses the base language template via `staticMap`
+- `src/utils/getLanguage.ts`: Add mappings to `staticMap` for any extension variants (e.g., `mts: 'typescript'`, `jsonc: 'json'`)
+- Test files: Create `templates/format-test-samples-for-obsidian/sample.{ext}`
 
 ## Formatter-Specific Notes
 

@@ -6,7 +6,7 @@
  */
 import { ButtonComponent, Modal, Setting, debounce, Notice, TFolder } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { DEFAULT_EDITOR_CONFIG, getExtensionConfigTemplate } from '../types/variables.ts';
+import { DEFAULT_EDITOR_CONFIG, getExtensionConfigTemplate, FORMATTABLE_EXTENSIONS } from '../types/variables.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
@@ -185,6 +185,35 @@ export class EditorSettingsModal extends Modal {
 			});
 
 		// ── Formatter Config ──────────────────────────────────────────────────
+		const isFormattable = FORMATTABLE_EXTENSIONS.includes(this.extension);
+		
+		if (!isFormattable) {
+			// Show message for non-formattable extensions
+			const nonFormattableSection = contentEl.createEl('div', {
+				cls: 'code-files-non-formattable-section'
+			});
+			nonFormattableSection.style.marginTop = '1rem';
+			nonFormattableSection.style.padding = '1rem';
+			nonFormattableSection.style.textAlign = 'center';
+			nonFormattableSection.style.color = 'var(--text-muted)';
+			
+			nonFormattableSection.createEl('hr', {
+				attr: {
+					style: 'margin: 0 0 1rem 0; border: none; border-top: 1px solid var(--background-modifier-border);'
+				}
+			});
+			
+			nonFormattableSection.createEl('p', {
+				text: `Extension .${this.extension} is not formattable`,
+				attr: { style: 'font-size: 1.1em; margin: 0;' }
+			});
+			nonFormattableSection.createEl('p', {
+				text: 'No integrated formatter available for this file type',
+				attr: { style: 'font-size: 0.9em; margin-top: 0.5rem;' }
+			});
+			return;
+		}
+		
 		const formatterSection = contentEl.createEl('div', {
 			cls: 'code-files-editor-config-section'
 		});

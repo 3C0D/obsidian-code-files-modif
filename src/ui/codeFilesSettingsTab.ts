@@ -13,8 +13,9 @@ import type { CodeEditorInstance } from '../types/types.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
 	DEFAULT_EDITOR_CONFIG,
-	DEFAULT_EXTENSION_CONFIG,
-	DEFAULT_SETTINGS
+	DEFAULT_SETTINGS,
+	FORMATTABLE_EXTENSIONS,
+	getExtensionConfigTemplate
 } from '../types/variables.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
@@ -153,6 +154,10 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		});
 
 		const extensions = getActiveExtensions(this.plugin.settings);
+		// Only show formattable extensions in the selector
+		const formattableExts = extensions.filter((ext) =>
+			FORMATTABLE_EXTENSIONS.includes(ext)
+		);
 		let selectedExt = this.plugin.settings.lastSelectedConfigExtension || '';
 		let isGlobal = !selectedExt;
 
@@ -236,7 +241,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			// Load the appropriate config
 			const key = global ? '*' : selectedExt;
 			const cfg = this.plugin.settings.editorConfigs?.[key];
-			const defaultCfg = global ? DEFAULT_EDITOR_CONFIG : DEFAULT_EXTENSION_CONFIG;
+			const defaultCfg = global ? DEFAULT_EDITOR_CONFIG : getExtensionConfigTemplate(selectedExt);
 			if (this.codeEditor) {
 				this.codeEditor.setValue(cfg ?? defaultCfg);
 			}
@@ -251,9 +256,16 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			if (!ext) return;
 			await switchScope(false, ext);
 			extInput.setValue('');
+			extInput.inputEl.blur();
 		};
 
-		new ExtensionSuggest(this.plugin, extInput.inputEl, showExt, () => extensions);
+		// Only suggest formattable extensions
+		new ExtensionSuggest(
+			this.plugin,
+			extInput.inputEl,
+			showExt,
+			() => formattableExts
+		);
 
 		// Initialize Monaco editor
 		void (async () => {
@@ -274,7 +286,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			);
 			editorContainer.append(this.codeEditor.iframe);
 			// Restore last selected extension or default to global
-			if (selectedExt && extensions.includes(selectedExt)) {
+			if (selectedExt && formattableExts.includes(selectedExt)) {
 				await switchScope(false, selectedExt);
 			} else {
 				await switchScope(true);

@@ -2,6 +2,60 @@ import { staticMap } from '../utils/getLanguage.ts';
 import type { MyPluginSettings } from './types.ts';
 
 /**
+ * Extensions that have integrated formatters.
+ * These are the only extensions that should appear in the Editor Config extension selector.
+ *
+ * Formatters:
+ * - Prettier: js, jsx, ts, tsx, css, scss, less, html, json, jsonc, yaml, yml, graphql, md
+ * - Mermaid: mmd
+ * - Ruff: py
+ * - gofmt: go
+ * - clang-format: c, cpp, cc, cxx, h, hpp
+ */
+export const FORMATTABLE_EXTENSIONS = [
+	// Prettier-supported
+	'js',
+	'jsx',
+	'cjs',
+	'mjs',
+	'es6',
+	'ts',
+	'tsx',
+	'cts',
+	'mts',
+	'css',
+	'scss',
+	'less',
+	'html',
+	'htm',
+	'json',
+	'jsonc',
+	'yaml',
+	'yml',
+	'graphql',
+	'gql',
+	'md',
+	'mdx',
+	'markdown',
+	// Mermaid
+	'mmd',
+	'mermaid',
+	// Python (Ruff)
+	'py',
+	// Go (gofmt)
+	'go',
+	// C/C++ (clang-format)
+	'c',
+	'cpp',
+	'cc',
+	'cxx',
+	'h',
+	'hpp',
+	'hh',
+	'hxx'
+];
+
+/**
  * Default Monaco editor options applied when no per-extension config exists.
  *
  * Convention:
@@ -70,19 +124,7 @@ export function getExtensionConfigTemplate(ext: string): string {
     "insertSpaces": true,
     // "printWidth": 80,
 }`,
-		jsonc: `{
-    // JSON uses 2-space indentation (Prettier override)
-    "tabSize": 2,
-    "insertSpaces": true,
-    // "printWidth": 80,
-}`,
 		yaml: `{
-    // YAML uses 2-space indentation (standard)
-    "tabSize": 2,
-    "insertSpaces": true,
-    // "printWidth": 80,
-}`,
-		yml: `{
     // YAML uses 2-space indentation (standard)
     "tabSize": 2,
     "insertSpaces": true,
@@ -163,11 +205,13 @@ export function getExtensionConfigTemplate(ext: string): string {
 }`,
 		c: `{
     // C typically uses 4-space or tab indentation
+    // clang-format formatter is integrated
     // "tabSize": 4,
     "insertSpaces": true,
 }`,
 		cpp: `{
     // C++ typically uses 4-space or tab indentation
+    // clang-format formatter is integrated
     // "tabSize": 4,
     "insertSpaces": true,
 }`,
