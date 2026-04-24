@@ -35,8 +35,7 @@ export function patchMenuOverlay(plugin: CodeFilesPlugin): void {
 		around(Menu.prototype, {
 			hide(next: Menu['hide']) {
 				return function (this: Menu) {
-					// Use setTimeout to ensure the menu has fully closed before removing overlays
-					setTimeout(() => removeOverlays(), 100);
+					removeOverlays();
 					return next.call(this);
 				};
 			}
