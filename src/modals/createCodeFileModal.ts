@@ -23,6 +23,7 @@ import {
 } from '../utils/extensionUtils.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/types.ts';
+import { confirmation } from './confirmation.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
@@ -113,11 +114,8 @@ export class CreateCodeFileModal extends Modal {
 		fileNameInput.inputEl.focus();
 	}
 
-	/** Creates the new file and opens it in a new leaf, or shows a notice if a file with the same name already exists */
 	async complete(): Promise<void> {
-		// Normalize: strip leading dot, trim whitespace
 		const ext = this.fileExtension.replace(/^\./, '').trim();
-
 		if (!ext) {
 			new Notice('Please enter a file extension');
 			return;
@@ -126,57 +124,43 @@ export class CreateCodeFileModal extends Modal {
 		let cleanName = this.fileName.trim();
 		let finalPath: string;
 		let isHiddenFromName = false;
+		let shouldRegisterExt = false;
+		const isExtRegistered = getActiveExtensions(this.plugin.settings).includes(ext);
 
-		// Hidden file typed directly in the name field (e.g. ".prettierrc")
+		// Case 1: hidden file typed directly in name field (e.g. ".prettierrc")
 		if (cleanName.startsWith('.') && !cleanName.slice(1).includes('.')) {
 			finalPath = normalizePath(`${this.parent.path}/${cleanName}`);
 			isHiddenFromName = true;
-		} else {
-			if (!cleanName) {
-				cleanName = `.${ext}`;
-				const confirmed = await new Promise<boolean>((resolve) => {
-					const modal = new Modal(this.app);
-					modal.titleEl.setText('Create file without name?');
-					modal.contentEl.createEl('p', { text: `Create file: ${cleanName}` });
-					const btnContainer = modal.contentEl.createDiv({
-						cls: 'modal-button-container'
-					});
-					new ButtonComponent(btnContainer)
-						.setButtonText('Cancel')
-						.onClick(() => {
-							modal.close();
-							resolve(false);
-						});
-					new ButtonComponent(btnContainer)
-						.setButtonText('Create')
-						.setCta()
-						.onClick(() => {
-							modal.close();
-							resolve(true);
-						});
-					modal.open();
-				});
 
-				if (!confirmed) return;
-				finalPath = normalizePath(`${this.parent.path}/${cleanName}`);
-			} else {
-				// If user typed 'myFile.js' and ext is set to 'js', prevent 'myFile.js.js'
-				if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
-					cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
-				} else if (cleanName.endsWith('.')) {
-					cleanName = cleanName.slice(0, -1);
-				}
-				finalPath = normalizePath(`${this.parent.path}/${cleanName}.${ext}`);
+			// Case 2: dotfile — no name, only extension
+		} else if (!cleanName) {
+			const dotfileName = `.${ext}`;
+			const confirmed = await confirmation(
+				this.app,
+				`Create dot file: ${dotfileName}?`
+			);
+			if (!confirmed) return;
+			cleanName = dotfileName;
+			finalPath = normalizePath(`${this.parent.path}/${cleanName}`);
+
+			if (!isExtRegistered) {
+				shouldRegisterExt = await confirmation(
+					this.app,
+					`Register ".${ext}" as a new extension with Code Files?`
+				);
 			}
+
+			// Case 3: named file
+		} else {
+			if (cleanName.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
+				cleanName = cleanName.slice(0, cleanName.length - ext.length - 1);
+			} else if (cleanName.endsWith('.')) {
+				cleanName = cleanName.slice(0, -1);
+			}
+			finalPath = normalizePath(`${this.parent.path}/${cleanName}.${ext}`);
 		}
 
-		// If the extension is not registered yet, register it on the fly.
-		// Skip registration if the primary intent was a hidden file typed in the name field
-		// (e.g. user typed ".prettierrc" in name and "json" happened to be in the extension field).
-		if (
-			!isHiddenFromName &&
-			!getActiveExtensions(this.plugin.settings).includes(ext)
-		) {
+		if (shouldRegisterExt) {
 			addExtension(this.plugin.settings, ext);
 			registerExtension(this.plugin, ext);
 			await this.plugin.saveSettings();
@@ -189,10 +173,6 @@ export class CreateCodeFileModal extends Modal {
 		const adapter = this.getAdapter();
 
 		if (await adapter.exists(newPath)) {
-			// If it's a hidden file (e.g. .prettierrc), Obsidian's vault mechanism doesn't track it by default.
-			// This means getAbstractFileByPath will return null even if it exists on disk.
-			// We manually call reconcileFileInternal to force Obsidian to add it to the vault cache
-			// so we can properly open it as a TFile.
 			if (
 				basename.startsWith('.') &&
 				!this.app.vault.getAbstractFileByPath(newPath)
@@ -201,11 +181,8 @@ export class CreateCodeFileModal extends Modal {
 					adapter.getRealPath(newPath),
 					newPath
 				);
-				// empirical delay, no clean alternative: We must wait a few ms for Obsidian's vault cache to reflect
-				// the reconciliation before getAbstractFileByPath can see it.
 				await new Promise((resolve) => setTimeout(resolve, 50));
 			}
-
 			const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 			if (existingFile && existingFile instanceof TFile) {
 				new Notice('File already exists, opening...');
@@ -219,15 +196,11 @@ export class CreateCodeFileModal extends Modal {
 		let newFile: TFile | null = null;
 		try {
 			if (basename.startsWith('.')) {
-				// Create the file using the adapter's write method (works for hidden files)
 				await adapter.write(newPath, '');
-				// Again, for hidden files we just created, the vault won't see them automatically.
-				// We force reconciliation so getFileByPath can successfully return the newly created TFile.
 				await adapter.reconcileFileInternal?.(
 					adapter.getRealPath(newPath),
 					newPath
 				);
-				// empirical delay, no clean alternative: Wait for vault cache synchronization (see note above).
 				await new Promise((resolve) => setTimeout(resolve, 50));
 				newFile = this.app.vault.getFileByPath(newPath);
 			} else {
@@ -243,6 +216,26 @@ export class CreateCodeFileModal extends Modal {
 			new Notice(`Failed to create file: ${newPath}`);
 			return;
 		}
+
+		// Named file with unregistered extension: ask after creation
+		if (
+			!isHiddenFromName &&
+			!isExtRegistered &&
+			!shouldRegisterExt &&
+			cleanName !== `.${ext}`
+		) {
+			const registerExt = await confirmation(
+				this.app,
+				`Register ".${ext}" as a new extension with Code Files?`
+			);
+			if (registerExt) {
+				addExtension(this.plugin.settings, ext);
+				registerExtension(this.plugin, ext);
+				await this.plugin.saveSettings();
+				new Notice(`Added ".${ext}" to registered extensions`);
+			}
+		}
+
 		void CodeEditorView.openFile(newFile, this.plugin, true);
 	}
 
