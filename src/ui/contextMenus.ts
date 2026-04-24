@@ -184,7 +184,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 	}
 
 	// Show "Register Extension" only if has extension AND not registered AND not native
-	if (!isRegistered && !isNative) {
+	if (ext && !isRegistered && !isNative) {
 		items.push({
 			title: 'Register Extension',
 			icon: 'plus-circle',
@@ -205,7 +205,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 	}
 
 	// Show "Unregister Extension" only if registered AND not native
-	if (isRegistered && !isNative) {
+	if (ext && isRegistered && !isNative) {
 		items.push({
 			title: 'Unregister Extension',
 			icon: 'minus-circle',
