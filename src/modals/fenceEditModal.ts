@@ -44,8 +44,7 @@ export class FenceEditModal extends Modal {
 
 		const badgeEl = createEl('span', {
 			text: `.${this.langKey}`,
-			cls: 'code-files-ext-badge',
-			attr: { style: 'margin-left: auto; margin-right: 0;' }
+			cls: 'code-files-ext-badge'
 		});
 		this.titleEl.appendChild(badgeEl);
 
@@ -131,9 +130,12 @@ export class FenceEditModal extends Modal {
 	}
 
 	/** Opens a Monaco Editor modal pre-filled with the content of the code fence under the cursor. Does nothing if the cursor is not inside a valid code block. */
-	static openOnCurrentCode(plugin: CodeFilesPlugin, editor: Editor): void {
-		const context = FenceEditContext.create(plugin, editor);
-
+	static openOnCurrentCode(
+		plugin: CodeFilesPlugin,
+		editor: Editor,
+		context?: FenceEditContext
+	): void {
+		context = context ?? FenceEditContext.create(plugin, editor) ?? undefined;
 		if (!context) {
 			new Notice('Your cursor is currently not in a valid code block.');
 			return;

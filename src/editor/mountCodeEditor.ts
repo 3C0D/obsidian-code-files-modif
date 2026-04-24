@@ -21,14 +21,16 @@ import { around } from 'monkey-around';
 const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 
 /**
- * Resolves theme parameters for Monaco. For built-in themes, returns the theme name.
- *  For custom themes, fetches the theme JSON and returns it as themeData.
+ * Resolves theme parameters for Monaco.
+ * - For built-in themes (vs, vs-dark, etc.), returns only the sanitized theme name.
+ * - For custom themes, fetches the theme JSON from the plugin folder and returns both
+ *   the sanitized name and the JSON string in `themeData`.
  *
  * @param plugin
  * @param theme  - Theme identifier as configured in plugin settings.
  * @returns Object with:
  *          - `theme`: sanitized theme name ready for Monaco.
- *          - `themeData?`: JSON-stringified theme
+ *          - `themeData?`: JSON-stringified theme (only for custom themes)
  */
 export const resolveThemeParams = async (
 	plugin: CodeFilesPlugin,

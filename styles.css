@@ -1,8 +1,6 @@
 .code-files-ext-badge {
-	display: inline-block;
-	width: auto;
-	margin-left: 6px;
-	margin-right: 4px;
+	margin-left: auto;
+	display: inline-block; /* already width: auto; */
 	padding: 1px 6px;
 	border-radius: 4px;
 	font-size: 0.75em;

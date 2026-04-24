@@ -25,8 +25,13 @@ export class FenceEditContext {
 	}
 
 	/**
+	 * Creates a new FenceEditContext from the cursor position in the editor.
 	 * Returns null if the cursor is not inside a
 	 * code fence (uses Obsidian's section cache).
+	 * 
+	 * @param plugin - The plugin instance
+	 * @param editor - The editor instance
+	 * @returns A new FenceEditContext instance if the cursor is inside a valid code block, or null otherwise.
 	 */
 	static create(plugin: CodeFilesPlugin, editor: Editor): FenceEditContext | null {
 		const file = plugin.app.workspace.getActiveFile();
@@ -53,10 +58,16 @@ export class FenceEditContext {
 		);
 	}
 
-	/** Extracts body text and language from the fence.
+	/** 
+	 * Extracts body text and language from the fence.
 	 *  `langKey` is the raw string after the backticks
 	 *  (e.g. "js" in ````js), while `language` is
-	 *  the Monaco language id resolved from it. */
+	 *  the Monaco language id resolved from it. 
+	 * 
+	 * @param plugin - The plugin instance
+	 * @param editor - The editor instance
+	 * @returns An object containing the fence body content, language ID, and raw language key.
+	 * */
 	getFenceData(): { content: string; language: string; langKey: string } {
 		let editorContent = '';
 		for (let i = this.start + 1; i < this.end; i++) {
@@ -73,6 +84,7 @@ export class FenceEditContext {
 		return { content, language, langKey };
 	}
 
+	/** Replaces the fence body with the given value when the modal closes. */
 	replaceFenceContent(value: string): void {
 		this.editor.replaceRange(
 			`${value}\n`,

@@ -27,8 +27,10 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 		id: 'open-codeblock-in-monaco',
 		name: 'Open current code block in Monaco Editor',
 		editorCheckCallback: (checking, editor) => {
-			if (!FenceEditContext.create(plugin, editor)) return false;
-			if (!checking) FenceEditModal.openOnCurrentCode(plugin, editor);
+			// Check if the cursor is inside a valid code block.
+			const context = FenceEditContext.create(plugin, editor);
+			if (!context) return false;
+			if (!checking) FenceEditModal.openOnCurrentCode(plugin, editor, context);
 			return true;
 		}
 	});
