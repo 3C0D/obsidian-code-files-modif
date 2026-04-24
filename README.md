@@ -16,7 +16,6 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Dynamic Extension Management** — add/remove extensions at runtime. Quick actions via right-click in explorer: Register Extension / Unregister Extension
 - **Two Extension Modes** — Manual (curated list) or Extended (all 80+ Monaco languages auto-registered). Exclusions and custom additions are preserved when switching modes
 - **Create Code Files Modal** — interactive modal with extension autosuggest, supports dotfiles files (.env), auto-registers new extensions
-- **Files Without Extension** — extensionless files (LICENSE, README) can be open with "Open in Monaco Editor" in file/editor context menu and palette. It can also open any unregistered file.
 - **Per-Extension & Global Config** — JSONC editor config (tabSize, insertSpaces, formatOnSave, printWidth, etc.) with global fallback and language-level inheritance
 - **Editor Settings Modal** — inline Monaco JSON editor with live preview, accessible via ⚙️ gear icon in tab header
 - **AutoSave (OFF by default)** — visual dirty indicator (circle in tab header); prevents accidental saves. Format on save optional
@@ -29,7 +28,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 
 ## Opening Files in Monaco
 
-Files with registered extensions open automatically in Monaco. You can also open any file manually:
+Files with registered extensions open automatically in Monaco, as well as dotfiles with a registered extension (e.g. .env) and extension-less files (e.g. LICENSE, README). You can also open any file manually:
 
 - Command palette → **"Open current file in Monaco Editor"**
 - Right-click a file → **"Open in Monaco Editor"**

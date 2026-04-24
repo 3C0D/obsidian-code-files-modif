@@ -175,7 +175,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 	// Show "Open in Monaco Editor" if:
 	// - File has no extension (LICENSE, README, etc.), OR
 	// - Extension is not registered AND not native
-	if (!isRegistered) {
+	if (ext && !isRegistered) {
 		items.push({
 			title: 'Open in Monaco Editor',
 			icon: 'file-code-corner',

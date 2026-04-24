@@ -1,5 +1,6 @@
 /**
- * Monkey-patches WorkspaceLeaf.prototype.openFile to intercept dotfiles.
+ * Monkey-patches WorkspaceLeaf.prototype.openFile to intercept dotfiles
+ * and extension-less files.
  *
  * Dotfiles (.env, .gitignore, etc.) have file.extension="" in Obsidian,
  * so they bypass normal extension routing and Obsidian tries to open
@@ -7,9 +8,11 @@
  * filename (e.g. "env" from ".env") and redirects to Monaco if that
  * extension is in the active list.
  *
- * Files without a real extension (LICENSE, README) or with an
- * unregistered extension (.tata) fall through to the original
- * Obsidian behavior unchanged.
+ * Files without any real extension (LICENSE, README, etc.) are also
+ * redirected to Monaco unconditionally.
+ *
+ * Files with an unregistered extension (.tata) fall through to the
+ * original Obsidian behavior unchanged.
  *
  * Returns an unpatch function to restore original behavior on
  * plugin unload.
@@ -29,10 +32,10 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 				file: TFile,
 				openState?: OpenViewState
 			) {
-				// Only intercept files with no Obsidian extension (dotfiles)
+				// Intercept files with no Obsidian extension (dotfiles + extension-less)
 				if (file && !file.extension) {
 					const ext = getExtension(file.name);
-					if (ext && getActiveExtensions(plugin.settings).includes(ext)) {
+					if (!ext || getActiveExtensions(plugin.settings).includes(ext)) {
 						// Redirect to Monaco instead of OS handler
 						return this.setViewState({
 							type: viewType,
