@@ -47,6 +47,7 @@ export class CreateCodeFileModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
+		this.modalEl.style.width = 'min(520px, 90vw)';
 		contentEl.style.display = 'flex';
 		contentEl.style.flexDirection = 'column';
 		contentEl.style.gap = '8px';
@@ -75,9 +76,11 @@ export class CreateCodeFileModal extends Modal {
 		inputRow.style.display = 'flex';
 		inputRow.style.alignItems = 'center';
 		inputRow.style.gap = '4px';
+		inputRow.style.flexWrap = 'wrap';
 
 		const fileNameInput = new TextComponent(inputRow);
-		fileNameInput.inputEl.style.width = '200px';
+		fileNameInput.inputEl.style.flex = '1';
+		fileNameInput.inputEl.style.minWidth = '0';
 		fileNameInput.setValue(this.fileName);
 		fileNameInput.onChange((value) => {
 			this.fileName = value;
@@ -87,7 +90,8 @@ export class CreateCodeFileModal extends Modal {
 		extInput.setPlaceholder('.ext');
 		extInput.inputEl.title =
 			'Type to filter registered extensions, or enter a new one — it will be registered automatically on Create.';
-		extInput.inputEl.style.width = '80px';
+		extInput.inputEl.style.width = '90px';
+		extInput.inputEl.style.flexShrink = '0';
 		extInput.onChange((value) => {
 			this.fileExtension = value.replace(/^\./, '');
 		});

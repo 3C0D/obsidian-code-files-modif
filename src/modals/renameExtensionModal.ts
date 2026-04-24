@@ -34,7 +34,7 @@ export class RenameExtensionModal extends Modal {
 		contentEl.style.display = 'flex';
 		contentEl.style.flexDirection = 'column';
 		contentEl.style.gap = '8px';
-		this.modalEl.style.width = '400px';
+		this.modalEl.style.width = 'min(480px, 90vw)';
 
 		// Current filename display
 		contentEl.createEl('div', {
@@ -50,11 +50,14 @@ export class RenameExtensionModal extends Modal {
 
 		// Name + extension row
 		const inputRow = contentEl.createEl('div', {
-			attr: { style: 'display: flex; align-items: center; gap: 4px;' }
+			attr: {
+				style: 'display: flex; align-items: center; gap: 4px; flex-wrap: wrap;'
+			}
 		});
 
 		const nameInput = new TextComponent(inputRow);
-		nameInput.inputEl.style.width = '200px';
+		nameInput.inputEl.style.flex = '1';
+		nameInput.inputEl.style.minWidth = '0';
 
 		// Pre-fill name and extension from current file
 		const currentExt = getExtension(this.file.name);
