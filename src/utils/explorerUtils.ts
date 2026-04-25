@@ -80,33 +80,31 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 
 			for (const item of Object.values(view.fileItems)) {
 				const file = (item as FileTreeItem).file;
-				if (!(file instanceof TFile)) continue;
-				if (file.extension) continue; // Only process dotfiles (empty extension)
-
-				const ext = getExtension(file.name);
-				if (!ext || !activeExts.includes(ext)) continue;
-
-				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
-				if (!selfEl) continue;
-
-				const tagEl = selfEl.querySelector('.nav-file-tag');
-				if (tagEl && !tagEl.textContent) {
-					tagEl.textContent = ext.toUpperCase();
-					tagEl.classList.add('code-files-dotfile-badge');
-				}
-			}
-
-			// Badge for unregistered files (not native, not registered with Code Files)
-			for (const item of Object.values(view.fileItems)) {
-				const file = (item as FileTreeItem).file;
 				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
 				const tagEl = selfEl?.querySelector('.nav-file-tag');
+
+				// Unregistered badge cleanup
 				if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
 
-				if (!(file instanceof TFile) || !file.extension) continue;
-				if (activeExts.includes(file.extension)) continue;
-				if (OBSIDIAN_NATIVE_EXTENSIONS.includes(file.extension)) continue;
-				if (tagEl) tagEl.classList.add('code-files-unregistered-badge');
+				if (!(file instanceof TFile)) continue;
+
+				// Dotfile badge
+				if (!file.extension) {
+					const ext = getExtension(file.name);
+					if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
+						tagEl.textContent = ext.toUpperCase();
+						tagEl.classList.add('code-files-dotfile-badge');
+					}
+					continue; // dotfiles ne sont pas "unregistered"
+				}
+
+				// Unregistered badge
+				if (
+					!activeExts.includes(file.extension) &&
+					!OBSIDIAN_NATIVE_EXTENSIONS.includes(file.extension)
+				) {
+					if (tagEl) tagEl.classList.add('code-files-unregistered-badge');
+				}
 			}
 		}
 	};
