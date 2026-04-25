@@ -9,7 +9,7 @@
  * as an iframe. This view handles all Obsidian-specific concerns (file I/O, header UI, lifecycle)
  * while delegating editor functionality to the isolated Monaco iframe via postMessage.
  */
-import type { WorkspaceLeaf } from 'obsidian';
+import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
 import { normalizePath, TextFileView, TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
@@ -29,6 +29,7 @@ import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/variables.ts';
 import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
+import { revealFiles } from '../utils/hiddenFilesUtils.ts';
 
 /**
  * Obsidian TextFileView wrapper for Monaco Editor.
@@ -89,6 +90,31 @@ export class CodeEditorView extends TextFileView {
 	/**	Context is used for language detection and is derived from the file path. */
 	getContext(file: TFile): string {
 		return file.path;
+	}
+
+	getState(): Record<string, unknown> {
+		const state = super.getState() as Record<string, unknown>;
+		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
+		if (this.file && (!this.file.extension || this.file.path.includes('.obsidian/snippets'))) {
+			state.reveal = true;
+		}
+		return state;
+	}
+
+	async setState(
+		state: Record<string, unknown>,
+		result: ViewStateResult
+	): Promise<void> {
+		const filePath = typeof state?.file === 'string' ? state.file : undefined;
+		if (
+			filePath &&
+			state.reveal &&
+			!this.plugin.app.vault.getAbstractFileByPath(filePath)
+		) {
+			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
+			await revealFiles(this.plugin, folderPath, [filePath], true, false); // silent, no persist
+		}
+		await super.setState(state, result);
 	}
 
 	/**
@@ -506,14 +532,14 @@ export class CodeEditorView extends TextFileView {
 		leaf.updateHeader();
 	}
 
-	/** 
+	/**
 	 * Opens any file in Monaco.
 	 *  If the file is in the vault, it opens it in a leaf (new tab or current leaf based on parameter).
 	 *  If the file is not in the vault, it opens it in a new leaf via an adapter path (not vault-indexed).
 	 *  @param file The file to open.
 	 *  @param plugin The CodeFilesPlugin instance.
 	 *  @param newTab Whether to open the file in a new tab or the current leaf.
-	*/
+	 */
 	static async openFile(
 		file: TFile,
 		plugin: CodeFilesPlugin,
