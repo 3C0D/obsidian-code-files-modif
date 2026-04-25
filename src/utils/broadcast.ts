@@ -133,27 +133,31 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  * @param plugin - The plugin instance.
  */
 export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
-	const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings') ?? {
-		modifiers: ['Mod'],
-		key: ','
-	};
-	const paletteHotkey = getObsidianHotkey(plugin.app, 'command-palette:open') ?? {
-		modifiers: ['Mod'],
-		key: 'p'
-	};
-	const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file') ?? {
-		modifiers: ['Mod'],
-		key: 'Delete'
-	};
-
 	// Apply overrides if they exist (overrides are stored as 'Mod' internally)
-	const finalSettingsHotkey =
-		parseHotkeyOverride(plugin.settings.settingsHotkeyOverride) ?? settingsHotkey;
-	const finalPaletteHotkey =
-		parseHotkeyOverride(plugin.settings.commandPaletteHotkeyOverride) ??
-		paletteHotkey;
-	const finalDeleteFileHotkey =
-		parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
+	const resolveHotkey = (
+		commandId: string,
+		fallback: { modifiers: string[]; key: string },
+		override: string
+	): { modifiers: string[]; key: string } =>
+		parseHotkeyOverride(override) ??
+		getObsidianHotkey(plugin.app, commandId) ??
+		fallback;
+
+	const finalSettingsHotkey = resolveHotkey(
+		'app:open-settings',
+		{ modifiers: ['Mod'], key: ',' },
+		plugin.settings.settingsHotkeyOverride
+	);
+	const finalPaletteHotkey = resolveHotkey(
+		'command-palette:open',
+		{ modifiers: ['Mod'], key: 'p' },
+		plugin.settings.commandPaletteHotkeyOverride
+	);
+	const finalDeleteFileHotkey = resolveHotkey(
+		'app:delete-file',
+		{ modifiers: ['Mod'], key: 'Delete' },
+		plugin.settings.deleteFileHotkeyOverride
+	);
 
 	const currentHotkeys = JSON.stringify({
 		settingsHotkey: finalSettingsHotkey,
