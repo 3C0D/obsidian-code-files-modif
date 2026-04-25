@@ -101,6 +101,8 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
  *    the files with its TypeScript language service
  * 4. If no project root is set, sends an empty array to clear
  *    previously loaded files
+ *
+ * @param plugin - The plugin instance.
  */
 export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const files = await readProjectFiles(plugin);
@@ -120,7 +122,7 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  * - 'Mod' = 'Cmd' on Mac
  * This matches Obsidian's internal representation and ensures overrides work consistently.
  *
- * @param plugin - The plugin instance
+ * @param plugin - The plugin instance.
  */
 export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 	const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings') ?? {

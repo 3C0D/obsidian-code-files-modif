@@ -19,7 +19,10 @@ const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
  *  for TypeScript/JavaScript cross-file navigation.
  *
  *  How: Adds a CSS class to the folder title element in Obsidian's file explorer.
- *  The class is styled in monacoHtml.css to show a green highlight. */
+ *  The class is styled in monacoHtml.css to show a green highlight.
+ *
+ *  @param plugin - The plugin instance.
+ */
 export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
 	const view = plugin.app.workspace.getLeavesOfType('file-explorer')?.first()?.view as
 		| FileExplorerView
@@ -63,6 +66,8 @@ let debounceTimeout: NodeJS.Timeout | null = null;
  * Uses a lightweight debounced MutationObserver on the file explorer's
  * container to catch folder expansions dynamically, since Obsidian lazily
  * renders file items only when their parent folder is expanded.
+ *
+ *  @param plugin - The plugin instance.
  */
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 	const updateBadges = (): void => {
@@ -72,14 +77,6 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 		for (const leaf of leaves) {
 			const view = leaf.view as FileExplorerView;
 			if (!view.fileItems) continue;
-
-			// Reset unregistered badges before recomputing
-			for (const item of Object.values(view.fileItems)) {
-				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
-				selfEl
-					?.querySelector('.code-files-unregistered-badge')
-					?.classList.remove('code-files-unregistered-badge');
-			}
 
 			for (const item of Object.values(view.fileItems)) {
 				const file = (item as FileTreeItem).file;
@@ -102,18 +99,14 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 			// Badge for unregistered files (not native, not registered with Code Files)
 			for (const item of Object.values(view.fileItems)) {
 				const file = (item as FileTreeItem).file;
-				if (!(file instanceof TFile)) continue;
-				if (!file.extension) continue; // dotfiles already handled above
+				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
+				const tagEl = selfEl?.querySelector('.nav-file-tag');
+				if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
+
+				if (!(file instanceof TFile) || !file.extension) continue;
 				if (activeExts.includes(file.extension)) continue;
 				if (OBSIDIAN_NATIVE_EXTENSIONS.includes(file.extension)) continue;
-
-				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
-				if (!selfEl) continue;
-
-				const tagEl = selfEl.querySelector('.nav-file-tag');
-				if (tagEl) {
-					tagEl.classList.add('code-files-unregistered-badge');
-				}
+				if (tagEl) tagEl.classList.add('code-files-unregistered-badge');
 			}
 		}
 	};
