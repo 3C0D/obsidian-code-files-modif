@@ -144,9 +144,8 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 				await broadcastProjectFiles(plugin);
 			}
 		});
-	}
-	// Show "Clear" only if this folder is already the project root
-	if (plugin.settings.projectRootFolder === folder.path) {
+	} else {
+		// Show "Clear" only if this folder is already the project root
 		items.push({
 			title: 'Clear Project Root Folder',
 			icon: 'x',
