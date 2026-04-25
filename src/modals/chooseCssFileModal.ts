@@ -41,7 +41,10 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 			// vault.create() only works for vault-indexed files,
 			// so adapter.write is intentional here
 			await this.plugin.app.vault.adapter.write(path, '');
-			new Notice('Make sure to enable the new snippet in Obsidian options.');
+			new Notice(
+				'Enable the snippet via the toggle in the editor title bar.',
+				3000
+			);
 		}
 
 		await CodeEditorView.openExternalFile(path, this.plugin);

@@ -264,34 +264,35 @@ export class CodeEditorView extends TextFileView {
 				}
 			);
 
-			if (exists) {
-				// Create toggle action to enable/disable the snippet
-				const isOn = isSnippetEnabled(this.plugin.app, snippetName);
-				const toggleEl = this.addAction(
-					'square',
-					`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
-					() => {
-						const newState = !isSnippetEnabled(this.plugin.app, snippetName);
-						this.plugin.app.customCss.setCssEnabledStatus(
-							snippetName,
-							newState
-						);
-						track.toggleClass('is-on', newState);
-						toggleEl.setAttr(
-							'aria-label',
-							`${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
-						);
+			const isOn = exists && isSnippetEnabled(this.plugin.app, snippetName);
+			const toggleEl = this.addAction(
+				'square',
+				`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
+				async () => {
+					// If the file doesn't exist yet (new unsaved snippet), save first
+					if (!snippetExists(this.plugin.app, snippetName)) {
+						this.forceSave = true;
+						await this.save();
 					}
-				);
-				// Replace the default Obsidian action button with a custom CSS toggle switch
-				toggleEl.empty();
-				toggleEl.addClass('code-files-snippet-toggle-action');
-				// The toggle consists of a track (the background) and a thumb (the circle that moves). The "is-on" class controls the toggle state (on/off).
-				const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
-				if (isOn) track.addClass('is-on');
-				track.createDiv({ cls: 'code-files-toggle-thumb' });
-				this.snippetToggleAction = toggleEl;
+					const newState = !isSnippetEnabled(this.plugin.app, snippetName);
+					this.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
+					track.toggleClass('is-on', newState);
+					toggleEl.setAttr(
+						'aria-label',
+						`${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
+					);
+				}
+			);
+			// Replace the default Obsidian action button with a custom CSS toggle switch
+			toggleEl.empty();
+			toggleEl.addClass('code-files-snippet-toggle-action');
+			// The toggle consists of a track (the background) and a thumb (the circle that moves). The "is-on" class controls the toggle state (on/off).
+			const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
+			if (isOn) track.addClass('is-on');
+			track.createDiv({ cls: 'code-files-toggle-thumb' });
+			this.snippetToggleAction = toggleEl;
 
+			if (exists) {
 				// Listen for external snippet state changes (from Obsidian settings).
 				// This reassigns the handler after it was nulled during previous cleanup() (e.g. on rename).
 				this.unregisterSnippetHandler = registerSnippetChangeHandler(
