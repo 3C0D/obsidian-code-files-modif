@@ -95,6 +95,15 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 	const unpatchRename = around(adapter, {
 		rename(next) {
 			return async function (this: DataAdapterEx, src: string, dest: string) {
+				// Block renames that would move external files (snippets, etc.) out of configDir
+				const configDir = plugin.app.vault.configDir;
+				if (
+					src.startsWith(configDir + '/') &&
+					!dest.startsWith(configDir + '/')
+				) {
+					return;
+				}
+				// Fix drag-and-drop destination for dotfiles
 				if (adapter.files?.[dest]?.type === 'folder') {
 					const filename = src.split('/').pop() || '';
 					dest = dest + '/' + filename;
