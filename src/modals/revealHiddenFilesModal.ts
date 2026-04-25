@@ -72,13 +72,17 @@ export class RevealHiddenFilesModal extends Modal {
 		);
 		this.selected = new Set([...this.selected].filter((p) => itemPaths.has(p)));
 
-		// Persist the cleanup immediately
+		// After filtering items against auto-managed paths, some entries in revealedFiles
+		// may reference paths that are no longer shown in this modal (e.g. a dotfile whose
+		// extension is now registered and handled by auto-reveal). Strip those stale entries
+		// so settings stay in sync with what the modal actually manages.
 		const current = this.plugin.settings.revealedFiles[this.folderPath] || [];
 		const cleaned = current.filter((p) => itemPaths.has(p));
 		if (cleaned.length !== current.length) {
 			if (cleaned.length > 0) {
 				this.plugin.settings.revealedFiles[this.folderPath] = cleaned;
 			} else {
+				// List is empty: remove the folder entry entirely from revealedFiles
 				delete this.plugin.settings.revealedFiles[this.folderPath];
 			}
 			await this.plugin.saveSettings();
@@ -117,6 +121,20 @@ export class RevealHiddenFilesModal extends Modal {
 			});
 		}
 
+		if (this.items.length === 0) {
+			contentEl.createEl('p', {
+				text: 'No hidden files found',
+				cls: 'hidden-files-empty'
+			});
+			const buttonContainer = contentEl.createDiv({
+				cls: 'modal-button-container'
+			});
+			buttonContainer
+				.createEl('button', { text: 'Close' })
+				.addEventListener('click', () => this.close());
+			return;
+		}
+
 		// Two-column description
 		const descEl = contentEl.createDiv({ cls: 'hidden-files-desc-columns' });
 
@@ -137,126 +155,114 @@ export class RevealHiddenFilesModal extends Modal {
 
 		contentEl.createEl('hr', { cls: 'hidden-files-separator' });
 
-		if (this.items.length === 0) {
-			contentEl.createEl('p', {
-				text: 'No hidden files found',
-				cls: 'hidden-files-empty'
-			});
-		} else {
-			const listEl = contentEl.createDiv({ cls: 'hidden-files-list' });
-			const registerableItems = this.items.filter(
-				(i) => !i.isFolder && getExtension(i.name)
-			);
+		const listEl = contentEl.createDiv({ cls: 'hidden-files-list' });
+		const registerableItems = this.items.filter(
+			(i) => !i.isFolder && getExtension(i.name)
+		);
 
-			// Master row
-			const masterEl = listEl.createDiv({
-				cls: 'hidden-file-item hidden-file-master'
-			});
+		// Master row
+		const masterEl = listEl.createDiv({
+			cls: 'hidden-file-item hidden-file-master'
+		});
+		const masterRevealSection = masterEl.createDiv({
+			cls: 'hidden-file-reveal-section'
+		});
+		const masterReveal = masterRevealSection.createEl('input', {
+			type: 'checkbox'
+		});
+		masterReveal.checked = this.items.every((i) => this.selected.has(i.path));
+		masterReveal.indeterminate = !masterReveal.checked && this.selected.size > 0;
+		masterRevealSection.createSpan({ text: 'All' });
 
-			const masterRevealSection = masterEl.createDiv({
+		const masterRegisterSection = masterEl.createDiv({
+			cls: 'hidden-file-register-section'
+		});
+		const masterRegister = masterRegisterSection.createEl('input', {
+			type: 'checkbox'
+		});
+		masterRegister.checked =
+			registerableItems.length > 0 &&
+			registerableItems.every((i) => this.selectedForRegistration.has(i.path));
+		masterRegister.indeterminate =
+			!masterRegister.checked && this.selectedForRegistration.size > 0;
+		masterRegisterSection.createSpan({ text: 'All' });
+
+		const itemRevealCbs: HTMLInputElement[] = [];
+		const itemRegisterCbs: HTMLInputElement[] = [];
+
+		for (const item of this.items) {
+			const ext = item.isFolder ? null : getExtension(item.name);
+			const rowEl = listEl.createDiv({ cls: 'hidden-file-item' });
+
+			// Left: reveal checkbox + icon + name + size
+			const revealSection = rowEl.createDiv({
 				cls: 'hidden-file-reveal-section'
 			});
-			const masterReveal = masterRevealSection.createEl('input', {
-				type: 'checkbox'
+			const revealCb = revealSection.createEl('input', { type: 'checkbox' });
+			revealCb.checked = this.selected.has(item.path);
+			itemRevealCbs.push(revealCb);
+			revealSection.createSpan({
+				cls: 'hidden-file-icon',
+				text: item.isFolder ? '📁' : '📄'
 			});
-			masterReveal.checked = this.items.every((i) => this.selected.has(i.path));
-			masterReveal.indeterminate = !masterReveal.checked && this.selected.size > 0;
-			masterRevealSection.createSpan({ text: 'All' });
-
-			const masterRegisterSection = masterEl.createDiv({
-				cls: 'hidden-file-register-section'
-			});
-			const masterRegister = masterRegisterSection.createEl('input', {
-				type: 'checkbox'
-			});
-			masterRegister.checked =
-				registerableItems.length > 0 &&
-				registerableItems.every((i) => this.selectedForRegistration.has(i.path));
-			masterRegister.indeterminate =
-				!masterRegister.checked && this.selectedForRegistration.size > 0;
-			masterRegisterSection.createSpan({ text: 'All' });
-
-			const itemRevealCbs: HTMLInputElement[] = [];
-			const itemRegisterCbs: HTMLInputElement[] = [];
-
-			for (const item of this.items) {
-				const ext = item.isFolder ? null : getExtension(item.name);
-				const rowEl = listEl.createDiv({ cls: 'hidden-file-item' });
-
-				// Left: reveal checkbox + icon + name + size
-				const revealSection = rowEl.createDiv({
-					cls: 'hidden-file-reveal-section'
-				});
-				const revealCb = revealSection.createEl('input', { type: 'checkbox' });
-				revealCb.checked = this.selected.has(item.path);
-				itemRevealCbs.push(revealCb);
+			revealSection.createSpan({ cls: 'hidden-file-name', text: item.name });
+			if (!item.isFolder) {
 				revealSection.createSpan({
-					cls: 'hidden-file-icon',
-					text: item.isFolder ? '📁' : '📄'
-				});
-				revealSection.createSpan({ cls: 'hidden-file-name', text: item.name });
-				if (!item.isFolder) {
-					revealSection.createSpan({
-						cls: 'hidden-file-size',
-						text: this.formatSize(item.size)
-					});
-				}
-
-				// Right: register checkbox
-				const registerSection = rowEl.createDiv({
-					cls: 'hidden-file-register-section'
-				});
-				if (!item.isFolder && ext) {
-					const registerCb = registerSection.createEl('input', {
-						type: 'checkbox'
-					});
-					registerCb.checked = this.selectedForRegistration.has(item.path);
-					itemRegisterCbs.push(registerCb);
-					registerSection.createSpan({ text: `register as .${ext}` });
-
-					registerCb.addEventListener('change', () => {
-						if (registerCb.checked)
-							this.selectedForRegistration.add(item.path);
-						else this.selectedForRegistration.delete(item.path);
-						masterRegister.checked = registerableItems.every((i) =>
-							this.selectedForRegistration.has(i.path)
-						);
-						masterRegister.indeterminate =
-							!masterRegister.checked &&
-							this.selectedForRegistration.size > 0;
-					});
-				}
-
-				revealCb.addEventListener('change', () => {
-					if (revealCb.checked) this.selected.add(item.path);
-					else this.selected.delete(item.path);
-					masterReveal.checked = this.items.every((i) =>
-						this.selected.has(i.path)
-					);
-					masterReveal.indeterminate =
-						!masterReveal.checked && this.selected.size > 0;
+					cls: 'hidden-file-size',
+					text: this.formatSize(item.size)
 				});
 			}
 
-			masterReveal.addEventListener('change', () => {
-				if (masterReveal.checked)
-					this.items.forEach((i) => this.selected.add(i.path));
-				else this.items.forEach((i) => this.selected.delete(i.path));
-				itemRevealCbs.forEach((cb) => (cb.checked = masterReveal.checked));
+			// Right: register checkbox
+			const registerSection = rowEl.createDiv({
+				cls: 'hidden-file-register-section'
 			});
+			if (!item.isFolder && ext) {
+				const registerCb = registerSection.createEl('input', {
+					type: 'checkbox'
+				});
+				registerCb.checked = this.selectedForRegistration.has(item.path);
+				itemRegisterCbs.push(registerCb);
+				registerSection.createSpan({ text: `register as .${ext}` });
 
-			masterRegister.addEventListener('change', () => {
-				if (masterRegister.checked)
-					registerableItems.forEach((i) =>
-						this.selectedForRegistration.add(i.path)
+				registerCb.addEventListener('change', () => {
+					if (registerCb.checked) this.selectedForRegistration.add(item.path);
+					else this.selectedForRegistration.delete(item.path);
+					masterRegister.checked = registerableItems.every((i) =>
+						this.selectedForRegistration.has(i.path)
 					);
-				else
-					registerableItems.forEach((i) =>
-						this.selectedForRegistration.delete(i.path)
-					);
-				itemRegisterCbs.forEach((cb) => (cb.checked = masterRegister.checked));
+					masterRegister.indeterminate =
+						!masterRegister.checked && this.selectedForRegistration.size > 0;
+				});
+			}
+
+			revealCb.addEventListener('change', () => {
+				if (revealCb.checked) this.selected.add(item.path);
+				else this.selected.delete(item.path);
+				masterReveal.checked = this.items.every((i) => this.selected.has(i.path));
+				masterReveal.indeterminate =
+					!masterReveal.checked && this.selected.size > 0;
 			});
 		}
+
+		masterReveal.addEventListener('change', () => {
+			if (masterReveal.checked)
+				this.items.forEach((i) => this.selected.add(i.path));
+			else this.items.forEach((i) => this.selected.delete(i.path));
+			itemRevealCbs.forEach((cb) => (cb.checked = masterReveal.checked));
+		});
+
+		masterRegister.addEventListener('change', () => {
+			if (masterRegister.checked)
+				registerableItems.forEach((i) =>
+					this.selectedForRegistration.add(i.path)
+				);
+			else
+				registerableItems.forEach((i) =>
+					this.selectedForRegistration.delete(i.path)
+				);
+			itemRegisterCbs.forEach((cb) => (cb.checked = masterRegister.checked));
+		});
 
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 

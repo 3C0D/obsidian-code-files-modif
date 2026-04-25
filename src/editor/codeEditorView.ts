@@ -9,8 +9,8 @@
  * as an iframe. This view handles all Obsidian-specific concerns (file I/O, header UI, lifecycle)
  * while delegating editor functionality to the isolated Monaco iframe via postMessage.
  */
-import type { TFile, WorkspaceLeaf } from 'obsidian';
-import { normalizePath, TextFileView } from 'obsidian';
+import type { WorkspaceLeaf } from 'obsidian';
+import { normalizePath, TextFileView, TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import { getLanguage } from '../utils/getLanguage.ts';
