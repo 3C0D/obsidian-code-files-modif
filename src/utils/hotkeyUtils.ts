@@ -56,7 +56,7 @@ export function getObsidianHotkey(app: App, commandId: string): HotkeyConfig | n
  * This matches Obsidian's internal hotkey representation where 'Mod' is used
  * as a cross-platform alias (Ctrl on Windows/Linux, Cmd on Mac).
  * Returns null if invalid.
- * 
+ *
  * @param override - The hotkey override string
  * @returns HotkeyConfig if valid, or null if invalid
  */
@@ -90,7 +90,7 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
 			modifiers.push('Alt');
 		} else {
 			// Last non-modifier part is assumed to be the key
-			key = part;
+			key = part.length === 1 ? part.toUpperCase() : part;
 		}
 	}
 

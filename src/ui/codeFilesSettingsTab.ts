@@ -351,8 +351,10 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				.setName(name)
 				.setDesc(`Current Obsidian: ${defaultStr || 'none'}`)
 				.addText((text) => {
-					const displayValue = currentOverride || `${defaultStr} (default)`;
-					text.setValue(displayValue);
+					const displayOverride = currentOverride
+						? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
+						: '';
+					text.setValue(displayOverride || `${defaultStr} (default)`);
 					text.setPlaceholder('Ctrl+P, Ctrl + P, or Ctrl P');
 					text.inputEl.style.width = '200px';
 
