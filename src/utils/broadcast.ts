@@ -5,6 +5,7 @@
  * - broadcastBrightness: CSS filter on iframe elements
  * - broadcastEditorConfig: merged editor config (tabSize, formatOnSave, etc.)
  * - broadcastProjectFiles: loads TS/JS files from project root for IntelliSense and cross-file navigation
+ * - broadcastHotkeys: updates editor hotkeys to match Obsidian's settings
  */
 import { Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
@@ -21,6 +22,8 @@ import { getObsidianHotkey, parseHotkeyOverride, formatHotkey } from './hotkeyUt
  * Called after toggling semantic/syntax validation
  * in settings — each iframe receives the message
  * and updates its internal Monaco configuration.
+ *
+ * @param plugin - The plugin instance.
  */
 export function broadcastOptions(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
@@ -37,6 +40,8 @@ export function broadcastOptions(plugin: CodeFilesPlugin): void {
  * theme variables don't reach it — a CSS filter
  * on the iframe itself is the only way to
  * dim/brighten the editor.
+ *
+ * @param plugin - The plugin instance.
  */
 export function broadcastBrightness(plugin: CodeFilesPlugin): void {
 	for (const view of getCodeEditorViews(plugin.app)) {
@@ -58,6 +63,9 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
  * Example: changing 'yaml' config broadcasts to both:
  * - Files with extension 'yaml'
  * - Files with extension 'clangformat' (which maps to yaml language)
+ *
+ * @param plugin - The plugin instance.
+ * @param ext - The file extension to target.
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
 	const views = getCodeEditorViews(plugin.app);
