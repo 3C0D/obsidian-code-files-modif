@@ -43,7 +43,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 			await this.plugin.app.vault.adapter.write(path, '');
 			new Notice(
 				'Enable the snippet via the toggle in the editor title bar.',
-				3000
+				4000
 			);
 		}
 

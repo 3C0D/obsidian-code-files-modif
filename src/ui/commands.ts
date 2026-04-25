@@ -8,7 +8,7 @@ import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
-import { ChooseCssFileModal } from '../modals/chooseCssFileModal.ts';
+import { ChooseCssFileModal } from '../modals/manageCssSnippetsModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';

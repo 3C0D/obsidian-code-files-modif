@@ -7,7 +7,7 @@
 import { ButtonComponent, FileView, Modal, Notice, TextComponent } from 'obsidian';
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { confirmation } from './confirmation.ts';
+import { confirmation } from './confirmationModal.ts';
 import {
 	getCodeEditorViews,
 	addExtension,
