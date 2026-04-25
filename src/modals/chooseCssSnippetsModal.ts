@@ -46,7 +46,6 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 				4000
 			);
 		}
-
 		await CodeEditorView.openExternalFile(path, this.plugin);
 	}
 

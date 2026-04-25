@@ -479,8 +479,8 @@ export async function scanDotEntries(
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to reveal.
- * @param silent - If true, don't show a notice (for auto-reveal)
- * @param persist - If true, save to revealedFiles settings (manual reveal only)
+ * @param silent - Defaults to false. If true, don't show a notice (for auto-reveal).
+ * @param persist - Defaults to true. If true, save to revealedFiles settings (manual reveal only).
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function revealFiles(

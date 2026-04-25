@@ -506,13 +506,23 @@ export class CodeEditorView extends TextFileView {
 		leaf.updateHeader();
 	}
 
-	/** Opens any file in Monaco. */
+	/** 
+	 * Opens any file in Monaco.
+	 *  If the file is in the vault, it opens it in a leaf (new tab or current leaf based on parameter).
+	 *  If the file is not in the vault, it opens it in a new leaf via an adapter path (not vault-indexed).
+	 *  @param file The file to open.
+	 *  @param plugin The CodeFilesPlugin instance.
+	 *  @param newTab Whether to open the file in a new tab or the current leaf.
+	*/
 	static async openFile(
 		file: TFile,
 		plugin: CodeFilesPlugin,
 		newTab = false
 	): Promise<void> {
-		if (plugin.app.vault.getAbstractFileByPath(file.path)) {
+		const inVault =
+			plugin.app.vault.getAbstractFileByPath(file.path) ??
+			plugin.app.vault.getFiles().find((f) => f.path === file.path);
+		if (inVault) {
 			await CodeEditorView.openVaultFile(file, plugin, newTab);
 		} else {
 			await CodeEditorView.openExternalFile(file.path, plugin);
