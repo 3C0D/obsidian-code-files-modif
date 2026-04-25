@@ -263,10 +263,12 @@ export class RevealHiddenFilesModal extends Modal {
 		buttonContainer
 			.createEl('button', { text: 'Apply', cls: 'mod-cta' })
 			.addEventListener('click', async () => {
+				// Files to reveal: checked now
 				const toReveal = this.items
 					.filter((item) => this.selected.has(item.path))
 					.map((item) => item.path);
 
+				// Files to hide: were revealed before, unchecked now
 				const toHide = this.items
 					.filter(
 						(item) =>
@@ -280,7 +282,13 @@ export class RevealHiddenFilesModal extends Modal {
 				if (toReveal.length > 0)
 					await revealFiles(this.plugin, this.folderPath, toReveal);
 
-				if (this.selected.size === 0) {
+				// Nothing was hidden or revealed but selection is empty:
+				// clean up the folder key if it somehow persisted
+				if (
+					this.selected.size === 0 &&
+					toHide.length === 0 &&
+					toReveal.length === 0
+				) {
 					delete this.plugin.settings.revealedFiles[this.folderPath];
 					await this.plugin.saveSettings();
 					decorateFolders(this.plugin);
@@ -295,6 +303,7 @@ export class RevealHiddenFilesModal extends Modal {
 					if (ext && addExtension(this.plugin.settings, ext))
 						anyRegistered = true;
 				}
+				// Reregister only if something changed (diffs against _registeredExts snapshot)
 				if (anyRegistered) await reregisterExtensions(this.plugin);
 
 				this.close();
