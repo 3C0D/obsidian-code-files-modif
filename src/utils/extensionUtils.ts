@@ -53,24 +53,22 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
 	}
 	// Block native extensions
 	if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
-		console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
+		// console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
 		return false;
 	}
 
 	// Block already registered extensions
 	if (getActiveExtensions(settings).includes(ext)) {
-		console.warn(`code-files: cannot add "${ext}" - already registered`);
+		// console.warn(`code-files: cannot add "${ext}" - already registered`);
 		return false;
 	}
 
 	// Remove from excludedExtensions if present
-	const excluded = new Set(settings.excludedExtensions);
-	excluded.delete(ext);
-	settings.excludedExtensions = [...excluded];
+	settings.excludedExtensions = settings.excludedExtensions.filter((e) => e !== ext);
 
 	// Add to extraExtensions only if not already in base extensions
 	if (!settings.extensions.includes(ext)) {
-		settings.extraExtensions = [...new Set([...settings.extraExtensions, ext])];
+		settings.extraExtensions = [...settings.extraExtensions, ext];
 	}
 
 	return true;
@@ -88,15 +86,14 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
 export function removeExtension(settings: MyPluginSettings, ext: string): void {
 	// If in extraExtensions, just remove it — no need to exclude
 	if (settings.extraExtensions.includes(ext)) {
-		const extras = new Set(settings.extraExtensions);
-		extras.delete(ext);
-		settings.extraExtensions = [...extras];
+		settings.extraExtensions = settings.extraExtensions.filter((e) => e !== ext);
 		return;
 	}
 	// If in base extensions, must add to excludedExtensions to override
-	settings.excludedExtensions = [...new Set([...settings.excludedExtensions, ext])];
+	settings.excludedExtensions = [...settings.excludedExtensions, ext];
 }
 
+// Not used
 /**
  * Checks if an extension is handled by CodeFilesPlugin.
  *
