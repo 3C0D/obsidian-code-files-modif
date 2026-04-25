@@ -41,6 +41,10 @@ export function parseEditorConfig(str: string): unknown {
  * a plain spread would overwrite the entire object,
  * losing `DEFAULT_EDITOR_CONFIG['*']` if the saved
  * data has no `'*'` key.
+ *
+ * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the settings are loaded.
+ * @internal
  */
 export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
 	const loaded = await plugin.loadData();
@@ -54,6 +58,13 @@ export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
 	};
 }
 
+/**
+ * Saves the current settings to disk.
+ *
+ * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the settings are saved.
+ * @internal
+ */
 export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 	await plugin.saveData(plugin.settings);
 }
@@ -61,7 +72,7 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
 /**
  * Saves a raw editor config string for the given key.
  *
- * @param plugin - The plugin instance
+ * @param plugin - The plugin instance.
  * @param key - File extension WITHOUT the leading dot (e.g. 'ts', 'md'), or '*' for global config
  * @param value - The raw JSONC string from the editor (may contain comments and trailing commas)
  * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
@@ -100,6 +111,10 @@ export function saveEditorConfig(
  * 1. Start with global config (*)
  * 2. Apply yaml config if it exists (language fallback)
  * 3. Apply clangformat config if it exists (extension override)
+ *
+ * @param plugin - The plugin instance.
+ * @param ext - The file extension (e.g. 'ts', 'md'), or '*' for global config
+ * @returns The merged JSON string.
  */
 export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string {
 	// Parse a stored JSONC config string, falling back to an empty object if missing or corrupted

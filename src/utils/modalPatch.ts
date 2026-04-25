@@ -6,7 +6,7 @@ import { Modal } from 'obsidian';
  * When a modal opens while a Monaco iframe has focus, Obsidian saves that iframe element
  * to restore focus on close. The iframe's elements don't have Obsidian's instanceOf method,
  * causing a crash. This patch blurs the iframe before Obsidian saves the active element.
- * Returns an unpatch function to restore original behavior on plugin unload.
+ * @returns The uninstaller function to restore original behavior.
  */
 export function patchModalOpen(): () => void {
 	const uninstaller = around(Modal.prototype, {

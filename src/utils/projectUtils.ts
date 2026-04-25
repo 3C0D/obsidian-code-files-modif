@@ -9,7 +9,7 @@ import type CodeFilesPlugin from '../main.ts';
  * in Monaco editors.
  *
  * @param plugin - The plugin instance
- * @returns Array of { path, content } objects for all JS/TS files in the project root
+ * @returns A Promise that resolves with an array of { path, content } objects for all JS/TS files in the project root.
  */
 export async function readProjectFiles(
 	plugin: CodeFilesPlugin

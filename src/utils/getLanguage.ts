@@ -5,8 +5,10 @@
  * is loaded and persisted separately (see mountCodeEditor.ts).
  */
 
-// Static map of file extensions to Monaco language IDs.
-// Exported for use in config template fallback logic
+/**
+ * Static map of file extensions to Monaco language IDs.
+ * Exported for use in config template fallback logic
+ */
 export const staticMap: Record<string, string> = {
 	js: 'javascript',
 	es6: 'javascript',
@@ -121,7 +123,12 @@ export const staticMap: Record<string, string> = {
 	clangformat: 'yaml'
 };
 
-/** Returns the Monaco language id for a given file extension. */
+/**
+ * Returns the Monaco language id for a given file extension.
+ *
+ * @param extension - The file extension to look up
+ * @returns The Monaco language ID for the extension, or "plaintext" if not found
+ */
 export function getLanguage(extension: string): string {
 	return staticMap[extension] ?? 'plaintext';
 }

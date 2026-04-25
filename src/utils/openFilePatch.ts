@@ -24,6 +24,11 @@ import { viewType } from '../types/variables.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
 
+/**
+ * Applies the open file patch to the plugin instance.
+ * @param plugin - The plugin instance.
+ * @returns The uninstaller function to restore original behavior.
+ */
 export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 	const uninstaller = around(WorkspaceLeaf.prototype, {
 		openFile(next: WorkspaceLeaf['openFile']) {

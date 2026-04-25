@@ -10,6 +10,10 @@ import type CodeFilesPlugin from '../main.ts';
 
 const OVERLAY_CLASS = 'code-editor-iframe-blocker';
 
+/**
+ * Applies the menu overlay patch to the plugin instance.
+ * @param plugin - The plugin instance.
+ */
 export function patchMenuOverlay(plugin: CodeFilesPlugin): void {
 	// Places a transparent overlay on all Monaco editor views to intercept mouse events
 	const showOverlays = (): void => {

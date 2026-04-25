@@ -35,14 +35,19 @@ import { getActiveExtensions } from './extensionUtils.ts';
 let _bypassPatch = false;
 
 /**
- * Retrieves the platform-specific data adapter.
- * @internal
+ * Retrieves the platform-specific data adapter
+ * @param plugin - The plugin instance.
+ * @returns The platform-specific data adapter.
  */
 function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
 	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
 
-/** Max file size in MB for Monaco (configurable in settings) */
+/**
+ * Max file size in MB for Monaco (configurable in settings)
+ * @param plugin - The plugin instance
+ * @returns The max file size in bytes
+ */
 export function getMaxFileSize(plugin: CodeFilesPlugin): number {
 	return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
 }
@@ -180,6 +185,10 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
 /**
  * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
  * dotfiles matching the new extensions.
+ *
+ * @param plugin - The plugin instance.
+ * @param extensions - The extensions to sync.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function syncAutoRevealedDotfiles(
 	plugin: CodeFilesPlugin,
@@ -235,6 +244,7 @@ export async function syncAutoRevealedDotfiles(
  * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  *
  * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const adapter = getAdapter(plugin);
@@ -270,6 +280,8 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
  * Automatically reveals dotfiles whose extensions are registered with Code Files.
  * Scans the entire vault for hidden files and reveals those matching active extensions.
  * Called on plugin startup after restoreRevealedFiles.
+ * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function autoRevealRegisteredDotfiles(
 	plugin: CodeFilesPlugin
@@ -300,8 +312,10 @@ export async function autoRevealRegisteredDotfiles(
 /**
  * Re-reveals all files stored in the plugin settings.
  * This is called on plugin startup to restore the user's view.
+ * Uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  *
- * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
+ * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const adapter = getAdapter(plugin);
@@ -347,6 +361,8 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
 
 /**
  * Adds visual badges (eye icon) to folders in the file explorer that contain revealed hidden files.
+ * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
 	const explorer = plugin.app.workspace.getLeavesOfType('file-explorer')[0];
@@ -401,7 +417,6 @@ export async function scanDotEntries(
 		/**
 		 * Lists direct dot-children (files and folders starting with a dot)
 		 * of the given directory, without recursing into subdirectories.
-		 * Ignores exclusion settings for folders and extensions.
 		 * Files exceeding the Monaco size limit are excluded.
 		 */
 		const listDotChildren = async (dir: string): Promise<void> => {
@@ -450,14 +465,14 @@ export async function scanDotEntries(
 
 /**
  * Reveals specified hidden files in the Obsidian UI.
+ * Uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  *
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to reveal.
  * @param silent - If true, don't show a notice (for auto-reveal)
  * @param persist - If true, save to revealedFiles settings (manual reveal only)
- *
- * This version uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function revealFiles(
 	plugin: CodeFilesPlugin,
@@ -526,13 +541,13 @@ export async function revealFiles(
 
 /**
  * Hides previously revealed hidden files from the Obsidian UI.
+ * getRealPath() is a FileSystemAdapter method (Desktop). On Mobile,
+ * this function may have limited behavior depending on the adapter implementation.
  *
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to hide.
- *
- * Note: getRealPath() is a FileSystemAdapter method (Desktop). On Mobile,
- * this function may have limited behavior depending on the adapter implementation.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function hideFilesInFolder(
 	plugin: CodeFilesPlugin,
@@ -572,6 +587,9 @@ export async function hideFilesInFolder(
 /**
  * Hides all auto-revealed dotfiles (those with registered extensions that are not manually revealed).
  * Called when the auto-reveal toggle is turned off.
+ *
+ * @param plugin - The plugin instance.
+ * @returns A Promise that resolves when the operation is complete.
  */
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
 	const activeExts = getActiveExtensions(plugin.settings);
