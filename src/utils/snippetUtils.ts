@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
 
-/** Checks if a snippet exists in the vault 
+/** Checks if a snippet exists in the vault
  *
  * @param app - The Obsidian app instance.
  * @param name - The name of the snippet to check.
@@ -10,7 +10,7 @@ export function snippetExists(app: App, name: string): boolean {
 	return app.customCss.snippets.includes(name);
 }
 
-/** Checks if a snippet is currently enabled 
+/** Checks if a snippet is currently enabled
  *
  * @param app - The Obsidian app instance.
  * @param name - The name of the snippet to check.
@@ -21,7 +21,7 @@ export function isSnippetEnabled(app: App, name: string): boolean {
 }
 
 /**
- * Registers a listener that syncs the toggle UI when the snippet state 
+ * Registers a listener that syncs the toggle UI when the snippet state
  * changes externally (e.g. from Obsidian settings).
  *
  * @param app - The Obsidian app instance.
