@@ -1,5 +1,7 @@
 .code-files-ext-badge {
-	margin-left: auto;
+	width: auto;
+	margin-left: 6px;
+	margin-right: 4px;
 	display: inline-block; /* already width: auto; */
 	padding: 1px 6px;
 	border-radius: 4px;
@@ -9,6 +11,22 @@
 	color: var(--text-muted);
 	vertical-align: middle;
 	line-height: 1.6;
+	pointer-events: none;
+}
+
+.code-files-fence-header {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.code-files-ext-badge.code-files-fence-badge {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	margin: 0;
 	pointer-events: none;
 }
 
@@ -171,4 +189,13 @@
 	border: none;
 	border-top: 1px solid var(--background-modifier-border);
 	margin: 0.75em 0;
+}
+
+/* Center title in editor header when ext badge is present */
+.view-header-title-container:has(.code-files-ext-badge) {
+	justify-content: center;
+}
+
+.view-header-title-container:has(.code-files-ext-badge) .view-header-title {
+	flex: unset;
 }

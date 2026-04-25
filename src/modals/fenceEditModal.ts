@@ -37,14 +37,13 @@ export class FenceEditModal extends Modal {
 	async onOpen(): Promise<void> {
 		super.onOpen();
 
-		// ── Badge extension + gear dans la barre de titre ────────────
-		this.titleEl.style.display = 'flex';
-		this.titleEl.style.alignItems = 'center';
-		this.titleEl.style.gap = '8px';
+		// ── Extension badge + gear in the title bar ────────────
+		this.titleEl.addClass('code-files-fence-header');
 
+		// the original style of the badge need a modification there to align on the right side
 		const badgeEl = createEl('span', {
 			text: `.${this.langKey}`,
-			cls: 'code-files-ext-badge'
+			cls: 'code-files-ext-badge code-files-fence-badge'
 		});
 		this.titleEl.appendChild(badgeEl);
 
