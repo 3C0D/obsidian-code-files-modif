@@ -393,7 +393,7 @@ Element.prototype.appendChild = function(node) {
 								const result = old.apply(this);
 								uninstall();
 								setTimeout(() => {
-									void broadcastHotkeys(plugin);
+									broadcastHotkeys(plugin);
 								}, 200);
 								send('focus', {});
 								return result;

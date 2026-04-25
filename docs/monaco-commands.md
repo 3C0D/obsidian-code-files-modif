@@ -233,7 +233,7 @@ case 'open-settings': {
         plugin.app.setting.onClose = () => {
             plugin.app.setting.onClose = old;
             setTimeout(() => {
-                void broadcastHotkeys(plugin);
+                broadcastHotkeys(plugin);
             }, 200);
             send('focus', {});
         };

@@ -122,8 +122,7 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
 /**
  * Checks if Obsidian hotkeys have changed and broadcasts updates to all open Monaco editors.
  * Called when settings modal closes to detect hotkey changes made by the user.
- * For inactive views, they'll get new hotkeys on next activation via onLoadFile.
- * For the active view, performs a soft reload preserving content and cursor position.
+ * Monaco updates keybindings dynamically via postMessage without requiring a reload.
  *
  * Hotkeys are stored internally as 'Mod' for cross-platform consistency:
  * - 'Mod' = 'Ctrl' on Windows/Linux
@@ -132,7 +131,7 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  *
  * @param plugin - The plugin instance.
  */
-export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
+export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
 	// Apply overrides if they exist (overrides are stored as 'Mod' internally)
 	const resolveHotkey = (
 		commandId: string,
@@ -165,52 +164,24 @@ export async function broadcastHotkeys(plugin: CodeFilesPlugin): Promise<void> {
 		deleteFileHotkey: finalDeleteFileHotkey
 	});
 
-	// Compare with last known state to detect changes
-	if (currentHotkeys !== plugin._lastHotkeys) {
-		plugin._lastHotkeys = currentHotkeys;
+	if (currentHotkeys === plugin._lastHotkeys) return;
+	plugin._lastHotkeys = currentHotkeys;
 
-		const views = getCodeEditorViews(plugin.app);
-		const activeView = views.find(
-			(v) => v.leaf === plugin.app.workspace.getMostRecentLeaf()
-		);
-
-		for (const view of views) {
-			if (!view.editor) continue;
-
-			if (view === activeView && view.file) {
-				// Reload the active view to apply new hotkeys immediately
-				// Save current content before reload (preserves unsaved changes)
-				const currentContent = view.editor.getValue();
-
-				// Destroy and remount editor (like onRename does)
-				view.editor.destroy();
-				view.contentEl.empty();
-
-				// Remount with current content
-				await view.mountEditor(view.file);
-				view.contentEl.append(view.editor!.iframe);
-
-				// Restore content if it was modified
-				if (currentContent !== view.data) {
-					view.editor!.setValue(currentContent);
-				}
-			} else {
-				// Broadcast hotkey updates to all other views
-				view.editor.send('update-hotkeys', {
-					commandPaletteHotkey: finalPaletteHotkey,
-					settingsHotkey: finalSettingsHotkey,
-					deleteFileHotkey: finalDeleteFileHotkey
-				});
-			}
-		}
-
-		// Show notice to user using resolved hotkey strings
-		const settingsStr = formatHotkey(finalSettingsHotkey, true);
-		const paletteStr = formatHotkey(finalPaletteHotkey, true);
-		const deleteStr = formatHotkey(finalDeleteFileHotkey, true);
-
-		new Notice(
-			`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
-		);
+	// Broadcast hotkey updates to all open views
+	for (const view of getCodeEditorViews(plugin.app)) {
+		view.editor?.send('update-hotkeys', {
+			commandPaletteHotkey: finalPaletteHotkey,
+			settingsHotkey: finalSettingsHotkey,
+			deleteFileHotkey: finalDeleteFileHotkey
+		});
 	}
+
+	// Show notice to user using resolved hotkey strings
+	const settingsStr = formatHotkey(finalSettingsHotkey, true);
+	const paletteStr = formatHotkey(finalPaletteHotkey, true);
+	const deleteStr = formatHotkey(finalDeleteFileHotkey, true);
+
+	new Notice(
+		`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
+	);
 }
