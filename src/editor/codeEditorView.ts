@@ -564,8 +564,10 @@ export class CodeEditorView extends TextFileView {
 			plugin.app.vault.getAbstractFileByPath(file.path) ??
 			plugin.app.vault.getFiles().find((f) => f.path === file.path);
 		if (inVault) {
+			console.debug('Opening vault file', file.path);
 			await CodeEditorView.openVaultFile(file, plugin, newTab);
 		} else {
+			console.debug('Opening external file', file.path);
 			await CodeEditorView.openExternalFile(file.path, plugin);
 		}
 	}

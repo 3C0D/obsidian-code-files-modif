@@ -199,3 +199,9 @@
 .view-header-title-container:has(.code-files-ext-badge) .view-header-title {
 	flex: unset;
 }
+
+/* Folder path style */
+.hidden-files-folder-path {
+	opacity: 0.8;
+	font-weight: bold;
+}

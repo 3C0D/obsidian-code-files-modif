@@ -96,30 +96,28 @@ export class RevealHiddenFilesModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('hidden-files-modal');
+		this.renderTitle(contentEl);
+		contentEl.createEl('p', { text: 'Scanning folder...' });
+	}
+
+	private renderTitle(contentEl: HTMLElement): void {
 		const titleEl = contentEl.createEl('h2', { cls: 'hidden-files-title' });
 		titleEl.createSpan({ text: 'Hidden files' });
+		titleEl.createSpan({ text: ' in:' });
 		if (this.folderPath) {
 			titleEl.createSpan({
-				cls: 'hidden-files-folder-path',
-				text: ` in ${this.folderPath}`
+				cls: 'u-pop hidden-files-folder-path',
+				text: ` ${this.folderPath}`
 			});
 		}
-		contentEl.createEl('p', { text: 'Scanning folder...' });
+		titleEl.createEl('small', { text: ' (not recursive)' });
 	}
 
 	private render(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		// Title with inline folder path (wraps if too long)
-		const titleEl = contentEl.createEl('h2', { cls: 'hidden-files-title' });
-		titleEl.createSpan({ text: 'Hidden files' });
-		if (this.folderPath) {
-			titleEl.createSpan({
-				cls: 'hidden-files-folder-path',
-				text: ` in: ${this.folderPath}`
-			});
-		}
+		this.renderTitle(contentEl);
 
 		if (this.items.length === 0) {
 			contentEl.createEl('p', {
@@ -139,19 +137,14 @@ export class RevealHiddenFilesModal extends Modal {
 		const descEl = contentEl.createDiv({ cls: 'hidden-files-desc-columns' });
 
 		const leftDesc = descEl.createDiv({ cls: 'hidden-files-desc-col' });
-		for (const text of [
-			'Check a file to reveal it',
-			'Uncheck to hide it again',
-			'Click Apply to confirm'
-		])
+		for (const text of ['Check a file to reveal it', 'Uncheck to hide it again'])
 			leftDesc.createEl('p', { text: `• ${text}` });
 
 		const rightDesc = descEl.createDiv({ cls: 'hidden-files-desc-col' });
-		for (const text of ['Register as code editor view', 'Click Apply to confirm'])
-			rightDesc.createEl('p', { text: `• ${text}` });
+		rightDesc.createEl('p', { text: '• Register as code editor view' });
+
 		const noteEl = rightDesc.createEl('p');
-		noteEl.createSpan({ text: "• This file won't be visible here anymore " });
-		noteEl.createEl('small', { text: '(because always visible in explorer)' });
+		noteEl.createSpan({ text: '• This file will become always visible' });
 
 		contentEl.createEl('hr', { cls: 'hidden-files-separator' });
 

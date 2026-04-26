@@ -43,7 +43,6 @@ export default class CodeFilesPlugin extends Plugin {
 	_origRename: ((src: string, dest: string) => Promise<void>) | null = null;
 
 	async onload(): Promise<void> {
-		console.log('Code Files Plugin loaded');
 		await loadSettings(this);
 		const needsDetectNotice = ensureDetectAllExtensions(this);
 		this._modalOpenPatch = patchModalOpen();

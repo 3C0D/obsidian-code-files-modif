@@ -185,6 +185,8 @@ You can open dotfiles in the vault directly in Monaco. Files are temporarily rev
 - Command palette → **"Open Hidden Files in Vault"**
 - A suggester lists all hidden files with their relative paths
 
+**Persistence**: Opened hidden files (including unregistered dotfiles and registered dotfiles) persist across Obsidian restarts.
+
 ### Behavior on Extension Changes
 
 - **Registering an extension**: existing dotfiles with that extension are automatically revealed (if auto-reveal is on)
@@ -265,6 +267,8 @@ When editing a CSS snippet file (`.obsidian/snippets/*.css`), two additional con
 | ------------- | ---------------------------------------------------------------- |
 | 📁 **Folder** | Open the snippets folder in your system file explorer            |
 | 🔘 **Toggle** | Enable or disable the current snippet without leaving the editor |
+
+**Persistence**: Opened CSS snippets persist across Obsidian restarts, allowing multi-session editing.
 
 ---
 
