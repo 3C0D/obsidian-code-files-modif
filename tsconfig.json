@@ -12,6 +12,7 @@
     "target": "ES2021",
     "inlineSourceMap": true,
     "inlineSources": true,
+    "esModuleInterop": true,
     "allowJs": true,
     "noImplicitAny": true,
     "importHelpers": true,
@@ -23,8 +24,9 @@
     "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "lib": ["DOM", "ES2021"]
+    "skipLibCheck": true,
+    "lib": ["DOM", "ES2021"],
   },
-  "include": ["./src/**/*.ts", "./scripts/**/*.ts", "./docs/**/*.ts"],
+  "include": ["./src/**/*.ts"],
   "exclude": ["node_modules", "eslint.config.ts", "templates"]
 }
