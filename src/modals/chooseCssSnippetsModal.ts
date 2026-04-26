@@ -16,6 +16,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 		private cssFiles: string[]
 	) {
 		super(plugin.app);
+		this.setPlaceholder('Choose a snippet or type a name to create one...');
 	}
 
 	/** Returns typed suggestions for the modal, each carrying the action to perform on selection */
