@@ -9,8 +9,6 @@ export interface MyPluginSettings {
 	syntaxValidation: boolean;
 	/** Monaco editor theme — 'default' follows Obsidian's dark/light mode */
 	theme: string;
-	/** Show the ribbon icon to create a new code file */
-	showRibbonIcon: boolean;
 	/** Last 5 recently used themes, most recent first */
 	recentThemes: string[];
 	/** If false, Obsidian's auto-save is blocked in Monaco views — only Ctrl+S saves */

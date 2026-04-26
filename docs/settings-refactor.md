@@ -12,7 +12,6 @@ Flat structure stored via Obsidian's `loadData()`/`saveData()` API, with setting
 {
 	"extensions": ["ts", "tsx", "js", "jsx", "py"],
 	"theme": "default",
-	"showRibbonIcon": true,
 	"recentThemes": ["Dracula", "Nord"],
 	"semanticValidation": true,
 	"syntaxValidation": true,
@@ -47,7 +46,7 @@ Flat structure stored via Obsidian's `loadData()`/`saveData()` API, with setting
 
 | Location                     | Settings                                                                                                                                                       |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Obsidian Settings Tab**    | Ribbon Icon, Extensions (manual/extended mode), Extra/Exclusions, Max File Size, Project Root Folder, Hotkey Overrides, Excluded Folders, Auto-Reveal Dotfiles |
+| **Obsidian Settings Tab**    | Extensions (manual/extended mode), Extra/Exclusions, Max File Size, Project Root Folder, Hotkey Overrides, Excluded Folders, Auto-Reveal Dotfiles |
 | **⚙️ Editor Settings Modal** | AutoSave, WordWrap, Folding, LineNumbers, Minimap, Semantic/Syntax Validation, Editor Brightness, Editor Config (JSON)                                         |
 | **Monaco F1 Palette**        | All editor actions + Save                                                                                                                                      |
 

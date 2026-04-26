@@ -2,18 +2,14 @@ import type CodeFilesPlugin from '../main.ts';
 import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 
 /**
- * Updates the ribbon icon based on the showRibbonIcon setting.
+ * Adds the ribbon icon to create code files.
  */
-export function updateRibbonIcon(plugin: CodeFilesPlugin): void {
-	// Avoid duplicates when toggling the setting
-	plugin.ribbonIconEl?.remove();
-	plugin.ribbonIconEl = plugin.settings.showRibbonIcon
-		? plugin.addRibbonIcon(
-				'file-code-corner',
-				'Create Code File | Manage extensions',
-				() => {
-					new CreateCodeFileModal(plugin).open();
-				}
-			)
-		: null;
+export function addRibbonIcon(plugin: CodeFilesPlugin): void {
+	plugin.ribbonIconEl = plugin.addRibbonIcon(
+		'file-code-corner',
+		'Create Code File | Manage extensions',
+		() => {
+			new CreateCodeFileModal(plugin).open();
+		}
+	);
 }

@@ -40,7 +40,6 @@ When opening a file with an unregistered extension in Monaco, a **return arrow i
 
 ## Creating a File & Managing Extensions
 
-- Click the **ribbon icon** (left sidebar)
 - Right-click a folder in the explorer → **Code Files → Create Code File | Manage extensions**
 - Command palette → **"Create new Code File"**
 
@@ -324,7 +323,6 @@ Changes save automatically when the panel closes.
 
 ## Plugin Settings (Obsidian Settings → Code Files)
 
-- **Show ribbon icon** — toggle the sidebar icon
 - **Use extended extensions list** — auto-register all Monaco-supported extensions (80+) vs. manual management
 - **Manage extensions** — add or remove extensions; changes take effect immediately
 - **Maximum file size** — maximum file size in MB for Monaco (default: 10 MB, range 1-100 MB)

@@ -1,7 +1,6 @@
 /**
  * Obsidian plugin settings tab.
  * Provides UI for:
- * - Ribbon icon toggle
  * - Extension management (manual vs extended mode, add/remove extensions)
  * - Per-extension editor config with Monaco JSON editor
  */
@@ -23,7 +22,6 @@ import {
 	getAllMonacoExtensions
 } from '../utils/extensionUtils.ts';
 import { saveEditorConfig } from '../utils/settingsUtils.ts';
-import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import {
 	getObsidianHotkey,
@@ -61,19 +59,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 		containerEl.createEl('p', {
 			text: 'Most editor settings (Theme, Word Wrap, Folding, Line Numbers, Minimap, Semantic & Syntax Validation) are directly accessible from the editor interface via the gear icon or the palette icon in the tab header.'
 		});
-
-		new Setting(containerEl)
-			.setName('Show ribbon icon')
-			.setDesc('Show the Code Files icon in the left sidebar ribbon.')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.showRibbonIcon)
-					.onChange(async (value) => {
-						this.plugin.settings.showRibbonIcon = value;
-						updateRibbonIcon(this.plugin);
-						await this.plugin.saveSettings();
-					})
-			);
 
 		// -- File Extensions --------------------------------------------------
 		containerEl.createEl('h3', { text: 'File Extensions' });

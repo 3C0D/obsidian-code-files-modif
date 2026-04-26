@@ -11,7 +11,7 @@ import {
 	showDetectAllExtensionsNotice
 } from './utils/vaultConfigUtils.ts';
 import { serializeMonacoHotkeys } from './utils/hotkeyUtils.ts';
-import { updateRibbonIcon } from './ui/ribbonIcon.ts';
+import { addRibbonIcon } from './ui/ribbonIcon.ts';
 import { registerCommands } from './ui/commands.ts';
 import { registerContextMenus } from './ui/contextMenus.ts';
 import { patchModalOpen } from './utils/modalPatch.ts';
@@ -54,7 +54,7 @@ export default class CodeFilesPlugin extends Plugin {
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
 		initExtensions(this);
-		updateRibbonIcon(this);
+		addRibbonIcon(this);
 		registerCommands(this);
 		registerContextMenus(this);
 		this.addSettingTab(new CodeFilesSettingsTab(this.app, this));

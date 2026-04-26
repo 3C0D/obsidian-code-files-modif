@@ -125,7 +125,7 @@
 
 ### 15. **Flexible File Creation**
 
-- **Multiple entry points**: Ribbon icon, folder context menu, command palette
+- **Multiple entry points**: Folder context menu, command palette
 - **Extension suggester**: Dropdown with validation on Enter
 - **Auto-registration**: Unknown extensions prompt for registration
 - **Immediate opening**: New files open automatically in Monaco
