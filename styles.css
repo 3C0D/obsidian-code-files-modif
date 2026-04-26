@@ -14,12 +14,6 @@
 	pointer-events: none;
 }
 
-.code-files-ext-badge.code-files-fence-badge small {
-	font-size: 0.7em;
-	color: var(--text-muted);
-	margin-left: 2px;
-}
-
 .code-files-fence-header {
 	position: relative;
 	display: flex;
@@ -50,7 +44,6 @@
 .code-files-save-indicator {
 	font-size: 0.7em;
 	color: var(--text-muted);
-	pointer-events: none;
 }
 
 .code-files-dirty-badge {
