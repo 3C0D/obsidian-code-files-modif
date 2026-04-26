@@ -391,9 +391,8 @@ git diff <old-hash> <new-hash> -- src/myFile.ts
 
 ```
 Read INDEX.md and follow its update protocol.
-Run: git diff HEAD~20 HEAD
-Then update the affected documentation files in place, following the layer order defined in INDEX.md.
-Do not rewrite sections not impacted by the diff.
+Run: git diff HEAD~50 HEAD -- src/
+Update the docs to reflect anything in the diff that is not already documented.
+Do not rewrite sections that are already accurate.
 ```
-
-Adjust `HEAD~20` to the number of commits in scope.
+For all commits! Run: git diff $(git rev-list --max-parents=0 HEAD) HEAD
