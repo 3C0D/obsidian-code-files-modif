@@ -7,9 +7,9 @@
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView, FileTreeItem } from 'obsidian-typings';
 import { TFile } from 'obsidian';
-import { getExtension } from './fileUtils.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
+import { getExtension } from './fileUtils.ts';
 
 const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
 
@@ -93,9 +93,8 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 					const ext = getExtension(file.name);
 					if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
 						tagEl.textContent = ext.toUpperCase();
-						tagEl.classList.add('code-files-dotfile-badge');
 					}
-					continue; // dotfiles ne sont pas "unregistered"
+					continue; // dotfiles are not "unregistered"
 				}
 
 				// Unregistered badge

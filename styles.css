@@ -147,10 +147,6 @@
 	color: var(--code-files-project-root-color, #c644cf) !important;
 }
 
-.code-files-dotfile-badge {
-	background: rgba(123, 99, 54, 0.238);
-}
-
 .code-files-unregistered-badge {
 	color: rgba(193, 61, 114, 0.486);
 }

@@ -138,7 +138,7 @@ staticMap > 'plaintext'
 
 - `updateProjectFolderHighlight()` — highlights the Project Root folder in the file explorer (color via `projectRootFolderColor` setting)
 - `setupExplorerBadges()` — adds badges to file entries:
-    - **Dotfiles with registered extensions** → uppercase extension badge (e.g., "ENV", "GITIGNORE") + subtle background tint
+    - **Dotfiles with registered extensions** → uppercase extension badge (e.g., "ENV", "GITIGNORE")
     - **Files with unregistered extensions** (excluding native Obsidian extensions like `.md`, `.canvas`) → muted yellow "unregistered" badge
     - Badges update automatically when extensions are registered or unregistered
 

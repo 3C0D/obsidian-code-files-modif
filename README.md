@@ -11,7 +11,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Multi-Language Formatting** — Prettier (JS, TS, CSS, HTML, JSON, YAML, Markdown, GraphQL), Mermaid, Ruff (Python), gofmt (Go), clang-format (C/C++). Trigger: `Shift+Alt+F` or `formatOnSave`
 - **Format Diff & Selective Revert** — view side-by-side diff after formatting; revert individual blocks or all changes with one click
 - **Cross-File Navigation** — Ctrl+Click on TS/JS imports to jump to definitions. Requires Project Root Folder (right-click folder → Code Files → Define as Project Root). Project root highlighted in explorer (color customizable)
-- **File Explorer Visual Indicators** — uppercase label on registered dotfiles (ENV, GITIGNORE), muted label on unregistered extensions, project root highlight, subtle background tint for registered dotfiles
+- **File Explorer Visual Indicators** — uppercase label on registered dotfiles (ENV, GITIGNORE), muted label on unregistered extensions, project root highlight
 - **Built-In Hidden Files** — no external plugin needed. Auto-reveal registered dotfiles in explorer (configurable). Bulk reveal/hide via Reveal Hidden Files modal (folder context menu)
 - **Dynamic Extension Management** — add/remove extensions at runtime. Quick actions via right-click in explorer: Register Extension / Unregister Extension
 - **Two Extension Modes** — Manual (curated list) or Extended (all 80+ Monaco languages auto-registered). Exclusions and custom additions are preserved when switching modes
@@ -132,7 +132,7 @@ Code Files adds visual cues in the Obsidian file explorer to help you identify w
 
 ![File Explorer Badges](assets/Hidden_files.png)
 
-<small>Explorer indicators — folder "Test" (green eye icon = revealed); `eslint.config.mts` — yellow label (MTS extension visible via "Detect all file extensions" but NOT registered); `.babelrc` — darker background (extension registered with Code Files); `.gitignore` — no label (dotfile revealed but NOT registered with Code Files).</small>
+<small>Explorer indicators — folder "Test" (green eye icon = revealed); `eslint.config.mts` — yellow label (MTS extension visible via "Detect all file extensions" but NOT registered); `.gitignore` — no label (dotfile revealed but NOT registered with Code Files).</small>
 
 ### Project Root Folder Highlight
 
@@ -140,9 +140,8 @@ Code Files adds visual cues in the Obsidian file explorer to help you identify w
 - **How to set**: Right-click folder → **Code Files → Define as Project Root Folder**
 - **Custom color**: Obsidian Settings → Code Files → Project Root Folder section
 
-### File and Dotfile Badges
+### File Badges
 
-- **Registered dotfiles** (e.g. `.babelrc`): uppercase extension label (BABELRC) + subtle background tint. Appear automatically if auto-reveal is enabled.
 - **Unregistered extensions** (e.g. `eslint.config.mts`): muted yellow label to indicate the file won't open in Monaco.
 - **Folder eye icon (👁️)**: appears only on folders with dotfiles **explicitly revealed** via the modal. Dotfiles auto-revealed via registered extensions do not trigger this icon.
 

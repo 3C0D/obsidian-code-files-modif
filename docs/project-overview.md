@@ -56,9 +56,10 @@
 
 - **Project root highlight**: Folder set as Project Root is highlighted (default purple/rose matching Obsidian accent; customizable via setting)
 - **Extension badges**:
-    - Dotfiles with registered extensions show an uppercase extension badge (e.g., "ENV", "GITIGNORE") + subtle background tint
+    - Dotfiles with registered extensions show an uppercase extension badge (e.g., "ENV", "GITIGNORE")
     - Regular files with unregistered extensions (excluding native Obsidian extensions like `.md`, `.canvas`) show a muted yellow "unregistered" badge
     - Native Obsidian files (`.md`, `.canvas`) show no badge
+
 - Badges update automatically when extensions are registered or unregistered
 
 ### 7. **Dynamic Extension Management**
