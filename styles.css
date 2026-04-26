@@ -26,6 +26,11 @@
 	align-items: center;
 	justify-content: flex-end;
 	gap: 8px;
+	pointer-events: none;
+}
+
+.code-files-fence-header > * {
+	pointer-events: auto;
 }
 
 .code-files-fence-badge-container {
