@@ -4,8 +4,11 @@ import builtins from 'builtin-modules';
 import { config } from 'dotenv';
 import path from 'path';
 import { readFileSync } from 'fs';
-import { rm, cp, copyFile } from 'fs/promises';
+import { rm, mkdir } from 'fs/promises';
 import fs from 'fs';
+import { bundleFormatters } from './build/formatters.js';
+import { copyMonacoAssets, copyEditorFiles } from './build/assets.js';
+import { obsidianTypingsPlugin } from './build/typingsPlugin.js';
 import {
 	isValidPath,
 	copyFilesToTargetDir,
@@ -121,180 +124,12 @@ async function createBuildContext(
 			name: 'copy-to-plugins-folder',
 			setup: (build: esbuild.PluginBuild): void => {
 				build.onEnd(async () => {
-					const monacoSrc = path.join(
-						pluginDir,
-						'node_modules/monaco-editor/min/vs'
-					);
-					const monacoTarget = path.join(buildPath, 'vs');
-					const htmlSrc = path.join(pluginDir, 'src/editor/monacoEditor.html');
-					const htmlTarget = path.join(buildPath, 'monacoEditor.html');
-					const configJsSrc = path.join(pluginDir, 'src/editor/monacoHtml.js');
-					const configJsTarget = path.join(buildPath, 'monacoHtml.js');
-					const formattersJsSrc = path.join(
-						pluginDir,
-						'src/editor/monacoFormatters.js'
-					);
-					const formattersJsTarget = path.join(
-						buildPath,
-						'monacoFormatters.js'
-					);
-					const diffJsSrc = path.join(pluginDir, 'src/editor/monacoDiff.js');
-					const diffJsTarget = path.join(buildPath, 'monacoDiff.js');
-					const actionsJsSrc = path.join(
-						pluginDir,
-						'src/editor/monacoActions.js'
-					);
-					const actionsJsTarget = path.join(buildPath, 'monacoActions.js');
-					const configCssSrc = path.join(
-						pluginDir,
-						'src/editor/monacoHtml.css'
-					);
-					const configCssTarget = path.join(buildPath, 'monacoHtml.css');
-					const themesSrc = path.join(
-						pluginDir,
-						'node_modules/monaco-themes/themes'
-					);
-					const themesTarget = path.join(buildPath, 'monaco-themes');
 					const formattersTarget = path.join(buildPath, 'formatters');
-					await cp(monacoSrc, monacoTarget, { recursive: true });
-					// Copy Codicons font so Monaco's @font-face can load it via app:// URL
-					// (Obsidian's CSP blocks data: font sources in child iframes)
-					const codiconSrc = path.join(
-						pluginDir,
-						'node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.ttf'
-					);
-					const codiconTarget = path.join(buildPath, 'vs/editor/codicon.ttf');
-					await copyFile(codiconSrc, codiconTarget);
-					// Create formatters directory
-					await fs.promises.mkdir(formattersTarget, { recursive: true });
-					// Copy Prettier and Mermaid formatters to formatters/ folder
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/standalone.js'),
-						path.join(formattersTarget, 'prettier-standalone.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/markdown.js'),
-						path.join(formattersTarget, 'prettier-markdown.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/estree.js'),
-						path.join(formattersTarget, 'prettier-estree.js')
-					);
-					await copyFile(
-						path.join(
-							pluginDir,
-							'node_modules/prettier/plugins/typescript.js'
-						),
-						path.join(formattersTarget, 'prettier-typescript.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/babel.js'),
-						path.join(formattersTarget, 'prettier-babel.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/postcss.js'),
-						path.join(formattersTarget, 'prettier-postcss.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/html.js'),
-						path.join(formattersTarget, 'prettier-html.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/yaml.js'),
-						path.join(formattersTarget, 'prettier-yaml.js')
-					);
-					await copyFile(
-						path.join(pluginDir, 'node_modules/prettier/plugins/graphql.js'),
-						path.join(formattersTarget, 'prettier-graphql.js')
-					);
-					// Bundle mermaid-formatter for browser
-					await esbuild.build({
-						entryPoints: [
-							path.join(pluginDir, 'src/mermaid-formatter-bundle-entry.js')
-						],
-						bundle: true,
-						format: 'iife', // Wrap in (function(){...})() for <script> tag loading in the Monaco iframe
-						outfile: path.join(formattersTarget, 'mermaid-formatter.js'),
-						platform: 'browser',
-						minify: isProd
-					});
-					// Bundle ruff-formatter (Python) for browser
-					await esbuild.build({
-						entryPoints: [
-							path.join(pluginDir, 'src/ruff-formatter-bundle-entry.js')
-						],
-						bundle: true,
-						format: 'iife',
-						outfile: path.join(formattersTarget, 'ruff-formatter.js'),
-						platform: 'browser',
-						minify: isProd,
-						loader: {
-							'.wasm': 'file'
-						},
-						metafile: true
-					});
-					// Copy WASM file to formatters/ folder
-					const wasmSrc = path.join(
-						pluginDir,
-						'node_modules/@wasm-fmt/ruff_fmt/ruff_fmt_bg.wasm'
-					);
-					const wasmTarget = path.join(formattersTarget, 'ruff_fmt_bg.wasm');
-					await copyFile(wasmSrc, wasmTarget);
-					// Bundle gofmt-formatter (Go) for browser
-					await esbuild.build({
-						entryPoints: [
-							path.join(pluginDir, 'src/gofmt-formatter-bundle-entry.js')
-						],
-						bundle: true,
-						format: 'iife',
-						outfile: path.join(formattersTarget, 'gofmt-formatter.js'),
-						platform: 'browser',
-						minify: isProd,
-						loader: {
-							'.wasm': 'file'
-						},
-						metafile: true
-					});
-					// Copy WASM file to formatters/ folder
-					const gofmtWasmSrc = path.join(
-						pluginDir,
-						'node_modules/@wasm-fmt/gofmt/gofmt.wasm'
-					);
-					const gofmtWasmTarget = path.join(formattersTarget, 'gofmt.wasm');
-					await copyFile(gofmtWasmSrc, gofmtWasmTarget);
-					// Bundle clang-format (C/C++) for browser
-					await esbuild.build({
-						entryPoints: [
-							path.join(pluginDir, 'src/clang-format-bundle-entry.js')
-						],
-						bundle: true,
-						format: 'iife',
-						outfile: path.join(formattersTarget, 'clang-formatter.js'),
-						platform: 'browser',
-						minify: isProd,
-						loader: {
-							'.wasm': 'file'
-						},
-						metafile: true
-					});
-					// Copy WASM file to formatters/ folder
-					const clangWasmSrc = path.join(
-						pluginDir,
-						'node_modules/@wasm-fmt/clang-format/clang-format.wasm'
-					);
-					const clangWasmTarget = path.join(
-						formattersTarget,
-						'clang-format.wasm'
-					);
-					await copyFile(clangWasmSrc, clangWasmTarget);
-					await copyFile(htmlSrc, htmlTarget);
-					await copyFile(configJsSrc, configJsTarget);
-					await copyFile(formattersJsSrc, formattersJsTarget);
-					await copyFile(diffJsSrc, diffJsTarget);
-					await copyFile(actionsJsSrc, actionsJsTarget);
-					await copyFile(configCssSrc, configCssTarget);
-					await cp(themesSrc, themesTarget, { recursive: true });
-					// if real or build
+					await mkdir(formattersTarget, { recursive: true });
+					await copyMonacoAssets(pluginDir, buildPath);
+					await copyEditorFiles(pluginDir, buildPath);
+					await bundleFormatters(pluginDir, formattersTarget, isProd);
+
 					if (isProd) {
 						if (
 							process.argv.includes('-r') ||
@@ -309,9 +144,7 @@ async function createBuildContext(
 							}
 							console.log('Build done in initial folder');
 						}
-					}
-					// if watch (dev)
-					else {
+					} else {
 						await copyFilesToTargetDir(buildPath);
 					}
 				});
@@ -333,34 +166,7 @@ async function createBuildContext(
 		treeShaking: true,
 		outdir: buildPath,
 		outbase: path.join(pluginDir, 'src'),
-		plugins: [
-			{
-				// Plugin to handle obsidian-typings: redirects types-only imports to empty and /implementations to the CJS file for esbuild
-				name: 'obsidian-typings-implementations',
-				setup(build: esbuild.PluginBuild): void {
-					// Redirect bare 'obsidian-typings' to empty module (types only, erased at runtime)
-					build.onResolve({ filter: /^obsidian-typings$/ }, () => ({
-						path: 'obsidian-typings',
-						namespace: 'empty-module'
-					}));
-					build.onLoad({ filter: /.*/, namespace: 'empty-module' }, () => ({
-						contents: '',
-						loader: 'js'
-					}));
-					// Existing handler
-					build.onResolve(
-						{ filter: /^obsidian-typings\/implementations$/ },
-						() => ({
-							path: path.resolve(
-								pluginDir,
-								'node_modules/obsidian-typings/dist/cjs/implementations.cjs'
-							)
-						})
-					);
-				}
-			},
-			...plugins
-		]
+		plugins: [obsidianTypingsPlugin(pluginDir), ...plugins]
 	});
 }
 
