@@ -174,6 +174,7 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 		if (file) {
 			await CodeEditorView.openVaultFile(file, this.plugin, true);
 		} else {
+			// Shouldnt happen
 			await CodeEditorView.openExternalFile(path, this.plugin);
 		}
 	}
