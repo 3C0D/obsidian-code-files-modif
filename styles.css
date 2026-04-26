@@ -14,6 +14,12 @@
 	pointer-events: none;
 }
 
+.code-files-ext-badge.code-files-fence-badge small {
+	font-size: 0.7em;
+	color: var(--text-muted);
+	margin-left: 2px;
+}
+
 .code-files-fence-header {
 	position: relative;
 	display: flex;
@@ -22,11 +28,23 @@
 	gap: 8px;
 }
 
-.code-files-ext-badge.code-files-fence-badge {
+.code-files-fence-badge-container {
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.code-files-ext-badge.code-files-fence-badge {
 	margin: 0;
+	pointer-events: none;
+}
+
+.code-files-save-indicator {
+	font-size: 0.7em;
+	color: var(--text-muted);
 	pointer-events: none;
 }
 
@@ -198,6 +216,33 @@
 
 .view-header-title-container:has(.code-files-ext-badge) .view-header-title {
 	flex: unset;
+}
+
+/* Fence modal layout - button outside scroll area */
+.modal:has(.code-files-fence-footer) {
+	display: flex;
+	flex-direction: column;
+	min-height: 300px;
+	height: 90vh;
+}
+
+.modal:has(.code-files-fence-footer) .modal-content {
+	flex: 1;
+	overflow: hidden;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.modal:has(.code-files-fence-footer) .modal-content > * {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.code-files-fence-footer {
+	flex-shrink: 0;
+	padding: 8px 16px;
 }
 
 /* Folder path style */

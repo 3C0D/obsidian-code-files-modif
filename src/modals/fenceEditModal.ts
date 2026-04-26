@@ -41,11 +41,22 @@ export class FenceEditModal extends Modal {
 		this.titleEl.addClass('code-files-fence-header');
 
 		// the original style of the badge need a modification there to align on the right side
+		const badgeContainer = createEl('div', {
+			cls: 'code-files-fence-badge-container'
+		});
 		const badgeEl = createEl('span', {
 			text: `.${this.langKey}`,
 			cls: 'code-files-ext-badge code-files-fence-badge'
 		});
-		this.titleEl.appendChild(badgeEl);
+		badgeContainer.appendChild(badgeEl);
+
+		const indicatorEl = createEl('small', {
+			text: '(save on close)',
+			cls: 'code-files-save-indicator'
+		});
+		badgeContainer.appendChild(indicatorEl);
+
+		this.titleEl.appendChild(badgeContainer);
 
 		const gearEl = createEl('div', {
 			cls: 'code-files-fence-gear',
@@ -110,6 +121,13 @@ export class FenceEditModal extends Modal {
 		);
 
 		this.contentEl.append(this.codeEditor.iframe);
+
+		const buttonContainer = this.modalEl.createDiv({
+			cls: 'modal-button-container code-files-fence-footer'
+		});
+		buttonContainer
+			.createEl('button', { text: 'Close', cls: 'mod-cta' })
+			.addEventListener('click', () => this.close());
 
 		this.modalEl.style.width = '90vw';
 		this.modalEl.style.height = '90vh';
