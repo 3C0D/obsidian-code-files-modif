@@ -50,7 +50,7 @@
     "prettier": "^3.8.1",
     "tslib": "2.4.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.8.2",
+    "typescript": "^5.9.3",
     "monkey-around": "latest"
   },
   "dependencies": {

@@ -335,6 +335,7 @@ async function createBuildContext(
 		outbase: path.join(pluginDir, 'src'),
 		plugins: [
 			{
+				// Plugin to handle obsidian-typings: redirects types-only imports to empty and /implementations to the CJS file for esbuild
 				name: 'obsidian-typings-implementations',
 				setup(build: esbuild.PluginBuild): void {
 					// Redirect bare 'obsidian-typings' to empty module (types only, erased at runtime)
