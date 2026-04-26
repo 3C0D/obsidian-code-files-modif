@@ -310,7 +310,6 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	extraExtensions: [],
 	maxFileSize: 10,
 	projectRootFolder: '',
-	projectRootFolderColor: '',
 	lastSelectedConfigExtension: '',
 	commandPaletteHotkeyOverride: '',
 	settingsHotkeyOverride: '',

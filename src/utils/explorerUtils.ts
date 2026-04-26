@@ -5,8 +5,12 @@
  * The highlight color is customizable via plugin settings.
  */
 import type CodeFilesPlugin from '../main.ts';
-import type { FileExplorerView, FileTreeItem } from 'obsidian-typings';
-import { TFile } from 'obsidian';
+import type {
+	FileExplorerView,
+	FileTreeItem,
+	FolderTreeItem
+} from 'obsidian-typings';
+import { TFile, TFolder } from 'obsidian';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 import { getExtension } from './fileUtils.ts';
@@ -29,31 +33,15 @@ export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
 		| undefined;
 	if (!view?.fileItems) return;
 
-	// Remove previous highlight
-	for (const [, item] of Object.entries(view.fileItems)) {
-		const titleEl = item.el?.querySelector(
-			'.nav-folder-title-content'
-		) as HTMLElement | null;
-		if (titleEl) {
-			titleEl.classList.remove(PROJECT_ROOT_CLASS);
-		}
-	}
+	const getTitleEl = (item: FolderTreeItem): HTMLElement | null =>
+		item.el?.querySelector<HTMLElement>('.nav-folder-title-content') ?? null;
 
-	// Add highlight to project root folder
-	if (!plugin.settings.projectRootFolder) return;
-	const projectItem = view.fileItems[plugin.settings.projectRootFolder];
-	if (!projectItem) return;
-	const titleEl = projectItem.el?.querySelector(
-		'.nav-folder-title-content'
-	) as HTMLElement | null;
-	if (titleEl) {
-		titleEl.classList.add(PROJECT_ROOT_CLASS);
-		const color = plugin.settings.projectRootFolderColor;
-		if (color) {
-			titleEl.style.setProperty('--code-files-project-root-color', color);
-		} else {
-			titleEl.style.removeProperty('--code-files-project-root-color');
-		}
+	for (const [path, item] of Object.entries(view.fileItems)) {
+		if (!(item.file instanceof TFolder)) continue;
+		getTitleEl(item as FolderTreeItem)?.classList.toggle(
+			PROJECT_ROOT_CLASS,
+			path === plugin.settings.projectRootFolder
+		);
 	}
 }
 
@@ -79,14 +67,15 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 			if (!view.fileItems) continue;
 
 			for (const item of Object.values(view.fileItems)) {
-				const file = (item as FileTreeItem).file;
-				const selfEl = (item as FileTreeItem).selfEl || (item as FileTreeItem).el;
+				if (!(item.file instanceof TFile)) continue; // Guard first: skip folders
+
+				const file = item.file; // Narrowed automatically to TFile
+				const treeItem = item as FileTreeItem;
+				const selfEl = treeItem.selfEl || treeItem.el;
 				const tagEl = selfEl?.querySelector('.nav-file-tag');
 
 				// Unregistered badge cleanup
 				if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
-
-				if (!(file instanceof TFile)) continue;
 
 				// Dotfile badge
 				if (!file.extension) {
@@ -102,7 +91,7 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 					!activeExts.includes(file.extension) &&
 					!OBSIDIAN_NATIVE_EXTENSIONS.includes(file.extension)
 				) {
-					if (tagEl) tagEl.classList.add('code-files-unregistered-badge');
+					tagEl?.classList.add('code-files-unregistered-badge');
 				}
 			}
 		}

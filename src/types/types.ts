@@ -38,8 +38,6 @@ export interface MyPluginSettings {
 	maxFileSize: number;
 	/** Project root folder (vault-relative path) for inter-file navigation and imports resolution */
 	projectRootFolder: string;
-	/** Custom color for the project root folder highlight — empty string uses CSS default (--color-green) */
-	projectRootFolderColor: string;
 	/** Last selected extension in the settings tab Editor Config section */
 	lastSelectedConfigExtension: string;
 	/** Override for command palette hotkey (empty string = use Obsidian default) */

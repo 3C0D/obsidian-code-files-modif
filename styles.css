@@ -144,7 +144,7 @@
 
 /* Project root folder highlight */
 .code-files-project-root-folder {
-	color: var(--code-files-project-root-color, #c644cf) !important;
+	color: #c644cf !important;
 }
 
 .code-files-unregistered-badge {

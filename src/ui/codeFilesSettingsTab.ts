@@ -4,7 +4,6 @@
  * - Ribbon icon toggle
  * - Extension management (manual vs extended mode, add/remove extensions)
  * - Per-extension editor config with Monaco JSON editor
- * - Project root folder highlight color customization
  */
 import type { App } from 'obsidian';
 import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
@@ -26,7 +25,6 @@ import {
 import { saveEditorConfig } from '../utils/settingsUtils.ts';
 import { updateRibbonIcon } from './ribbonIcon.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
-import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import {
 	getObsidianHotkey,
 	parseHotkeyOverride,
@@ -294,36 +292,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				await switchScope(true);
 			}
 		})();
-
-		// -- Project Root Folder Color --------------------------------------------
-		containerEl.createEl('h3', { text: 'Project Root Folder' });
-
-		const colorSetting = new Setting(containerEl)
-			.setName('Folder highlight color')
-			.setDesc(
-				'Color used to highlight the project root folder in the file explorer. Leave default to use violet (#c644cf).'
-			);
-
-		const colorInput = colorSetting.controlEl.createEl('input');
-		colorInput.type = 'color';
-		colorInput.value = this.plugin.settings.projectRootFolderColor || '#c644cf';
-		colorInput.style.marginRight = '8px';
-		colorInput.style.cursor = 'pointer';
-
-		colorInput.addEventListener('input', async () => {
-			this.plugin.settings.projectRootFolderColor = colorInput.value;
-			await this.plugin.saveSettings();
-			updateProjectFolderHighlight(this.plugin);
-		});
-
-		colorSetting.addButton((btn) =>
-			btn.setButtonText('Reset').onClick(async () => {
-				this.plugin.settings.projectRootFolderColor = '';
-				colorInput.value = '#c644cf';
-				await this.plugin.saveSettings();
-				updateProjectFolderHighlight(this.plugin);
-			})
-		);
 
 		// -- Monaco Hotkey Overrides -----------------------------------------
 		containerEl.createEl('h3', { text: 'Monaco Hotkey Overrides' });
