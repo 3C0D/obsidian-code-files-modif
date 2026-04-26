@@ -552,16 +552,21 @@ export async function revealFiles(
  * Hides previously revealed hidden files from the Obsidian UI.
  * getRealPath() is a FileSystemAdapter method (Desktop). On Mobile,
  * this function may have limited behavior depending on the adapter implementation.
+ * If temporary is true, only removes the file from the vault index without
+ * persisting any changes to settings, decorating folders, or showing a notice.
+ * Use this for files revealed transiently (e.g. opened via ChooseHiddenFileModal).
  *
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to hide.
+ * @param temporary - Defaults to false. If true, skip settings, notice, badges, and persist.
  * @returns A Promise that resolves when the operation is complete.
  */
-export async function hideFilesInFolder(
+export async function unrevealFiles(
 	plugin: CodeFilesPlugin,
 	folderPath: string,
-	itemPaths: string[]
+	itemPaths: string[],
+	temporary = false
 ): Promise<void> {
 	folderPath = normalizePath(folderPath);
 	if (folderPath === '/') folderPath = '';
@@ -576,6 +581,8 @@ export async function hideFilesInFolder(
 		await adapter.reconcileDeletion(realPath, filePath);
 	}
 	_bypassPatch = false;
+	
+	if (temporary) return; // skip settings, notice, badges
 
 	// Remove from persisted settings
 	const remaining = (plugin.settings.revealedFiles[folderPath] || []).filter(
@@ -619,6 +626,6 @@ export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise
 	}
 
 	for (const [folderPath, paths] of toHide) {
-		await hideFilesInFolder(plugin, folderPath, paths);
+		await unrevealFiles(plugin, folderPath, paths);
 	}
 }

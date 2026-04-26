@@ -29,7 +29,7 @@ import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/variables.ts';
 import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
-import { revealFiles } from '../utils/hiddenFilesUtils.ts';
+import { revealFiles, unrevealFiles } from '../utils/hiddenFilesUtils.ts';
 
 /**
  * Obsidian TextFileView wrapper for Monaco Editor.
@@ -95,7 +95,10 @@ export class CodeEditorView extends TextFileView {
 	getState(): Record<string, unknown> {
 		const state = super.getState() as Record<string, unknown>;
 		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
-		if (this.file && (!this.file.extension || this.file.path.includes('.obsidian/snippets'))) {
+		if (
+			this.file &&
+			(!this.file.extension || this.file.path.includes('.obsidian/snippets'))
+		) {
 			state.reveal = true;
 		}
 		return state;
@@ -169,6 +172,18 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	async onClose(): Promise<void> {
+		if (this.file) {
+			const path = this.file.path;
+			const tmp = this.plugin.settings.temporaryRevealedPaths;
+			if (tmp.includes(path)) {
+				const folderPath = path.substring(0, path.lastIndexOf('/')) || '';
+				await unrevealFiles(this.plugin, folderPath, [path], true);
+				this.plugin.settings.temporaryRevealedPaths = tmp.filter(
+					(p) => p !== path
+				);
+				await this.plugin.saveSettings();
+			}
+		}
 		await super.onClose();
 		this.cleanup();
 	}

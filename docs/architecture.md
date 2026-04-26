@@ -87,7 +87,7 @@ staticMap > 'plaintext'
 - `revealedFiles` — map of folder paths to arrays of revealed file paths
 - `scanDotEntries ()` — scans folder for dotfiles, respects exclusion settings
 - `revealFiles()` — makes dotfiles visible in Obsidian's file explorer
-- `hideFilesInFolder()` — removes dotfiles from explorer
+- `unrevealFiles ()` — removes dotfiles from explorer
 - `decorateFolders()` — adds eye icon badge to folders with revealed files
 
 **Auto-Reveal System:**

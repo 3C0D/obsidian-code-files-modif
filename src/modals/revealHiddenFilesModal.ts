@@ -4,7 +4,7 @@ import {
 	scanDotEntries,
 	cleanStaleRevealedFiles,
 	revealFiles,
-	hideFilesInFolder,
+	unrevealFiles,
 	decorateFolders
 } from '../utils/hiddenFilesUtils.ts';
 import {
@@ -284,7 +284,7 @@ export class RevealHiddenFilesModal extends Modal {
 					.map((item) => item.path);
 
 				if (toHide.length > 0)
-					await hideFilesInFolder(this.plugin, this.folderPath, toHide);
+					await unrevealFiles(this.plugin, this.folderPath, toHide);
 				if (toReveal.length > 0)
 					await revealFiles(this.plugin, this.folderPath, toReveal);
 

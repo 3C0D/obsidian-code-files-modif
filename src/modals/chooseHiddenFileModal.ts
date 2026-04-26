@@ -169,6 +169,8 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 
 		// Reveal silently without persisting so the file enters the vault index
 		await revealFiles(this.plugin, folder, [path], true, false);
+		this.plugin.settings.temporaryRevealedPaths.push(path);
+		await this.plugin.saveSettings();
 
 		const file = this.plugin.app.vault.getFileByPath(path);
 		if (file) {

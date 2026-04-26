@@ -58,6 +58,8 @@ export interface MyPluginSettings {
 	revealedFiles: Record<string, string[]>;
 	/** Automatically reveal dotfiles when their extension is registered with Code Files */
 	autoRevealRegisteredDotfiles: boolean;
+	/** Paths of files temporarily revealed for editing, cleaned up on close */
+	temporaryRevealedPaths: string[];
 }
 
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */

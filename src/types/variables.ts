@@ -317,7 +317,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	deleteFileHotkeyOverride: '',
 	excludedFolders: ['.git', 'node_modules', '.trash'],
 	revealedFiles: {},
-	autoRevealRegisteredDotfiles: true
+	autoRevealRegisteredDotfiles: true,
+	temporaryRevealedPaths: []
 };
 
 /** Obsidian view type identifier for the Monaco editor */
