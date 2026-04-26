@@ -222,9 +222,11 @@ The plugin now handles dotfiles natively through the **Reveal Hidden Files** sys
 
 ### Built-in Dotfile Management
 
-- **Auto-reveal**: When a dotfile extension (e.g., `.env`, `.gitignore`) is registered with Code Files, it is automatically made visible in the Obsidian file explorer.
+- **Automatic "Detect all file extensions"**: On plugin startup, the plugin automatically enables Obsidian's "Detect all file extensions" setting (required for dotfile visibility). A one-time notice is shown when this happens. Managed by `vaultConfigUtils.ts`.
+- **Auto-reveal**: When a dotfile extension (e.g., `.env`, `.gitignore`) is registered with Code Files, it is automatically made visible in the Obsidian file explorer (if "Auto-reveal registered dotfiles" is enabled, which is the default).
 - **Manual control**: The "Reveal Hidden Files" modal (`.re` quick action or folder context menu) allows scanning and manually revealing/hiding dotfiles per folder.
-- **Patch layer**: `openFilePatch.ts` intercepts Obsidian's file opening to ensure dotfiles open in Monaco when registered.
+- **Patch layer**: `openFilePatch.ts` intercepts Obsidian's file opening to ensure dotfiles and extension-less files open in Monaco when registered (or unconditionally for extension-less files like LICENSE, README).
+- **Adapter patches**: `patchAdapter()` prevents Obsidian from auto-deleting revealed dotfiles, fixes drag-and-drop destination paths, and allows dotfile deletion via trash. `patchRegisterExtensions()` keeps dotfile visibility in sync with extension registration state.
 - **No external plugin required**: The Code Files plugin fully manages dotfile visibility without any third-party dependencies.
 
 ### To See Dotfiles in Explorer

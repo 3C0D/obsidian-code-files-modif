@@ -19,7 +19,8 @@ CodeEditorView → mountCodeEditor() → iframe (monacoEditor.html) → Monaco E
 - `monacoEditor.html` — Monaco instance, receives messages
 - `codeEditorView.ts` — Obsidian TextFileView wrapper
 - `getLanguage.ts` — extension → language mapping
-- `hiddenFilesUtils.ts` — hidden files scanning, reveal/hide operations
+- `hiddenFilesUtils.ts` — hidden files scanning, reveal/hide operations, adapter patching
+- `vaultConfigUtils.ts` — vault-level settings management ("Detect all file extensions")
 - `revealHiddenFilesModal.ts` — modal for revealing/hiding dotfiles per folder
 
 ## postMessage Protocol
@@ -76,24 +77,33 @@ staticMap > 'plaintext'
 
 **Runtime Operations:**
 
-- `addExtension()`: removes from `excludedExtensions`, adds to `extraExtensions` if not in base
-- `removeExtension()`: adds to `excludedExtensions`, removes from `extraExtensions`
+- `addExtension()`: blocks empty string, native extensions, and already registered extensions; removes from `excludedExtensions`, adds to `extraExtensions` if not in base
+- `removeExtension()`: if in `extraExtensions`, just removes it; if in base `extensions`, adds to `excludedExtensions` to override
 - `reregisterExtensions()` diffs changes to avoid re-registering identical extensions
 
 ## Hidden Files Management
 
+**Vault Configuration:**
+
+- `ensureDetectAllExtensions()` — automatically enables Obsidian's "Detect all file extensions" setting on plugin startup (required for dotfile visibility)
+- `showDetectAllExtensionsNotice()` — one-time notice shown when the setting is first enabled
+- Located in `vaultConfigUtils.ts`
+
 **Reveal System:**
 
 - `revealedFiles` — map of folder paths to arrays of revealed file paths
-- `scanDotEntries ()` — scans folder for dotfiles, respects exclusion settings
+- `scanDotEntries()` — scans folder for dotfiles, respects exclusion settings, filters by max file size
 - `revealFiles()` — makes dotfiles visible in Obsidian's file explorer
-- `unrevealFiles()` — removes dotfiles from explorer
+    - `silent` parameter (default: false) — suppresses notice for auto-reveal operations
+    - `persist` parameter (default: true) — saves to settings for manual reveals only
+- `unrevealFiles()` — removes dotfiles from explorer (renamed from `hideFilesInFolder`)
+    - `temporary` parameter (default: false) — skips settings/notice/badges for transient reveals
 - `decorateFolders()` — adds eye icon badge to folders with revealed files
 
 **Auto-Reveal System:**
 
 - `autoRevealRegisteredDotfiles` setting (default: true)
-- `syncAutoRevealedDotfiles ()` — auto-reveals existing dotfiles when an extension is registered
+- `syncAutoRevealedDotfiles()` — cleans revealedFiles and auto-reveals dotfiles when extensions are registered
 - `autoRevealRegisteredDotfiles()` — scans entire vault on startup to reveal dotfiles with active extensions
 - `hideAutoRevealedDotfiles()` — hides all auto-managed files when the feature is disabled
 - Auto-managed files are filtered from the hidden files modal UI
@@ -102,11 +112,13 @@ staticMap > 'plaintext'
 
 - `patchAdapter()` — prevents Obsidian from auto-deleting revealed dotfiles
     - `reconcileDeletion` override blocks deletion unless `_bypassPatch` flag is set
-    - `rename` patch ensures correct destination path for folder moves (src/dest normalization)
+    - `rename` patch fixes drag-and-drop destination path for dotfiles (checks if dest is folder, appends filename)
+    - `rename` patch blocks moves of external files (snippets, etc.) out of configDir
     - `vault.trash` patch sets `_bypassPatch` before deletion to allow dotfile trash
+    - Stores original methods in `plugin._origReconcileDeletion` and `plugin._origRename` for use by other patches
 - `patchRegisterExtensions()` — keeps dotfile visibility in sync with extension registration
-    - On `registerExtensions`: auto-reveals matching dotfiles
-    - On `unregisterExtensions`: hides non-manually-revealed dotfiles for removed extensions
+    - On `registerExtensions`: cleans revealedFiles and auto-reveals matching dotfiles via `syncAutoRevealedDotfiles()`
+    - On `unregisterExtensions`: hides non-manually-revealed dotfiles for removed extensions using original reconcileDeletion method
 
 **Persistence:**
 
@@ -126,8 +138,8 @@ staticMap > 'plaintext'
 
 - `updateProjectFolderHighlight()` — highlights the Project Root folder in the file explorer (color via `projectRootFolderColor` setting)
 - `setupExplorerBadges()` — adds badges to file entries:
-    - **Dotfiles with registered extensions** → uppercase extension badge (e.g., "ENV", "GITIGNORE")
-    - **Files with unregistered extensions** (non-native) → muted "unregistered" badge
+    - **Dotfiles with registered extensions** → uppercase extension badge (e.g., "ENV", "GITIGNORE") + subtle background tint
+    - **Files with unregistered extensions** (excluding native Obsidian extensions like `.md`, `.canvas`) → muted yellow "unregistered" badge
     - Badges update automatically when extensions are registered or unregistered
 
 ## Editor Config

@@ -34,14 +34,14 @@
 
 ### 5. **Hidden Files Access & Management**
 
-- **Automatic Detect All Extensions**: Plugin enables Obsidian's "Detect all file extensions" setting automatically — dotfiles are visible system-wide
+- **Automatic Detect All Extensions**: Plugin enables Obsidian's "Detect all file extensions" setting automatically on startup — dotfiles are visible system-wide. One-time notice shown when first enabled.
 - **Reveal in explorer**: Right-click folder → "Reveal/Hide Hidden Files" modal with two-column UI
     - **Left column**: Checkboxes to reveal/hide files in explorer
     - **Right column**: Checkboxes to register file extensions for Monaco auto-open
 - **Master checkboxes**: "All" in each column to select/deselect all items in that column
 - **Auto-reveal**: Dotfiles with registered extensions are automatically revealed (configurable, on by default)
 - **Extension registration**: Register new extensions directly from the hidden files modal
-- **Visual indicator**: Eye icon (👁️) badge on folders with revealed files
+- **Visual indicator**: Eye icon (👁️) badge on folders with manually revealed files
 - **Persistent state**: Revealed files persist across sessions
 - **Open directly**: Access hidden files without revealing them first
     - **From folder**: Right-click → "Open Hidden Files in Code Files"
@@ -50,13 +50,14 @@
 - **Smart cleanup**: Auto-managed files hidden automatically when auto-reveal is disabled or extension unregistered
 - **Safe filtering**: Excludes executables, archives, databases, binary office formats, fonts (configurable max size)
 - **Configurable exclusions**: Exclude specific folders (`.git`, `node_modules`) and extensions (`tmp`, `log`, `cache`) in settings
+- **Drag and drop support**: Dotfiles can be moved between folders normally; adapter patch fixes destination path calculation
 
 ### 6. **File Explorer Visual Indicators**
 
 - **Project root highlight**: Folder set as Project Root is highlighted (default purple/rose matching Obsidian accent; customizable via setting)
 - **Extension badges**:
-    - Dotfiles with registered extensions show an uppercase extension badge (e.g., "ENV", "GITIGNORE")
-    - Regular files with unregistered (non-native) extensions show a muted "unregistered" badge
+    - Dotfiles with registered extensions show an uppercase extension badge (e.g., "ENV", "GITIGNORE") + subtle background tint
+    - Regular files with unregistered extensions (excluding native Obsidian extensions like `.md`, `.canvas`) show a muted yellow "unregistered" badge
     - Native Obsidian files (`.md`, `.canvas`) show no badge
 - Badges update automatically when extensions are registered or unregistered
 
