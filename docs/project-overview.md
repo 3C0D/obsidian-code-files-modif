@@ -46,6 +46,7 @@
 - **Open directly**: Access hidden files without revealing them first
     - **From folder**: Right-click → "Open Hidden Files in Code Files"
     - **From vault**: Command palette → "Open Hidden Files in Vault"
+- **Temporary reveal for editing**: Hidden files opened directly are temporarily revealed in the vault index for editing, then hidden again when the tab is closed
 - **Smart cleanup**: Auto-managed files hidden automatically when auto-reveal is disabled or extension unregistered
 - **Safe filtering**: Excludes executables, archives, databases, binary office formats, fonts (configurable max size)
 - **Configurable exclusions**: Exclude specific folders (`.git`, `node_modules`) and extensions (`tmp`, `log`, `cache`) in settings

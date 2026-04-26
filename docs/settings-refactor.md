@@ -12,30 +12,44 @@ Flat structure stored via Obsidian's `loadData()`/`saveData()` API, with setting
 {
 	"extensions": ["ts", "tsx", "js", "jsx", "py"],
 	"theme": "default",
-	"overwriteBg": true,
-	"recentThemes": ["Dracula", "Nord"],
 	"showRibbonIcon": true,
+	"recentThemes": ["Dracula", "Nord"],
+	"semanticValidation": true,
+	"syntaxValidation": true,
+	"autoSave": false,
+	"editorBrightness": 1.0,
+	"wordWrap": "off",
 	"folding": true,
 	"lineNumbers": true,
 	"minimap": true,
-	"semanticValidation": true,
-	"syntaxValidation": true,
-	"autoSave": true,
-	"wordWrap": "off",
 	"editorConfigs": {
 		"*": "{...global config...}",
 		"ts": "{\n  \"tabSize\": 4\n}"
-	}
+	},
+	"allExtensions": false,
+	"excludedExtensions": [],
+	"extraExtensions": [],
+	"maxFileSize": 10,
+	"projectRootFolder": "",
+	"projectRootFolderColor": "",
+	"lastSelectedConfigExtension": "",
+	"commandPaletteHotkeyOverride": "",
+	"settingsHotkeyOverride": "",
+	"deleteFileHotkeyOverride": "",
+	"excludedFolders": ["node_modules", ".git"],
+	"revealedFiles": {},
+	"autoRevealRegisteredDotfiles": true,
+	"temporaryRevealedPaths": []
 }
 ```
 
 ## Settings Distribution
 
-| Location                     | Settings                                                                                                          |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Obsidian Settings Tab**    | Ribbon Icon, Extensions (manual/extended mode), Editor Config (per-extension JSON), Project Root Folder highlight |
-| **⚙️ Editor Settings Modal** | AutoSave, WordWrap, Folding, LineNumbers, Minimap, Semantic/Syntax Validation, Editor Config (JSON)               |
-| **Monaco F1 Palette**        | All editor actions + Save                                                                                         |
+| Location                     | Settings                                                                                                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Obsidian Settings Tab**    | Ribbon Icon, Extensions (manual/extended mode), Extra/Exclusions, Max File Size, Project Root Folder, Hotkey Overrides, Excluded Folders, Auto-Reveal Dotfiles |
+| **⚙️ Editor Settings Modal** | AutoSave, WordWrap, Folding, LineNumbers, Minimap, Semantic/Syntax Validation, Editor Brightness, Editor Config (JSON)                                         |
+| **Monaco F1 Palette**        | All editor actions + Save                                                                                                                                      |
 
 ## EditorSettingsModal Structure
 

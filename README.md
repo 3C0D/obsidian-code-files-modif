@@ -109,14 +109,14 @@ Navigate between TypeScript and JavaScript files in your project:
 **Two ways to set the Project Root Folder:**
 
 1. **Via context menu**:
-   - Right-click any folder in the file explorer
-   - Select **Code Files → Define as Project Root Folder**
-   - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
-   - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
+    - Right-click any folder in the file explorer
+    - Select **Code Files → Define as Project Root Folder**
+    - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
+    - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
 
 2. **Via Editor Settings**:
-   - Open Editor Settings (⚙️ gear icon in tab header)
-   - Set **Project Root Folder** to your TypeScript/JavaScript project folder
+    - Open Editor Settings (⚙️ gear icon in tab header)
+    - Set **Project Root Folder** to your TypeScript/JavaScript project folder
 
 Monaco will load all TS/JS files from that folder for IntelliSense and navigation.
 
@@ -168,8 +168,8 @@ When **Auto-reveal registered dotfiles** is enabled (default: on):
 
 - **Right-click a folder** in the explorer → **Code Files → Reveal/Hide Hidden Files**
 - The modal lists all hidden files in that folder with a **two-column layout**:
-  - **Left column (Reveal)** — check to reveal in the explorer, uncheck to hide
-  - **Right column (Register)** — check to register the file's extension with Code Files (opens automatically in Monaco)
+    - **Left column (Reveal)** — check to reveal in the explorer, uncheck to hide
+    - **Right column (Register)** — check to register the file's extension with Code Files (opens automatically in Monaco)
 - **Master checkboxes**: "All" in each column selects/deselects all items
 - **Click Apply** to confirm all changes at once
 
@@ -178,9 +178,9 @@ When **Auto-reveal registered dotfiles** is enabled (default: on):
 - **Manual reveal**: You explicitly check a file in the modal → persists until you uncheck it
 - **Auto-reveal**: Extension registered → file automatically shown → hidden if extension is unregistered or auto-reveal is disabled
 
-### Open Hidden Files Without Revealing
+### Open Hidden Files with Temporary Reveal
 
-You can open dotfiles in the vault directly in Monaco:
+You can open dotfiles in the vault directly in Monaco. Files are temporarily revealed in the vault index for editing, then automatically hidden when the tab is closed:
 
 - Command palette → **"Open Hidden Files in Vault"**
 - A suggester lists all hidden files with their relative paths
@@ -205,6 +205,7 @@ In **Obsidian Settings → Code Files → Hidden Files**:
 ### Filtered File Types
 
 For safety, the following are excluded from scanning:
+
 - Executables: `exe`, `dll`, `so`, `dylib`, `app`, `dmg`, `msi`
 - Archives: `zip`, `rar`, `7z`, `tar`, `gz`, `bz2`, `xz`
 - Databases: `db`, `sqlite`, `mdb`
@@ -247,12 +248,12 @@ The block opens in a full-screen Monaco modal. Changes are written back when you
 
 When a code file is open, icons appear in the tab header:
 
-| Icon | What it does |
-|------|-------------|
-| ✏️ **Pencil** | Rename the file (name + extension). Unknown extensions will prompt for registration. |
+| Icon           | What it does                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| ✏️ **Pencil**  | Rename the file (name + extension). Unknown extensions will prompt for registration.        |
 | 🎨 **Palette** | Pick a theme with live preview. Hover to preview, adjust brightness with left/right arrows. |
-| ↩ **Arrow** | Return to default view (only for files with unregistered extensions opened in Monaco). |
-| ⚙️ **Gear** | Open the Editor Settings panel |
+| ↩ **Arrow**    | Return to default view (only for files with unregistered extensions opened in Monaco).      |
+| ⚙️ **Gear**    | Open the Editor Settings panel                                                              |
 
 These actions are also available via **F1** or right-click inside Monaco.
 
@@ -260,9 +261,9 @@ These actions are also available via **F1** or right-click inside Monaco.
 
 When editing a CSS snippet file (`.obsidian/snippets/*.css`), two additional controls appear:
 
-| Icon | What it does |
-|------|-------------|
-| 📁 **Folder** | Open the snippets folder in your system file explorer |
+| Icon          | What it does                                                     |
+| ------------- | ---------------------------------------------------------------- |
+| 📁 **Folder** | Open the snippets folder in your system file explorer            |
 | 🔘 **Toggle** | Enable or disable the current snippet without leaving the editor |
 
 ---
@@ -285,14 +286,14 @@ JSON editor for formatting rules. Two scopes:
 
 ```jsonc
 {
-    "tabSize": 4,
-    "insertSpaces": true,
-    "formatOnSave": true,
-    "formatOnType": false,
-    "printWidth": 80,  // Line length for Prettier
-    "proseWrap": "always",  // Markdown only: "always" | "never" | "preserve"
-    // "rulers": [80, 120],
-    // "fontSize": 14,
+	"tabSize": 4,
+	"insertSpaces": true,
+	"formatOnSave": true,
+	"formatOnType": false,
+	"printWidth": 80, // Line length for Prettier
+	"proseWrap": "always" // Markdown only: "always" | "never" | "preserve"
+	// "rulers": [80, 120],
+	// "fontSize": 14,
 }
 ```
 
@@ -332,16 +333,16 @@ Changes save automatically when the panel closes.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+S` | Save (formats first if formatOnSave is on) |
-| `Shift+Alt+F` | Format document |
-| `Ctrl+/` | Toggle line comment |
-| `Alt+Z` | Toggle word wrap |
-| `F1` | Monaco command palette |
-| `Ctrl+P` | Obsidian command palette (accessible from inside Monaco) |
-| `Ctrl+,` | Obsidian settings (accessible from inside Monaco) |
-| `Ctrl+Delete` | Delete the current file |
+| Shortcut      | Action                                                   |
+| ------------- | -------------------------------------------------------- |
+| `Ctrl+S`      | Save (formats first if formatOnSave is on)               |
+| `Shift+Alt+F` | Format document                                          |
+| `Ctrl+/`      | Toggle line comment                                      |
+| `Alt+Z`       | Toggle word wrap                                         |
+| `F1`          | Monaco command palette                                   |
+| `Ctrl+P`      | Obsidian command palette (accessible from inside Monaco) |
+| `Ctrl+,`      | Obsidian settings (accessible from inside Monaco)        |
+| `Ctrl+Delete` | Delete the current file                                  |
 
 ---
 
@@ -365,17 +366,17 @@ Changes take effect immediately. Extensions can also be added on the fly from th
 
 ## Architecture Overview
 
-| File | Role |
-|------|------|
-| `mountCodeEditor.ts` | Creates the Monaco iframe and handles all postMessage communication |
-| `monacoEditor.html` | The iframe HTML, loaded locally from the plugin folder |
-| `codeEditorView.ts` | Obsidian TextFileView wrapping Monaco |
-| `getLanguage.ts` | Extension → Monaco language ID mapping |
-| `fenceEditModal.ts` | Modal for editing code fences |
-| `createCodeFileModal.ts` | Modal for creating new code files |
-| `renameExtensionModal.ts` | Modal for renaming files (name + extension) |
-| `editorSettingsModal.ts` | Gear panel: toggles + JSON config editor |
-| `chooseThemeModal.ts` | Theme picker with live preview |
+| File                      | Role                                                                |
+| ------------------------- | ------------------------------------------------------------------- |
+| `mountCodeEditor.ts`      | Creates the Monaco iframe and handles all postMessage communication |
+| `monacoEditor.html`       | The iframe HTML, loaded locally from the plugin folder              |
+| `codeEditorView.ts`       | Obsidian TextFileView wrapping Monaco                               |
+| `getLanguage.ts`          | Extension → Monaco language ID mapping                              |
+| `fenceEditModal.ts`       | Modal for editing code fences                                       |
+| `createCodeFileModal.ts`  | Modal for creating new code files                                   |
+| `renameExtensionModal.ts` | Modal for renaming files (name + extension)                         |
+| `editorSettingsModal.ts`  | Gear panel: toggles + JSON config editor                            |
+| `chooseThemeModal.ts`     | Theme picker with live preview                                      |
 
 ---
 
