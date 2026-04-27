@@ -214,6 +214,27 @@ For safety, the following are excluded from scanning:
 
 ---
 
+## Opening External Files (.obsidian/)
+
+You can open and edit any file in your `.obsidian/` folder directly in Monaco:
+
+- Command palette → **"Browse External Files (.obsidian/)"**
+- A suggester opens, listing all files in `.obsidian/` with their relative paths
+- Files are filtered by size (max 10MB by default) and type (binaries excluded)
+- Select a file to open it in a new Monaco tab
+
+**Supported file types:** All text files except binaries (executables, archives, databases, fonts, etc.)
+
+**Use cases:**
+- Edit Obsidian config files: `app.json`, `workspace.json`, `hotkeys.json`
+- Modify plugin data files: `.obsidian/plugins/*/data.json`
+- Customize themes: `.obsidian/themes/*.css`
+- Access any configuration file in your vault's `.obsidian/` folder
+
+**Persistence:** Opened external files persist across Obsidian restarts, allowing multi-session editing.
+
+---
+
 ## Renaming Files (name + extension)
 
 - Click the **pencil icon** in the tab header

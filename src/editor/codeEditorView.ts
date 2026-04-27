@@ -10,7 +10,7 @@
  * while delegating editor functionality to the isolated Monaco iframe via postMessage.
  */
 import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
-import { normalizePath, TextFileView, TFile } from 'obsidian';
+import { normalizePath, TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
 import { getLanguage } from '../utils/getLanguage.ts';
@@ -97,7 +97,7 @@ export class CodeEditorView extends TextFileView {
 		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
 		if (
 			this.file &&
-			(!this.file.extension || this.file.path.includes('.obsidian/snippets'))
+			(!this.file.extension || this.file.path.includes('.obsidian'))
 		) {
 			state.reveal = true;
 		}
@@ -117,7 +117,12 @@ export class CodeEditorView extends TextFileView {
 			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
 			await revealFiles(this.plugin, folderPath, [filePath], true, false); // silent, no persist
 		}
-		await super.setState(state, result);
+
+		try {
+			await super.setState(state, result);
+		} catch {
+			// super.setState may fail for external files not in vault index
+		}
 	}
 
 	/**
@@ -527,24 +532,33 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
-	/** Opens external files (CSS snippets) in a new leaf via an adapter path (not vault-indexed).
+	/** Opens external files (CSS snippets) via an adapter path (not vault-indexed).
+	 *  Reuses existing tab if file is already open, otherwise creates a new tab.
 	 *  Constructs a pseudo TFile internally since the path is outside the vault. */
 	static async openExternalFile(
 		filePath: string,
 		plugin: CodeFilesPlugin
 	): Promise<void> {
-		// Snippets are outside the vault — TFile is constructed manually
-		// because the adapter path is not indexed in the vault.
-		// Workaround: constructors TFile manually via Obsidian's internal API since the file isn't in vault cache.
-		// @ts-expect-error: TFile constructor is internal API
-		const file = new TFile(plugin.app.vault, filePath);
-		const leaf = plugin.app.workspace.getLeaf(true);
-		const view = new CodeEditorView(leaf, plugin);
-		view.file = file;
-		await leaf.open(view);
-		await view.onLoadFile(file);
-		// Update tab header tab to show the file name
-		leaf.updateHeader();
+		// Check if file is already open in a leaf
+		const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
+			const view = leaf.view as CodeEditorView;
+			return view.file?.path === filePath;
+		});
+
+		if (existingLeaf) {
+			// File already open — activate that leaf
+			plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+			return;
+		}
+
+		// Always create a new tab for external files
+		const leaf = plugin.app.workspace.getLeaf('tab');
+		// Use setViewState for proper state management and persistence
+		await leaf.setViewState({
+			type: viewType,
+			state: { file: filePath, external: true, reveal: true },
+			active: true
+		});
 	}
 
 	/**
