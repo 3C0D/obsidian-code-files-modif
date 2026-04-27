@@ -2,7 +2,7 @@
 
 ## Summary
 
-The eye badge (👁️) appears on folders containing **manually revealed** dotfiles. It's managed by `decorateFolders()` which checks `plugin.settings.revealedFiles[folderPath]`. The badge is added/removed dynamically based on folder content changes.
+The eye badge (👁️) appears on folders containing **manually revealed** dotfiles (stored in `plugin.settings.revealedFiles`). It's managed by `decorateFolders()` and updated after file operations. Dotfiles are registered by Obsidian as `file.extension = ""`. Files without extension (LICENSE, README) also have `extension = ""` but are visible by default when "Detect all file extensions" is enabled.
 
 ---
 
@@ -102,14 +102,26 @@ if (hasRevealed && !existing) {
 
 ## Patches Using `around()`
 
-### 1. `patchAdapter()` — Prevent Dotfile Auto-Deletion
+### 1. `patchAdapter()` — Prevent Dotfile Auto-Deletion & Fix Rename
 
 **Location:** `hiddenFilesUtils.ts`
 
 **Patches:**
-- `adapter.reconcileDeletion` — blocks deletion of dotfiles unless `_bypassPatch=true`
-- `adapter.rename` — fixes drag-and-drop destination for dotfiles
-- `vault.trash` — allows dotfile deletion via trash
+
+#### `adapter.reconcileDeletion`
+Blocks deletion of dotfiles unless `_bypassPatch=true`.
+
+#### `adapter.rename`
+Fixes drag-and-drop destination for dotfiles:
+```typescript
+if (adapter.files?.[dest]?.type === 'folder') {
+    const filename = src.split('/').pop() || '';
+    dest = dest + '/' + filename;
+}
+```
+
+#### `vault.trash`
+Allows dotfile deletion via trash by setting `_bypassPatch=true`.
 
 **Registered in:** `main.ts` via `this.register(patchAdapter(this))`
 
@@ -198,105 +210,39 @@ this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));
 
 ---
 
-## Current Issues & Potential Bugs
+## Current Bugs — Eye Badge Not Updated
 
-### Issue 1: Extension-less Files (LICENSE, README)
+### Bug 1: Drag-and-Drop Between Folders
 
-**Problem:** Files without extension (`file.extension = ""`) are registered via `extraExtensions: ['']` but are NOT dotfiles (don't start with `.`).
+**Status:** ✅ Fixed in `unpatchRename`
 
-**Current Behavior:**
-- These files open in Monaco automatically (correct)
-- They are NOT managed by the hidden files system (correct)
-- They do NOT appear in `RevealHiddenFilesModal` (correct)
-
-**Status:** ✅ Working as intended
+**Solution:** After rename, update file paths in `revealedFiles`, handle folder renames, clean empty folders, then call `decorateFolders()`.
 
 ---
 
-### Issue 2: Eye Badge Not Updated After Extension Registration
+### Bug 2: Folder Rename
 
-**Scenario:**
-1. Manually reveal `.prettierrc` via modal → eye badge appears
-2. Register `prettierrc` extension → file becomes auto-managed
-3. Eye badge should disappear (file no longer in `revealedFiles`)
+**Status:** ✅ Fixed in `unpatchRename`
 
-**Current Behavior:**
-- `syncAutoRevealedDotfiles()` cleans `revealedFiles` and calls `decorateFolders()`
-- Eye badge should disappear correctly
-
-**Status:** ✅ Should work (needs testing)
+**Solution:** Update folder keys in `revealedFiles` when a folder is renamed.
 
 ---
 
-### Issue 3: Eye Badge After Unregistering Extension
+### Bug 3: Trash/Delete File
 
-**Scenario:**
-1. Register `.env` extension → auto-revealed (no badge)
-2. Unregister `.env` extension → file hidden
-3. Manually reveal `.env` via modal → eye badge appears
+**Status:** ✅ Fixed in `unpatchTrash`
 
-**Current Behavior:**
-- `patchRegisterExtensions()` hides auto-revealed files when extension is unregistered
-- Manual reveal adds to `revealedFiles` → eye badge appears
-
-**Status:** ✅ Should work (needs testing)
+**Solution:** After deletion, remove file path from `revealedFiles`, delete empty folder entries, then call `decorateFolders()`.
 
 ---
 
-### Issue 4: Drag-and-Drop Between Folders
+## Notes
 
-**Scenario:**
-1. Folder A has manually revealed `.env` → eye badge on A
-2. Drag `.env` from A to B
-3. Eye badge should move from A to B
-
-**Current Behavior:**
-- Vault `rename` event triggers `decorateFolders()`
-- But `revealedFiles` still references old path `A/.env`
-- Eye badge stays on A (incorrect)
-
-**Status:** ⚠️ Potential bug — `revealedFiles` paths not updated on rename
-
----
-
-### Issue 5: Folder Rename
-
-**Scenario:**
-1. Folder `src` has manually revealed `.eslintrc` → eye badge on `src`
-2. Rename `src` to `source`
-3. Eye badge should appear on `source`
-
-**Current Behavior:**
-- `revealedFiles` key is still `"src"` (old path)
-- Eye badge disappears (incorrect)
-
-**Status:** ⚠️ Bug — folder rename not handled in `revealedFiles`
-
----
-
-## Recommendations
-
-### 1. Add Path Update on Rename
-
-**Location:** `main.ts` or `hiddenFilesUtils.ts`
-
-**Solution:** Listen to `vault.on('rename')` and update `revealedFiles` keys/values:
-```typescript
-this.registerEvent(this.app.vault.on('rename', (file, oldPath) => {
-    updateRevealedFilesOnRename(this, oldPath, file.path);
-    decorateFolders(this);
-}));
-```
-
-### 2. Test Eye Badge Behavior
-
-**Test cases:**
-- Manual reveal → badge appears
-- Manual hide → badge disappears
-- Register extension → badge disappears (if file was manually revealed)
-- Unregister extension → badge appears (if file is manually revealed after)
-- Drag file between folders → badge moves
-- Rename folder → badge stays on renamed folder
+- Dotfiles and extension-less files both have `file.extension = ""`
+- Extension-less files (LICENSE, README) are visible when "Detect all file extensions" is enabled
+- Only dotfiles (starting with `.`) are managed by the reveal system
+- Auto-revealed files (registered extensions) do NOT appear in `revealedFiles` and do NOT trigger eye badge
+- Eye badge only appears for manually revealed files
 
 ---
 

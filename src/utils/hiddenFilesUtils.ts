@@ -108,7 +108,36 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 					const filename = src.split('/').pop() || '';
 					dest = dest + '/' + filename;
 				}
-				return next.call(this, src, dest);
+				const result = await next.call(this, src, dest);
+				
+				// Update revealedFiles after rename
+				const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
+				const destFolder = dest.substring(0, dest.lastIndexOf('/')) || '';
+				let changed = false;
+				
+				// Remove from source folder
+				if (plugin.settings.revealedFiles[srcFolder]) {
+					const filtered = plugin.settings.revealedFiles[srcFolder].filter(p => p !== src);
+					if (filtered.length > 0) {
+						plugin.settings.revealedFiles[srcFolder] = filtered;
+					} else {
+						delete plugin.settings.revealedFiles[srcFolder];
+					}
+					changed = true;
+				}
+				
+				// Add to destination folder
+				if (changed) {
+					const existing = plugin.settings.revealedFiles[destFolder] ?? [];
+					plugin.settings.revealedFiles[destFolder] = [...existing, dest];
+				}
+				
+				if (changed) {
+					void plugin.saveSettings();
+					void decorateFolders(plugin);
+				}
+				
+				return result;
 			};
 		}
 	});
@@ -121,9 +150,28 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				file: TAbstractFile,
 				system: boolean
 			) {
-				if (file?.path) _bypassPatch = true;
+				const filePath = file?.path;
+				if (filePath) _bypassPatch = true;
 				try {
-					return await next.call(this, file, system);
+					const result = await next.call(this, file, system);
+					
+					// Clean up revealedFiles after deletion
+					if (filePath) {
+						for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
+							const filtered = paths.filter(p => p !== filePath);
+							if (filtered.length !== paths.length) {
+								if (filtered.length > 0) {
+									plugin.settings.revealedFiles[folderPath] = filtered;
+								} else {
+									delete plugin.settings.revealedFiles[folderPath];
+								}
+							}
+						}
+						void plugin.saveSettings();
+						void decorateFolders(plugin);
+					}
+					
+					return result;
 				} finally {
 					_bypassPatch = false;
 				}
