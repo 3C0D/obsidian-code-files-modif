@@ -34,7 +34,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 	getSuggestions(query: string): CssSuggestion[] {
 		// Filter matching filenames and tag each as 'existing' so onChooseSuggestion knows to open it
 		const filtered = this.cssFiles
-			.filter((name) => name.toLowerCase().includes(query.toLowerCase()))
+			.filter((name) => this.fuzzyMatch(query, name))
 			.map((name): CssSuggestion => ({ kind: 'existing', name }));
 
 		// If the user typed something, append a 'new' suggestion to create a snippet with that name
@@ -65,5 +65,17 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 		el.setText(
 			item.kind === 'new' ? `Create new snippet "${item.name}.css"` : item.name
 		);
+	}
+
+	/** Fuzzy matching: returns true if all query characters appear in text in order */
+	private fuzzyMatch(query: string, text: string): boolean {
+		if (!query) return true;
+		const q = query.toLowerCase();
+		const t = text.toLowerCase();
+		let qi = 0;
+		for (let i = 0; i < t.length && qi < q.length; i++) {
+			if (t[i] === q[qi]) qi++;
+		}
+		return qi === q.length;
 	}
 }

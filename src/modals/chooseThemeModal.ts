@@ -103,12 +103,11 @@ export class ChooseThemeModal extends SuggestModal<string> {
 
 	/** Returns filtered themes, prioritizing current and recently used themes at the top. */
 	getSuggestions(query: string): string[] {
-		const q = query.toLowerCase();
 		const current = this.plugin.settings.theme;
 		const recent = this.plugin.settings.recentThemes.filter((t) => t !== current);
 		const priority = [current, ...recent];
 		const allThemes = ['default', ...getThemes()];
-		const filtered = allThemes.filter((t) => t.toLowerCase().includes(q));
+		const filtered = allThemes.filter((t) => this.fuzzyMatch(query, t));
 		return [
 			...priority.filter((t) => filtered.includes(t)),
 			...filtered.filter((t) => !priority.includes(t))
@@ -143,5 +142,17 @@ export class ChooseThemeModal extends SuggestModal<string> {
 			this.applyTheme(this.originalTheme);
 		}
 		this.restoreFocus?.();
+	}
+
+	/** Fuzzy matching: returns true if all query characters appear in text in order */
+	private fuzzyMatch(query: string, text: string): boolean {
+		if (!query) return true;
+		const q = query.toLowerCase();
+		const t = text.toLowerCase();
+		let qi = 0;
+		for (let i = 0; i < t.length && qi < q.length; i++) {
+			if (t[i] === q[qi]) qi++;
+		}
+		return qi === q.length;
 	}
 }
