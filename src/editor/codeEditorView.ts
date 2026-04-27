@@ -95,10 +95,7 @@ export class CodeEditorView extends TextFileView {
 	getState(): Record<string, unknown> {
 		const state = super.getState() as Record<string, unknown>;
 		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
-		if (
-			this.file &&
-			(!this.file.extension || this.file.path.includes('.obsidian'))
-		) {
+		if (this.file && (!this.file.extension || this.file.path.includes('.obsidian'))) {
 			state.reveal = true;
 		}
 		return state;
@@ -482,7 +479,9 @@ export class CodeEditorView extends TextFileView {
 		if (tmp.includes(path)) {
 			// Don't unreveal if the file is covered by a manual reveal
 			// (file itself, or an ancestor folder, is in revealedFiles)
-			const allRevealedItems = Object.values(this.plugin.settings.revealedFiles).flat();
+			const allRevealedItems = Object.values(
+				this.plugin.settings.revealedFiles
+			).flat();
 			const manuallyRevealed = allRevealedItems.some(
 				(p) => path === p || path.startsWith(p + '/')
 			);
@@ -490,9 +489,7 @@ export class CodeEditorView extends TextFileView {
 				const folderPath = path.substring(0, path.lastIndexOf('/')) || '';
 				await unrevealFiles(this.plugin, folderPath, [path], true);
 			}
-			this.plugin.settings.temporaryRevealedPaths = tmp.filter(
-				(p) => p !== path
-			);
+			this.plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== path);
 			await this.plugin.saveSettings();
 		}
 		this.cleanup();
@@ -553,10 +550,12 @@ export class CodeEditorView extends TextFileView {
 		plugin: CodeFilesPlugin
 	): Promise<void> {
 		// Check if file is already open in a leaf
-		const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
-			const view = leaf.view as CodeEditorView;
-			return view.file?.path === filePath;
-		});
+		const existingLeaf = plugin.app.workspace
+			.getLeavesOfType(viewType)
+			.find((leaf) => {
+				const view = leaf.view as CodeEditorView;
+				return view.file?.path === filePath;
+			});
 
 		if (existingLeaf) {
 			// File already open — activate that leaf

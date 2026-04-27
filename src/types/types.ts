@@ -186,3 +186,14 @@ export interface FileSuggestion {
 	path: string;
 	size: number;
 }
+
+/**
+ * Encapsulates the state for a folder section in the reveal hidden files modal.
+ */
+export interface FolderSection {
+	folderPath: string;
+	items: HiddenItem[];
+	initialRevealed: Set<string>;
+	selected: Set<string>;
+	selectedForRegistration: Set<string>;
+}

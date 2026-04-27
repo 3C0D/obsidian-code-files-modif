@@ -165,7 +165,7 @@ When **Auto-reveal registered dotfiles** is enabled (default: on):
 ### Reveal Hidden Files Modal
 
 - **Right-click a folder** in the explorer → **Code Files → Reveal/Hide Hidden Files**
-- The modal lists all hidden files in that folder with a **two-column layout**:
+- The modal lists all hidden files in that folder **and its subfolders** with a **two-column layout**:
     - **Left column (Reveal)** — check to reveal in the explorer, uncheck to hide
     - **Right column (Register)** — check to register the file's extension with Code Files (opens automatically in Monaco)
 - **Master checkboxes**: "All" in each column selects/deselects all items

@@ -148,7 +148,7 @@
 }
 
 .code-files-unregistered-badge {
-	color: rgba(193, 61, 114, 0.486);
+	color: rgba(193, 131, 61, 0.588);
 }
 
 .hidden-files-badge {
@@ -241,6 +241,15 @@
 
 /* Folder path style */
 .hidden-files-folder-path {
-	opacity: 0.8;
-	font-weight: bold;
+  opacity: 0.8;
+  font-weight: bold;
+}
+
+.hidden-files-section-header {
+  font-weight: 600;
+  margin: 0.5em 0 0.25em;
+}
+
+.hidden-files-subfolders-hint {
+  opacity: 0.65;
 }

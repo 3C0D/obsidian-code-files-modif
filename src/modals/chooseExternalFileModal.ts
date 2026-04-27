@@ -18,7 +18,9 @@ export class ExternalFileBrowserModal extends SuggestModal<FileSuggestion> {
 		super(plugin.app);
 		this.setPlaceholder('Search files in .obsidian/...');
 		this.scope.register([], 'Enter', (evt) => {
-			const item = this.getSuggestions(this.inputEl.value)[this.chooser.selectedItem];
+			const item = this.getSuggestions(this.inputEl.value)[
+				this.chooser.selectedItem
+			];
 			if (item) {
 				evt.preventDefault();
 				void this.onChooseSuggestion(item);

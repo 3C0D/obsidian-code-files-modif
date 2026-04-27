@@ -1,4 +1,4 @@
-import { Modal, normalizePath } from 'obsidian';
+import { Modal, normalizePath, TFolder } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { scanDotEntries } from '../utils/hiddenFiles/scan.ts';
 import { cleanStaleRevealedFiles } from '../utils/hiddenFiles/sync.ts';
@@ -10,113 +10,136 @@ import {
 	reregisterExtensions
 } from '../utils/extensionUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
-import type { HiddenItem } from '../types/types.ts';
+import type { FolderSection } from '../types/types.ts';
 
 /**
- * Modal to scan, reveal, and hide dotfiles within a specific folder.
+ * Modal to scan, reveal, and hide dotfiles within a specific folder and its subfolders.
  */
 export class RevealHiddenFilesModal extends Modal {
 	plugin: CodeFilesPlugin;
 	folderPath: string;
-	items: HiddenItem[] = [];
-	private initialRevealed: Set<string>;
-	selected: Set<string>;
-	selectedForRegistration: Set<string> = new Set();
+	private sections: FolderSection[] = [];
 
 	constructor(plugin: CodeFilesPlugin, folderPath: string) {
 		super(plugin.app);
 		this.plugin = plugin;
 		this.folderPath = normalizePath(folderPath);
 		if (this.folderPath === '/') this.folderPath = '';
-
-		// Initialize as empty sets; they will be populated from clean settings in onOpen()
-		this.initialRevealed = new Set();
-		this.selected = new Set();
 	}
 
 	async onOpen(): Promise<void> {
 		this.renderLoading();
-
-		// Clean up stale files before scanning to ensure settings are up-to-date
 		await cleanStaleRevealedFiles(this.plugin);
 
-		// Re-initialize selections from the cleaned settings
-		const revealed = this.plugin.settings.revealedFiles[this.folderPath] || [];
-		this.initialRevealed = new Set(revealed);
-		this.selected = new Set(revealed);
-		this.selectedForRegistration = new Set();
+		const allFolderPaths = [
+			this.folderPath,
+			...this.getSubfolderPaths(this.folderPath)
+		];
 
-		// Perform scan for currently existing hidden files
-		const allItems = await scanDotEntries(this.plugin, this.folderPath);
+		const activeExts = this.plugin.settings.autoRevealRegisteredDotfiles
+			? getActiveExtensions(this.plugin.settings)
+			: null;
 
-		// Exclude files already managed by auto-reveal (registered extensions)
-		if (this.plugin.settings.autoRevealRegisteredDotfiles) {
-			const activeExts = getActiveExtensions(this.plugin.settings);
+		this.sections = [];
 
-			this.items = allItems.filter((item) => {
-				if (item.isFolder) return true;
-				const ext = getExtension(item.name);
-				return !ext || !activeExts.includes(ext);
-			});
-		} else {
-			this.items = allItems;
-		}
+		for (const folderPath of allFolderPaths) {
+			const revealed = this.plugin.settings.revealedFiles[folderPath] || [];
+			const initialRevealed = new Set<string>(revealed);
+			const selected = new Set<string>(revealed);
 
-		// Remove auto-managed paths from selected/initialRevealed and from settings
-		const itemPaths = new Set(this.items.map((i) => i.path));
-		this.initialRevealed = new Set(
-			[...this.initialRevealed].filter((p) => itemPaths.has(p))
-		);
-		this.selected = new Set([...this.selected].filter((p) => itemPaths.has(p)));
+			const allItems = await scanDotEntries(this.plugin, folderPath);
 
-		// After filtering items against auto-managed paths, some entries in revealedFiles
-		// may reference paths that are no longer shown in this modal (e.g. a dotfile whose
-		// extension is now registered and handled by auto-reveal). Strip those stale entries
-		// so settings stay in sync with what the modal actually manages.
-		const current = this.plugin.settings.revealedFiles[this.folderPath] || [];
-		const cleaned = current.filter((p) => itemPaths.has(p));
-		if (cleaned.length !== current.length) {
-			if (cleaned.length > 0) {
-				this.plugin.settings.revealedFiles[this.folderPath] = cleaned;
-			} else {
-				// List is empty: remove the folder entry entirely from revealedFiles
-				delete this.plugin.settings.revealedFiles[this.folderPath];
+			const items = activeExts
+				? allItems.filter((item) => {
+						if (item.isFolder) return true;
+						const ext = getExtension(item.name);
+						return !ext || !activeExts.includes(ext);
+					})
+				: allItems;
+
+			if (items.length === 0) continue;
+
+			const itemPaths = new Set(items.map((i) => i.path));
+
+			// Sync settings: remove stale entries that are now auto-managed
+			const current = this.plugin.settings.revealedFiles[folderPath] || [];
+			const cleaned = current.filter((p) => itemPaths.has(p));
+			if (cleaned.length !== current.length) {
+				if (cleaned.length > 0) {
+					this.plugin.settings.revealedFiles[folderPath] = cleaned;
+				} else {
+					delete this.plugin.settings.revealedFiles[folderPath];
+				}
+				await this.plugin.saveSettings();
+				decorateFolders(this.plugin);
 			}
-			await this.plugin.saveSettings();
-			decorateFolders(this.plugin);
+
+			this.sections.push({
+				folderPath,
+				items,
+				initialRevealed: new Set(
+					[...initialRevealed].filter((p) => itemPaths.has(p))
+				),
+				selected: new Set([...selected].filter((p) => itemPaths.has(p))),
+				selectedForRegistration: new Set()
+			});
 		}
 
 		this.render();
+	}
+
+	private getSubfolderPaths(folderPath: string): string[] {
+		const root = folderPath
+			? this.plugin.app.vault.getAbstractFileByPath(folderPath)
+			: this.plugin.app.vault.getRoot();
+		if (!(root instanceof TFolder)) return [];
+		const results: string[] = [];
+		this.collectSubfolders(root, results);
+		return results;
+	}
+
+	private collectSubfolders(folder: TFolder, results: string[]): void {
+		for (const child of folder.children) {
+			if (child instanceof TFolder) {
+				results.push(child.path);
+				this.collectSubfolders(child, results);
+			}
+		}
 	}
 
 	private renderLoading(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('hidden-files-modal');
-		this.renderTitle(contentEl);
+		this.renderTitle(contentEl, false);
 		contentEl.createEl('p', { text: 'Scanning folder...' });
 	}
 
-	private renderTitle(contentEl: HTMLElement): void {
+	private renderTitle(contentEl: HTMLElement, hasSubfolders: boolean): void {
 		const titleEl = contentEl.createEl('h2', { cls: 'hidden-files-title' });
-		titleEl.createSpan({ text: 'Hidden files' });
-		titleEl.createSpan({ text: ' in:' });
+		titleEl.createSpan({ text: 'Hidden files in:' });
 		if (this.folderPath) {
 			titleEl.createSpan({
 				cls: 'u-pop hidden-files-folder-path',
 				text: ` ${this.folderPath}`
 			});
 		}
-		titleEl.createEl('small', { text: ' (not recursive)' });
+		if (hasSubfolders) {
+			titleEl.createEl('small', {
+				cls: 'hidden-files-subfolders-hint',
+				text: ' + subfolders'
+			});
+		}
 	}
 
 	private render(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		this.renderTitle(contentEl);
+		const hasSubfolderSections = this.sections.length > 1;
+		this.renderTitle(contentEl, hasSubfolderSections);
 
-		if (this.items.length === 0) {
+		if (this.sections.length === 0) {
 			contentEl.createEl('p', {
 				text: 'No hidden files found',
 				cls: 'hidden-files-empty'
@@ -130,38 +153,108 @@ export class RevealHiddenFilesModal extends Modal {
 			return;
 		}
 
-		// Two-column description
+		// Two-column description (shown once at the top)
 		const descEl = contentEl.createDiv({ cls: 'hidden-files-desc-columns' });
-
 		const leftDesc = descEl.createDiv({ cls: 'hidden-files-desc-col' });
 		for (const text of ['Check a file to reveal it', 'Uncheck to hide it again'])
 			leftDesc.createEl('p', { text: `• ${text}` });
-
 		const rightDesc = descEl.createDiv({ cls: 'hidden-files-desc-col' });
 		rightDesc.createEl('p', { text: '• Register as code editor view' });
-
 		const noteEl = rightDesc.createEl('p');
 		noteEl.createSpan({ text: '• This file will become always visible' });
 
 		contentEl.createEl('hr', { cls: 'hidden-files-separator' });
 
+		for (let i = 0; i < this.sections.length; i++) {
+			if (i > 0) {
+				contentEl.createEl('hr', {
+					cls: 'hidden-files-separator hidden-files-section-separator'
+				});
+			}
+			this.renderSection(contentEl, this.sections[i], hasSubfolderSections);
+		}
+
+		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+
+		buttonContainer
+			.createEl('button', { text: 'Apply', cls: 'mod-cta' })
+			.addEventListener('click', async () => {
+				let anyRegistered = false;
+
+				for (const section of this.sections) {
+					const toReveal = section.items
+						.filter((item) => section.selected.has(item.path))
+						.map((item) => item.path);
+
+					const toHide = section.items
+						.filter(
+							(item) =>
+								!section.selected.has(item.path) &&
+								section.initialRevealed.has(item.path)
+						)
+						.map((item) => item.path);
+
+					if (toHide.length > 0)
+						await unrevealFiles(this.plugin, section.folderPath, toHide);
+					if (toReveal.length > 0)
+						await revealFiles(this.plugin, section.folderPath, toReveal);
+
+					if (
+						section.selected.size === 0 &&
+						toHide.length === 0 &&
+						toReveal.length === 0
+					) {
+						delete this.plugin.settings.revealedFiles[section.folderPath];
+						await this.plugin.saveSettings();
+						decorateFolders(this.plugin);
+					}
+
+					for (const filePath of section.selectedForRegistration) {
+						const item = section.items.find((i) => i.path === filePath);
+						if (!item || item.isFolder) continue;
+						const ext = getExtension(item.name);
+						if (ext && addExtension(this.plugin.settings, ext))
+							anyRegistered = true;
+					}
+				}
+
+				if (anyRegistered) await reregisterExtensions(this.plugin);
+				this.close();
+			});
+
+		buttonContainer
+			.createEl('button', { text: 'Cancel' })
+			.addEventListener('click', () => this.close());
+	}
+
+	private renderSection(
+		contentEl: HTMLElement,
+		section: FolderSection,
+		showFolderLabel: boolean
+	): void {
+		if (showFolderLabel) {
+			const sectionHeader = contentEl.createDiv({
+				cls: 'hidden-files-section-header'
+			});
+			sectionHeader.createSpan({
+				cls: 'u-pop hidden-files-folder-path',
+				text: section.folderPath || '(vault root)'
+			});
+		}
+
 		const listEl = contentEl.createDiv({ cls: 'hidden-files-list' });
-		const registerableItems = this.items.filter(
+		const registerableItems = section.items.filter(
 			(i) => !i.isFolder && getExtension(i.name)
 		);
 
 		// Master row
-		const masterEl = listEl.createDiv({
-			cls: 'hidden-file-item hidden-file-master'
-		});
+		const masterEl = listEl.createDiv({ cls: 'hidden-file-item hidden-file-master' });
 		const masterRevealSection = masterEl.createDiv({
 			cls: 'hidden-file-reveal-section'
 		});
-		const masterReveal = masterRevealSection.createEl('input', {
-			type: 'checkbox'
-		});
-		masterReveal.checked = this.items.every((i) => this.selected.has(i.path));
-		masterReveal.indeterminate = !masterReveal.checked && this.selected.size > 0;
+		const masterReveal = masterRevealSection.createEl('input', { type: 'checkbox' });
+		masterReveal.checked = section.items.every((i) => section.selected.has(i.path));
+		masterReveal.indeterminate = !masterReveal.checked && section.selected.size > 0;
 		masterRevealSection.createSpan({ text: 'All' });
 
 		const masterRegisterSection = masterEl.createDiv({
@@ -172,142 +265,83 @@ export class RevealHiddenFilesModal extends Modal {
 		});
 		masterRegister.checked =
 			registerableItems.length > 0 &&
-			registerableItems.every((i) => this.selectedForRegistration.has(i.path));
+			registerableItems.every((i) => section.selectedForRegistration.has(i.path));
 		masterRegister.indeterminate =
-			!masterRegister.checked && this.selectedForRegistration.size > 0;
+			!masterRegister.checked && section.selectedForRegistration.size > 0;
 		masterRegisterSection.createSpan({ text: 'All' });
 
 		const itemRevealCbs: HTMLInputElement[] = [];
 		const itemRegisterCbs: HTMLInputElement[] = [];
 
-		for (const item of this.items) {
+		for (const item of section.items) {
 			const ext = item.isFolder ? null : getExtension(item.name);
 			const rowEl = listEl.createDiv({ cls: 'hidden-file-item' });
 
-			// Left: reveal checkbox + icon + name + size
-			const revealSection = rowEl.createDiv({
-				cls: 'hidden-file-reveal-section'
-			});
-			const revealCb = revealSection.createEl('input', { type: 'checkbox' });
-			revealCb.checked = this.selected.has(item.path);
+			const revealSec = rowEl.createDiv({ cls: 'hidden-file-reveal-section' });
+			const revealCb = revealSec.createEl('input', { type: 'checkbox' });
+			revealCb.checked = section.selected.has(item.path);
 			itemRevealCbs.push(revealCb);
-			revealSection.createSpan({
+			revealSec.createSpan({
 				cls: 'hidden-file-icon',
 				text: item.isFolder ? '📁' : '📄'
 			});
-			revealSection.createSpan({ cls: 'hidden-file-name', text: item.name });
+			revealSec.createSpan({ cls: 'hidden-file-name', text: item.name });
 			if (!item.isFolder) {
-				revealSection.createSpan({
+				revealSec.createSpan({
 					cls: 'hidden-file-size',
 					text: this.formatSize(item.size)
 				});
 			}
 
-			// Right: register checkbox
-			const registerSection = rowEl.createDiv({
-				cls: 'hidden-file-register-section'
-			});
+			const registerSec = rowEl.createDiv({ cls: 'hidden-file-register-section' });
 			if (!item.isFolder && ext) {
-				const registerCb = registerSection.createEl('input', {
-					type: 'checkbox'
-				});
-				registerCb.checked = this.selectedForRegistration.has(item.path);
+				const registerCb = registerSec.createEl('input', { type: 'checkbox' });
+				registerCb.checked = section.selectedForRegistration.has(item.path);
 				itemRegisterCbs.push(registerCb);
-				registerSection.createSpan({ text: `register as .${ext}` });
+				registerSec.createSpan({ text: `register as .${ext}` });
 
 				registerCb.addEventListener('change', () => {
-					if (registerCb.checked) this.selectedForRegistration.add(item.path);
-					else this.selectedForRegistration.delete(item.path);
+					if (registerCb.checked)
+						section.selectedForRegistration.add(item.path);
+					else section.selectedForRegistration.delete(item.path);
 					masterRegister.checked = registerableItems.every((i) =>
-						this.selectedForRegistration.has(i.path)
+						section.selectedForRegistration.has(i.path)
 					);
 					masterRegister.indeterminate =
-						!masterRegister.checked && this.selectedForRegistration.size > 0;
+						!masterRegister.checked &&
+						section.selectedForRegistration.size > 0;
 				});
 			}
 
 			revealCb.addEventListener('change', () => {
-				if (revealCb.checked) this.selected.add(item.path);
-				else this.selected.delete(item.path);
-				masterReveal.checked = this.items.every((i) => this.selected.has(i.path));
+				if (revealCb.checked) section.selected.add(item.path);
+				else section.selected.delete(item.path);
+				masterReveal.checked = section.items.every((i) =>
+					section.selected.has(i.path)
+				);
 				masterReveal.indeterminate =
-					!masterReveal.checked && this.selected.size > 0;
+					!masterReveal.checked && section.selected.size > 0;
 			});
 		}
 
 		masterReveal.addEventListener('change', () => {
 			if (masterReveal.checked)
-				this.items.forEach((i) => this.selected.add(i.path));
-			else this.items.forEach((i) => this.selected.delete(i.path));
+				section.items.forEach((i) => section.selected.add(i.path));
+			else section.items.forEach((i) => section.selected.delete(i.path));
 			itemRevealCbs.forEach((cb) => (cb.checked = masterReveal.checked));
 		});
 
 		masterRegister.addEventListener('change', () => {
 			if (masterRegister.checked)
 				registerableItems.forEach((i) =>
-					this.selectedForRegistration.add(i.path)
+					section.selectedForRegistration.add(i.path)
 				);
 			else
 				registerableItems.forEach((i) =>
-					this.selectedForRegistration.delete(i.path)
+					section.selectedForRegistration.delete(i.path)
 				);
 			itemRegisterCbs.forEach((cb) => (cb.checked = masterRegister.checked));
 		});
-
-		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-
-		buttonContainer
-			.createEl('button', { text: 'Apply', cls: 'mod-cta' })
-			.addEventListener('click', async () => {
-				// Files to reveal: checked now
-				const toReveal = this.items
-					.filter((item) => this.selected.has(item.path))
-					.map((item) => item.path);
-
-				// Files to hide: were revealed before, unchecked now
-				const toHide = this.items
-					.filter(
-						(item) =>
-							!this.selected.has(item.path) &&
-							this.initialRevealed.has(item.path)
-					)
-					.map((item) => item.path);
-
-				if (toHide.length > 0)
-					await unrevealFiles(this.plugin, this.folderPath, toHide);
-				if (toReveal.length > 0)
-					await revealFiles(this.plugin, this.folderPath, toReveal);
-
-				// Nothing was hidden or revealed but selection is empty:
-				// clean up the folder key if it somehow persisted
-				if (
-					this.selected.size === 0 &&
-					toHide.length === 0 &&
-					toReveal.length === 0
-				) {
-					delete this.plugin.settings.revealedFiles[this.folderPath];
-					await this.plugin.saveSettings();
-					decorateFolders(this.plugin);
-				}
-
-				// Register selected extensions with Code Files
-				let anyRegistered = false;
-				for (const filePath of this.selectedForRegistration) {
-					const item = this.items.find((i) => i.path === filePath);
-					if (!item || item.isFolder) continue;
-					const ext = getExtension(item.name);
-					if (ext && addExtension(this.plugin.settings, ext))
-						anyRegistered = true;
-				}
-				// Reregister only if something changed (diffs against _registeredExts snapshot)
-				if (anyRegistered) await reregisterExtensions(this.plugin);
-
-				this.close();
-			});
-
-		buttonContainer
-			.createEl('button', { text: 'Cancel' })
-			.addEventListener('click', () => this.close());
 	}
 
 	private formatSize(bytes: number): string {

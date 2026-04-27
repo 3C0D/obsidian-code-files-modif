@@ -53,7 +53,7 @@ if (hasRevealed && !existing) {
 4. Shows notice if `silent=false`
 
 **Used by:**
-- `RevealHiddenFilesModal` — manual reveal (persist=true)
+- `RevealHiddenFilesModal` — manual reveal (persist=true, scans recursively through subfolders)
 - `syncAutoRevealedDotfiles()` — auto-reveal (persist=false, silent=true)
 - `restoreRevealedFiles()` — on plugin startup
 
@@ -77,7 +77,7 @@ if (hasRevealed && !existing) {
    - Shows notice
 
 **Used by:**
-- `RevealHiddenFilesModal` — manual hide
+- `RevealHiddenFilesModal` — manual hide (scans recursively through subfolders)
 - `patchRegisterExtensions()` — when unregistering extensions
 - `hideAutoRevealedDotfiles()` — when disabling auto-reveal
 - `ChooseHiddenFileModal` — temporary reveal for editing (temporary=true)
