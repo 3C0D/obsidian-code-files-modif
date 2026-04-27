@@ -183,7 +183,9 @@ export class CodeEditorView extends TextFileView {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onForceSave: () => { this.forceSave = true; },
+			onForceSave: () => {
+				this.forceSave = true;
+			},
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,
@@ -249,7 +251,9 @@ export class CodeEditorView extends TextFileView {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onForceSave: () => { this.forceSave = true; },
+			onForceSave: () => {
+				this.forceSave = true;
+			},
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,
@@ -365,7 +369,9 @@ export class CodeEditorView extends TextFileView {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onForceSave: () => { this.forceSave = true; },
+			onForceSave: () => {
+				this.forceSave = true;
+			},
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,
@@ -389,7 +395,9 @@ export class CodeEditorView extends TextFileView {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onForceSave: () => { this.forceSave = true; },
+			onForceSave: () => {
+				this.forceSave = true;
+			},
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,

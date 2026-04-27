@@ -28,12 +28,10 @@ export async function openExternalFile(
 	plugin: CodeFilesPlugin
 ): Promise<void> {
 	// Check if file is already open in a leaf
-	const existingLeaf = plugin.app.workspace
-		.getLeavesOfType(viewType)
-		.find((leaf) => {
-			const view = leaf.view as { file?: { path: string } };
-			return view.file?.path === filePath;
-		});
+	const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
+		const view = leaf.view as { file?: { path: string } };
+		return view.file?.path === filePath;
+	});
 
 	if (existingLeaf) {
 		// File already open — activate that leaf

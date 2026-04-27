@@ -4,9 +4,9 @@ export { patchAdapter, patchRegisterExtensions } from './patches.ts';
 export { scanDotEntries, getMaxFileSize } from './scan.ts';
 export { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 export {
-    syncAutoRevealedDotfiles,
-    autoRevealRegisteredDotfiles,
-    restoreRevealedFiles,
-    cleanStaleRevealedFiles,
-    hideAutoRevealedDotfiles
+	syncAutoRevealedDotfiles,
+	autoRevealRegisteredDotfiles,
+	restoreRevealedFiles,
+	cleanStaleRevealedFiles,
+	hideAutoRevealedDotfiles
 } from './sync.ts';

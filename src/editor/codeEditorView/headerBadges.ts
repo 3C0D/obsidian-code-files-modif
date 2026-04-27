@@ -5,10 +5,12 @@ import { getExtension } from '../../utils/fileUtils.ts';
 /**
  * Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled.
  */
-export function updateExtBadge(containerEl: HTMLElement, file: TFile, plugin: CodeFilesPlugin): void {
-	const titleContainer = containerEl.querySelector(
-		'.view-header-title-container'
-	);
+export function updateExtBadge(
+	containerEl: HTMLElement,
+	file: TFile,
+	plugin: CodeFilesPlugin
+): void {
+	const titleContainer = containerEl.querySelector('.view-header-title-container');
 	if (!titleContainer) return;
 	titleContainer.querySelector('.code-files-ext-badge')?.remove();
 	titleContainer.querySelector('.code-files-dirty-badge')?.remove();
@@ -27,10 +29,11 @@ export function updateExtBadge(containerEl: HTMLElement, file: TFile, plugin: Co
 /**
  * Updates the dirty badge visibility based on autoSave setting.
  */
-export function updateDirtyBadgeVisibility(containerEl: HTMLElement, plugin: CodeFilesPlugin): void {
-	const titleContainer = containerEl.querySelector(
-		'.view-header-title-container'
-	);
+export function updateDirtyBadgeVisibility(
+	containerEl: HTMLElement,
+	plugin: CodeFilesPlugin
+): void {
+	const titleContainer = containerEl.querySelector('.view-header-title-container');
 	if (!titleContainer) return;
 	const existingBadge = titleContainer.querySelector('.code-files-dirty-badge');
 	if (plugin.settings.autoSave) {
