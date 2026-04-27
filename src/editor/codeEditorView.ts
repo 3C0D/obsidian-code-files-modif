@@ -116,12 +116,18 @@ export class CodeEditorView extends TextFileView {
 		) {
 			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
 			await revealFiles(this.plugin, folderPath, [filePath], true, false); // silent, no persist
+			// Track for cleanup on unload
+			if (!this.plugin.settings.temporaryRevealedPaths.includes(filePath)) {
+				this.plugin.settings.temporaryRevealedPaths.push(filePath);
+				await this.plugin.saveSettings();
+			}
 		}
 
 		try {
 			await super.setState(state, result);
-		} catch {
+		} catch (e) {
 			// super.setState may fail for external files not in vault index
+			console.debug('super.setState failed for external file', e);
 		}
 	}
 
@@ -177,18 +183,6 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	async onClose(): Promise<void> {
-		if (this.file) {
-			const path = this.file.path;
-			const tmp = this.plugin.settings.temporaryRevealedPaths;
-			if (tmp.includes(path)) {
-				const folderPath = path.substring(0, path.lastIndexOf('/')) || '';
-				await unrevealFiles(this.plugin, folderPath, [path], true);
-				this.plugin.settings.temporaryRevealedPaths = tmp.filter(
-					(p) => p !== path
-				);
-				await this.plugin.saveSettings();
-			}
-		}
 		await super.onClose();
 		this.cleanup();
 	}
@@ -482,6 +476,25 @@ export class CodeEditorView extends TextFileView {
 	/** Cleans up Monaco when the file is unloaded from the view. */
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
+		// Cleanup temporary revealed paths
+		const path = file.path;
+		const tmp = this.plugin.settings.temporaryRevealedPaths;
+		if (tmp.includes(path)) {
+			// Don't unreveal if the file is covered by a manual reveal
+			// (file itself, or an ancestor folder, is in revealedFiles)
+			const allRevealedItems = Object.values(this.plugin.settings.revealedFiles).flat();
+			const manuallyRevealed = allRevealedItems.some(
+				(p) => path === p || path.startsWith(p + '/')
+			);
+			if (!manuallyRevealed) {
+				const folderPath = path.substring(0, path.lastIndexOf('/')) || '';
+				await unrevealFiles(this.plugin, folderPath, [path], true);
+			}
+			this.plugin.settings.temporaryRevealedPaths = tmp.filter(
+				(p) => p !== path
+			);
+			await this.plugin.saveSettings();
+		}
 		this.cleanup();
 	}
 
@@ -574,9 +587,7 @@ export class CodeEditorView extends TextFileView {
 		plugin: CodeFilesPlugin,
 		newTab = false
 	): Promise<void> {
-		const inVault =
-			plugin.app.vault.getAbstractFileByPath(file.path) ??
-			plugin.app.vault.getFiles().find((f) => f.path === file.path);
+		const inVault = plugin.app.vault.getAbstractFileByPath(file.path);
 		if (inVault) {
 			console.debug('Opening vault file', file.path);
 			await CodeEditorView.openVaultFile(file, plugin, newTab);
