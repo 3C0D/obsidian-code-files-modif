@@ -61,16 +61,16 @@ Files like `.prettierrc`, `.env`, or `LICENSE` need per-file editor configuratio
 
 ### How It Works
 
-**Step 1: Extension Mapping** (`getEmptyFileExtension` in `fileUtils.ts`)
+**Step 1: Extension Mapping** (`getExtension` in `fileUtils.ts`)
 
-Maps files without extension to unique identifiers:
+Maps files to unique identifiers for configuration:
 
 - `.prettierrc` → `"prettierrc"`
 - `.env` → `"env"`
-- `LICENSE` → `"license"`
+- `LICENSE` → `""` (uses global config)
 - `.gitignore` → `"gitignore"`
 
-This allows each file type to have its own editor config.
+This allows dotfiles to have their own editor config. Files without extension that don't start with a dot (like LICENSE, README) use the global config.
 
 **Step 2: Language Detection** (`getLanguage` in `getLanguage.ts`)
 
@@ -129,7 +129,7 @@ if (language !== ext && language !== 'plaintext' && templates[language]) {
 
 ```typescript
 const targets = views.filter((v) => {
-	const fileExt = getEmptyFileExtension(v.file);
+	const fileExt = getExtension(v.file.name);
 	if (fileExt === ext) return true;
 	const language = staticMap[fileExt] ?? 'plaintext';
 	return language === ext; // Also broadcast to extensions that map to this language
@@ -158,7 +158,7 @@ When changing editor config for `.prettierrc`, the settings modal would save the
 
 **The Fix:** (`broadcast.ts`)
 
-Use `getEmptyFileExtension()` instead of `file.extension` when broadcasting:
+Use `getExtension(file.name)` instead of `file.extension` when broadcasting:
 
 ```typescript
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
@@ -166,9 +166,9 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
 	const targets =
 		ext === '*'
 			? views
-			: views.filter((v) => v.file && getEmptyFileExtension(v.file) === ext);
+			: views.filter((v) => v.file && getExtension(v.file.name) === ext);
 	for (const view of targets) {
-		const fileExt = view.file ? getEmptyFileExtension(view.file) : '';
+		const fileExt = view.file ? getExtension(view.file.name) : '';
 		const config = buildMergedConfig(plugin, fileExt);
 		view.editor?.send('change-editor-config', { config });
 	}
@@ -177,7 +177,7 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
 
 This ensures:
 
-- Config saved under `"prettierrc"` is broadcast to files with `getEmptyFileExtension(file) === "prettierrc"`
+- Config saved under `"prettierrc"` is broadcast to files with `getExtension(file.name) === "prettierrc"`
 - Each file type receives its correct configuration
 - Format settings (tabSize, formatOnSave) apply immediately when closing the settings modal
 
@@ -225,6 +225,7 @@ The plugin now handles dotfiles natively through the **Reveal Hidden Files** sys
 - **Automatic "Detect all file extensions"**: On plugin startup, the plugin automatically enables Obsidian's "Detect all file extensions" setting (required for dotfile visibility). A one-time notice is shown when this happens. Managed by `vaultConfigUtils.ts`.
 - **Auto-reveal**: When a dotfile extension (e.g., `.env`, `.gitignore`) is registered with Code Files, it is automatically made visible in the Obsidian file explorer (if "Auto-reveal registered dotfiles" is enabled, which is the default).
 - **Manual control**: The "Reveal Hidden Files" modal (`.re` quick action or folder context menu) allows scanning and manually revealing/hiding dotfiles per folder.
+- **Eye badge**: Folders containing manually revealed dotfiles display an eye icon (👁️). See [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md) for details.
 - **Patch layer**: `openFilePatch.ts` intercepts Obsidian's file opening to ensure dotfiles and extension-less files open in Monaco when registered (or unconditionally for extension-less files like LICENSE, README).
 - **Adapter patches**: `patchAdapter()` prevents Obsidian from auto-deleting revealed dotfiles, fixes drag-and-drop destination paths, and allows dotfile deletion via trash. `patchRegisterExtensions()` keeps dotfile visibility in sync with extension registration state.
 - **No external plugin required**: The Code Files plugin fully manages dotfile visibility without any third-party dependencies.

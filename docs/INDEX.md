@@ -147,6 +147,15 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Automatic opening in Monaco for all extension-less files
 - **Key for:** Understanding dotfile and extension-less file support
 
+### [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md)
+
+**Role:** Eye badge system for manually revealed hidden files
+
+- Eye badge (👁️) on folders containing revealed dotfiles
+- Management via `decorateFolders()` and `revealedFiles` settings
+- Integration with reveal/hide operations and vault events
+- **Key for:** Understanding badge behavior and hidden file management
+
 ---
 
 ## 🐛 Bug Fixes & Technical Solutions
@@ -238,13 +247,14 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 1. [diff-editor-singleton-fix.md](diff-editor-singleton-fix.md) — Diff editor errors
 2. [files-without-extension.md](files-without-extension.md) — Extension-less files
+3. [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md) — Hidden files badges
 
 ---
 
 ## 📝 Maintenance Notes
 
-- **Last Updated:** 2026-04-26
-- **Total Documents:** 18
+- **Last Updated:** 2026-04-27
+- **Total Documents:** 19
 - **Categories:** 7
 - **Status:** All documents reviewed and indexed
 

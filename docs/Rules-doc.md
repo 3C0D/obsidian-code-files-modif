@@ -39,3 +39,5 @@ For understanding how features work:
 - [x] diff-editor-singleton-fix.md ✓
 - [x] settings-refactor.md ✓
 - [x] monaco-local-integration.md ✓
+- [x] files-without-extension.md ✓
+- [x] hidden-files-eye-badge-system.md ✓

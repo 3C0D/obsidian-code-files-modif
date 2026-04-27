@@ -188,7 +188,7 @@ When adding formatters for files without extension (like `.prettierrc`), ensure 
 
 **See:** [Files Without Extension - Editor Configuration](files-without-extension.md#editor-configuration-for-files-without-extension)
 
-The key fix: use `getEmptyFileExtension()` instead of `file.extension` in `broadcastEditorConfig()` to match the fake extension used for config storage.
+The key fix: use `getExtension(file.name)` instead of `file.extension` in `broadcastEditorConfig()` to match the extension used for config storage.
 
 ## Testing
 
