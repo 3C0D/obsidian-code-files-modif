@@ -7,7 +7,7 @@ import type { DataAdapterWithInternal } from '../../types/types.ts';
  * Set to true when the user explicitly chooses
  * to hide a previously revealed file.
  */
- 
+
 export let _bypassPatch = false;
 
 /**

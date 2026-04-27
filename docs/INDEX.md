@@ -415,7 +415,7 @@ git diff <old-hash> <new-hash> -- src/myFile.ts
 
 ```
 Read INDEX.md and follow its update protocol.
-Run: git diff HEAD~50 HEAD -- src/
+Run: git diff HEAD~20 HEAD -- src/
 Update the docs to reflect anything in the diff that is not already documented.
 Do not rewrite sections that are already accurate.
 ```

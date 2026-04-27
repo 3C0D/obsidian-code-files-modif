@@ -5,11 +5,7 @@
  * The highlight color is customizable via plugin settings.
  */
 import type CodeFilesPlugin from '../main.ts';
-import type {
-	FileExplorerView,
-	FileTreeItem,
-	FolderTreeItem
-} from 'obsidian-typings';
+import type { FileExplorerView, FileTreeItem, FolderTreeItem } from 'obsidian-typings';
 import { TFile, TFolder } from 'obsidian';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';

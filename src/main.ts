@@ -21,10 +21,7 @@ import {
 	setupExplorerBadges,
 	cleanupExplorerBadges
 } from './utils/explorerUtils.ts';
-import {
-	patchAdapter,
-	patchRegisterExtensions
-} from './utils/hiddenFiles/patches.ts';
+import { patchAdapter, patchRegisterExtensions } from './utils/hiddenFiles/patches.ts';
 import {
 	cleanStaleRevealedFiles,
 	restoreRevealedFiles,

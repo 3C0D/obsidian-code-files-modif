@@ -1,13 +1,8 @@
 import { Modal, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { scanDotEntries } from '../utils/hiddenFiles/scan.ts';
-import {
-	cleanStaleRevealedFiles
-} from '../utils/hiddenFiles/sync.ts';
-import {
-	revealFiles,
-	unrevealFiles
-} from '../utils/hiddenFiles/operations.ts';
+import { cleanStaleRevealedFiles } from '../utils/hiddenFiles/sync.ts';
+import { revealFiles, unrevealFiles } from '../utils/hiddenFiles/operations.ts';
 import { decorateFolders } from '../utils/hiddenFiles/badge.ts';
 import {
 	addExtension,

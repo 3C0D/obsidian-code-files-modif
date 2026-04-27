@@ -8,7 +8,7 @@ import { bundleFormatters } from './build/formatters.js';
 import { copyMonacoAssets, copyEditorFiles } from './build/assets.js';
 import { obsidianTypingsPlugin } from './build/typingsPlugin.js';
 import { EXTERNAL_DEPS, BANNER } from './build/constants.js';
-import  {
+import {
 	type Manifest,
 	checkManifest,
 	validateEnvironment,

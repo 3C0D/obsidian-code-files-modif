@@ -12,6 +12,7 @@ import { ChooseCssFileModal } from '../modals/chooseCssSnippetsModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
+import { ExternalFileBrowserModal } from '../modals/externalFileBrowserModal.ts';
 import { broadcastOptions, broadcastEditorConfig } from '../utils/broadcast.ts';
 
 export function registerCommands(plugin: CodeFilesPlugin): void {
@@ -89,6 +90,14 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 		name: 'Open Hidden Files in Vault',
 		callback: () => {
 			new ChooseHiddenFileModal(plugin).open();
+		}
+	});
+
+	plugin.addCommand({
+		id: 'open-external-file-browser',
+		name: 'Browse External Files (.obsidian/)',
+		callback: () => {
+			new ExternalFileBrowserModal(plugin).open();
 		}
 	});
 }
