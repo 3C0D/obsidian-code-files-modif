@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Code Files Modif",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "src/main.ts",
   "license": "MIT",
   "keywords": [
     "obsidian",

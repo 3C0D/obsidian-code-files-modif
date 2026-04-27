@@ -23,12 +23,14 @@ import {
 } from './utils/explorerUtils.ts';
 import {
 	patchAdapter,
-	patchRegisterExtensions,
+	patchRegisterExtensions
+} from './utils/hiddenFiles/patches.js';
+import {
 	cleanStaleRevealedFiles,
 	restoreRevealedFiles,
-	decorateFolders,
 	syncAutoRevealedDotfiles
-} from './utils/hiddenFiles/hiddenFilesUtils.ts';
+} from './utils/hiddenFiles/sync.js';
+import { decorateFolders } from './utils/hiddenFiles/badge.js';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 
 export default class CodeFilesPlugin extends Plugin {
