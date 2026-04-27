@@ -6,7 +6,8 @@
  * and excluding binary formats (executables, archives, databases, fonts).
  */
 import type { TFolder } from 'obsidian';
-import { normalizePath, Notice, SuggestModal } from 'obsidian';
+import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
+import type { FuzzyMatch } from 'obsidian';
 import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
@@ -18,7 +19,7 @@ import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 /** Modal for choosing hidden files in a folder to open in Monaco.
  *  "Hidden" means absent from the vault's known files,
  *  regardless of registered extensions. */
-export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
+export class ChooseHiddenFileModal extends FuzzySuggestModal<HiddenFileSuggestion> {
 	private hiddenFiles: HiddenFileSuggestion[] = [];
 
 	constructor(
@@ -125,35 +126,34 @@ export class ChooseHiddenFileModal extends SuggestModal<HiddenFileSuggestion> {
 		}
 	}
 
-	getSuggestions(query: string): HiddenFileSuggestion[] {
-		return this.hiddenFiles.filter((file) =>
-			file.path.toLowerCase().includes(query.toLowerCase())
-		);
+	getItems(): HiddenFileSuggestion[] {
+		return this.hiddenFiles;
 	}
 
-	async onChooseSuggestion(item: HiddenFileSuggestion): Promise<void> {
+	getItemText(item: HiddenFileSuggestion): string {
+		return item.path;
+	}
+
+	onChooseItem(item: HiddenFileSuggestion, _evt: MouseEvent | KeyboardEvent): void {
 		const path = normalizePath(item.path);
 		const folder = path.substring(0, path.lastIndexOf('/'));
-
-		// Reveal silently without persisting so the file enters the vault index
-		await revealFiles(this.plugin, folder, [path], true, false);
-		this.plugin.settings.temporaryRevealedPaths.push(path);
-		await this.plugin.saveSettings();
-
-		const file = this.plugin.app.vault.getFileByPath(path);
-		if (file) {
-			await CodeEditorView.openVaultFile(file, this.plugin, true);
-		} else {
-			// Shouldnt happen
-			await CodeEditorView.openExternalFile(path, this.plugin);
-		}
+		void revealFiles(this.plugin, folder, [path], true, false).then(async () => {
+			this.plugin.settings.temporaryRevealedPaths.push(path);
+			await this.plugin.saveSettings();
+			const file = this.plugin.app.vault.getFileByPath(path);
+			if (file) {
+				await CodeEditorView.openVaultFile(file, this.plugin, true);
+			} else {
+				await CodeEditorView.openExternalFile(path, this.plugin);
+			}
+		});
 	}
 
-	renderSuggestion(item: HiddenFileSuggestion, el: HTMLElement): void {
+	renderSuggestion(item: FuzzyMatch<HiddenFileSuggestion>, el: HTMLElement): void {
 		const container = el.createDiv({ cls: 'suggestion-content' });
-		container.createDiv({ text: item.path, cls: 'suggestion-title' });
+		container.createDiv({ text: item.item.path, cls: 'suggestion-title' });
 
-		const sizeKB = (item.size / 1024).toFixed(1);
+		const sizeKB = (item.item.size / 1024).toFixed(1);
 		container.createDiv({
 			text: `${sizeKB} KB`,
 			cls: 'suggestion-note'
