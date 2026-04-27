@@ -32,7 +32,7 @@ import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
 import {
 	syncAutoRevealedDotfiles,
 	hideAutoRevealedDotfiles
-} from '../utils/hiddenFiles/sync.js';
+} from '../utils/hiddenFiles/sync.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
 	private codeEditor: CodeEditorInstance | null = null;

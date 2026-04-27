@@ -29,7 +29,7 @@ import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/variables.ts';
 import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
-import { revealFiles, unrevealFiles } from '../utils/hiddenFiles/operations.js';
+import { revealFiles, unrevealFiles } from '../utils/hiddenFiles/operations.ts';
 
 /**
  * Obsidian TextFileView wrapper for Monaco Editor.

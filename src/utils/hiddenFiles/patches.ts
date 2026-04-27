@@ -2,11 +2,10 @@ import { type DataAdapterEx } from 'obsidian-typings';
 import { around } from 'monkey-around';
 import type { Plugin, TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getAdapter } from './state.js';
-import { getExtension } from '../fileUtils.js';
-import { decorateFolders } from './badge.js';
-import { syncAutoRevealedDotfiles } from './sync.js';
-import { _bypassPatch, setBypassPatch } from './state.js';
+import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
+import { getExtension } from '../fileUtils.ts';
+import { decorateFolders } from './badge.ts';
+import { syncAutoRevealedDotfiles } from './sync.ts';
 
 /**
  * Patches Obsidian's DataAdapter to prevent the automatic

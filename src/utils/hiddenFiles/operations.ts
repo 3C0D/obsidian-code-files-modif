@@ -1,8 +1,7 @@
 import { Notice, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getAdapter } from './state.js';
-import { decorateFolders } from './badge.js';
-import { _bypassPatch, setBypassPatch } from './state.js';
+import { getAdapter, setBypassPatch } from './state.ts';
+import { decorateFolders } from './badge.ts';
 
 /**
  * Reveals specified hidden files in the Obsidian UI.

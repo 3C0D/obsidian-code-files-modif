@@ -11,8 +11,8 @@ import { CodeEditorView } from '../editor/codeEditorView.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { HiddenFileSuggestion } from '../types/types.ts';
-import { getMaxFileSize } from '../utils/hiddenFiles/scan.js';
-import { revealFiles } from '../utils/hiddenFiles/operations.js';
+import { getMaxFileSize } from '../utils/hiddenFiles/scan.ts';
+import { revealFiles } from '../utils/hiddenFiles/operations.ts';
 
 /** Extensions to exclude from hidden files list (binary executables, archives, and files that can't be opened as text) */
 const EXCLUDED_EXTENSIONS = [

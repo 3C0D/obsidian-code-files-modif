@@ -1,7 +1,7 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import type { HiddenItem } from '../../types/types.ts';
-import { getAdapter } from './state.js';
+import { getAdapter } from './state.ts';
 
 /**
  * Max file size in MB for Monaco (configurable in settings)

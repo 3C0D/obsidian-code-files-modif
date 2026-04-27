@@ -1,11 +1,11 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getAdapter } from './state.js';
-import { getExtension } from '../fileUtils.js';
-import { getActiveExtensions } from '../extensionUtils.js';
-import { decorateFolders } from './badge.js';
-import { scanDotEntries } from './scan.js';
-import { revealFiles, unrevealFiles } from './operations.js';
+import { getAdapter } from './state.ts';
+import { getExtension } from '../fileUtils.ts';
+import { getActiveExtensions } from '../extensionUtils.ts';
+import { decorateFolders } from './badge.ts';
+import { scanDotEntries } from './scan.ts';
+import { revealFiles, unrevealFiles } from './operations.ts';
 
 /**
  * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
