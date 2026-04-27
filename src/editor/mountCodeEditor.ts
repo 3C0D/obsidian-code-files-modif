@@ -13,7 +13,7 @@ import manifest from '../../manifest.json' with { type: 'json' };
 import { buildMergedConfig } from '../utils/settingsUtils.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride } from '../utils/hotkeyUtils.ts';
-import { CodeEditorView } from './codeEditorView.ts';
+import { CodeEditorView } from './codeEditorView/index.ts';
 import { broadcastHotkeys } from '../utils/broadcast.ts';
 import { readProjectFiles } from '../utils/projectUtils.ts';
 import { around } from 'monkey-around';

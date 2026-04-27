@@ -4,7 +4,7 @@
  * edit CSS snippet, rename file (name.ext), open editor settings, and open hidden files.
  */
 import type CodeFilesPlugin from '../main.ts';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';

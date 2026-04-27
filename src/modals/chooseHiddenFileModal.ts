@@ -7,7 +7,7 @@
  */
 import type { TFolder } from 'obsidian';
 import { normalizePath, Notice, SuggestModal } from 'obsidian';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { HiddenFileSuggestion } from '../types/types.ts';

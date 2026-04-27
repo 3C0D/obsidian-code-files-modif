@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import { CodeEditorView } from './editor/codeEditorView.ts';
+import { CodeEditorView } from './editor/codeEditorView/index.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/types.ts';
 import { viewType } from './types/variables.ts';

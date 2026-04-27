@@ -16,7 +16,7 @@ import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItems } from '../types/types.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {
 	addExtension,

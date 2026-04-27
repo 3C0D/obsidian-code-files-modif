@@ -13,7 +13,7 @@ import {
 	TFile
 } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import {

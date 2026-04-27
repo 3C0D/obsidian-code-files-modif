@@ -10,26 +10,34 @@
  * while delegating editor functionality to the isolated Monaco iframe via postMessage.
  */
 import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
-import { normalizePath, TextFileView, type TFile } from 'obsidian';
-import type CodeFilesPlugin from '../main.ts';
-import { mountCodeEditor, resolveThemeParams } from './mountCodeEditor.ts';
-import { getLanguage } from '../utils/getLanguage.ts';
-import type { CodeEditorInstance } from '../types/types.ts';
-import { viewType } from '../types/variables.ts';
-import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
-import { ChooseThemeModal } from '../modals/chooseThemeModal.ts';
-import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
+import { TextFileView, type TFile } from 'obsidian';
+import type CodeFilesPlugin from '../../main.ts';
+import { mountCodeEditor, resolveThemeParams } from '../mountCodeEditor.ts';
+import { getLanguage } from '../../utils/getLanguage.ts';
+import type { CodeEditorInstance } from '../../types/types.ts';
+import { viewType } from '../../types/variables.ts';
+import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
+import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
+import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';
+import { broadcastOptions } from '../../utils/broadcast.ts';
+import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
+import { getExtension } from '../../utils/fileUtils.ts';
+import { revealFiles, unrevealFiles } from '../../utils/hiddenFiles/operations.ts';
+import { openFile, openVaultFile, openExternalFile } from './editorOpeners.ts';
 import {
-	snippetExists,
-	isSnippetEnabled,
-	registerSnippetChangeHandler
-} from '../utils/snippetUtils.ts';
-import { broadcastOptions } from '../utils/broadcast.ts';
-import { getActiveExtensions } from '../utils/extensionUtils.ts';
-import { DIFF_BUTTON_DISPLAY_DURATION } from '../types/variables.ts';
-import { registerThemeChangeHandler } from '../utils/themeUtils.ts';
-import { getExtension } from '../utils/fileUtils.ts';
-import { revealFiles, unrevealFiles } from '../utils/hiddenFiles/operations.ts';
+	updateExtBadge,
+	updateDirtyBadgeVisibility,
+	setDirty,
+	setSaving,
+	clearDirty
+} from './headerBadges.ts';
+import {
+	injectHeaderActions,
+	removeHeaderActions,
+	showDiffAction,
+	hideDiffAction,
+	type HeaderActionsContext
+} from './headerActions.ts';
 
 /**
  * Obsidian TextFileView wrapper for Monaco Editor.
@@ -151,16 +159,6 @@ export class CodeEditorView extends TextFileView {
 		this.forceSave = false;
 	}
 
-	/** Removes all header actions from the view. */
-	private removeHeaderActions(): void {
-		this.gearAction?.remove();
-		this.themeAction?.remove();
-		this.snippetFolderAction?.remove();
-		this.snippetToggleAction?.remove();
-		this.returnAction?.remove();
-		this.diffAction?.remove();
-	}
-
 	/** Cleans up Monaco when the file is unloaded from the view. */
 	private cleanup(): void {
 		this.codeEditor?.destroy();
@@ -179,6 +177,37 @@ export class CodeEditorView extends TextFileView {
 		this.diffTimer = null;
 	}
 
+	/** Removes all header actions from the view. */
+	private removeHeaderActions(): void {
+		const context: HeaderActionsContext = {
+			plugin: this.plugin,
+			codeEditor: this.codeEditor,
+			addAction: this.addAction.bind(this),
+			onForceSave: () => { this.forceSave = true; },
+			onShowDiff: () => this.showDiffAction(),
+			onHideDiff: () => this.hideDiffAction(),
+			leaf: this.leaf,
+			gearAction: this.gearAction,
+			themeAction: this.themeAction,
+			snippetFolderAction: this.snippetFolderAction,
+			snippetToggleAction: this.snippetToggleAction,
+			returnAction: this.returnAction,
+			diffAction: this.diffAction,
+			diffTimer: this.diffTimer,
+			unregisterSnippetHandler: this.unregisterSnippetHandler
+		};
+		removeHeaderActions(context);
+		// Update back
+		this.gearAction = context.gearAction;
+		this.themeAction = context.themeAction;
+		this.snippetFolderAction = context.snippetFolderAction;
+		this.snippetToggleAction = context.snippetToggleAction;
+		this.returnAction = context.returnAction;
+		this.diffAction = context.diffAction;
+		this.diffTimer = context.diffTimer;
+		this.unregisterSnippetHandler = context.unregisterSnippetHandler;
+	}
+
 	async onClose(): Promise<void> {
 		await super.onClose();
 		this.cleanup();
@@ -191,160 +220,58 @@ export class CodeEditorView extends TextFileView {
 
 	/** Clears the dirty badge (marks the view as saved). */
 	clearDirty(): void {
-		this.setDirty(false);
+		clearDirty(this.containerEl);
 	}
 
 	/** Updates the dirty badge styling to show/hide the unsaved indicator in the header. */
 	private setDirty(isDirtyBadge: boolean): void {
-		const badge = this.containerEl.querySelector('.code-files-dirty-badge');
-		if (!badge) return;
-		badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
+		setDirty(this.containerEl, isDirtyBadge);
 	}
 
 	/** Updates the saving badge styling to show/hide the saving indicator in the header. */
 	private setSaving(isSaving: boolean): void {
-		const badge = this.containerEl.querySelector('.code-files-dirty-badge');
-		if (!badge) return;
-		badge.toggleClass('code-files-dirty-saving', isSaving);
+		setSaving(this.containerEl, isSaving);
 	}
 
 	/** Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled. */
 	private updateExtBadge(file: TFile): void {
-		const titleContainer = this.containerEl.querySelector(
-			'.view-header-title-container'
-		);
-		if (!titleContainer) return;
-		titleContainer.querySelector('.code-files-ext-badge')?.remove();
-		titleContainer.querySelector('.code-files-dirty-badge')?.remove();
-		const ext = getExtension(file.name);
-		const badge = createEl('span', {
-			text: ext ? `.${ext}` : file.name,
-			cls: 'code-files-ext-badge'
-		});
-		titleContainer.appendChild(badge);
-		if (!this.plugin.settings.autoSave) {
-			const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
-			titleContainer.appendChild(dirtyBadge);
-		}
+		updateExtBadge(this.containerEl, file, this.plugin);
 	}
 
 	/** Updates the dirty badge visibility based on autoSave setting. */
 	public updateDirtyBadgeVisibility(): void {
-		const titleContainer = this.containerEl.querySelector(
-			'.view-header-title-container'
-		);
-		if (!titleContainer) return;
-		const existingBadge = titleContainer.querySelector('.code-files-dirty-badge');
-		if (this.plugin.settings.autoSave) {
-			existingBadge?.remove();
-		} else if (!existingBadge) {
-			const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
-			titleContainer.appendChild(dirtyBadge);
-		}
+		updateDirtyBadgeVisibility(this.containerEl, this.plugin);
 	}
 
 	/** Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets). */
 	private injectHeaderActions(file: TFile): void {
-		this.removeHeaderActions();
-
-		this.themeAction = this.addAction('palette', 'Change Theme', () => {
-			const applyTheme = async (theme: string): Promise<void> => {
-				const params = await resolveThemeParams(this.plugin, theme);
-				this.codeEditor?.send('change-theme', params);
-			};
-			new ChooseThemeModal(this.plugin, applyTheme, () =>
-				this.codeEditor?.send('focus', {})
-			).open();
-		});
-
-		const ext = getExtension(file.name);
-		this.gearAction = this.addAction('settings', 'Editor Settings', () => {
-			new EditorSettingsModal(
-				this.plugin,
-				ext,
-				() => broadcastOptions(this.plugin),
-				(config) => {
-					this.codeEditor?.send('change-editor-config', { config });
-				},
-				() => this.codeEditor?.send('focus', {})
-			).open();
-		});
-
-		// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered
-		const isUnregistered = !getActiveExtensions(this.plugin.settings).includes(ext);
-		if (isUnregistered) {
-			this.returnAction = this.addAction(
-				'undo-2',
-				'Return to default view',
-				async () => {
-					await this.leaf.setViewState({ type: 'empty', state: {} });
-					await this.leaf.openFile(file);
-				}
-			);
-		}
-
-		// Add snippet controls ONLY when editing a CSS snippet file
-		// Added LAST so they appear on the LEFT
-		const isSnippetFile =
-			file.path.includes('.obsidian/snippets') && getExtension(file.name) === 'css';
-		if (isSnippetFile) {
-			const snippetName = file.basename;
-			const exists = snippetExists(this.plugin.app, snippetName);
-
-			this.snippetFolderAction = this.addAction(
-				'folder',
-				'Open snippets folder',
-				() => {
-					this.plugin.app.openWithDefaultApp(
-						normalizePath('.obsidian/snippets')
-					);
-				}
-			);
-
-			const isOn = exists && isSnippetEnabled(this.plugin.app, snippetName);
-			const toggleEl = this.addAction(
-				'square',
-				`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
-				async () => {
-					// If the file doesn't exist yet (new unsaved snippet), save first
-					if (!snippetExists(this.plugin.app, snippetName)) {
-						this.forceSave = true;
-						await this.save();
-					}
-					const newState = !isSnippetEnabled(this.plugin.app, snippetName);
-					this.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
-					track.toggleClass('is-on', newState);
-					toggleEl.setAttr(
-						'aria-label',
-						`${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
-					);
-				}
-			);
-			// Replace the default Obsidian action button with a custom CSS toggle switch
-			toggleEl.empty();
-			toggleEl.addClass('code-files-snippet-toggle-action');
-			// The toggle consists of a track (the background) and a thumb (the circle that moves). The "is-on" class controls the toggle state (on/off).
-			const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
-			if (isOn) track.addClass('is-on');
-			track.createDiv({ cls: 'code-files-toggle-thumb' });
-			this.snippetToggleAction = toggleEl;
-
-			if (exists) {
-				// Listen for external snippet state changes (from Obsidian settings).
-				// This reassigns the handler after it was nulled during previous cleanup() (e.g. on rename).
-				this.unregisterSnippetHandler = registerSnippetChangeHandler(
-					this.plugin.app,
-					snippetName,
-					(isOn) => {
-						track.toggleClass('is-on', isOn);
-						toggleEl.setAttr(
-							'aria-label',
-							`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
-						);
-					}
-				);
-			}
-		}
+		const context: HeaderActionsContext = {
+			plugin: this.plugin,
+			codeEditor: this.codeEditor,
+			addAction: this.addAction.bind(this),
+			onForceSave: () => { this.forceSave = true; },
+			onShowDiff: () => this.showDiffAction(),
+			onHideDiff: () => this.hideDiffAction(),
+			leaf: this.leaf,
+			gearAction: this.gearAction,
+			themeAction: this.themeAction,
+			snippetFolderAction: this.snippetFolderAction,
+			snippetToggleAction: this.snippetToggleAction,
+			returnAction: this.returnAction,
+			diffAction: this.diffAction,
+			diffTimer: this.diffTimer,
+			unregisterSnippetHandler: this.unregisterSnippetHandler
+		};
+		injectHeaderActions(context, file);
+		// Update back
+		this.gearAction = context.gearAction;
+		this.themeAction = context.themeAction;
+		this.snippetFolderAction = context.snippetFolderAction;
+		this.snippetToggleAction = context.snippetToggleAction;
+		this.returnAction = context.returnAction;
+		this.diffAction = context.diffAction;
+		this.diffTimer = context.diffTimer;
+		this.unregisterSnippetHandler = context.unregisterSnippetHandler;
 	}
 
 	/** Creates the Monaco editor instance with callbacks for content changes
@@ -434,28 +361,50 @@ export class CodeEditorView extends TextFileView {
 
 	/** Shows the diff action in the header for x seconds after a format */
 	private showDiffAction(): void {
-		if (this.diffTimer) clearTimeout(this.diffTimer);
-		this.diffAction?.remove();
-
-		this.diffAction = this.addAction('diff', 'Show Format Diff', () => {
-			this.codeEditor?.send('trigger-show-diff', {});
-		});
-		// Flash the diff icon to draw attention to it
-		this.diffAction.addClass('code-files-diff-action');
-
-		// Hide the diff action after x seconds
-		this.diffTimer = setTimeout(() => {
-			this.diffAction?.remove();
-			this.diffAction = null;
-		}, DIFF_BUTTON_DISPLAY_DURATION);
+		const context: HeaderActionsContext = {
+			plugin: this.plugin,
+			codeEditor: this.codeEditor,
+			addAction: this.addAction.bind(this),
+			onForceSave: () => { this.forceSave = true; },
+			onShowDiff: () => this.showDiffAction(),
+			onHideDiff: () => this.hideDiffAction(),
+			leaf: this.leaf,
+			gearAction: this.gearAction,
+			themeAction: this.themeAction,
+			snippetFolderAction: this.snippetFolderAction,
+			snippetToggleAction: this.snippetToggleAction,
+			returnAction: this.returnAction,
+			diffAction: this.diffAction,
+			diffTimer: this.diffTimer,
+			unregisterSnippetHandler: this.unregisterSnippetHandler
+		};
+		showDiffAction(context);
+		this.diffAction = context.diffAction;
+		this.diffTimer = context.diffTimer;
 	}
 
 	/** Hides the diff action immediately (called when all blocks are reverted) */
 	public hideDiffAction(): void {
-		if (this.diffTimer) clearTimeout(this.diffTimer);
-		this.diffAction?.remove();
-		this.diffAction = null;
-		this.diffTimer = null;
+		const context: HeaderActionsContext = {
+			plugin: this.plugin,
+			codeEditor: this.codeEditor,
+			addAction: this.addAction.bind(this),
+			onForceSave: () => { this.forceSave = true; },
+			onShowDiff: () => this.showDiffAction(),
+			onHideDiff: () => this.hideDiffAction(),
+			leaf: this.leaf,
+			gearAction: this.gearAction,
+			themeAction: this.themeAction,
+			snippetFolderAction: this.snippetFolderAction,
+			snippetToggleAction: this.snippetToggleAction,
+			returnAction: this.returnAction,
+			diffAction: this.diffAction,
+			diffTimer: this.diffTimer,
+			unregisterSnippetHandler: this.unregisterSnippetHandler
+		};
+		hideDiffAction(context);
+		this.diffAction = context.diffAction;
+		this.diffTimer = context.diffTimer;
 	}
 
 	/** Initializes the Monaco editor when a file is loaded into the view. */
@@ -534,12 +483,7 @@ export class CodeEditorView extends TextFileView {
 		plugin: CodeFilesPlugin,
 		newTab = false
 	): Promise<void> {
-		const leaf = plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
-		await leaf.setViewState({
-			type: viewType,
-			state: { file: file.path },
-			active: true
-		});
+		await openVaultFile(file, plugin, newTab);
 	}
 
 	/** Opens external files (CSS snippets) via an adapter path (not vault-indexed).
@@ -549,28 +493,7 @@ export class CodeEditorView extends TextFileView {
 		filePath: string,
 		plugin: CodeFilesPlugin
 	): Promise<void> {
-		// Check if file is already open in a leaf
-		const existingLeaf = plugin.app.workspace
-			.getLeavesOfType(viewType)
-			.find((leaf) => {
-				const view = leaf.view as CodeEditorView;
-				return view.file?.path === filePath;
-			});
-
-		if (existingLeaf) {
-			// File already open — activate that leaf
-			plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
-			return;
-		}
-
-		// Always create a new tab for external files
-		const leaf = plugin.app.workspace.getLeaf('tab');
-		// Use setViewState for proper state management and persistence
-		await leaf.setViewState({
-			type: viewType,
-			state: { file: filePath, external: true, reveal: true },
-			active: true
-		});
+		await openExternalFile(filePath, plugin);
 	}
 
 	/**
@@ -586,13 +509,6 @@ export class CodeEditorView extends TextFileView {
 		plugin: CodeFilesPlugin,
 		newTab = false
 	): Promise<void> {
-		const inVault = plugin.app.vault.getAbstractFileByPath(file.path);
-		if (inVault) {
-			console.debug('Opening vault file', file.path);
-			await CodeEditorView.openVaultFile(file, plugin, newTab);
-		} else {
-			console.debug('Opening external file', file.path);
-			await CodeEditorView.openExternalFile(file.path, plugin);
-		}
+		await openFile(file, plugin, newTab);
 	}
 }
