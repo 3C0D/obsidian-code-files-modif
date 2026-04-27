@@ -222,9 +222,13 @@ this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));
 
 ### Bug 2: Folder Rename
 
-**Status:** ✅ Fixed in `unpatchRename`
+**Status:** ⚠️ Known limitation — not currently handled.
 
-**Solution:** Update folder keys in `revealedFiles` when a folder is renamed.
+When a folder containing revealed dotfiles is renamed, the key in `revealedFiles`
+becomes stale (old folder name). The eye badge disappears after the rename
+(correct visually, since `decorateFolders` re-reads the current file tree),
+but the stale key remains in settings until `cleanStaleRevealedFiles` runs at next startup.
+No data loss — the dotfiles remain visible — but the badge won't reappear until restart.
 
 ---
 

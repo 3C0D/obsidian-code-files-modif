@@ -117,13 +117,17 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				
 				// Remove from source folder
 				if (plugin.settings.revealedFiles[srcFolder]) {
-					const filtered = plugin.settings.revealedFiles[srcFolder].filter(p => p !== src);
-					if (filtered.length > 0) {
-						plugin.settings.revealedFiles[srcFolder] = filtered;
-					} else {
-						delete plugin.settings.revealedFiles[srcFolder];
+					const original = plugin.settings.revealedFiles[srcFolder];
+					const filtered = original.filter(p => p !== src);
+					if (filtered.length !== original.length) {
+						// src was actually in revealedFiles
+						if (filtered.length > 0) {
+							plugin.settings.revealedFiles[srcFolder] = filtered;
+						} else {
+							delete plugin.settings.revealedFiles[srcFolder];
+						}
+						changed = true;
 					}
-					changed = true;
 				}
 				
 				// Add to destination folder
@@ -274,20 +278,18 @@ export async function syncAutoRevealedDotfiles(
 	if (changed) await plugin.saveSettings();
 
 	// Auto-reveal dotfiles matching the new extensions
-	if (plugin.settings.autoRevealRegisteredDotfiles) {
-		const allFolders = plugin.app.vault.getAllFolders();
-		for (const folder of allFolders) {
-			const items = await scanDotEntries(plugin, folder.path);
-			const toReveal = items
-				.filter((item) => {
-					if (item.isFolder) return false;
-					const ext = getExtension(item.name);
-					return ext && extSet.has(ext);
-				})
-				.map((item) => item.path);
-			if (toReveal.length > 0) {
-				await revealFiles(plugin, folder.path, toReveal, true, false);
-			}
+	const allFolders = plugin.app.vault.getAllFolders();
+	for (const folder of allFolders) {
+		const items = await scanDotEntries(plugin, folder.path);
+		const toReveal = items
+			.filter((item) => {
+				if (item.isFolder) return false;
+				const ext = getExtension(item.name);
+				return ext && extSet.has(ext);
+			})
+			.map((item) => item.path);
+		if (toReveal.length > 0) {
+			await revealFiles(plugin, folder.path, toReveal, true, false);
 		}
 	}
 
@@ -377,7 +379,7 @@ export async function autoRevealRegisteredDotfiles(
 export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
 	const adapter = getAdapter(plugin);
 
-	for (const [_, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
+	for (const [, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
 		for (const itemPath of itemPaths) {
 			const realPath = adapter.getRealPath(itemPath);
 			try {
@@ -544,21 +546,20 @@ export async function revealFiles(
 	const adapter = getAdapter(plugin);
 
 	for (const itemPath of itemPaths) {
-		const normItemPath = normalizePath(itemPath);
 		try {
-			const stat = await adapter.stat(normItemPath);
+			const stat = await adapter.stat(itemPath);
 			if (!stat) continue;
 
-			const realPath = adapter.getRealPath(normItemPath);
+			const realPath = adapter.getRealPath(itemPath);
 
 			// Force Obsidian to "see" and display the item.
 			// Pattern: use reconcileFileInternal if available (Desktop),
 			// otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
 			if (stat.type === 'folder') {
-				await adapter.reconcileFolderCreation(realPath, normItemPath);
+				await adapter.reconcileFolderCreation(realPath, itemPath);
 			} else {
 				if (adapter.reconcileFileInternal) {
-					await adapter.reconcileFileInternal(realPath, normItemPath);
+					await adapter.reconcileFileInternal(realPath, itemPath);
 				} else if (
 					adapter.fs?.stat &&
 					adapter.reconcileFileChanged &&
@@ -570,7 +571,7 @@ export async function revealFiles(
 					if (fsStat.type === 'file') {
 						await adapter.reconcileFileChanged(
 							realPath,
-							normItemPath,
+							itemPath,
 							fsStat
 						);
 					}
@@ -623,12 +624,15 @@ export async function unrevealFiles(
 
 	// Temporarily allow reconcileDeletion to work for dotfiles
 	_bypassPatch = true;
-	for (const filePath of itemPaths) {
-		const realPath = adapter.getRealPath(filePath);
-		// Trigger a deletion reconciliation which removes the item from the vault's internal list
-		await adapter.reconcileDeletion(realPath, filePath);
+	try {
+		for (const filePath of itemPaths) {
+			const realPath = adapter.getRealPath(filePath);
+			// Remove the file from Obsidian's vault index
+			await adapter.reconcileDeletion(realPath, filePath);
+		}
+	} finally {
+		_bypassPatch = false;
 	}
-	_bypassPatch = false;
 	
 	if (temporary) return; // skip settings, notice, badges
 
