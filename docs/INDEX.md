@@ -140,21 +140,35 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 ### [files-without-extension.md](files-without-extension.md)
 
-**Role:** Support for files without extensions (.env, .gitignore, LICENSE, etc.)
+**Role:** Support for files without extensions, including editor configuration and integration with hidden files system
 
-- Empty string registered as extension in extraExtensions
-- How Obsidian's file system treats extension-less files
-- Automatic opening in Monaco for all extension-less files
-- **Key for:** Understanding dotfile and extension-less file support
+- Register empty string as extension for automatic Monaco opening
+
+- Extension mapping system for per-file editor configuration
+
+- Language fallback cascade (e.g., .clangformat inherits YAML config)
+
+- Broadcasting config changes and file creation fixes
+
+- Built-in dotfile management with auto-reveal and manual control
+
+- **Key for:** Understanding dotfile support, configuration, and hidden file integration
 
 ### [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md)
 
-**Role:** Eye badge system for manually revealed hidden files
+**Role:** Eye badge system for manually revealed hidden files, with patches and bug fixes
 
-- Eye badge (👁️) on folders containing revealed dotfiles
+- Eye badge (👁️) on folders containing manually revealed dotfiles
+
 - Management via `decorateFolders()` and `revealedFiles` settings
-- Integration with reveal/hide operations and vault events
-- **Key for:** Understanding badge behavior and hidden file management
+
+- Integration with reveal/hide operations, vault events, and extension registration
+
+- Patches for adapter operations (deletion, rename, file opening)
+
+- Bug fixes for drag-and-drop and trash operations
+
+- **Key for:** Understanding badge behavior, hidden file management, and system patches
 
 ---
 
