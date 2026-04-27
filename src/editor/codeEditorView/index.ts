@@ -22,7 +22,7 @@ import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';
 import { broadcastOptions } from '../../utils/broadcast.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
-import { revealFiles, unrevealFiles } from '../../utils/hiddenFiles/operations.ts';
+import { revealFiles, unrevealFiles } from '../../utils/hiddenFiles/index.ts';
 import { openFile, openVaultFile, openExternalFile } from './editorOpeners.ts';
 import {
 	updateExtBadge,

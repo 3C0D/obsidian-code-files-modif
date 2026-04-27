@@ -167,7 +167,7 @@ plugin.addCommand({
 import { SuggestModal, normalizePath, Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
-import { getMaxFileSize } from '../utils/hiddenFiles/scan.ts';
+import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 
 interface FileSuggestion {
     name: string;

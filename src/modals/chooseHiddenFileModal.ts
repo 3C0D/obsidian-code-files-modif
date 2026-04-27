@@ -11,8 +11,8 @@ import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { HiddenFileSuggestion } from '../types/types.ts';
-import { getMaxFileSize } from '../utils/hiddenFiles/scan.ts';
-import { revealFiles } from '../utils/hiddenFiles/operations.ts';
+import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
+import { revealFiles } from '../utils/hiddenFiles/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 
 /** Modal for choosing hidden files in a folder to open in Monaco.
