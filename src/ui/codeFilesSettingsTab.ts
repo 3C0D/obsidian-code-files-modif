@@ -60,6 +60,13 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			text: 'Most editor settings (Theme, Word Wrap, Folding, Line Numbers, Minimap, Semantic & Syntax Validation) are directly accessible from the editor interface via the gear icon or the palette icon in the tab header.'
 		});
 
+		this.renderExtensionsSection(containerEl);
+		this.renderEditorConfigSection(containerEl);
+		this.renderHotkeySection(containerEl);
+		this.renderHiddenFilesSection(containerEl);
+	}
+
+	private renderExtensionsSection(containerEl: HTMLElement): void {
 		// -- File Extensions --------------------------------------------------
 		containerEl.createEl('h3', { text: 'File Extensions' });
 
@@ -126,7 +133,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						}
 					})
 			);
+	}
 
+	private renderEditorConfigSection(containerEl: HTMLElement): void {
 		// -- Formatter Config -------------------------------------------------
 		containerEl.createEl('h3', { text: 'Editor Config' });
 		containerEl.createEl('p', {
@@ -277,7 +286,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				await switchScope(true);
 			}
 		})();
+	}
 
+	private renderHotkeySection(containerEl: HTMLElement): void {
 		// -- Monaco Hotkey Overrides -----------------------------------------
 		containerEl.createEl('h3', { text: 'Monaco Hotkey Overrides' });
 		containerEl.createEl('p', {
@@ -287,82 +298,27 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 			}
 		});
 
-		const createHotkeyOverrideSetting = (
-			name: string,
-			commandId: string,
-			overrideKey:
-				| 'commandPaletteHotkeyOverride'
-				| 'settingsHotkeyOverride'
-				| 'deleteFileHotkeyOverride'
-		): void => {
-			const obsidianHotkey = getObsidianHotkey(this.plugin.app, commandId);
-			// Display Obsidian hotkey with platform-specific modifier names (Ctrl on Windows, Cmd on Mac)
-			const defaultStr = obsidianHotkey ? formatHotkey(obsidianHotkey, true) : '';
-			const currentOverride = this.plugin.settings[overrideKey];
-
-			new Setting(containerEl)
-				.setName(name)
-				.setDesc(`Current Obsidian: ${defaultStr || 'none'}`)
-				.addText((text) => {
-					const displayOverride = currentOverride
-						? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
-						: '';
-					text.setValue(displayOverride || `${defaultStr} (default)`);
-					text.setPlaceholder('Ctrl+P, Ctrl + P, or Ctrl P');
-					text.inputEl.style.width = '200px';
-
-					text.inputEl.addEventListener('blur', async () => {
-						let value = text.getValue().trim();
-
-						// Remove " (default)" suffix if present
-						if (value.endsWith(' (default)')) {
-							value = value.replace(/ \(default\)$/, '').trim();
-						}
-
-						// If empty, reset to default
-						if (!value) {
-							this.plugin.settings[overrideKey] = '';
-							text.setValue(`${defaultStr} (default)`);
-							await this.plugin.saveSettings();
-							return;
-						}
-
-						// Validate and normalize format (converts Ctrl/Cmd/Meta → Mod internally)
-						const parsed = parseHotkeyOverride(value);
-						if (!parsed) {
-							// Invalid format, reset to default
-							this.plugin.settings[overrideKey] = '';
-							text.setValue(`${defaultStr} (default)`);
-							await this.plugin.saveSettings();
-							return;
-						}
-
-						// Format with + and no spaces (stores as Mod+P internally)
-						const formatted = formatHotkey(parsed);
-						this.plugin.settings[overrideKey] = formatted;
-						// Display with platform-specific modifier for user clarity
-						text.setValue(formatHotkey(parsed, true));
-						await this.plugin.saveSettings();
-					});
-				});
-		};
-
-		createHotkeyOverrideSetting(
+		this.createHotkeyOverrideSetting(
+			containerEl,
 			'Command Palette',
 			'command-palette:open',
 			'commandPaletteHotkeyOverride'
 		);
-		createHotkeyOverrideSetting(
+		this.createHotkeyOverrideSetting(
+			containerEl,
 			'Settings',
 			'app:open-settings',
 			'settingsHotkeyOverride'
 		);
-		createHotkeyOverrideSetting(
+		this.createHotkeyOverrideSetting(
+			containerEl,
 			'Delete File',
 			'app:delete-file',
 			'deleteFileHotkeyOverride'
 		);
+	}
 
+	private renderHiddenFilesSection(containerEl: HTMLElement): void {
 		// -- Hidden Files -----------------------------------------------------
 		containerEl.createEl('h3', { text: 'Hidden Files' });
 
@@ -422,5 +378,66 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 						await reregisterExtensions(this.plugin);
 					})
 			);
+	}
+
+	private createHotkeyOverrideSetting(
+		containerEl: HTMLElement,
+		name: string,
+		commandId: string,
+		overrideKey:
+			| 'commandPaletteHotkeyOverride'
+			| 'settingsHotkeyOverride'
+			| 'deleteFileHotkeyOverride'
+	): void {
+		const obsidianHotkey = getObsidianHotkey(this.plugin.app, commandId);
+		// Display Obsidian hotkey with platform-specific modifier names (Ctrl on Windows, Cmd on Mac)
+		const defaultStr = obsidianHotkey ? formatHotkey(obsidianHotkey, true) : '';
+		const currentOverride = this.plugin.settings[overrideKey];
+
+		new Setting(containerEl)
+			.setName(name)
+			.setDesc(`Current Obsidian: ${defaultStr || 'none'}`)
+			.addText((text) => {
+				const displayOverride = currentOverride
+					? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
+					: '';
+				text.setValue(displayOverride || `${defaultStr} (default)`);
+				text.setPlaceholder('Ctrl+P, Ctrl + P, or Ctrl P');
+				text.inputEl.style.width = '200px';
+
+				text.inputEl.addEventListener('blur', async () => {
+					let value = text.getValue().trim();
+
+					// Remove " (default)" suffix if present
+					if (value.endsWith(' (default)')) {
+						value = value.replace(/ \(default\)$/, '').trim();
+					}
+
+					// If empty, reset to default
+					if (!value) {
+						this.plugin.settings[overrideKey] = '';
+						text.setValue(`${defaultStr} (default)`);
+						await this.plugin.saveSettings();
+						return;
+					}
+
+					// Validate and normalize format (converts Ctrl/Cmd/Meta → Mod internally)
+					const parsed = parseHotkeyOverride(value);
+					if (!parsed) {
+						// Invalid format, reset to default
+						this.plugin.settings[overrideKey] = '';
+						text.setValue(`${defaultStr} (default)`);
+						await this.plugin.saveSettings();
+						return;
+					}
+
+					// Format with + and no spaces (stores as Mod+P internally)
+					const formatted = formatHotkey(parsed);
+					this.plugin.settings[overrideKey] = formatted;
+					// Display with platform-specific modifier for user clarity
+					text.setValue(formatHotkey(parsed, true));
+					await this.plugin.saveSettings();
+				});
+			});
 	}
 }
