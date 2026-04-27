@@ -6,7 +6,7 @@ import {
 	revealFiles,
 	unrevealFiles,
 	decorateFolders
-} from '../utils/hiddenFilesUtils.ts';
+} from '../utils/hiddenFiles/hiddenFilesUtils.ts';
 import {
 	addExtension,
 	getActiveExtensions,

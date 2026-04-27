@@ -22,10 +22,10 @@ import {
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { around } from 'monkey-around';
 import type { Plugin, TAbstractFile } from 'obsidian';
-import type CodeFilesPlugin from '../main.ts';
-import type { DataAdapterWithInternal, HiddenItem } from '../types/types.ts';
-import { getExtension } from './fileUtils.ts';
-import { getActiveExtensions } from './extensionUtils.ts';
+import type CodeFilesPlugin from '../../main.ts';
+import type { DataAdapterWithInternal, HiddenItem } from '../../types/types.ts';
+import { getExtension } from '../fileUtils.ts';
+import { getActiveExtensions } from '../extensionUtils.ts';
 
 /**
  * Global flag used to temporarily bypass the deletion patch.
@@ -109,16 +109,16 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 					dest = dest + '/' + filename;
 				}
 				const result = await next.call(this, src, dest);
-				
+
 				// Update revealedFiles after rename
 				const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
 				const destFolder = dest.substring(0, dest.lastIndexOf('/')) || '';
 				let changed = false;
-				
+
 				// Remove from source folder
 				if (plugin.settings.revealedFiles[srcFolder]) {
 					const original = plugin.settings.revealedFiles[srcFolder];
-					const filtered = original.filter(p => p !== src);
+					const filtered = original.filter((p) => p !== src);
 					if (filtered.length !== original.length) {
 						// src was actually in revealedFiles
 						if (filtered.length > 0) {
@@ -129,18 +129,18 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 						changed = true;
 					}
 				}
-				
+
 				// Add to destination folder
 				if (changed) {
 					const existing = plugin.settings.revealedFiles[destFolder] ?? [];
 					plugin.settings.revealedFiles[destFolder] = [...existing, dest];
 				}
-				
+
 				if (changed) {
 					void plugin.saveSettings();
 					void decorateFolders(plugin);
 				}
-				
+
 				return result;
 			};
 		}
@@ -158,11 +158,13 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				if (filePath) _bypassPatch = true;
 				try {
 					const result = await next.call(this, file, system);
-					
+
 					// Clean up revealedFiles after deletion
 					if (filePath) {
-						for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
-							const filtered = paths.filter(p => p !== filePath);
+						for (const [folderPath, paths] of Object.entries(
+							plugin.settings.revealedFiles
+						)) {
+							const filtered = paths.filter((p) => p !== filePath);
 							if (filtered.length !== paths.length) {
 								if (filtered.length > 0) {
 									plugin.settings.revealedFiles[folderPath] = filtered;
@@ -174,7 +176,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 						void plugin.saveSettings();
 						void decorateFolders(plugin);
 					}
-					
+
 					return result;
 				} finally {
 					_bypassPatch = false;
@@ -569,11 +571,7 @@ export async function revealFiles(
 						adapter.getFullRealPath(realPath)
 					);
 					if (fsStat.type === 'file') {
-						await adapter.reconcileFileChanged(
-							realPath,
-							itemPath,
-							fsStat
-						);
+						await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
 					}
 				}
 			}
@@ -633,7 +631,7 @@ export async function unrevealFiles(
 	} finally {
 		_bypassPatch = false;
 	}
-	
+
 	if (temporary) return; // skip settings, notice, badges
 
 	// Remove from persisted settings

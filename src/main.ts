@@ -28,7 +28,7 @@ import {
 	restoreRevealedFiles,
 	decorateFolders,
 	syncAutoRevealedDotfiles
-} from './utils/hiddenFilesUtils.ts';
+} from './utils/hiddenFiles/hiddenFilesUtils.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 
 export default class CodeFilesPlugin extends Plugin {
