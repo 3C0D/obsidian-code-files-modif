@@ -12,7 +12,7 @@ import { ChooseCssFileModal } from '../modals/chooseCssSnippetsModal.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { EditorSettingsModal } from '../modals/editorSettingsModal.ts';
 import { ChooseHiddenFileModal } from '../modals/chooseHiddenFileModal.ts';
-import { ExternalFileBrowserModal } from '../modals/externalFileBrowserModal.ts';
+import { ExternalFileBrowserModal } from '../modals/chooseExternalFileModal.ts';
 import { broadcastOptions, broadcastEditorConfig } from '../utils/broadcast.ts';
 
 export function registerCommands(plugin: CodeFilesPlugin): void {

@@ -8,40 +8,8 @@ import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/scan.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
-
-interface FileSuggestion {
-	name: string;
-	path: string;
-	size: number;
-}
-
-const EXCLUDED_EXTENSIONS = [
-	'exe',
-	'dll',
-	'so',
-	'dylib',
-	'app',
-	'dmg',
-	'msi',
-	'zip',
-	'rar',
-	'7z',
-	'tar',
-	'gz',
-	'bz2',
-	'xz',
-	'db',
-	'sqlite',
-	'mdb',
-	'doc',
-	'xls',
-	'ppt',
-	'ttf',
-	'otf',
-	'woff',
-	'woff2',
-	'eot'
-];
+import type { FileSuggestion } from '../types/types.ts';
+import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 
 export class ExternalFileBrowserModal extends SuggestModal<FileSuggestion> {
 	private files: FileSuggestion[] = [];

@@ -324,3 +324,37 @@ export const viewType = 'code-editor';
 
 /** Duration (ms) the diff button stays visible in tab header after formatting */
 export const DIFF_BUTTON_DISPLAY_DURATION = 10000;
+
+/** Extensions to exclude from file lists (binary executables, archives, and files that can't be opened as text) */
+export const EXCLUDED_EXTENSIONS = [
+	// Executables and libraries
+	'exe',
+	'dll',
+	'so',
+	'dylib',
+	'app',
+	'dmg',
+	'msi',
+	// Archives
+	'zip',
+	'rar',
+	'7z',
+	'tar',
+	'gz',
+	'bz2',
+	'xz',
+	// Database files
+	'db',
+	'sqlite',
+	'mdb',
+	// Office binary formats
+	'doc',
+	'xls',
+	'ppt',
+	// Fonts
+	'ttf',
+	'otf',
+	'woff',
+	'woff2',
+	'eot'
+];

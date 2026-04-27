@@ -177,3 +177,12 @@ export interface HiddenFileSuggestion {
 	path: string;
 	size: number;
 }
+
+/**
+ * Suggestion for file selection modals
+ */
+export interface FileSuggestion {
+	name: string;
+	path: string;
+	size: number;
+}

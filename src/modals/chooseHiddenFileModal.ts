@@ -13,40 +13,7 @@ import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { HiddenFileSuggestion } from '../types/types.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/scan.ts';
 import { revealFiles } from '../utils/hiddenFiles/operations.ts';
-
-/** Extensions to exclude from hidden files list (binary executables, archives, and files that can't be opened as text) */
-const EXCLUDED_EXTENSIONS = [
-	// Executables and libraries
-	'exe',
-	'dll',
-	'so',
-	'dylib',
-	'app',
-	'dmg',
-	'msi',
-	// Archives
-	'zip',
-	'rar',
-	'7z',
-	'tar',
-	'gz',
-	'bz2',
-	'xz',
-	// Database files
-	'db',
-	'sqlite',
-	'mdb',
-	// Office binary formats
-	'doc',
-	'xls',
-	'ppt',
-	// Fonts
-	'ttf',
-	'otf',
-	'woff',
-	'woff2',
-	'eot'
-];
+import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 
 /** Modal for choosing hidden files in a folder to open in Monaco.
  *  "Hidden" means absent from the vault's known files,
