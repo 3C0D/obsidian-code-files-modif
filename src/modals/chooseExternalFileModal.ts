@@ -3,7 +3,8 @@
  * Recursively scans .obsidian/, filters by size and extension,
  * and opens selected files in Monaco Editor.
  */
-import { SuggestModal, normalizePath, Notice } from 'obsidian';
+import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
+import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
@@ -11,23 +12,12 @@ import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { FileSuggestion } from '../types/types.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 
-export class ExternalFileBrowserModal extends SuggestModal<FileSuggestion> {
+export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> {
 	private files: FileSuggestion[] = [];
 
 	constructor(private plugin: CodeFilesPlugin) {
 		super(plugin.app);
 		this.setPlaceholder('Search files in .obsidian/...');
-		this.scope.register([], 'Enter', (evt) => {
-			const item = this.getSuggestions(this.inputEl.value)[
-				this.chooser.selectedItem
-			];
-			if (item) {
-				evt.preventDefault();
-				void this.onChooseSuggestion(item);
-				this.close();
-			}
-			return false;
-		});
 	}
 
 	async onOpen(): Promise<void> {
@@ -110,21 +100,23 @@ export class ExternalFileBrowserModal extends SuggestModal<FileSuggestion> {
 		}
 	}
 
-	getSuggestions(query: string): FileSuggestion[] {
-		return this.files.filter((file) =>
-			file.path.toLowerCase().includes(query.toLowerCase())
-		);
+	getItems(): FileSuggestion[] {
+		return this.files;
 	}
 
-	async onChooseSuggestion(item: FileSuggestion): Promise<void> {
-		await CodeEditorView.openExternalFile(item.path, this.plugin);
+	getItemText(item: FileSuggestion): string {
+		return item.path;
 	}
 
-	renderSuggestion(item: FileSuggestion, el: HTMLElement): void {
+	onChooseItem(item: FileSuggestion, _evt: MouseEvent | KeyboardEvent): void {
+		void CodeEditorView.openExternalFile(item.path, this.plugin);
+	}
+
+	renderSuggestion(item: FuzzyMatch<FileSuggestion>, el: HTMLElement): void {
 		const container = el.createDiv({ cls: 'suggestion-content' });
-		container.createDiv({ text: item.path, cls: 'suggestion-title' });
+		container.createDiv({ text: item.item.path, cls: 'suggestion-title' });
 
-		const sizeKB = (item.size / 1024).toFixed(1);
+		const sizeKB = (item.item.size / 1024).toFixed(1);
 		container.createDiv({
 			text: `${sizeKB} KB`,
 			cls: 'suggestion-note'
