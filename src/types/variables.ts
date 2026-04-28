@@ -2,6 +2,116 @@ import { staticMap } from '../utils/getLanguage.ts';
 import type { MyPluginSettings } from './types.ts';
 
 /**
+ * Default Monaco editor options applied when no per-extension config exists.
+ *
+ * Convention:
+ * - Uncommented = values we explicitly chose (may differ from Monaco's own defaults)
+ * - Commented = uncommenting will override the default behavior
+ */
+export const DEFAULT_EDITOR_CONFIG = `{
+    // Options here override global settings for this extension (like VSCode workspace settings).
+    // --- Indentation ---
+    "tabSize": 4,
+    "insertSpaces": false,
+
+    // --- On Save / On Type ---
+    "formatOnSave": false,
+    "formatOnType": false,
+    "trimAutoWhitespace": true,
+    "trimTrailingWhitespace": true,
+
+    // --- Formatting ---
+    "printWidth": 100,  // Line length for Prettier formatters
+
+    // --- Display ---
+    "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
+    // "folding": false,
+    // "lineNumbers": "off",
+    // "minimap": { "enabled": false },
+    // "wordWrap": "on",  // "on" | "off"
+
+    // --- Optional ---
+    // "rulers": [80, 120],  // Visual guides for line length (all languages)
+    // "fontSize": 14,
+    // "bracketPairColorization.enabled": true,
+}`;
+
+/** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
+export const OBSIDIAN_NATIVE_EXTENSIONS = [
+	'md',
+	'canvas',
+	'pdf',
+	'png',
+	'jpg',
+	'jpeg',
+	'gif',
+	'bmp',
+	'svg',
+	'webp',
+	'mp3',
+	'wav',
+	'm4a',
+	'ogg',
+	'3gp',
+	'flac',
+	'mp4',
+	'webm',
+	'ogv',
+	'mov',
+	'mkv',
+	'base'
+];
+
+/** Plugin default settings applied on first install */
+export const DEFAULT_SETTINGS: MyPluginSettings = {
+	extensions: [
+		'ts',
+		'tsx',
+		'js',
+		'jsx',
+		'py',
+		'json',
+		'jsonc',
+		'css',
+		'html',
+		'sh',
+		'yaml',
+		'sql',
+		'php',
+		'cs',
+		'java',
+		'go',
+		'rs',
+		'cpp',
+		'c'
+	],
+	semanticValidation: true,
+	syntaxValidation: true,
+	theme: 'default',
+	recentThemes: [],
+	autoSave: false,
+	editorBrightness: 1,
+	wordWrap: 'off',
+	folding: true,
+	lineNumbers: true,
+	minimap: true,
+	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
+	allExtensions: true,
+	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
+	extraExtensions: [],
+	maxFileSize: 10,
+	projectRootFolder: '',
+	lastSelectedConfigExtension: '',
+	commandPaletteHotkeyOverride: '',
+	settingsHotkeyOverride: '',
+	deleteFileHotkeyOverride: '',
+	excludedFolders: ['.git', 'node_modules', '.trash'],
+	revealedFiles: {},
+	autoRevealRegisteredDotfiles: true,
+	temporaryRevealedPaths: []
+};
+
+/**
  * Extensions that have integrated formatters.
  * These are the only extensions that should appear in the Editor Config extension selector.
  *
@@ -54,41 +164,6 @@ export const FORMATTABLE_EXTENSIONS = [
 	'hh',
 	'hxx'
 ];
-
-/**
- * Default Monaco editor options applied when no per-extension config exists.
- *
- * Convention:
- * - Uncommented = values we explicitly chose (may differ from Monaco's own defaults)
- * - Commented = uncommenting will override the default behavior
- */
-export const DEFAULT_EDITOR_CONFIG = `{
-    // Options here override global settings for this extension (like VSCode workspace settings).
-    // --- Indentation ---
-    "tabSize": 4,
-    "insertSpaces": false,
-
-    // --- On Save / On Type ---
-    "formatOnSave": false,
-    "formatOnType": false,
-    "trimAutoWhitespace": true,
-    "trimTrailingWhitespace": true,
-
-    // --- Formatting ---
-    "printWidth": 100,  // Line length for Prettier formatters
-
-    // --- Display ---
-    "renderWhitespace": "selection", // "none" | "boundary" | "selection" | "all"
-    // "folding": false,
-    // "lineNumbers": "off",
-    // "minimap": { "enabled": false },
-    // "wordWrap": "on",  // "on" | "off"
-
-    // --- Optional ---
-    // "rulers": [80, 120],  // Visual guides for line length (all languages)
-    // "fontSize": 14,
-    // "bracketPairColorization.enabled": true,
-}`;
 
 /** Default per-extension config — empty override, only add what differs from global */
 export const DEFAULT_EXTENSION_CONFIG = `{
@@ -243,81 +318,6 @@ export function getExtensionConfigTemplate(ext: string): string {
 
 	return DEFAULT_EXTENSION_CONFIG;
 }
-
-/** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
-export const OBSIDIAN_NATIVE_EXTENSIONS = [
-	'md',
-	'canvas',
-	'pdf',
-	'png',
-	'jpg',
-	'jpeg',
-	'gif',
-	'bmp',
-	'svg',
-	'webp',
-	'mp3',
-	'wav',
-	'm4a',
-	'ogg',
-	'3gp',
-	'flac',
-	'mp4',
-	'webm',
-	'ogv',
-	'mov',
-	'mkv',
-	'base'
-];
-
-/** Plugin default settings applied on first install */
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	extensions: [
-		'ts',
-		'tsx',
-		'js',
-		'jsx',
-		'py',
-		'json',
-		'jsonc',
-		'css',
-		'html',
-		'sh',
-		'yaml',
-		'sql',
-		'php',
-		'cs',
-		'java',
-		'go',
-		'rs',
-		'cpp',
-		'c'
-	],
-	semanticValidation: true,
-	syntaxValidation: true,
-	theme: 'default',
-	recentThemes: [],
-	autoSave: false,
-	editorBrightness: 1,
-	wordWrap: 'off',
-	folding: true,
-	lineNumbers: true,
-	minimap: true,
-	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
-	allExtensions: true,
-	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
-	extraExtensions: [],
-	maxFileSize: 10,
-	projectRootFolder: '',
-	lastSelectedConfigExtension: '',
-	commandPaletteHotkeyOverride: '',
-	settingsHotkeyOverride: '',
-	deleteFileHotkeyOverride: '',
-	excludedFolders: ['.git', 'node_modules', '.trash'],
-	revealedFiles: {},
-	autoRevealRegisteredDotfiles: true,
-	temporaryRevealedPaths: []
-};
 
 /** Obsidian view type identifier for the Monaco editor */
 export const viewType = 'code-editor';
