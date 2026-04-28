@@ -186,9 +186,9 @@ async setState(
 
 Obsidian's workspace layout persistence relies on `setViewState()` to properly serialize and restore view state. When creating a view manually with `new CodeEditorView()` and `leaf.open(view)`, the state is not properly registered in the workspace layout, causing the tab to disappear on restart.
 
-### Why read content in `setState()`?
+### Why reveal files in `setState()`?
 
-External files are not indexed in Obsidian's vault cache. When `super.setState()` is called, it tries to load the file through Obsidian's normal file loading mechanism, which fails for external files. By reading the content directly with `adapter.read()` and setting `this.data` before mounting the editor, we bypass the vault's file loading system entirely.
+External files (like CSS snippets) are not indexed in Obsidian's vault cache. When `super.setState()` is called, it tries to load the file through Obsidian's normal file loading mechanism, which would normally fail for external files. By calling `revealFiles()` to temporarily inject the file into Obsidian's index before calling `super.setState()`, we allow Obsidian's standard file loading system to work normally.
 
 ### Why check `state.reveal`?
 

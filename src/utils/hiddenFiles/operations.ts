@@ -28,6 +28,7 @@ export async function revealFiles(
 
 	for (const itemPath of itemPaths) {
 		try {
+			// to check if the file exists
 			const stat = await adapter.stat(itemPath);
 			if (!stat) continue;
 
