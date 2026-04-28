@@ -13,7 +13,7 @@ import {
 	TFile
 } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { CodeEditorView } from '../editor/codeEditorView/index.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import {
@@ -190,7 +190,7 @@ export class CreateCodeFileModal extends Modal {
 			const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 			if (existingFile && existingFile instanceof TFile) {
 				new Notice('File already exists, opening...');
-				void CodeEditorView.openVaultFile(existingFile, this.plugin, true);
+				void openInMonacoLeaf(existingFile, this.plugin, true);
 			} else {
 				new Notice('File already exists but could not be opened');
 			}
@@ -240,7 +240,7 @@ export class CreateCodeFileModal extends Modal {
 			}
 		}
 
-		void CodeEditorView.openFile(newFile, this.plugin, true);
+		void openInMonacoLeaf(newFile, this.plugin, true);
 	}
 
 	onClose(): void {

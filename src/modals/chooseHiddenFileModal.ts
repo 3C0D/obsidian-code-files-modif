@@ -8,13 +8,13 @@
 import type { TFolder } from 'obsidian';
 import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
-import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { HiddenFileSuggestion } from '../types/types.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 import { revealFiles } from '../utils/hiddenFiles/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 /** Modal for choosing hidden files in a folder to open in Monaco.
  *  "Hidden" means absent from the vault's known files,
@@ -134,18 +134,13 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<HiddenFileSuggestio
 		return item.path;
 	}
 
-	onChooseItem(item: HiddenFileSuggestion, _evt: MouseEvent | KeyboardEvent): void {
+	async onChooseItem(item: HiddenFileSuggestion, _evt: MouseEvent | KeyboardEvent): Promise<void> {
 		const path = normalizePath(item.path);
 		const folder = path.substring(0, path.lastIndexOf('/'));
-		void revealFiles(this.plugin, folder, [path], true, false).then(async () => {
+		await revealFiles(this.plugin, folder, [path], true, false).then(async () => {
 			this.plugin.settings.temporaryRevealedPaths.push(path);
 			await this.plugin.saveSettings();
-			const file = this.plugin.app.vault.getFileByPath(path);
-			if (file) {
-				await CodeEditorView.openVaultFile(file, this.plugin, true);
-			} else {
-				await CodeEditorView.openExternalFile(path, this.plugin);
-			}
+			await openInMonacoLeaf(path, this.plugin, true);
 		});
 	}
 

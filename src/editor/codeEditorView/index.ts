@@ -23,7 +23,6 @@ import { broadcastOptions } from '../../utils/broadcast.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
 import { revealFiles, unrevealFiles } from '../../utils/hiddenFiles/index.ts';
-import { openFile, openVaultFile, openExternalFile } from './editorOpeners.ts';
 import {
 	updateExtBadge,
 	updateDirtyBadgeVisibility,
@@ -508,40 +507,5 @@ export class CodeEditorView extends TextFileView {
 				this.codeEditor.setValue(data);
 			}
 		}
-	}
-
-	/** Opens a vault file in a leaf (new tab or current leaf based on parameter). */
-	static async openVaultFile(
-		file: TFile,
-		plugin: CodeFilesPlugin,
-		newTab = false
-	): Promise<void> {
-		await openVaultFile(file, plugin, newTab);
-	}
-
-	/** Opens external files (CSS snippets) via an adapter path (not vault-indexed).
-	 *  Reuses existing tab if file is already open, otherwise creates a new tab.
-	 *  Constructs a pseudo TFile internally since the path is outside the vault. */
-	static async openExternalFile(
-		filePath: string,
-		plugin: CodeFilesPlugin
-	): Promise<void> {
-		await openExternalFile(filePath, plugin);
-	}
-
-	/**
-	 * Opens any file in Monaco.
-	 *  If the file is in the vault, it opens it in a leaf (new tab or current leaf based on parameter).
-	 *  If the file is not in the vault, it opens it in a new leaf via an adapter path (not vault-indexed).
-	 *  @param file The file to open.
-	 *  @param plugin The CodeFilesPlugin instance.
-	 *  @param newTab Whether to open the file in a new tab or the current leaf.
-	 */
-	static async openFile(
-		file: TFile,
-		plugin: CodeFilesPlugin,
-		newTab = false
-	): Promise<void> {
-		await openFile(file, plugin, newTab);
 	}
 }

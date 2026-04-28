@@ -16,7 +16,6 @@ import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItems } from '../types/types.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
-import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {
 	addExtension,
@@ -27,6 +26,8 @@ import {
 	getActiveExtensions
 } from '../utils/extensionUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
+import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 
 /**
  * Registers two context menus:
@@ -177,7 +178,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 		items.push({
 			title: 'Open in Monaco Editor',
 			icon: 'file-code-corner',
-			action: async () => await CodeEditorView.openFile(file, plugin)
+			action: async () => await openInMonacoLeaf(file, plugin, true)
 		});
 	}
 
@@ -227,25 +228,27 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 	return items;
 }
 
-/** Builds the submenu items shown both in the tab
- *  header file-menu and the markdown editor-menu.
+/** Builds the submenu items shown in the markdown editor-menu.
  */
 function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 	const activeFile = plugin.app.workspace.getActiveFile();
-
+	const isCodeEditor = !!plugin.app.workspace.getActiveViewOfType(CodeEditorView);
 	const items: MenuItems[] = [];
+	if (!activeFile) {
+		return [];
+	}
+		
+	items.push({
+		title: 'Rename (Name/ext)',
+		icon: 'pencil',
+		action: () => new RenameExtensionModal(plugin, activeFile).open()
+	});
 
-	// Both items require an active file — no fallback items if none
-	if (activeFile) {
+	if (!isCodeEditor) {
 		items.push({
 			title: 'Open in Monaco Editor',
 			icon: 'file-code-corner',
-			action: async () => await CodeEditorView.openFile(activeFile, plugin)
-		});
-		items.push({
-			title: 'Rename (Name/ext)',
-			icon: 'pencil',
-			action: () => new RenameExtensionModal(plugin, activeFile).open()
+			action: async () => await openInMonacoLeaf(activeFile, plugin, false)
 		});
 	}
 

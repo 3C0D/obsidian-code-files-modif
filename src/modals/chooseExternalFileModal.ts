@@ -6,11 +6,11 @@
 import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { FileSuggestion } from '../types/types.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> {
 	private files: FileSuggestion[] = [];
@@ -108,8 +108,8 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
 		return item.path;
 	}
 
-	onChooseItem(item: FileSuggestion, _evt: MouseEvent | KeyboardEvent): void {
-		void CodeEditorView.openExternalFile(item.path, this.plugin);
+	async onChooseItem(item: FileSuggestion, _evt: MouseEvent | KeyboardEvent): Promise<void> {
+		await openInMonacoLeaf(item.path, this.plugin, true);
 	}
 
 	renderSuggestion(item: FuzzyMatch<FileSuggestion>, el: HTMLElement): void {

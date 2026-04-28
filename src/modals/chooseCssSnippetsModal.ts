@@ -5,9 +5,9 @@
  * Opens the selected or created snippet in Monaco Editor.
  */
 import { normalizePath, Notice, SuggestModal } from 'obsidian';
-import { CodeEditorView } from '../editor/codeEditorView/index.ts';
-import type CodeFilesPlugin from '../main.ts';
 import type { CssSuggestion } from '../types/types.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
+import type CodeFilesPlugin from '../main.ts';
 
 /** Modal for choosing an existing CSS file or creating a new one */
 export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
@@ -58,7 +58,7 @@ export class ChooseCssFileModal extends SuggestModal<CssSuggestion> {
 				4000
 			);
 		}
-		await CodeEditorView.openExternalFile(path, this.plugin);
+		await openInMonacoLeaf(path, this.plugin, true);
 	}
 
 	renderSuggestion(item: CssSuggestion, el: HTMLElement): void {
