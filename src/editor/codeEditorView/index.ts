@@ -83,7 +83,13 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	getDisplayText(): string {
-		return this.file?.basename ?? 'Code Editor';
+		if (!this.file) return 'Code Editor';
+		const configDir = this.plugin.app.vault.configDir;
+		if (this.file.path.startsWith(`${configDir}/`)) {
+			// Return the full relative path from the vault root, e.g. ".obsidian/snippets/style.css"
+			return this.file.path;
+		}
+		return this.file.basename;
 	}
 
 	getViewType(): string {
