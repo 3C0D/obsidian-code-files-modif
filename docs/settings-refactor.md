@@ -74,10 +74,23 @@ Global settings: AutoSave, WordWrap, Folding, Line Numbers, Minimap, Semantic Va
 
 **Location:** `CodeEditorView`
 
-- `requestSave()` blocked when autoSave OFF
-- `save()` blocked except when `forceSave = true`
-- **Ctrl+S:** sets `forceSave = true`, allows save
-- **Obsidian close:** `forceSave = false` → blocked → unsaved changes lost (intended)
+**Architecture: Callbacks vs Gatekeeper**
+The integration relies on a clear separation of concerns between the editor's event callbacks and the central save mechanism. 
+
+When mounting the editor (`mountCodeEditor`), we inject callbacks that act simply as "intent signals", without needing to know the current state of settings like `autoSave`:
+
+1. **`onChange` callback:** Triggered every time the user types. It asks Obsidian to queue an automatic save (`requestSave()`).
+   * **Why `requestSave`?** Because Monaco runs in an isolated `iframe`, Obsidian is "blind" to user typing events. `requestSave()` acts as an alarm clock. It tells Obsidian's internal timer: *"The user typed something, start your 2-second countdown"*. Once the countdown finishes, Obsidian automatically calls `save()`.
+2. **`onSave` callback:** Triggered explicitly by `Ctrl+S`. It sets a "VIP pass" (`forceSave = true`) and immediately forces a save (`this.save()`).
+
+**The Gatekeeper (`save()` function)**
+Obsidian's parent class (`TextFileView`) is designed to constantly trigger automatic background saves (on focus loss, timeouts, or via our `requestSave` requests) by calling `save()`.
+
+If we only checked `if (!autoSave) return;` inside `save()`, we would block **all** saves, including intentional manual saves by the user. This is where `forceSave` acts as the VIP pass for manual saves:
+
+- **Obsidian's background saves (or `onChange`):** Call `save()` → `forceSave` is false → Blocked by the gatekeeper when autoSave is OFF.
+- **Manual Save (Ctrl+S):** Callback explicitly sets `forceSave = true` → calls `save()` → Allowed by the gatekeeper despite autoSave being OFF → Resets `forceSave = false`.
+- **Obsidian close:** `forceSave` is false → Blocked → Unsaved changes are intentionally lost.
 
 ### Visual Indicator
 

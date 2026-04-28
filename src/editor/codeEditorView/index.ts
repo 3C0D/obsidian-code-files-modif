@@ -154,6 +154,7 @@ export class CodeEditorView extends TextFileView {
 	 *                and could be simplified in the future.
 	 */
 	async save(clear?: boolean): Promise<void> {
+		// Only save when autoSave is enabled or when forceSave is true (set by Ctrl+S)
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
 		// External files (in configDir, e.g. .obsidian/snippets/)
 		// must bypass vault.modify() which triggers Obsidian's
