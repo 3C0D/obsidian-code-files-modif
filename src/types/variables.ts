@@ -96,7 +96,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	lineNumbers: true,
 	minimap: true,
 	editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
-	allExtensions: true,
+	allExtensions: false,
 	excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
 	extraExtensions: [],
 	maxFileSize: 10,
