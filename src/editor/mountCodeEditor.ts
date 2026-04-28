@@ -365,7 +365,7 @@ Element.prototype.appendChild = function(node) {
 				send('init', initParams);
 				send('change-value', { value });
 				if (autoFocus) send('focus', {});
-				void loadProjectFiles(send);
+				await loadProjectFiles(send);
 				break;
 			}
 			case 'open-formatter-config': {
@@ -507,6 +507,7 @@ Element.prototype.appendChild = function(node) {
 					} | null;
 					const file = plugin.app.vault.getFileByPath(vaultPath);
 					if (!file) break;
+					console.debug('open-file in mountCodeEditor');
 
 					// Look for an existing leaf in the main editor area (no sidebars, no popout windows)
 					const existingLeaf = plugin.app.workspace
