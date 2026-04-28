@@ -312,9 +312,14 @@ export class CodeEditorView extends TextFileView {
 			this.getContext(file),
 			this.contentEl,
 			() => {
-				this.setDirty(true);
-				// Debounced this.save() 2s
-				this.requestSave();
+				if (this.codeEditor.getValue() === this.data) {
+					// Content reverted to saved state: clear dirty without saving
+					this.setDirty(false);
+				} else {
+					this.setDirty(true);
+					// Debounced this.save() 2s
+					this.requestSave();
+				}
 			},
 			() => {
 				this.forceSave = true;
