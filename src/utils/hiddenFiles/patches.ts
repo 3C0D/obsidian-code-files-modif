@@ -37,8 +37,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				normalizedPath: string
 			) {
 				if (!_bypassPatch) {
-					const basename =
-						normalizedPath.split('/').pop() || '';
+					const basename = normalizedPath.split('/').pop() || '';
 					// Always protect dotfiles (e.g. .env)
 					if (basename.startsWith('.')) return;
 					// Protect files inside configDir
@@ -47,19 +46,10 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 					// the plugin (temporary or manual
 					// reveal). Uses synchronous checks
 					// to avoid deadlock with the watcher.
-					const cfgDir =
-						plugin.app.vault.configDir;
-					if (
-						normalizedPath.startsWith(
-							cfgDir + '/'
-						)
-					) {
-						const tmp =
-							plugin.settings
-								.temporaryRevealedPaths;
-						const rev = Object.values(
-							plugin.settings.revealedFiles
-						).flat();
+					const cfgDir = plugin.app.vault.configDir;
+					if (normalizedPath.startsWith(cfgDir + '/')) {
+						const tmp = plugin.settings.temporaryRevealedPaths;
+						const rev = Object.values(plugin.settings.revealedFiles).flat();
 						if (
 							tmp.includes(normalizedPath) ||
 							rev.includes(normalizedPath)
@@ -68,11 +58,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 						}
 					}
 				}
-				return next.call(
-					this,
-					realPath,
-					normalizedPath
-				);
+				return next.call(this, realPath, normalizedPath);
 			};
 		}
 	});

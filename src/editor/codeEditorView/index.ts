@@ -109,7 +109,10 @@ export class CodeEditorView extends TextFileView {
 		const state = super.getState() as Record<string, unknown>;
 		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
 		const configDir = this.plugin.app.vault.configDir;
-		if (this.file && (!this.file.extension || this.file.path.startsWith(`${configDir}/`))) {
+		if (
+			this.file &&
+			(!this.file.extension || this.file.path.startsWith(`${configDir}/`))
+		) {
 			state.reveal = true;
 		}
 		return state;
@@ -167,15 +170,9 @@ export class CodeEditorView extends TextFileView {
 		// internal watcher → reconcileDeletion → tab closes.
 		// Write directly via adapter.write() instead.
 		const configDir = this.plugin.app.vault.configDir;
-		if (
-			this.file &&
-			this.file.path.startsWith(configDir + '/')
-		) {
+		if (this.file && this.file.path.startsWith(configDir + '/')) {
 			const content = this.getViewData();
-			await this.plugin.app.vault.adapter.write(
-				this.file.path,
-				content
-			);
+			await this.plugin.app.vault.adapter.write(this.file.path, content);
 			this.data = content;
 		} else {
 			await super.save(clear);

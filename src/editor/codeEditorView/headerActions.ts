@@ -123,7 +123,8 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 	// Added LAST so they appear on the LEFT
 	const configDir = context.plugin.app.vault.configDir;
 	const isSnippetFile =
-		file.path.startsWith(`${configDir}/snippets`) && getExtension(file.name) === 'css';
+		file.path.startsWith(`${configDir}/snippets`) &&
+		getExtension(file.name) === 'css';
 	if (isSnippetFile) {
 		const snippetName = file.basename;
 		const exists = snippetExists(context.plugin.app, snippetName);

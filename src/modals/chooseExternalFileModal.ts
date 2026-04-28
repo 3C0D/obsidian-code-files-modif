@@ -108,7 +108,10 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
 		return item.path;
 	}
 
-	async onChooseItem(item: FileSuggestion, _evt: MouseEvent | KeyboardEvent): Promise<void> {
+	async onChooseItem(
+		item: FileSuggestion,
+		_evt: MouseEvent | KeyboardEvent
+	): Promise<void> {
 		await openInMonacoLeaf(item.path, this.plugin, true);
 	}
 

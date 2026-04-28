@@ -134,7 +134,10 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<HiddenFileSuggestio
 		return item.path;
 	}
 
-	async onChooseItem(item: HiddenFileSuggestion, _evt: MouseEvent | KeyboardEvent): Promise<void> {
+	async onChooseItem(
+		item: HiddenFileSuggestion,
+		_evt: MouseEvent | KeyboardEvent
+	): Promise<void> {
 		const path = normalizePath(item.path);
 		const folder = path.substring(0, path.lastIndexOf('/'));
 		await revealFiles(this.plugin, folder, [path], true, false).then(async () => {

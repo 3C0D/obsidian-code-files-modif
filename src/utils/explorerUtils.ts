@@ -8,7 +8,6 @@ import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView, FileTreeItem, FolderTreeItem } from 'obsidian-typings';
 import { TFile, TFolder } from 'obsidian';
 import { getActiveExtensions } from './extensionUtils.ts';
-import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 import { getExtension } from './fileUtils.ts';
 
 const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
@@ -83,10 +82,7 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 				}
 
 				// Unregistered badge
-				if (
-					!activeExts.includes(file.extension) &&
-					!OBSIDIAN_NATIVE_EXTENSIONS.includes(file.extension)
-				) {
+				if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
 					tagEl?.classList.add('code-files-unregistered-badge');
 				}
 			}

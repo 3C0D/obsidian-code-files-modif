@@ -237,7 +237,7 @@ function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 	if (!activeFile) {
 		return [];
 	}
-		
+
 	items.push({
 		title: 'Rename (Name/ext)',
 		icon: 'pencil',

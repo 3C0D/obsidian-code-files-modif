@@ -35,7 +35,7 @@ export async function openInMonacoLeaf(
 		active: true,
 		state: {
 			file: filePath,
-			...(isExternal && { external: true, reveal: true }),
-		},
+			...(isExternal && { external: true, reveal: true })
+		}
 	});
 }

@@ -37,30 +37,33 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 				file: TFile,
 				openState?: OpenViewState
 			) {
-				console.debug('openFile patch in openFilePatch', file);
+				console.debug('openFile patch in openFilePatch');
 				// Intercept files with no Obsidian extension (dotfiles + extension-less)
 				if (file && !file.extension) {
 					const ext = getExtension(file.name);
-					if (!ext || getActiveExtensions(plugin.settings).includes(ext)) {
-						// Check if file is already open in a leaf
-						const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
-							const view = leaf.view as { file?: { path: string } };
-							return view.file?.path === file.path;
-						});
+					const isKnownToObsidian =
+						!!plugin.app.viewRegistry.typeByExtension[ext];
+					const isKnownToMonaco =
+						!ext || getActiveExtensions(plugin.settings).includes(ext);
 
+					// Avoid openining tabs for unknown extensions
+					if (!isKnownToObsidian && !isKnownToMonaco) {
+						return; // Unknown everywhere — do nothing
+					}
+
+					if (isKnownToMonaco) {
+						const existingLeaf = plugin.app.workspace
+							.getLeavesOfType(viewType)
+							.find((leaf) => {
+								const view = leaf.view as { file?: { path: string } };
+								return view.file?.path === file.path;
+							});
 						if (existingLeaf) {
-							// File already open — activate that leaf
-							plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+							plugin.app.workspace.revealLeaf(existingLeaf);
 							return;
 						}
-
-						// Redirect to Monaco instead of OS handler
 						return this.setViewState(
-							{
-								type: viewType,
-								state: { file: file.path },
-								active: true
-							},
+							{ type: viewType, state: { file: file.path }, active: true },
 							openState
 						);
 					}
