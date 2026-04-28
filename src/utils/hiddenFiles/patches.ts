@@ -36,11 +36,43 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 				realPath: string,
 				normalizedPath: string
 			) {
-				const basename = normalizedPath.split('/').pop() || '';
-				if (basename.startsWith('.') && !_bypassPatch) {
-					return;
+				if (!_bypassPatch) {
+					const basename =
+						normalizedPath.split('/').pop() || '';
+					// Always protect dotfiles (e.g. .env)
+					if (basename.startsWith('.')) return;
+					// Protect files inside configDir
+					// (e.g. .obsidian/snippets/my.css)
+					// that are currently tracked by
+					// the plugin (temporary or manual
+					// reveal). Uses synchronous checks
+					// to avoid deadlock with the watcher.
+					const cfgDir =
+						plugin.app.vault.configDir;
+					if (
+						normalizedPath.startsWith(
+							cfgDir + '/'
+						)
+					) {
+						const tmp =
+							plugin.settings
+								.temporaryRevealedPaths;
+						const rev = Object.values(
+							plugin.settings.revealedFiles
+						).flat();
+						if (
+							tmp.includes(normalizedPath) ||
+							rev.includes(normalizedPath)
+						) {
+							return;
+						}
+					}
 				}
-				return next.call(this, realPath, normalizedPath);
+				return next.call(
+					this,
+					realPath,
+					normalizedPath
+				);
 			};
 		}
 	});

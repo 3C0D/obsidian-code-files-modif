@@ -155,7 +155,24 @@ export class CodeEditorView extends TextFileView {
 	 */
 	async save(clear?: boolean): Promise<void> {
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
-		await super.save(clear);
+		// External files (in configDir, e.g. .obsidian/snippets/)
+		// must bypass vault.modify() which triggers Obsidian's
+		// internal watcher → reconcileDeletion → tab closes.
+		// Write directly via adapter.write() instead.
+		const configDir = this.plugin.app.vault.configDir;
+		if (
+			this.file &&
+			this.file.path.startsWith(configDir + '/')
+		) {
+			const content = this.getViewData();
+			await this.plugin.app.vault.adapter.write(
+				this.file.path,
+				content
+			);
+			this.data = content;
+		} else {
+			await super.save(clear);
+		}
 		this.forceSave = false;
 	}
 
