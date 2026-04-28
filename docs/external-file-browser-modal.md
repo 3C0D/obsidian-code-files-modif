@@ -29,32 +29,33 @@ Modal permettant d'ouvrir n'importe quel fichier extérieur au vault Obsidian da
 - Démarre dans `.obsidian/` au lieu du vault root
 - Scanne TOUS les fichiers (pas seulement les hidden)
 - Pas de révélation temporaire (fichiers déjà accessibles via adapter)
-- Ouvre via `CodeEditorView.openExternalFile()` directement
+- Ouvre via `openInMonacoLeaf()` directement
 
 **Code structure**:
 
 ```typescript
 export class ExternalFileBrowserModal extends SuggestModal<FileSuggestion> {
     private files: FileSuggestion[] = [];
-    
+
     constructor(private plugin: CodeFilesPlugin) {
         super(plugin.app);
         this.setPlaceholder('Search files in .obsidian/...');
     }
-    
+
     async onOpen(): Promise<void> {
         await this.scanFolder('.obsidian');
         this.inputEl.dispatchEvent(new Event('input'));
     }
-    
+
     private async scanFolder(folderPath: string): Promise<void> {
         // Récursif, même logique que chooseHiddenFileModal
         // Filtrage: EXCLUDED_EXTENSIONS + maxFileSize
         // Exclusion des dossiers: .git, node_modules, .trash (depuis settings)
     }
-    
+
     async onChooseSuggestion(item: FileSuggestion): Promise<void> {
-        await CodeEditorView.openExternalFile(item.path, this.plugin);
+        const { openInMonacoLeaf } = await import('../editor/codeEditorView/editorOpeners.ts');
+        await openInMonacoLeaf(item.path, this.plugin, true); // Open in new tab for external files
     }
 }
 ```
@@ -108,7 +109,7 @@ plugin.addCommand({
 
 ### Ouverture du fichier
 
-- Utilise `CodeEditorView.openExternalFile(path, plugin)` (déjà existant)
+- Utilise `openInMonacoLeaf(path, plugin, true)` (ouvre dans une nouvelle tab)
 - Ouvre dans une **nouvelle tab** (comportement identique aux CSS snippets)
 - Pas de révélation dans le vault (fichiers restent externes)
 - Pas de persistence dans `temporaryRevealedPaths` (pas nécessaire)
@@ -166,7 +167,7 @@ plugin.addCommand({
  */
 import { SuggestModal, normalizePath, Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { CodeEditorView } from '../editor/codeEditorView.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 
 interface FileSuggestion {
@@ -260,7 +261,7 @@ export class ExternalFileBrowserModal extends SuggestModal<FileSuggestion> {
     }
 
     async onChooseSuggestion(item: FileSuggestion): Promise<void> {
-        await CodeEditorView.openExternalFile(item.path, this.plugin);
+        await openInMonacoLeaf(item.path, this.plugin, true); // Open in new tab for external files
     }
 
     renderSuggestion(item: FileSuggestion, el: HTMLElement): void {

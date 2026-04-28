@@ -8,7 +8,7 @@ External files (CSS snippets and files in `.obsidian/`) were not persisting corr
 
 ## Root Cause
 
-The `openExternalFile()` method was manually creating a `TFile` and a view with `new CodeEditorView()` and `leaf.open(view)`, instead of using `setViewState()` which properly handles persistence in Obsidian's workspace layout.
+The `openInMonacoLeaf()` method now handles all file opening (vault and external), using `setViewState()` which properly handles persistence in Obsidian's workspace layout. Previously, `openExternalFile()` was manually creating a `TFile` and a view with `new CodeEditorView()` and `leaf.open(view)`.
 
 ---
 
@@ -38,44 +38,54 @@ static async openExternalFile(
 }
 ```
 
-### 1. Method `openExternalFile()` - After
+### 1. Unified Method `openInMonacoLeaf()` - Current
 
 ```typescript
-/** Opens external files (CSS snippets) via an adapter path (not vault-indexed).
- *  Reuses existing tab if file is already open, otherwise creates a new tab.
- *  Constructs a pseudo TFile internally since the path is outside the vault. */
-static async openExternalFile(
-	filePath: string,
-	plugin: CodeFilesPlugin
+/**
+ * Opens a file (vault or external) in a Monaco editor leaf.
+ * Activates an existing leaf if the file is already open,
+ * otherwise opens it in a new tab or the current leaf.
+ * @param fileOrPath - TFile or absolute path of the file to open.
+ * @param plugin - The CodeFilesPlugin instance.
+ * @param newTab - Whether to open in a new tab or reuse the current leaf.
+ */
+export async function openInMonacoLeaf(
+	fileOrPath: TFile | string,
+	plugin: CodeFilesPlugin,
+	newTab: boolean
 ): Promise<void> {
-	// Check if file is already open in a leaf
+	const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
+	const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
+
+	// Activate existing leaf if file is already open
 	const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
-		const view = leaf.view as CodeEditorView;
+		const view = leaf.view as { file?: { path: string } };
 		return view.file?.path === filePath;
 	});
-
 	if (existingLeaf) {
-		// File already open — activate that leaf
-		plugin.app.workspace.setActiveLeaf(existingLeaf, { focus: true });
+		plugin.app.workspace.revealLeaf(existingLeaf);
 		return;
 	}
 
-	// Always create a new tab for external files
-	const leaf = plugin.app.workspace.getLeaf('tab');
-	// Use setViewState for proper state management and persistence
+	// Open in new tab or current leaf
+	const leaf = plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
 	await leaf.setViewState({
 		type: viewType,
-		state: { file: filePath, reveal: true },
-		active: true
+		active: true,
+		state: {
+			file: filePath,
+			...(isExternal && { external: true, reveal: true }),
+		},
 	});
 }
 ```
 
 **Key changes:**
+- Unified function handles both vault and external files
 - Added check if file is already open (tab reuse)
 - Using `setViewState()` instead of manually creating the view
-- Passing `reveal: true` in state for persistence
-- Using `getLeaf('tab')` to always create a new tab
+- Passing `external: true, reveal: true` in state for external files persistence
+- Using `revealLeaf()` instead of deprecated `setActiveLeaf()`
 
 ---
 
@@ -175,7 +185,7 @@ async setState(
 
 ## Affected Files
 
-- `src/editor/codeEditorView.ts` (3 methods modified)
+- `src/editor/codeEditorView/editorOpeners.ts` (`openInMonacoLeaf` function)
 - Used by:
   - `src/modals/chooseCssSnippetsModal.ts` (CSS snippets)
   - `src/modals/chooseExternalFileModal.ts` (all files in `.obsidian/`)

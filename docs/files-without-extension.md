@@ -198,14 +198,15 @@ When creating a file with only an extension (no name), like `.prettierrc`, the m
 
 **The Fix:** (`createCodeFileModal.ts`)
 
-Use `CodeEditorView.openFile()` instead of `openVaultFile()` after creating the file:
+Use `openInMonacoLeaf()` instead of `openVaultFile()` after creating the file:
 
 ```typescript
 const newFile = await this.app.vault.create(newPath, '');
-void CodeEditorView.openFile(newFile, this.plugin);
+const { openInMonacoLeaf } = await import('../editor/codeEditorView/editorOpeners.ts');
+void openInMonacoLeaf(newFile, this.plugin, false); // Open in current leaf
 ```
 
-`openFile()` checks if the file exists in the vault with `getAbstractFileByPath()` before opening, handling newly created files correctly.
+`openInMonacoLeaf()` checks if the file exists in the vault with `getAbstractFileByPath()` before opening, handling newly created files correctly.
 
 ### Testing
 
