@@ -121,8 +121,9 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 
 	// Add snippet controls ONLY when editing a CSS snippet file
 	// Added LAST so they appear on the LEFT
+	const configDir = context.plugin.app.vault.configDir;
 	const isSnippetFile =
-		file.path.includes('.obsidian/snippets') && getExtension(file.name) === 'css';
+		file.path.startsWith(`${configDir}/snippets`) && getExtension(file.name) === 'css';
 	if (isSnippetFile) {
 		const snippetName = file.basename;
 		const exists = snippetExists(context.plugin.app, snippetName);
@@ -132,7 +133,7 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 			'Open snippets folder',
 			() => {
 				context.plugin.app.openWithDefaultApp(
-					normalizePath('.obsidian/snippets')
+					normalizePath(`${context.plugin.app.vault.configDir}/snippets`)
 				);
 			}
 		);

@@ -103,7 +103,8 @@ export class CodeEditorView extends TextFileView {
 	getState(): Record<string, unknown> {
 		const state = super.getState() as Record<string, unknown>;
 		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
-		if (this.file && (!this.file.extension || this.file.path.includes('.obsidian'))) {
+		const configDir = this.plugin.app.vault.configDir;
+		if (this.file && (!this.file.extension || this.file.path.startsWith(`${configDir}/`))) {
 			state.reveal = true;
 		}
 		return state;

@@ -1,6 +1,6 @@
 /**
- * Modal for browsing and opening external files in .obsidian/ folder.
- * Recursively scans .obsidian/, filters by size and extension,
+ * Modal for browsing and opening external files in the config folder (e.g. .obsidian/).
+ * Recursively scans the config folder, filters by size and extension,
  * and opens selected files in Monaco Editor.
  */
 import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
@@ -17,7 +17,7 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
 
 	constructor(private plugin: CodeFilesPlugin) {
 		super(plugin.app);
-		this.setPlaceholder('Search files in .obsidian/...');
+		this.setPlaceholder(`Search files in ${this.plugin.app.vault.configDir}/...`);
 	}
 
 	async onOpen(): Promise<void> {
@@ -28,11 +28,11 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
 
 	private async loadFiles(): Promise<void> {
 		try {
-			const obsidianPath = normalizePath('.obsidian');
-			await this.scanFolder(obsidianPath);
+			const configPath = normalizePath(this.plugin.app.vault.configDir);
+			await this.scanFolder(configPath);
 
 			if (this.files.length === 0) {
-				new Notice('No files found in .obsidian/');
+				new Notice(`No files found in ${this.plugin.app.vault.configDir}/`);
 				this.close();
 			}
 		} catch (error) {

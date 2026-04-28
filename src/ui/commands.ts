@@ -48,14 +48,14 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 
 	plugin.addCommand({
 		id: 'open-css-snippet',
-		name: 'Edit CSS Snippet',
+		name: 'Edit/create CSS snippet',
 		callback: () =>
 			new ChooseCssFileModal(plugin, plugin.app.customCss.snippets).open()
 	});
 
 	plugin.addCommand({
 		id: 'rename-extension',
-		name: 'Rename (Name.ext) of current file',
+		name: 'Rename current file (name/ext)',
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (!file) return false;
@@ -87,7 +87,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 
 	plugin.addCommand({
 		id: 'open-hidden-files-vault',
-		name: 'Open Hidden Files in Vault',
+		name: 'Open hidden files in vault',
 		callback: () => {
 			new ChooseHiddenFileModal(plugin).open();
 		}
@@ -95,7 +95,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
 
 	plugin.addCommand({
 		id: 'open-external-file-browser',
-		name: 'Browse External Files (.obsidian/)',
+		name: `Open config files (${plugin.app.vault.configDir}/)`,
 		callback: () => {
 			new ExternalFileBrowserModal(plugin).open();
 		}

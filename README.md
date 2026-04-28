@@ -238,9 +238,9 @@ You can open and edit any file in your `.obsidian/` folder directly in Monaco:
 ## Renaming Files (name + extension)
 
 - Click the **pencil icon** in the tab header
-- Right-click a file in the explorer → **"Rename (Name.ext)"**
-- Right-click the file in the editor → **"Rename (Name.ext)"**
-- Command palette → **"Rename (Name.ext) of current file"**
+- Right-click a file in the explorer → **"Rename (Name/ext)"**
+- Right-click the file in the editor → **"Rename (Name/ext)"**
+- Command palette → **"Rename (Name/ext) of current file"**
 
 Allows renaming both the filename and extension:
 
@@ -382,7 +382,7 @@ Extensions control which file types open in Monaco.
 - **Register Extension** — right-click any file with an unregistered extension → Code Files → Register Extension
 - **Unregister Extension** — right-click any file with a registered custom extension → Code Files → Unregister Extension
 
-Changes take effect immediately. Extensions can also be added on the fly from the **Create Code File** modal or **Rename (Name.ext)** dialog.
+Changes take effect immediately. Extensions can also be added on the fly from the **Create Code File** modal or **Rename (Name/ext)** dialog.
 
 ---
 

@@ -101,7 +101,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 						.setIcon('code')
 						.onClick(() => FenceEditModal.openOnCurrentCode(plugin, editor));
 				} else {
-					// Cursor outside a code fence: show Code Files submenu (Open in Monaco, Rename (Name.ext))
+					// Cursor outside a code fence: show Code Files submenu (Open in Monaco, Rename (Name/ext))
 					const items = getFileItems(plugin);
 					item.setTitle('Code Files').setIcon('file-code-corner');
 					const sub = item.setSubmenu();
@@ -217,9 +217,9 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 		});
 	}
 
-	// Always show "Rename (Name.ext)"
+	// Always show "Rename (Name/ext)"
 	items.push({
-		title: 'Rename (Name.ext)',
+		title: 'Rename (Name/ext)',
 		icon: 'pencil',
 		action: () => new RenameExtensionModal(plugin, file).open()
 	});
@@ -243,7 +243,7 @@ function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
 			action: async () => await CodeEditorView.openFile(activeFile, plugin)
 		});
 		items.push({
-			title: 'Rename (Name.ext)',
+			title: 'Rename (Name/ext)',
 			icon: 'pencil',
 			action: () => new RenameExtensionModal(plugin, activeFile).open()
 		});
