@@ -342,6 +342,7 @@ export class CodeEditorView extends TextFileView {
 		this.diffTimer = context.diffTimer;
 	}
 
+	/** Handles content changes in the editor editor. */
 	private onContentChange(): void {
 		if (this.codeEditor.getValue() === this.data) {
 			this.setDirty(false);
@@ -351,6 +352,7 @@ export class CodeEditorView extends TextFileView {
 		}
 	}
 
+	/** Handles manual saves (Ctrl+S). */
 	private onCtrlS(): void {
 		this.forceSave = true;
 		this.setSaving(true);
@@ -360,10 +362,12 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
+	/** Shows the diff action button after a format. */
 	private onFormat(): void {
 		this.showDiffAction();
 	}
 
+	/** Hides the diff action button (called when all blocks are reverted). */
 	private onFormatReverted(): void {
 		this.hideDiffAction();
 		this.setDirty(false);
@@ -373,6 +377,7 @@ export class CodeEditorView extends TextFileView {
 		});
 	}
 
+	/** Opens the editor settings modal. */
 	private onOpenEditorConfig(ext: string): void {
 		new EditorSettingsModal(
 			this.plugin,
@@ -385,6 +390,7 @@ export class CodeEditorView extends TextFileView {
 		).open();
 	}
 
+	/** Opens the theme picker modal. */
 	private onOpenThemePicker(): void {
 		const applyTheme = async (theme: string): Promise<void> => {
 			const params = await resolveThemeParams(this.plugin, theme);
@@ -395,14 +401,13 @@ export class CodeEditorView extends TextFileView {
 		).open();
 	}
 
+	/** Opens the rename extension modal for the current file. */
 	private onOpenRenameExtension(file: TFile): void {
 		const f = this.plugin.app.vault.getFileByPath(file.path);
-		if (f && 'extension' in f) {
-			const modal = new RenameExtensionModal(this.plugin, f, () =>
-				setTimeout(() => this.codeEditor?.send('focus', {}), 50)
-			);
-			modal.open();
-		}
+		if (!f) return;
+		new RenameExtensionModal(this.plugin, f, () =>
+			setTimeout(() => this.codeEditor?.send('focus', {}), 50)
+		).open();
 	}
 
 	/** Initializes the Monaco editor when a file is loaded into the view. */
@@ -447,9 +452,7 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.clear();
 	}
 
-	/**
-	 * Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges).
-	 */
+	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
 		// Destroys codeEditor instance and listeners
