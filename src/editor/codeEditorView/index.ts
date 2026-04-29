@@ -171,18 +171,8 @@ export class CodeEditorView extends TextFileView {
 		if (!this.codeEditor) return;
 		this.codeEditor.destroy();
 		this.removeHeaderActions();
-		if (this.diffTimer) clearTimeout(this.diffTimer);
-		this.unregisterSnippetHandler?.();
-		this.unregisterSnippetHandler = null;
 		this.unregisterThemeHandler?.();
 		this.unregisterThemeHandler = null;
-		this.gearAction = null;
-		this.themeAction = null;
-		this.snippetFolderAction = null;
-		this.snippetToggleAction = null;
-		this.returnAction = null;
-		this.diffAction = null;
-		this.diffTimer = null;
 		this.codeEditor = null!;
 	}
 
@@ -245,8 +235,6 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.send('focus', {});
 	}
 
-
-
 	/** Updates the dirty badge styling to show/hide the unsaved indicator in the header. */
 	private setDirty(isDirtyBadge: boolean): void {
 		setDirty(this.containerEl, isDirtyBadge);
@@ -290,7 +278,7 @@ export class CodeEditorView extends TextFileView {
 			() => this.onContentChange(),
 			() => this.onCtrlS(),
 			() => this.onFormat(),
-			() => this.onFormatReverted(),
+			() => this.onAllBlocksReverted(),
 			(ext) => this.onOpenEditorConfig(ext),
 			() => this.onOpenThemePicker(),
 			() => this.onOpenRenameExtension(file)
@@ -364,13 +352,8 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/** Hides the diff action button (called when all blocks are reverted). */
-	private onFormatReverted(): void {
+	private onAllBlocksReverted(): void {
 		this.hideDiffAction();
-		this.setDirty(false);
-		this.forceSave = true;
-		void this.save().then(() => {
-			this.setSaving(false);
-		});
 	}
 
 	/** Opens the editor settings modal. */
