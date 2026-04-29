@@ -295,76 +295,13 @@ export class CodeEditorView extends TextFileView {
 			this.data,
 			this.getContext(file),
 			this.contentEl,
-			() => {
-				if (this.codeEditor.getValue() === this.data) {
-					// Content reverted to saved state: clear dirty without saving
-					this.setDirty(false);
-				} else {
-					this.setDirty(true);
-					// Debounced this.save() 2s
-					this.requestSave();
-				}
-			},
-			() => {
-				this.forceSave = true;
-				this.setSaving(true);
-				// void is used to explicitly ignore the returned promise, since the save
-				// operation is already being tracked by the saving badge and we don't want
-				// unhandled promise rejections if the save fails. The save method will
-				// reset the dirty and saving states accordingly once it completes.
-				void this.save().then(() => {
-					this.setDirty(false);
-					this.setSaving(false);
-				});
-			},
-			() => {
-				// Show the diff action in the header after formatting so users can
-				// see what changed. Hidden after x seconds.
-				this.showDiffAction();
-			},
-			() => {
-				// onFormatDiffReverted — full reset
-				// as if no formatting ever happened
-				this.hideDiffAction();
-				this.setDirty(false);
-				// Save the reverted content to disk
-				this.forceSave = true;
-				void this.save().then(() => {
-					this.setSaving(false);
-				});
-			},
-			// onOpenEditorConfig
-			(ext) => {
-				new EditorSettingsModal(
-					this.plugin,
-					ext,
-					() => broadcastOptions(this.plugin),
-					(config) => {
-						this.codeEditor?.send('change-editor-config', { config });
-					},
-					() => this.codeEditor?.send('focus', {})
-				).open();
-			},
-			// onOpenThemePicker
-			() => {
-				const applyTheme = async (theme: string): Promise<void> => {
-					const params = await resolveThemeParams(this.plugin, theme);
-					this.codeEditor?.send('change-theme', params);
-				};
-				new ChooseThemeModal(this.plugin, applyTheme, () =>
-					this.codeEditor?.send('focus', {})
-				).open();
-			},
-			// onOpenRenameExtension
-			() => {
-				const f = this.plugin.app.vault.getFileByPath(file.path);
-				if (f && 'extension' in f) {
-					const modal = new RenameExtensionModal(this.plugin, f, () =>
-						setTimeout(() => this.codeEditor?.send('focus', {}), 50)
-					);
-					modal.open();
-				}
-			}
+			() => this.onContentChange(),
+			() => this.onCtrlS(),
+			() => this.onFormat(),
+			() => this.onFormatReverted(),
+			(ext) => this.onOpenEditorConfig(ext),
+			() => this.onOpenThemePicker(),
+			() => this.onOpenRenameExtension(file)
 		);
 		// Register theme change handler to follow Obsidian's theme when set to 'default'
 		this.unregisterThemeHandler = registerThemeChangeHandler(
@@ -398,6 +335,69 @@ export class CodeEditorView extends TextFileView {
 		hideDiffAction(context);
 		this.diffAction = context.diffAction;
 		this.diffTimer = context.diffTimer;
+	}
+
+	private onContentChange(): void {
+		if (this.codeEditor.getValue() === this.data) {
+			this.setDirty(false);
+		} else {
+			this.setDirty(true);
+			this.requestSave();
+		}
+	}
+
+	private onCtrlS(): void {
+		this.forceSave = true;
+		this.setSaving(true);
+		void this.save().then(() => {
+			this.setDirty(false);
+			this.setSaving(false);
+		});
+	}
+
+	private onFormat(): void {
+		this.showDiffAction();
+	}
+
+	private onFormatReverted(): void {
+		this.hideDiffAction();
+		this.setDirty(false);
+		this.forceSave = true;
+		void this.save().then(() => {
+			this.setSaving(false);
+		});
+	}
+
+	private onOpenEditorConfig(ext: string): void {
+		new EditorSettingsModal(
+			this.plugin,
+			ext,
+			() => broadcastOptions(this.plugin),
+			(config) => {
+				this.codeEditor?.send('change-editor-config', { config });
+			},
+			() => this.codeEditor?.send('focus', {})
+		).open();
+	}
+
+	private onOpenThemePicker(): void {
+		const applyTheme = async (theme: string): Promise<void> => {
+			const params = await resolveThemeParams(this.plugin, theme);
+			this.codeEditor?.send('change-theme', params);
+		};
+		new ChooseThemeModal(this.plugin, applyTheme, () =>
+			this.codeEditor?.send('focus', {})
+		).open();
+	}
+
+	private onOpenRenameExtension(file: TFile): void {
+		const f = this.plugin.app.vault.getFileByPath(file.path);
+		if (f && 'extension' in f) {
+			const modal = new RenameExtensionModal(this.plugin, f, () =>
+				setTimeout(() => this.codeEditor?.send('focus', {}), 50)
+			);
+			modal.open();
+		}
 	}
 
 	/** Initializes the Monaco editor when a file is loaded into the view. */
