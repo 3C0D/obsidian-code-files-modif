@@ -11,8 +11,7 @@ import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { FileSuggestion } from '../types/types.ts';
-import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
-import { revealFiles } from '../utils/hiddenFiles/index.ts';
+import { getMaxFileSize, handleTemporaryReveal } from '../utils/hiddenFiles/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
@@ -139,12 +138,8 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
 		_evt: MouseEvent | KeyboardEvent
 	): Promise<void> {
 		const path = normalizePath(item.path);
-		const folder = path.substring(0, path.lastIndexOf('/'));
-		await revealFiles(this.plugin, folder, [path], true, false).then(async () => {
-			this.plugin.settings.temporaryRevealedPaths.push(path);
-			await this.plugin.saveSettings();
-			await openInMonacoLeaf(path, this.plugin, true);
-		});
+		await handleTemporaryReveal(this.plugin, path);
+		await openInMonacoLeaf(path, this.plugin, true);
 	}
 
 	renderSuggestion(item: FuzzyMatch<FileSuggestion>, el: HTMLElement): void {

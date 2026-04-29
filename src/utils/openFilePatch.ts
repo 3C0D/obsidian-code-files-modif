@@ -37,7 +37,7 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 				file: TFile,
 				openState?: OpenViewState
 			) {
-				console.debug('openFile patch in openFilePatch');
+				// console.debug('openFile patch in openFilePatch');
 				// Intercept files with no Obsidian extension (dotfiles + extension-less)
 				if (file && !file.extension) {
 					const ext = getExtension(file.name);
