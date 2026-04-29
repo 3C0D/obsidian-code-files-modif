@@ -12,14 +12,11 @@
 import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
 import { TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { mountCodeEditor, resolveThemeParams } from '../mountCodeEditor.ts';
+import { mountCodeEditor } from '../mountCodeEditor.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
 import type { CodeEditorInstance, HeaderActionsContext } from '../../types/types.ts';
 import { viewType } from '../../types/variables.ts';
-import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
-import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
-import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';
-import { broadcastOptions } from '../../utils/broadcast.ts';
+import { openEditorConfig, openThemePicker, openRenameExtension } from './editorModals.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
 import { revealFiles, unrevealFiles } from '../../utils/hiddenFiles/index.ts';
@@ -201,8 +198,8 @@ export class CodeEditorView extends TextFileView {
 			diffAction: this.diffAction,
 			diffTimer: this.diffTimer,
 			unregisterSnippetHandler: this.unregisterSnippetHandler,
-			onOpenEditorConfig: (ext: string) => this.onOpenEditorConfig(ext),
-			onOpenThemePicker: () => this.onOpenThemePicker()
+			onOpenEditorConfig: (ext: string) => openEditorConfig(this.plugin, this.codeEditor, ext),
+			onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor)
 		};
 	}
 
@@ -281,9 +278,9 @@ export class CodeEditorView extends TextFileView {
 			() => this.onCtrlS(),
 			() => this.onFormat(),
 			() => this.onAllBlocksReverted(),
-			(ext) => this.onOpenEditorConfig(ext),
-			() => this.onOpenThemePicker(),
-			() => this.onOpenRenameExtension(file)
+			(ext) => openEditorConfig(this.plugin, this.codeEditor, ext),
+			() => openThemePicker(this.plugin, this.codeEditor),
+			() => openRenameExtension(this.plugin, this.codeEditor, file)
 		);
 		// Register theme change handler to follow Obsidian's theme when set to 'default'
 		this.unregisterThemeHandler = registerThemeChangeHandler(
@@ -356,39 +353,6 @@ export class CodeEditorView extends TextFileView {
 	/** Hides the diff action button (called when all blocks are reverted). */
 	private onAllBlocksReverted(): void {
 		this.hideDiffAction();
-	}
-
-	/** Opens the editor settings modal. */
-	private onOpenEditorConfig(ext: string): void {
-		new EditorSettingsModal(
-			this.plugin,
-			ext,
-			() => broadcastOptions(this.plugin),
-			(config) => {
-				this.codeEditor?.send('change-editor-config', { config });
-			},
-			() => this.codeEditor?.send('focus', {})
-		).open();
-	}
-
-	/** Opens the theme picker modal. */
-	private onOpenThemePicker(): void {
-		const applyTheme = async (theme: string): Promise<void> => {
-			const params = await resolveThemeParams(this.plugin, theme);
-			this.codeEditor?.send('change-theme', params);
-		};
-		new ChooseThemeModal(this.plugin, applyTheme, () =>
-			this.codeEditor?.send('focus', {})
-		).open();
-	}
-
-	/** Opens the rename extension modal for the current file. */
-	private onOpenRenameExtension(file: TFile): void {
-		const f = this.plugin.app.vault.getFileByPath(file.path);
-		if (!f) return;
-		new RenameExtensionModal(this.plugin, f, () =>
-			setTimeout(() => this.codeEditor?.send('focus', {}), 50)
-		).open();
 	}
 
 	/** Initializes the Monaco editor when a file is loaded into the view. */
