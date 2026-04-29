@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Type definitions for obsidian-code-files.
+ *
+ * Documentation convention used throughout this file:
+ * - `@property` tags on the interface JSDoc: visible when hovering the interface type itself
+ *   (e.g. when first constructing an object or reading a function signature).
+ * - Inline `/** ... *\/` on each property: visible when hovering `context.myProp` in consuming code.
+ *
+ * Both are intentional and complementary
+ */
 import type { DataAdapterEx } from 'obsidian-typings';
 import type { ItemView, WorkspaceLeaf } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
@@ -72,6 +82,12 @@ export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
  * The iframe is isolated from Obsidian's scope; all writes and lifecycle ops go through postMessage,
  * reads return a locally-cached value kept in sync via 'change' events.
  *
+ * @property iframe   - The iframe DOM element
+ * @property send     - Send a typed command to the iframe (theme, options, content...)
+ * @property getValue - Get current content (local cache, no postMessage)
+ * @property setValue - Set content and sync to iframe
+ * @property clear    - Clear content
+ * @property destroy  - Remove iframe, revoke blob URL, detach message listener
  */
 export interface CodeEditorInstance {
 	/** The iframe element containing the Monaco editor */
@@ -95,10 +111,13 @@ export interface CodeEditorInstance {
 	destroy: () => void;
 }
 
+/** Menu item configuration for context menus. */
 export type MenuItems = { title: string; icon: string; action: () => void };
 
 /**
  * Hotkey configuration object.
+ * @property modifiers - Array of modifier keys (e.g. ['Mod', 'Shift'])
+ * @property key - The main key (e.g. 'a')
  */
 export interface HotkeyConfig {
 	/** Array of modifier keys (e.g. ['Mod', 'Shift']) */
@@ -109,6 +128,13 @@ export interface HotkeyConfig {
 
 /**
  * Extended DataAdapter interface including internal Obsidian methods.
+ * @property reconcileFileInternal   - Internal method to reconcile a file change
+ * @property reconcileDeletion       - Internal method to reconcile a file deletion
+ * @property reconcileFolderCreation - Internal method to reconcile a folder creation
+ * @property reconcileFileChanged    - Internal method to reconcile a file modification
+ * @property listRecursive           - List all files and folders (including dotfiles)
+ * @property fs                      - Internal file system access (Mobile/Desktop abstraction)
+ * @property getFullRealPath         - Get the full physical path on disk
  */
 export interface DataAdapterWithInternal extends Omit<
 	DataAdapterEx,
@@ -141,6 +167,10 @@ export interface DataAdapterWithInternal extends Omit<
 
 /**
  * Represents a hidden item found during a file system scan.
+ * @property name     - The file or folder name (including the leading dot)
+ * @property path     - The normalized path relative to the vault root
+ * @property isFolder - Whether the item is a folder
+ * @property size     - File size in bytes
  */
 export interface HiddenItem {
 	/** The file or folder name (including the leading dot) */
@@ -160,6 +190,12 @@ export type FileSuggestion = Pick<HiddenItem, 'name' | 'path' | 'size'>;
 
 /**
  * Encapsulates the state for a folder section in the reveal hidden files modal.
+ * 
+ * @property folderPath - The normalized path of the folder
+ * @property items - Array of hidden items in this folder
+ * @property initialRevealed - Set of paths that were initially revealed when the modal opened
+ * @property selected - Set of paths currently selected by the user
+ * @property selectedForRegistration - Set of paths selected for extension registration
  */
 export interface FolderSection {
 	/** The normalized path of the folder */
@@ -176,6 +212,21 @@ export interface FolderSection {
 
 /**
  * Context for header actions in the code editor view.
+ * @property plugin - The plugin instance
+ * @property codeEditor - Monaco editor control handle
+ * @property addAction - Bound ItemView.addAction, adds a button to the view header
+ * @property onForceSave - Triggers a force save (bypasses autoSave guard)
+ * @property onShowDiff - Shows the diff action button
+ * @property onHideDiff - Hides the diff action button
+ * @property leaf - Workspace leaf containing this view
+ * @property gearAction - Gear button element, null when not mounted
+ * @property themeAction - Theme picker button element, null when not mounted
+ * @property snippetFolderAction - Snippet folder button element, null when not mounted
+ * @property snippetToggleAction - Snippet toggle button element, null when not mounted
+ * @property returnAction - Return button element, null when not mounted
+ * @property diffAction - Diff button element, null when not mounted
+ * @property diffTimer - Controls how long the diff button stays visible
+ * @property unregisterSnippetHandler - Cleanup for the active snippet event handler
  */
 export interface HeaderActionsContext {
 	/** The plugin instance */
