@@ -72,7 +72,4 @@ export function setSaving(containerEl: HTMLElement, isSaving: boolean): void {
 	badge.toggleClass('code-files-dirty-saving', isSaving);
 }
 
-/** Alias for setDirty(el, false) — marks the view as saved. */
-export function clearDirty(containerEl: HTMLElement): void {
-	setDirty(containerEl, false);
-}
+

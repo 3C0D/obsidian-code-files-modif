@@ -27,8 +27,7 @@ import {
 	updateExtBadge,
 	updateDirtyBadgeVisibility,
 	setDirty,
-	setSaving,
-	clearDirty
+	setSaving
 } from './headerBadges.ts';
 import {
 	injectHeaderActions,
@@ -231,7 +230,7 @@ export class CodeEditorView extends TextFileView {
 	private removeHeaderActions(): void {
 		const context = this.buildContext();
 		removeHeaderActions(context);
-		// Update back
+		// Sync action class properties back from context
 		this.updateFromContext(context);
 	}
 
@@ -246,10 +245,7 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.send('focus', {});
 	}
 
-	/** Clears the dirty badge (marks the view as saved). */
-	clearDirty(): void {
-		clearDirty(this.containerEl);
-	}
+
 
 	/** Updates the dirty badge styling to show/hide the unsaved indicator in the header. */
 	private setDirty(isDirtyBadge: boolean): void {

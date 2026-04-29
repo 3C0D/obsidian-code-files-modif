@@ -90,14 +90,12 @@ export class EditorSettingsModal extends Modal {
 					this.plugin.settings.autoSave = v;
 					await this.plugin.saveSettings();
 					// Update all open code editor views to show/hide dirty badge
+					// Duck typing avoids the circular import between editorSettingsModal and codeEditorView,
+					// which esbuild resolves in the wrong order and leaves the class undefined at runtime.
 					for (const view of getCodeEditorViews(this.app)) {
-						// Duck typing avoids the circular import between editorSettingsModal and codeEditorView,
-						// which esbuild resolves in the wrong order and leaves the class undefined at runtime.
-						// Note: This is technical debt; if the architecture is refactored to remove
-						// circularity, this should be replaced with a proper 'instanceof' check.
-						if (!('clearDirty' in view)) continue;
+						if (!('updateDirtyBadgeVisibility' in view)) continue;
 						if (v) {
-							view.clearDirty();
+							void view.save();
 						}
 						view.updateDirtyBadgeVisibility();
 					}
