@@ -3,14 +3,6 @@ import type CodeFilesPlugin from '../../main.ts';
 import { viewType } from '../../types/variables.ts';
 
 /**
- * Opens a file (vault or external) in a Monaco editor leaf.
- * Activates an existing leaf if the file is already open,
- * otherwise opens it in a new tab or the current leaf.
- * @param fileOrPath - TFile or absolute path of the file to open.
- * @param plugin - The CodeFilesPlugin instance.
- * @param newTab - Whether to open in a new tab or reuse the current leaf.
- */
-/**
  * Looks for an existing Monaco leaf for the given file path.
  * If found, reveals it and returns true. Otherwise returns false.
  */
@@ -29,6 +21,14 @@ export function revealExistingMonacoLeaf(
 	return false;
 }
 
+/**
+ * Opens a file (vault or external) in a Monaco editor leaf.
+ * Activates an existing leaf if the file is already open,
+ * otherwise opens it in a new tab or the current leaf.
+ * @param fileOrPath - TFile or absolute path of the file to open.
+ * @param plugin - The CodeFilesPlugin instance.
+ * @param newTab - Whether to open in a new tab or reuse the current leaf.
+ */
 export async function openInMonacoLeaf(
 	fileOrPath: TFile | string,
 	plugin: CodeFilesPlugin,
