@@ -215,11 +215,8 @@ export class CodeEditorView extends TextFileView {
 		};
 	}
 
-	/** Removes all header actions from the view. */
-	private removeHeaderActions(): void {
-		const context = this.buildContext();
-		removeHeaderActions(context);
-		// Update back
+	/** Updates class properties from the HeaderActionsContext. */
+	private updateFromContext(context: HeaderActionsContext): void {
 		this.gearAction = context.gearAction;
 		this.themeAction = context.themeAction;
 		this.snippetFolderAction = context.snippetFolderAction;
@@ -230,6 +227,15 @@ export class CodeEditorView extends TextFileView {
 		this.unregisterSnippetHandler = context.unregisterSnippetHandler;
 	}
 
+	/** Removes all header actions from the view. */
+	private removeHeaderActions(): void {
+		const context = this.buildContext();
+		removeHeaderActions(context);
+		// Update back
+		this.updateFromContext(context);
+	}
+
+	/** Cleans up the view when it's closed. */
 	async onClose(): Promise<void> {
 		await super.onClose();
 		this.cleanup();
@@ -270,14 +276,7 @@ export class CodeEditorView extends TextFileView {
 		const context = this.buildContext();
 		injectHeaderActions(context, file);
 		// Update back
-		this.gearAction = context.gearAction;
-		this.themeAction = context.themeAction;
-		this.snippetFolderAction = context.snippetFolderAction;
-		this.snippetToggleAction = context.snippetToggleAction;
-		this.returnAction = context.returnAction;
-		this.diffAction = context.diffAction;
-		this.diffTimer = context.diffTimer;
-		this.unregisterSnippetHandler = context.unregisterSnippetHandler;
+		this.updateFromContext(context);
 	}
 
 	/** Creates the Monaco editor instance with callbacks for content changes
