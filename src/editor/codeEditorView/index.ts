@@ -68,7 +68,7 @@ export class CodeEditorView extends TextFileView {
 		super(leaf);
 	}
 
-	/** Expose the Monaco editor instance to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
+	/** Expose the Monaco editor instance (MountCodeEditor Instance) to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
 	get editor(): CodeEditorInstance | undefined {
 		return this.codeEditor;
 	}
@@ -92,11 +92,17 @@ export class CodeEditorView extends TextFileView {
 		return 'file-code-corner';
 	}
 
-	/**	Context is used for language detection and is derived from the file path. */
-	getContext(file: TFile): string {
+	/**
+	 * Get the file path for the current view.
+	 * This method is used to resolve the file path for actions like saving or revealing the file in the vault.
+	 */
+	getFilePath(file: TFile): string {
 		return file.path;
 	}
 
+	/**
+	 * Used to save the view state to the vault.
+	 */
 	getState(): Record<string, unknown> {
 		const state = super.getState() as Record<string, unknown>;
 		// Mark dotfiles and CSS snippets so setState can reveal them before vault lookup on restore
@@ -110,6 +116,9 @@ export class CodeEditorView extends TextFileView {
 		return state;
 	}
 
+	/**
+	 * Used to restore the view state from the vault.
+	 */
 	async setState(
 		state: Record<string, unknown>,
 		result: ViewStateResult
@@ -138,29 +147,15 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/**
-	 * Overrides the parent save to enforce manual-save-only behavior when autoSave is disabled.
+	 * Overrides parent save: proceeds only if autoSave is enabled or forceSave is true.
+	 * forceSave is set by the Ctrl+S handler in mountEditor (bypasses requestSave's debounce)
+	 * and reset here after save completes.
 	 *
-	 * Two conditions allow the save to proceed:
-	 * - `autoSave` is enabled in settings (Obsidian's normal flow)
-	 * - `forceSave` is true, set explicitly by the Ctrl+S handler in Monaco before calling this method
-	 *
-	 * `forceSave` is a private flag defined on the class. It is set to `true` by the Ctrl+S callback
-	 * in `mountEditor`, which calls `this.save()` directly (bypassing `requestSave`'s debounce),
-	 * then reset to `false` here after the save completes.
-	 *
-	 * @param clear - Forwarded to the parent: if true, marks the view as clean (non-dirty) after saving.
-	 *                Never passed explicitly in this plugin (always undefined in practice) — the dirty
-	 *                state is managed manually via `setDirty()` and `setSaving()`, which drive the
-	 *                custom `.code-files-dirty-badge` element. Using `clear` here may be redundant
-	 *                and could be simplified in the future.
+	 * External files (.obsidian/) write via adapter.write() instead of vault.modify()
+	 * to avoid triggering the internal watcher which would close the tab.
 	 */
 	async save(clear?: boolean): Promise<void> {
-		// Only save when autoSave is enabled or when forceSave is true (set by Ctrl+S)
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
-		// External files (in configDir, e.g. .obsidian/snippets/)
-		// must bypass vault.modify() which triggers Obsidian's
-		// internal watcher → reconcileDeletion → tab closes.
-		// Write directly via adapter.write() instead.
 		const configDir = this.plugin.app.vault.configDir;
 		if (this.file && this.file.path.startsWith(configDir + '/')) {
 			const content = this.getViewData();
@@ -193,17 +188,19 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/**
-	 * Builds a HeaderActionsContext snapshot from current class state.
-	 * Used by showDiffAction, hideDiffAction, removeHeaderActions, and injectHeaderActions
-	 * to delegate to standalone helpers. Mutable properties (diffAction, diffTimer, etc.)
-	 * must be read back from the context after each call.
+	 * Bundles current class state and callbacks into a HeaderActionsContext
+	 * to pass to the standalone helpers in headerActions.ts.
+	 * After each call, mutable properties (diffAction, diffTimer, etc.)
+	 * must be synced back from the context to the class.
 	 */
 	private buildContext(): HeaderActionsContext {
 		return {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onForceSave: () => { this.forceSave = true; },
+			onForceSave: () => {
+				this.forceSave = true;
+			},
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,
@@ -293,7 +290,7 @@ export class CodeEditorView extends TextFileView {
 			this.plugin,
 			getLanguage(ext),
 			this.data,
-			this.getContext(file),
+			this.getFilePath(file),
 			this.contentEl,
 			() => this.onContentChange(),
 			() => this.onCtrlS(),
@@ -406,21 +403,26 @@ export class CodeEditorView extends TextFileView {
 		// For external files, leaf.open() doesn't trigger this automatically.
 		await super.onLoadFile(file);
 		await this.mountEditor(file);
-		this.contentEl.style.overflow = 'hidden'; // Monaco has its own scrollbars
+		// Monaco has its own scrollbars
+		this.contentEl.style.overflow = 'hidden';
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
 		this.injectHeaderActions(file);
 	}
 
-	/** Cleans up Monaco when the file is unloaded from the view. */
+	/**
+	 * Called by Obsidian when the file is unloaded from the view.
+	 * If the file was temporarily revealed (dotfile opened via setState restore),
+	 * unreveals it on close — unless it is also covered by a manual reveal
+	 * (file itself or an ancestor folder in revealedFiles).
+	 */
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
-		// Cleanup temporary revealed paths
 		const path = file.path;
 		const tmp = this.plugin.settings.temporaryRevealedPaths;
 		if (tmp.includes(path)) {
-			// Don't unreveal if the file is covered by a manual reveal
-			// (file itself, or an ancestor folder, is in revealedFiles)
+			// Don't unreveal if a manual reveal already covers this file:
+			// either the file itself is in revealedFiles, or one of its ancestor folders is.
 			const allRevealedItems = Object.values(
 				this.plugin.settings.revealedFiles
 			).flat();
@@ -431,6 +433,7 @@ export class CodeEditorView extends TextFileView {
 				const folderPath = path.substring(0, path.lastIndexOf('/')) || '';
 				await unrevealFiles(this.plugin, folderPath, [path], true);
 			}
+			// Remove from temporary list regardless — file is closed
 			this.plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== path);
 			await this.plugin.saveSettings();
 		}
@@ -441,12 +444,16 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.clear();
 	}
 
-	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
+	/**
+	 * Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges).
+	 */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
-		this.cleanup(); // destroys codeEditor and removes header actions, but not the iframe DOM node
-		this.contentEl.empty(); // remove the stale iframe from DOM
-		// this.data remains valid after path change; no disk reload needed here
+		// Destroys codeEditor instance and listeners
+		this.cleanup();
+		// Now we can remove the stale iframe
+		this.contentEl.empty();
+		// New codeEditor instance mounted
 		await this.mountEditor(file);
 		this.contentEl.append(this.codeEditor.iframe);
 		this.updateExtBadge(file);
@@ -457,13 +464,19 @@ export class CodeEditorView extends TextFileView {
 		return this.codeEditor.getValue();
 	}
 
-	/** Called by Obsidian when the file content is ready to be displayed. Syncs the inherited `data` property and the Monaco editor instance.
-	 *  The optional chaining on codeEditor handles the case where setViewData is called before onLoadFile completes. */
+	/**
+	 * Called by Obsidian when file content is ready (initial load or external disk change).
+	 * Stores the content in this.data (Obsidian's cache) and syncs to Monaco if it exists.
+	 * On initial load, codeEditor is not yet created — only this.data is set.
+	 * On external change, the content comparison protects Monaco's undo/redo history:
+	 * setValue() is only called if the disk content actually differs from the editor state.
+	 *
+	 * @param data The file content to sync to the editor.
+	 * @param _clear Whether to clear the editor before setting the content. (Unused here)
+	 */
 	setViewData(data: string, _clear: boolean): void {
 		this.data = data;
 		if (this.codeEditor) {
-			// Protect Monaco's undo/redo history!
-			// Only update if the disk data actually differs from the editor's current state.
 			if (this.codeEditor.getValue() !== data) {
 				this.codeEditor.setValue(data);
 			}

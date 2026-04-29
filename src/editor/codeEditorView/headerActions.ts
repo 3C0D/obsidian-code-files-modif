@@ -34,6 +34,8 @@ export function removeHeaderActions(context: HeaderActionsContext): void {
 
 /**
  * Shows the diff action in the header for x seconds after a format.
+ *
+ * @param context The header actions context providing access to the editor and action management methods.
  */
 export function showDiffAction(context: HeaderActionsContext): void {
 	hideDiffAction(context);
@@ -49,7 +51,10 @@ export function showDiffAction(context: HeaderActionsContext): void {
 	context.diffAction.addClass('code-files-diff-action');
 
 	// Hide the diff action after x seconds
-	context.diffTimer = setTimeout(() => hideDiffAction(context), DIFF_BUTTON_DISPLAY_DURATION);
+	context.diffTimer = setTimeout(
+		() => hideDiffAction(context),
+		DIFF_BUTTON_DISPLAY_DURATION
+	);
 }
 
 /**
@@ -107,9 +112,7 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 	// Add snippet controls ONLY when editing a CSS snippet file
 	// Added LAST so they appear on the LEFT
 	const configDir = context.plugin.app.vault.configDir;
-	const isSnippetFile =
-		file.path.startsWith(`${configDir}/snippets`) &&
-		ext === 'css';
+	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
 	if (isSnippetFile) {
 		const snippetName = file.basename;
 		const exists = snippetExists(context.plugin.app, snippetName);
