@@ -10,6 +10,25 @@ import { viewType } from '../../types/variables.ts';
  * @param plugin - The CodeFilesPlugin instance.
  * @param newTab - Whether to open in a new tab or reuse the current leaf.
  */
+/**
+ * Looks for an existing Monaco leaf for the given file path.
+ * If found, reveals it and returns true. Otherwise returns false.
+ */
+export function revealExistingMonacoLeaf(
+	plugin: CodeFilesPlugin,
+	filePath: string
+): boolean {
+	const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
+		const view = leaf.view as { file?: { path: string } };
+		return view.file?.path === filePath;
+	});
+	if (existingLeaf) {
+		plugin.app.workspace.revealLeaf(existingLeaf);
+		return true;
+	}
+	return false;
+}
+
 export async function openInMonacoLeaf(
 	fileOrPath: TFile | string,
 	plugin: CodeFilesPlugin,
@@ -19,12 +38,7 @@ export async function openInMonacoLeaf(
 	const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
 
 	// Activate existing leaf if file is already open
-	const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
-		const view = leaf.view as { file?: { path: string } };
-		return view.file?.path === filePath;
-	});
-	if (existingLeaf) {
-		plugin.app.workspace.revealLeaf(existingLeaf);
+	if (revealExistingMonacoLeaf(plugin, filePath)) {
 		return;
 	}
 
