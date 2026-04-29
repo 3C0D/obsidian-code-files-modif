@@ -10,7 +10,7 @@ import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
-import type { HiddenFileSuggestion } from '../types/types.ts';
+import type { FileSuggestion } from '../types/types.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 import { revealFiles } from '../utils/hiddenFiles/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
@@ -19,8 +19,8 @@ import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 /** Modal for choosing hidden files in a folder to open in Monaco.
  *  "Hidden" means absent from the vault's known files,
  *  regardless of registered extensions. */
-export class ChooseHiddenFileModal extends FuzzySuggestModal<HiddenFileSuggestion> {
-	private hiddenFiles: HiddenFileSuggestion[] = [];
+export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
+	private hiddenFiles: FileSuggestion[] = [];
 
 	constructor(
 		private plugin: CodeFilesPlugin,
@@ -126,16 +126,16 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<HiddenFileSuggestio
 		}
 	}
 
-	getItems(): HiddenFileSuggestion[] {
+	getItems(): FileSuggestion[] {
 		return this.hiddenFiles;
 	}
 
-	getItemText(item: HiddenFileSuggestion): string {
+	getItemText(item: FileSuggestion): string {
 		return item.path;
 	}
 
 	async onChooseItem(
-		item: HiddenFileSuggestion,
+		item: FileSuggestion,
 		_evt: MouseEvent | KeyboardEvent
 	): Promise<void> {
 		const path = normalizePath(item.path);
@@ -147,7 +147,7 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<HiddenFileSuggestio
 		});
 	}
 
-	renderSuggestion(item: FuzzyMatch<HiddenFileSuggestion>, el: HTMLElement): void {
+	renderSuggestion(item: FuzzyMatch<FileSuggestion>, el: HTMLElement): void {
 		const container = el.createDiv({ cls: 'suggestion-content' });
 		container.createDiv({ text: item.item.path, cls: 'suggestion-title' });
 

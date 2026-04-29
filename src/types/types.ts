@@ -1,4 +1,6 @@
 import type { DataAdapterEx } from 'obsidian-typings';
+import type { ItemView, WorkspaceLeaf } from 'obsidian';
+import type CodeFilesPlugin from '../main.ts';
 
 export interface MyPluginSettings {
 	/** File extensions registered with Obsidian to open in Monaco */
@@ -46,6 +48,7 @@ export interface MyPluginSettings {
 	deleteFileHotkeyOverride: string;
 	/** Hidden folders to never show */
 	excludedFolders: string[];
+
 	/**
 	 * Map of revealed hidden files (dotfiles) in the file explorer.
 	 * Key: Normalized path of the parent folder.
@@ -69,12 +72,6 @@ export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
  * The iframe is isolated from Obsidian's scope; all writes and lifecycle ops go through postMessage,
  * reads return a locally-cached value kept in sync via 'change' events.
  *
- * @property iframe    - The iframe DOM element
- * @property send      - Send a typed command to the iframe (theme, options, content...)
- * @property getValue  - Get current content (local cache, no postMessage)
- * @property setValue  - Set content and sync to iframe
- * @property clear     - Clear content
- * @property destroy   - Remove iframe, revoke blob URL, detach message listener
  */
 export interface CodeEditorInstance {
 	/** The iframe element containing the Monaco editor */
@@ -102,9 +99,6 @@ export type MenuItems = { title: string; icon: string; action: () => void };
 
 /**
  * Hotkey configuration object.
- *
- * @property modifiers - Array of modifier keys (e.g. ['Mod', 'Shift'])
- * @property key - The main key (e.g. 'a')
  */
 export interface HotkeyConfig {
 	/** Array of modifier keys (e.g. ['Mod', 'Shift']) */
@@ -115,14 +109,6 @@ export interface HotkeyConfig {
 
 /**
  * Extended DataAdapter interface including internal Obsidian methods.
- *
- * @property reconcileFileInternal    - Internal Obsidian method to reconcile a file change
- * @property reconcileDeletion        - Internal Obsidian method to reconcile a file deletion
- * @property reconcileFolderCreation  - Internal Obsidian method to reconcile a folder creation
- * @property reconcileFileChanged     - Internal Obsidian method to reconcile a file modification
- * @property listRecursive            - Internal method to list all files and folders (including dotfiles)
- * @property fs                       - Internal file system access (Mobile/Desktop abstraction)
- * @property getFullRealPath          - Get the full physical path on disk
  */
 export interface DataAdapterWithInternal extends Omit<
 	DataAdapterEx,
@@ -155,11 +141,6 @@ export interface DataAdapterWithInternal extends Omit<
 
 /**
  * Represents a hidden item found during a file system scan.
- *
- * @property name     - The file or folder name (including the leading dot)
- * @property path     - The normalized path relative to the vault root
- * @property isFolder - Whether the item is a folder
- * @property size     - File size in bytes
  */
 export interface HiddenItem {
 	/** The file or folder name (including the leading dot) */
@@ -172,28 +153,60 @@ export interface HiddenItem {
 	size: number;
 }
 
-export interface HiddenFileSuggestion {
-	name: string;
-	path: string;
-	size: number;
-}
-
 /**
- * Suggestion for file selection modals
+ * Suggestion for file selection modals and for hidden files in the file explorer.
  */
-export interface FileSuggestion {
-	name: string;
-	path: string;
-	size: number;
-}
+export type FileSuggestion = Pick<HiddenItem, 'name' | 'path' | 'size'>;
 
 /**
  * Encapsulates the state for a folder section in the reveal hidden files modal.
  */
 export interface FolderSection {
+	/** The normalized path of the folder */
 	folderPath: string;
+	/** Array of hidden items in this folder */
 	items: HiddenItem[];
+	/** Set of paths that were initially revealed when the modal opened */
 	initialRevealed: Set<string>;
+	/** Set of paths currently selected by the user */
 	selected: Set<string>;
+	/** Set of paths selected for extension registration */
 	selectedForRegistration: Set<string>;
+}
+
+/**
+ * Context for header actions in the code editor view.
+ */
+export interface HeaderActionsContext {
+	/** The plugin instance */
+	plugin: CodeFilesPlugin;
+	/** The Monaco editor control handle */
+	codeEditor: CodeEditorInstance;
+	/** Bound ItemView.addAction — adds a button to the view header */
+	addAction: ItemView['addAction'];
+	/** Called to trigger a force save (bypasses autoSave guard) */
+	onForceSave: () => void;
+	/** Called to show the diff action button */
+	onShowDiff: () => void;
+	/** Called to hide the diff action button */
+	onHideDiff: () => void;
+	/** The workspace leaf containing this view */
+	leaf: WorkspaceLeaf;
+	// Mutable action button elements — null when not mounted
+	/** Gear/settings action button element */
+	gearAction: HTMLElement | null;
+	/** Theme picker action button element */
+	themeAction: HTMLElement | null;
+	/** Snippet folder action button element */
+	snippetFolderAction: HTMLElement | null;
+	/** Snippet toggle action button element */
+	snippetToggleAction: HTMLElement | null;
+	/** Return/back action button element */
+	returnAction: HTMLElement | null;
+	/** Diff view action button element */
+	diffAction: HTMLElement | null;
+	/** Timer controlling how long the diff button stays visible */
+	diffTimer: NodeJS.Timeout | null;
+	/** Cleanup function to unregister the active snippet event handler */
+	unregisterSnippetHandler: (() => void) | null;
 }

@@ -1,6 +1,5 @@
-import type { TFile, ItemView, WorkspaceLeaf } from 'obsidian';
-import type CodeFilesPlugin from '../../main.ts';
-import type { CodeEditorInstance } from '../../types/types.ts';
+import type { TFile } from 'obsidian';
+import type { HeaderActionsContext } from '../../types/types.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
 import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 
@@ -15,25 +14,6 @@ import { getActiveExtensions } from '../../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../../types/variables.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
 import { resolveThemeParams } from '../mountCodeEditor.ts';
-
-export interface HeaderActionsContext {
-	plugin: CodeFilesPlugin;
-	codeEditor: CodeEditorInstance;
-	addAction: ItemView['addAction'];
-	onForceSave: () => void;
-	onShowDiff: () => void;
-	onHideDiff: () => void;
-	leaf: WorkspaceLeaf;
-	// Mutable properties for actions
-	gearAction: HTMLElement | null;
-	themeAction: HTMLElement | null;
-	snippetFolderAction: HTMLElement | null;
-	snippetToggleAction: HTMLElement | null;
-	returnAction: HTMLElement | null;
-	diffAction: HTMLElement | null;
-	diffTimer: NodeJS.Timeout | null;
-	unregisterSnippetHandler: (() => void) | null;
-}
 
 /**
  * Removes all header actions from the view.

@@ -14,7 +14,7 @@ import { TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { mountCodeEditor, resolveThemeParams } from '../mountCodeEditor.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
-import type { CodeEditorInstance } from '../../types/types.ts';
+import type { CodeEditorInstance, HeaderActionsContext } from '../../types/types.ts';
 import { viewType } from '../../types/variables.ts';
 import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
@@ -34,8 +34,7 @@ import {
 	injectHeaderActions,
 	removeHeaderActions,
 	showDiffAction,
-	hideDiffAction,
-	type HeaderActionsContext
+	hideDiffAction
 } from './headerActions.ts';
 
 /**
@@ -389,7 +388,18 @@ export class CodeEditorView extends TextFileView {
 		);
 	}
 
-	/** Shows the diff action in the header for x seconds after a format */
+	/**
+	 * Shows the diff action button in the header for a few seconds after a format.
+	 * Delegates to the standalone `showDiffAction()` helper via a {@link HeaderActionsContext}.
+	 *
+	 * Callbacks injected into context:
+	 * - `onForceSave` : sets `this.forceSave = true`
+	 * - `onShowDiff`  : calls `this.showDiffAction()` (self-reference)
+	 * - `onHideDiff`  : calls `this.hideDiffAction()`
+	 *
+	 * Mutates after call:
+	 * - `this.diffAction` and `this.diffTimer` are updated from the context returned by the helper.
+	 */
 	private showDiffAction(): void {
 		const context: HeaderActionsContext = {
 			plugin: this.plugin,
