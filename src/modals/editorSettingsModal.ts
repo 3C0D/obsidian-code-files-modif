@@ -60,7 +60,7 @@ export class EditorSettingsModal extends Modal {
 		this.modalEl.style.maxHeight = '90vh';
 		this.modalEl.style.position = 'fixed';
 		// Position modal at 65% from left if there's space, otherwise center it
-		this.modalEl.style.opacity = '0';
+		this.modalEl.style.opacity = '0'; // Hide before first paint to prevent flash during repositioning
 		setTimeout(() => {
 			const { innerWidth } = window;
 			const { offsetWidth } = this.modalEl;
@@ -72,7 +72,7 @@ export class EditorSettingsModal extends Modal {
 			}
 			this.modalEl.style.top = '10%';
 			this.modalEl.style.transform = 'translateX(-50%)';
-			this.modalEl.style.opacity = '';
+			this.modalEl.style.opacity = ''; // Reveal after repositioning;
 		}, 0);
 
 		const { contentEl } = this;

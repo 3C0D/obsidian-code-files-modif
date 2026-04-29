@@ -65,7 +65,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 		this.modalEl.style.position = 'fixed';
 		this.modalEl.style.background = 'var(--background-primary)';
 		// Position modal at 75% of screen width (or centered if too close to edge)
-		this.modalEl.style.opacity = '0';
+		this.modalEl.style.opacity = '0'; // Hide before first paint to prevent flash during repositioning
 		setTimeout(() => {
 			const { innerWidth } = window;
 			const { offsetWidth } = this.modalEl;
@@ -78,7 +78,7 @@ export class ChooseThemeModal extends SuggestModal<string> {
 				this.modalEl.style.transform = 'translateX(-50%)';
 			}
 			this.modalEl.style.top = '10%';
-			this.modalEl.style.opacity = '';
+			this.modalEl.style.opacity = ''; // Reveal after repositioning;
 		}, 0);
 
 		const footer = this.modalEl.createEl('div', { cls: 'code-files-theme-footer' });
