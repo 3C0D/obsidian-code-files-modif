@@ -12,6 +12,12 @@ export function updateExtBadge(
 ): void {
 	const titleContainer = containerEl.querySelector('.view-header-title-container');
 	if (!titleContainer) return;
+
+	// Capture the current dirty and saving states before removing the badges
+	const existingDirtyBadge = titleContainer.querySelector('.code-files-dirty-badge');
+	const isDirty = existingDirtyBadge?.classList.contains('code-files-dirty-unsaved');
+	const isSaving = existingDirtyBadge?.classList.contains('code-files-dirty-saving');
+
 	titleContainer.querySelector('.code-files-ext-badge')?.remove();
 	titleContainer.querySelector('.code-files-dirty-badge')?.remove();
 	const ext = getExtension(file.name);
@@ -22,6 +28,8 @@ export function updateExtBadge(
 	titleContainer.appendChild(badge);
 	if (!plugin.settings.autoSave) {
 		const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
+		if (isDirty) dirtyBadge.addClass('code-files-dirty-unsaved');
+		if (isSaving) dirtyBadge.addClass('code-files-dirty-saving');
 		titleContainer.appendChild(dirtyBadge);
 	}
 }
