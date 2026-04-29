@@ -1,17 +1,13 @@
 import { normalizePath, type TFile } from 'obsidian';
 import type { HeaderActionsContext } from '../../types/types.ts';
-import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
-import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 import {
 	snippetExists,
 	isSnippetEnabled,
 	registerSnippetChangeHandler
 } from '../../utils/snippetUtils.ts';
-import { broadcastOptions } from '../../utils/broadcast.ts';
 import { getActiveExtensions } from '../../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../../types/variables.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
-import { resolveThemeParams } from '../mountCodeEditor.ts';
 
 /**
  * Removes all header actions from the view.
@@ -74,26 +70,12 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 	removeHeaderActions(context);
 
 	context.themeAction = context.addAction('palette', 'Change Theme', () => {
-		const applyTheme = async (theme: string): Promise<void> => {
-			const params = await resolveThemeParams(context.plugin, theme);
-			context.codeEditor?.send('change-theme', params);
-		};
-		new ChooseThemeModal(context.plugin, applyTheme, () =>
-			context.codeEditor?.send('focus', {})
-		).open();
+		context.onOpenThemePicker();
 	});
 
 	const ext = getExtension(file.name);
 	context.gearAction = context.addAction('settings', 'Editor Settings', () => {
-		new EditorSettingsModal(
-			context.plugin,
-			ext,
-			() => broadcastOptions(context.plugin),
-			(config: string) => {
-				context.codeEditor?.send('change-editor-config', { config });
-			},
-			() => context.codeEditor?.send('focus', {})
-		).open();
+		context.onOpenEditorConfig(ext);
 	});
 
 	// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered

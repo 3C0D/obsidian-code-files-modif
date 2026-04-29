@@ -200,7 +200,9 @@ export class CodeEditorView extends TextFileView {
 			returnAction: this.returnAction,
 			diffAction: this.diffAction,
 			diffTimer: this.diffTimer,
-			unregisterSnippetHandler: this.unregisterSnippetHandler
+			unregisterSnippetHandler: this.unregisterSnippetHandler,
+			onOpenEditorConfig: (ext: string) => this.onOpenEditorConfig(ext),
+			onOpenThemePicker: () => this.onOpenThemePicker()
 		};
 	}
 

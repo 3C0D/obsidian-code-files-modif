@@ -293,4 +293,8 @@ export interface HeaderActionsContext {
 	diffTimer: NodeJS.Timeout | null;
 	/** Cleanup function to unregister the active snippet event handler */
 	unregisterSnippetHandler: (() => void) | null;
+	/** Called to open the editor config modal */
+	onOpenEditorConfig: (ext: string) => void;
+	/** Called to open the theme picker modal */
+	onOpenThemePicker: () => void;
 }
