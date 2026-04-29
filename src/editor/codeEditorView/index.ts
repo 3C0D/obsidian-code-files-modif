@@ -37,13 +37,6 @@ import {
 	hideDiffAction
 } from './headerActions.ts';
 
-/**
- * Obsidian TextFileView wrapper for Monaco Editor.
- * Bridges Obsidian's file lifecycle (load/save/rename/close) with the Monaco iframe's postMessage API.
- * Manages the view header with extension badge, dirty state indicator, and action icons:
- * - Theme picker, settings gear, return arrow (unregistered extensions), diff viewer
- * - CSS snippet controls (folder opener, enable/disable toggle) when editing snippets
- */
 export class CodeEditorView extends TextFileView {
 	/** The Monaco Editor instance, created by mountCodeEditor() and destroyed on view close. */
 	private codeEditor!: CodeEditorInstance;
@@ -181,7 +174,8 @@ export class CodeEditorView extends TextFileView {
 
 	/** Cleans up Monaco when the file is unloaded from the view. */
 	private cleanup(): void {
-		this.codeEditor?.destroy();
+		if (!this.codeEditor) return;
+		this.codeEditor.destroy();
 		this.removeHeaderActions();
 		if (this.diffTimer) clearTimeout(this.diffTimer);
 		this.unregisterSnippetHandler?.();
@@ -195,17 +189,21 @@ export class CodeEditorView extends TextFileView {
 		this.returnAction = null;
 		this.diffAction = null;
 		this.diffTimer = null;
+		this.codeEditor = null!;
 	}
 
-	/** Removes all header actions from the view. */
-	private removeHeaderActions(): void {
-		const context: HeaderActionsContext = {
+	/**
+	 * Builds a HeaderActionsContext snapshot from current class state.
+	 * Used by showDiffAction, hideDiffAction, removeHeaderActions, and injectHeaderActions
+	 * to delegate to standalone helpers. Mutable properties (diffAction, diffTimer, etc.)
+	 * must be read back from the context after each call.
+	 */
+	private buildContext(): HeaderActionsContext {
+		return {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onForceSave: () => {
-				this.forceSave = true;
-			},
+			onForceSave: () => { this.forceSave = true; },
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,
@@ -218,6 +216,11 @@ export class CodeEditorView extends TextFileView {
 			diffTimer: this.diffTimer,
 			unregisterSnippetHandler: this.unregisterSnippetHandler
 		};
+	}
+
+	/** Removes all header actions from the view. */
+	private removeHeaderActions(): void {
+		const context = this.buildContext();
 		removeHeaderActions(context);
 		// Update back
 		this.gearAction = context.gearAction;
@@ -267,25 +270,7 @@ export class CodeEditorView extends TextFileView {
 
 	/** Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets). */
 	private injectHeaderActions(file: TFile): void {
-		const context: HeaderActionsContext = {
-			plugin: this.plugin,
-			codeEditor: this.codeEditor,
-			addAction: this.addAction.bind(this),
-			onForceSave: () => {
-				this.forceSave = true;
-			},
-			onShowDiff: () => this.showDiffAction(),
-			onHideDiff: () => this.hideDiffAction(),
-			leaf: this.leaf,
-			gearAction: this.gearAction,
-			themeAction: this.themeAction,
-			snippetFolderAction: this.snippetFolderAction,
-			snippetToggleAction: this.snippetToggleAction,
-			returnAction: this.returnAction,
-			diffAction: this.diffAction,
-			diffTimer: this.diffTimer,
-			unregisterSnippetHandler: this.unregisterSnippetHandler
-		};
+		const context = this.buildContext();
 		injectHeaderActions(context, file);
 		// Update back
 		this.gearAction = context.gearAction;
@@ -401,51 +386,15 @@ export class CodeEditorView extends TextFileView {
 	 * - `this.diffAction` and `this.diffTimer` are updated from the context returned by the helper.
 	 */
 	private showDiffAction(): void {
-		const context: HeaderActionsContext = {
-			plugin: this.plugin,
-			codeEditor: this.codeEditor,
-			addAction: this.addAction.bind(this),
-			onForceSave: () => {
-				this.forceSave = true;
-			},
-			onShowDiff: () => this.showDiffAction(),
-			onHideDiff: () => this.hideDiffAction(),
-			leaf: this.leaf,
-			gearAction: this.gearAction,
-			themeAction: this.themeAction,
-			snippetFolderAction: this.snippetFolderAction,
-			snippetToggleAction: this.snippetToggleAction,
-			returnAction: this.returnAction,
-			diffAction: this.diffAction,
-			diffTimer: this.diffTimer,
-			unregisterSnippetHandler: this.unregisterSnippetHandler
-		};
+		const context = this.buildContext();
 		showDiffAction(context);
 		this.diffAction = context.diffAction;
 		this.diffTimer = context.diffTimer;
 	}
 
 	/** Hides the diff action immediately (called when all blocks are reverted) */
-	public hideDiffAction(): void {
-		const context: HeaderActionsContext = {
-			plugin: this.plugin,
-			codeEditor: this.codeEditor,
-			addAction: this.addAction.bind(this),
-			onForceSave: () => {
-				this.forceSave = true;
-			},
-			onShowDiff: () => this.showDiffAction(),
-			onHideDiff: () => this.hideDiffAction(),
-			leaf: this.leaf,
-			gearAction: this.gearAction,
-			themeAction: this.themeAction,
-			snippetFolderAction: this.snippetFolderAction,
-			snippetToggleAction: this.snippetToggleAction,
-			returnAction: this.returnAction,
-			diffAction: this.diffAction,
-			diffTimer: this.diffTimer,
-			unregisterSnippetHandler: this.unregisterSnippetHandler
-		};
+	private hideDiffAction(): void {
+		const context = this.buildContext();
 		hideDiffAction(context);
 		this.diffAction = context.diffAction;
 		this.diffTimer = context.diffTimer;
@@ -495,8 +444,8 @@ export class CodeEditorView extends TextFileView {
 	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
-		this.cleanup();
-		this.contentEl.empty();
+		this.cleanup(); // destroys codeEditor and removes header actions, but not the iframe DOM node
+		this.contentEl.empty(); // remove the stale iframe from DOM
 		// this.data remains valid after path change; no disk reload needed here
 		await this.mountEditor(file);
 		this.contentEl.append(this.codeEditor.iframe);

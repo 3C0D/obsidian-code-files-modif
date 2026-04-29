@@ -13,6 +13,8 @@ export function updateExtBadge(
 	const titleContainer = containerEl.querySelector('.view-header-title-container');
 	if (!titleContainer) return;
 
+	// Capture dirty/saving state before removing the badge so it can be restored
+	// on the new badge — otherwise a rename mid-edit silently resets the unsaved indicator.
 	// Capture the current dirty and saving states before removing the badges
 	const existingDirtyBadge = titleContainer.querySelector('.code-files-dirty-badge');
 	const isDirty = existingDirtyBadge?.classList.contains('code-files-dirty-unsaved');
@@ -70,9 +72,7 @@ export function setSaving(containerEl: HTMLElement, isSaving: boolean): void {
 	badge.toggleClass('code-files-dirty-saving', isSaving);
 }
 
-/**
- * Clears the dirty badge (marks the view as saved).
- */
+/** Alias for setDirty(el, false) — marks the view as saved. */
 export function clearDirty(containerEl: HTMLElement): void {
 	setDirty(containerEl, false);
 }
