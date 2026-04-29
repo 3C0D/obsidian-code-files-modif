@@ -1,9 +1,7 @@
-import type { TFile } from 'obsidian';
+import { normalizePath, type TFile } from 'obsidian';
 import type { HeaderActionsContext } from '../../types/types.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
 import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
-
-import { normalizePath } from 'obsidian';
 import {
 	snippetExists,
 	isSnippetEnabled,
@@ -24,7 +22,14 @@ export function removeHeaderActions(context: HeaderActionsContext): void {
 	context.snippetFolderAction?.remove();
 	context.snippetToggleAction?.remove();
 	context.returnAction?.remove();
-	context.diffAction?.remove();
+	hideDiffAction(context);
+	context.unregisterSnippetHandler?.();
+	context.unregisterSnippetHandler = null;
+	context.gearAction = null;
+	context.themeAction = null;
+	context.snippetFolderAction = null;
+	context.snippetToggleAction = null;
+	context.returnAction = null;
 }
 
 /**
@@ -79,7 +84,7 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 			context.plugin,
 			ext,
 			() => broadcastOptions(context.plugin),
-			(config) => {
+			(config: string) => {
 				context.codeEditor?.send('change-editor-config', { config });
 			},
 			() => context.codeEditor?.send('focus', {})
@@ -104,7 +109,7 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 	const configDir = context.plugin.app.vault.configDir;
 	const isSnippetFile =
 		file.path.startsWith(`${configDir}/snippets`) &&
-		getExtension(file.name) === 'css';
+		ext === 'css';
 	if (isSnippetFile) {
 		const snippetName = file.basename;
 		const exists = snippetExists(context.plugin.app, snippetName);
@@ -114,7 +119,7 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 			'Open snippets folder',
 			() => {
 				context.plugin.app.openWithDefaultApp(
-					normalizePath(`${context.plugin.app.vault.configDir}/snippets`)
+					normalizePath(`${configDir}/snippets`)
 				);
 			}
 		);
