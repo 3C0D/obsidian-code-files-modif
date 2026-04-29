@@ -129,3 +129,48 @@ export async function unrevealFiles(
 	decorateFolders(plugin);
 	new Notice(`${itemPaths.length} file(s) hidden`);
 }
+
+/**
+ * Reveals a file temporarily (e.g. when restoring workspace state).
+ * Tracks the file in temporaryRevealedPaths so it can be unrevealed on close.
+ */
+export async function handleTemporaryReveal(
+	plugin: CodeFilesPlugin,
+	filePath: string
+): Promise<void> {
+	if (!plugin.app.vault.getAbstractFileByPath(filePath)) {
+		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
+		await revealFiles(plugin, folderPath, [filePath], true, false); // silent, no persist
+		// Track for cleanup on unload
+		if (!plugin.settings.temporaryRevealedPaths.includes(filePath)) {
+			plugin.settings.temporaryRevealedPaths.push(filePath);
+			await plugin.saveSettings();
+		}
+	}
+}
+
+/**
+ * Cleans up a temporarily revealed file when it is closed.
+ * Unreveals it unless it is covered by a manual reveal (file or ancestor folder).
+ */
+export async function cleanupTemporaryReveal(
+	plugin: CodeFilesPlugin,
+	filePath: string
+): Promise<void> {
+	const tmp = plugin.settings.temporaryRevealedPaths;
+	if (tmp.includes(filePath)) {
+		// Don't unreveal if a manual reveal already covers this file:
+		// either the file itself is in revealedFiles, or one of its ancestor folders is.
+		const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
+		const manuallyRevealed = allRevealedItems.some(
+			(p) => filePath === p || filePath.startsWith(p + '/')
+		);
+		if (!manuallyRevealed) {
+			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
+			await unrevealFiles(plugin, folderPath, [filePath], true);
+		}
+		// Remove from temporary list regardless — file is closed
+		plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
+		await plugin.saveSettings();
+	}
+}

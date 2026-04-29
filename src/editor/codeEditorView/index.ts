@@ -19,7 +19,7 @@ import { viewType } from '../../types/variables.ts';
 import { openEditorConfig, openThemePicker, openRenameExtension } from './editorModals.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
-import { revealFiles, unrevealFiles } from '../../utils/hiddenFiles/index.ts';
+import { handleTemporaryReveal, cleanupTemporaryReveal } from '../../utils/hiddenFiles/index.ts';
 import {
 	updateExtBadge,
 	updateDirtyBadgeVisibility,
@@ -120,18 +120,8 @@ export class CodeEditorView extends TextFileView {
 		result: ViewStateResult
 	): Promise<void> {
 		const filePath = typeof state?.file === 'string' ? state.file : undefined;
-		if (
-			filePath &&
-			state.reveal &&
-			!this.plugin.app.vault.getAbstractFileByPath(filePath)
-		) {
-			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-			await revealFiles(this.plugin, folderPath, [filePath], true, false); // silent, no persist
-			// Track for cleanup on unload
-			if (!this.plugin.settings.temporaryRevealedPaths.includes(filePath)) {
-				this.plugin.settings.temporaryRevealedPaths.push(filePath);
-				await this.plugin.saveSettings();
-			}
+		if (filePath && state.reveal) {
+			await handleTemporaryReveal(this.plugin, filePath);
 		}
 
 		try {
@@ -371,25 +361,7 @@ export class CodeEditorView extends TextFileView {
 	 */
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
-		const path = file.path;
-		const tmp = this.plugin.settings.temporaryRevealedPaths;
-		if (tmp.includes(path)) {
-			// Don't unreveal if a manual reveal already covers this file:
-			// either the file itself is in revealedFiles, or one of its ancestor folders is.
-			const allRevealedItems = Object.values(
-				this.plugin.settings.revealedFiles
-			).flat();
-			const manuallyRevealed = allRevealedItems.some(
-				(p) => path === p || path.startsWith(p + '/')
-			);
-			if (!manuallyRevealed) {
-				const folderPath = path.substring(0, path.lastIndexOf('/')) || '';
-				await unrevealFiles(this.plugin, folderPath, [path], true);
-			}
-			// Remove from temporary list regardless — file is closed
-			this.plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== path);
-			await this.plugin.saveSettings();
-		}
+		await cleanupTemporaryReveal(this.plugin, file.path);
 		this.cleanup();
 	}
 
