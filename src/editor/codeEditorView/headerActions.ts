@@ -28,23 +28,23 @@ export function removeHeaderActions(context: HeaderActionsContext): void {
 }
 
 /**
- * Shows the diff action in the header for x seconds after a format
+ * Shows the diff action in the header for x seconds after a format.
  */
 export function showDiffAction(context: HeaderActionsContext): void {
-	if (context.diffTimer) clearTimeout(context.diffTimer);
-	context.diffAction?.remove();
+	hideDiffAction(context);
 
 	context.diffAction = context.addAction('diff', 'Show Format Diff', () => {
 		context.codeEditor?.send('trigger-show-diff', {});
 	});
+
+	// Add tooltip
+	context.diffAction.setAttr('title', 'Also available in Monaco context menu');
+
 	// Flash the diff icon to draw attention to it
 	context.diffAction.addClass('code-files-diff-action');
 
 	// Hide the diff action after x seconds
-	context.diffTimer = setTimeout(() => {
-		context.diffAction?.remove();
-		context.diffAction = null;
-	}, DIFF_BUTTON_DISPLAY_DURATION);
+	context.diffTimer = setTimeout(() => hideDiffAction(context), DIFF_BUTTON_DISPLAY_DURATION);
 }
 
 /**

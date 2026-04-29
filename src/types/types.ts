@@ -115,6 +115,39 @@ export interface CodeEditorInstance {
 export type MenuItems = { title: string; icon: string; action: () => void };
 
 /**
+ * Tool definition for actions that can appear in multiple locations.
+ * @property id - Unique identifier for the action
+ * @property icon - Icon identifier (for header actions)
+ * @property title - Display title
+ * @property action - Function to execute
+ * @property availableInHeader - Whether this action appears in the view header
+ * @property availableInContextMenu - Whether this action appears in Monaco's context menu
+ * @property contextMenuGroupId - Group ID for context menu organization (if availableInContextMenu)
+ * @property contextMenuOrder - Order within context menu group (if availableInContextMenu)
+ * @property keybindings - Keyboard shortcuts (if any)
+ */
+export interface ToolDefinition {
+  /** Unique identifier for the action */
+  id: string;
+  /** Icon identifier for header actions */
+  icon: string;
+  /** Display title */
+  title: string;
+  /** Function to execute */
+  action: () => void;
+  /** Whether this action appears in the view header */
+  availableInHeader: boolean;
+  /** Whether this action appears in Monaco's context menu */
+  availableInContextMenu: boolean;
+  /** Group ID for context menu organization */
+  contextMenuGroupId?: string;
+  /** Order within context menu group */
+  contextMenuOrder?: number;
+  /** Keyboard shortcuts */
+  keybindings?: number[];
+}
+
+/**
  * Hotkey configuration object.
  * @property modifiers - Array of modifier keys (e.g. ['Mod', 'Shift'])
  * @property key - The main key (e.g. 'a')
