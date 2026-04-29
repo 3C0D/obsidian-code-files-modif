@@ -307,6 +307,15 @@ export class CodeEditorView extends TextFileView {
 		);
 	}
 
+	/** Mounts the editor and sets up the view elements and badges. */
+	private async mountAndRender(file: TFile): Promise<void> {
+		await this.mountEditor(file);
+		this.contentEl.style.overflow = 'hidden';
+		this.contentEl.append(this.codeEditor.iframe);
+		this.updateExtBadge(file);
+		this.injectHeaderActions(file);
+	}
+
 	/**
 	 * Shows the diff action button in the header for a few seconds after a format.
 	 * Delegates to the standalone `showDiffAction()` helper via a {@link HeaderActionsContext}.
@@ -402,12 +411,7 @@ export class CodeEditorView extends TextFileView {
 		// super.onLoadFile reads file content into this.data and calls setViewData().
 		// For external files, leaf.open() doesn't trigger this automatically.
 		await super.onLoadFile(file);
-		await this.mountEditor(file);
-		// Monaco has its own scrollbars
-		this.contentEl.style.overflow = 'hidden';
-		this.contentEl.append(this.codeEditor.iframe);
-		this.updateExtBadge(file);
-		this.injectHeaderActions(file);
+		await this.mountAndRender(file);
 	}
 
 	/**
@@ -453,11 +457,7 @@ export class CodeEditorView extends TextFileView {
 		this.cleanup();
 		// Now we can remove the stale iframe
 		this.contentEl.empty();
-		// New codeEditor instance mounted
-		await this.mountEditor(file);
-		this.contentEl.append(this.codeEditor.iframe);
-		this.updateExtBadge(file);
-		this.injectHeaderActions(file);
+		await this.mountAndRender(file);
 	}
 
 	getViewData(): string {
