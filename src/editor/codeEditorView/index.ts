@@ -16,15 +16,21 @@ import { mountCodeEditor } from '../mountCodeEditor.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
 import type { CodeEditorInstance, HeaderActionsContext } from '../../types/types.ts';
 import { viewType } from '../../types/variables.ts';
-import { openEditorConfig, openThemePicker, openRenameExtension } from './editorModals.ts';
+import {
+	openEditorConfig,
+	openThemePicker,
+	openRenameExtension
+} from './editorModals.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
-import { handleTemporaryReveal, cleanupTemporaryReveal } from '../../utils/hiddenFiles/index.ts';
+import {
+	handleTemporaryReveal,
+	cleanupTemporaryReveal
+} from '../../utils/hiddenFiles/index.ts';
 import {
 	updateExtBadge,
 	updateDirtyBadgeVisibility,
-	setDirty,
-	setSaving
+	setDirty
 } from './headerBadges.ts';
 import {
 	injectHeaderActions,
@@ -174,6 +180,7 @@ export class CodeEditorView extends TextFileView {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
+			// A save is needed when toggling snippet
 			onForceSave: () => {
 				this.forceSave = true;
 			},
@@ -188,7 +195,8 @@ export class CodeEditorView extends TextFileView {
 			diffAction: this.diffAction,
 			diffTimer: this.diffTimer,
 			unregisterSnippetHandler: this.unregisterSnippetHandler,
-			onOpenEditorConfig: (ext: string) => openEditorConfig(this.plugin, this.codeEditor, ext),
+			onOpenEditorConfig: (ext: string) =>
+				openEditorConfig(this.plugin, this.codeEditor, ext),
 			onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor)
 		};
 	}
@@ -229,19 +237,16 @@ export class CodeEditorView extends TextFileView {
 		setDirty(this.containerEl, isDirtyBadge);
 	}
 
-	/** Updates the saving badge styling to show/hide the saving indicator in the header. */
-	private setSaving(isSaving: boolean): void {
-		setSaving(this.containerEl, isSaving);
+
+
+	/** Updates the dirty badge visibility based on autoSave setting. */
+	public updateDirtyBadgeVisibility(): void {
+		updateDirtyBadgeVisibility(this.containerEl, this.plugin);
 	}
 
 	/** Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled. */
 	private updateExtBadge(file: TFile): void {
 		updateExtBadge(this.containerEl, file, this.plugin);
-	}
-
-	/** Updates the dirty badge visibility based on autoSave setting. */
-	public updateDirtyBadgeVisibility(): void {
-		updateDirtyBadgeVisibility(this.containerEl, this.plugin);
 	}
 
 	/** Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets). */
@@ -328,10 +333,8 @@ export class CodeEditorView extends TextFileView {
 	/** Handles manual saves (Ctrl+S). */
 	private onCtrlS(): void {
 		this.forceSave = true;
-		this.setSaving(true);
 		void this.save().then(() => {
 			this.setDirty(false);
-			this.setSaving(false);
 		});
 	}
 

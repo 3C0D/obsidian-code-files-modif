@@ -63,13 +63,6 @@ export function setDirty(containerEl: HTMLElement, isDirtyBadge: boolean): void 
 	badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
 }
 
-/**
- * Updates the saving badge styling to show/hide the saving indicator in the header.
- */
-export function setSaving(containerEl: HTMLElement, isSaving: boolean): void {
-	const badge = containerEl.querySelector('.code-files-dirty-badge');
-	if (!badge) return;
-	badge.toggleClass('code-files-dirty-saving', isSaving);
-}
+
 
 
