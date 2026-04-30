@@ -62,7 +62,3 @@ export function setDirty(containerEl: HTMLElement, isDirtyBadge: boolean): void 
 	if (!badge) return;
 	badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
 }
-
-
-
-

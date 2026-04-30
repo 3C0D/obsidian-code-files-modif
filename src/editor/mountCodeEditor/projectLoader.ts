@@ -11,9 +11,9 @@ import { readProjectFiles } from '../../utils/projectUtils.ts';
  * @param send - Callback to post a message to the Monaco iframe.
  */
 export async function loadProjectFiles(
-    plugin: CodeFilesPlugin,
-    send: (type: string, payload: Record<string, unknown>) => void
+	plugin: CodeFilesPlugin,
+	send: (type: string, payload: Record<string, unknown>) => void
 ): Promise<void> {
-    const files = await readProjectFiles(plugin);
-    send('load-project-files', { files });
+	const files = await readProjectFiles(plugin);
+	send('load-project-files', { files });
 }

@@ -127,24 +127,24 @@ export type MenuItems = { title: string; icon: string; action: () => void };
  * @property keybindings - Keyboard shortcuts (if any)
  */
 export interface ToolDefinition {
-  /** Unique identifier for the action */
-  id: string;
-  /** Icon identifier for header actions */
-  icon: string;
-  /** Display title */
-  title: string;
-  /** Function to execute */
-  action: () => void;
-  /** Whether this action appears in the view header */
-  availableInHeader: boolean;
-  /** Whether this action appears in Monaco's context menu */
-  availableInContextMenu: boolean;
-  /** Group ID for context menu organization */
-  contextMenuGroupId?: string;
-  /** Order within context menu group */
-  contextMenuOrder?: number;
-  /** Keyboard shortcuts */
-  keybindings?: number[];
+	/** Unique identifier for the action */
+	id: string;
+	/** Icon identifier for header actions */
+	icon: string;
+	/** Display title */
+	title: string;
+	/** Function to execute */
+	action: () => void;
+	/** Whether this action appears in the view header */
+	availableInHeader: boolean;
+	/** Whether this action appears in Monaco's context menu */
+	availableInContextMenu: boolean;
+	/** Group ID for context menu organization */
+	contextMenuGroupId?: string;
+	/** Order within context menu group */
+	contextMenuOrder?: number;
+	/** Keyboard shortcuts */
+	keybindings?: number[];
 }
 
 /**
@@ -223,7 +223,7 @@ export type FileSuggestion = Pick<HiddenItem, 'name' | 'path' | 'size'>;
 
 /**
  * Encapsulates the state for a folder section in the reveal hidden files modal.
- * 
+ *
  * @property folderPath - The normalized path of the folder
  * @property items - Array of hidden items in this folder
  * @property initialRevealed - Set of paths that were initially revealed when the modal opened
@@ -266,10 +266,10 @@ export interface HeaderActionsContext {
 	plugin: CodeFilesPlugin;
 	/** The Monaco editor control handle */
 	codeEditor: CodeEditorInstance;
-  /** Bound ItemView.addAction — adds a button to the view header */
-  addAction: ItemView['addAction'];
-  /** Called to show the diff action button */
-  onShowDiff: () => void;
+	/** Bound ItemView.addAction — adds a button to the view header */
+	addAction: ItemView['addAction'];
+	/** Called to show the diff action button */
+	onShowDiff: () => void;
 	/** Called to hide the diff action button */
 	onHideDiff: () => void;
 	/** The workspace leaf containing this view */
@@ -343,7 +343,9 @@ export interface MessageHandlerContext {
 	/** Initialization parameters sent to the iframe */
 	initParams: Record<string, unknown>;
 	/** Function to load project files for IntelliSense */
-	loadProjectFiles: (send: (type: string, payload: Record<string, unknown>) => void) => Promise<void>;
+	loadProjectFiles: (
+		send: (type: string, payload: Record<string, unknown>) => void
+	) => Promise<void>;
 	/** Whether to auto-focus the editor after init */
 	autoFocus: boolean;
 	/** Callback for content changes */

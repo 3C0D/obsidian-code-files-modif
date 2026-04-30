@@ -72,7 +72,13 @@ export const mountCodeEditor = async (
 	// find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
 	const extension = codeContext.match(/\.([^.]+)$/)?.[1] ?? '';
 
-	const initParams = await buildInitParams(plugin, codeContext, language, theme, extension);
+	const initParams = await buildInitParams(
+		plugin,
+		codeContext,
+		language,
+		theme,
+		extension
+	);
 
 	// Create the iframe in the correct document (supports popout windows)
 	const iframe = doc.createElement('iframe') as HTMLIFrameElement;
@@ -96,10 +102,21 @@ export const mountCodeEditor = async (
 	};
 
 	const onMessage = buildMessageHandler({
-		iframe, send, valueRef, codeContext, plugin,
-		initParams, loadProjectFiles: (send) => loadProjectFiles(plugin, send), autoFocus,
-		onChange, onSave, onFormatDiff, onFormatDiffReverted,
-		onOpenEditorConfig, onOpenThemePicker, onOpenRenameExtension
+		iframe,
+		send,
+		valueRef,
+		codeContext,
+		plugin,
+		initParams,
+		loadProjectFiles: (send) => loadProjectFiles(plugin, send),
+		autoFocus,
+		onChange,
+		onSave,
+		onFormatDiff,
+		onFormatDiffReverted,
+		onOpenEditorConfig,
+		onOpenThemePicker,
+		onOpenRenameExtension
 	});
 
 	// Register the message listener on the correct window (supports popout windows)

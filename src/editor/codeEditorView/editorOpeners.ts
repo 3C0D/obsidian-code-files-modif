@@ -2,7 +2,6 @@ import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { viewType } from '../../types/variables.ts';
 
-
 /**
  * Looks for an existing Monaco leaf for the given file path.
  * If found, reveals it and returns true. Otherwise returns false.
