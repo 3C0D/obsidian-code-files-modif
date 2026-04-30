@@ -180,10 +180,6 @@ export class CodeEditorView extends TextFileView {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			// A save is needed when toggling snippet
-			onForceSave: () => {
-				this.forceSave = true;
-			},
 			onShowDiff: () => this.showDiffAction(),
 			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,

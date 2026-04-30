@@ -114,10 +114,6 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 			'square',
 			`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
 			async () => {
-				// If the file doesn't exist yet (new unsaved snippet), save first
-				if (!snippetExists(context.plugin.app, snippetName)) {
-					context.onForceSave();
-				}
 				const newState = !isSnippetEnabled(context.plugin.app, snippetName);
 				context.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
 				track.toggleClass('is-on', newState);

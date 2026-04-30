@@ -266,12 +266,10 @@ export interface HeaderActionsContext {
 	plugin: CodeFilesPlugin;
 	/** The Monaco editor control handle */
 	codeEditor: CodeEditorInstance;
-	/** Bound ItemView.addAction — adds a button to the view header */
-	addAction: ItemView['addAction'];
-	/** Called to trigger a force save (bypasses autoSave guard) */
-	onForceSave: () => void;
-	/** Called to show the diff action button */
-	onShowDiff: () => void;
+  /** Bound ItemView.addAction — adds a button to the view header */
+  addAction: ItemView['addAction'];
+  /** Called to show the diff action button */
+  onShowDiff: () => void;
 	/** Called to hide the diff action button */
 	onHideDiff: () => void;
 	/** The workspace leaf containing this view */
