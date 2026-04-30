@@ -2,6 +2,7 @@ import type { MessageHandlerContext } from '../../types/types.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
+import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 
 /**
  * Builds the postMessage handler for a Monaco iframe instance.
@@ -155,51 +156,10 @@ export function buildMessageHandler(
 			}
 			case 'open-file': {
 				const vaultPath = data.path as string;
-				const position = data.position as {
-					lineNumber: number;
-					column: number;
-				} | null;
+				const position = data.position as { lineNumber: number; column: number } | null;
 				const file = plugin.app.vault.getFileByPath(vaultPath);
 				if (!file) break;
-				console.debug('open-file in mountCodeEditor');
-
-				// Look for an existing leaf in the main editor area (no sidebars, no popout windows)
-				const existingLeaf = plugin.app.workspace
-					.getLeavesOfType('code-editor')
-					.find((l) => {
-						// Must be in the main window
-						if (l.view.containerEl.win !== window) return false;
-						// Must be in the root split (editor area), not left/right sidebar
-						const root = plugin.app.workspace.rootSplit;
-						let el: Element | null = l.containerEl;
-						while (el && el !== root.containerEl) el = el.parentElement;
-						if (!el) return false;
-						// File must match
-						return (
-							l.view instanceof CodeEditorView &&
-							l.view.file?.path === vaultPath
-						);
-					});
-
-				const leaf = existingLeaf ?? plugin.app.workspace.getLeaf('tab');
-				if (!existingLeaf) await leaf.openFile(file);
-				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-
-				if (position) {
-					// Wait for Monaco to mount in new tabs.
-					// empirical delay, no clean alternative: 150ms is an empirical delay to ensure Monaco is ready
-					// to receive the 'scroll-to-position' command after it is opened in a new tab.
-					setTimeout(
-						() => {
-							if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-								leaf.view.editor.send('scroll-to-position', {
-									position
-								});
-							}
-						},
-						existingLeaf ? 0 : 150
-					);
-				}
+				await openInMonacoLeaf(file, plugin, true, position, true);
 				break;
 			}
 			default:

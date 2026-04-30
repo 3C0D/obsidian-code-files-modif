@@ -20,9 +20,9 @@
 import { around } from 'monkey-around';
 import { WorkspaceLeaf, type OpenViewState, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { viewType } from '../types/variables.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
+import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 /**
  * Applies the open file patch to the plugin instance.
@@ -35,7 +35,7 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 			return async function (
 				this: WorkspaceLeaf,
 				file: TFile,
-				openState?: OpenViewState
+				openState?: OpenViewState // navigation state (cursor position, scroll, etc.)
 			) {
 				// console.debug('openFile patch in openFilePatch');
 				// Intercept files with no Obsidian extension (dotfiles + extension-less)
@@ -52,13 +52,8 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 					}
 
 					if (isKnownToMonaco) {
-						// if (revealExistingMonacoLeaf(plugin, file.path)) {
-						// 	return;
-						// }
-						return this.setViewState(
-							{ type: viewType, state: { file: file.path }, active: true },
-							openState
-						);
+						await openInMonacoLeaf(file, plugin, false, null, false);
+						return;
 					}
 				}
 				// Fall through to original Obsidian behavior

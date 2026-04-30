@@ -1,25 +1,22 @@
+import type { WorkspaceLeaf } from 'obsidian';
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { viewType } from '../../types/variables.ts';
+import { CodeEditorView } from '../codeEditorView/index.ts';
 
 /**
- * Looks for an existing Monaco leaf for the given file path.
- * If found, reveals it and returns true. Otherwise returns false.
+ * Looks for an existing Monaco leaf for the given file path in the main editor area.
+ * Returns the leaf if found, otherwise null.
  */
-// Not used for the moment (option or better system)
-export function revealExistingMonacoLeaf(
+export function findRootMonacoLeaf(
 	plugin: CodeFilesPlugin,
 	filePath: string
-): boolean {
-	const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((leaf) => {
-		const view = leaf.view as { file?: { path: string } };
-		return view.file?.path === filePath;
+): WorkspaceLeaf | null {
+	const existingLeaf = plugin.app.workspace.getLeavesOfType(viewType).find((l) => {
+		if (l.getRoot() !== plugin.app.workspace.rootSplit) return false;
+		return l.view instanceof CodeEditorView && l.view.file?.path === filePath;
 	});
-	if (existingLeaf) {
-		plugin.app.workspace.revealLeaf(existingLeaf);
-		return true;
-	}
-	return false;
+	return existingLeaf || null;
 }
 
 /**
@@ -29,28 +26,42 @@ export function revealExistingMonacoLeaf(
  * @param fileOrPath - TFile or absolute path of the file to open.
  * @param plugin - The CodeFilesPlugin instance.
  * @param newTab - Whether to open in a new tab or reuse the current leaf.
+ * @param position - Optional position to scroll to after opening.
+ * @param reuseExisting - Whether to reuse an existing leaf for the file.
  */
 export async function openInMonacoLeaf(
-	fileOrPath: TFile | string,
-	plugin: CodeFilesPlugin,
-	newTab: boolean
+    fileOrPath: TFile | string,
+    plugin: CodeFilesPlugin,
+    newTab: boolean,
+    position?: { lineNumber: number; column: number } | null,
+    reuseExisting = false
 ): Promise<void> {
-	const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
-	const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
+    const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
+    const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
+    const existingLeaf = reuseExisting ? findRootMonacoLeaf(plugin, filePath) : null;
+    const leaf = existingLeaf ?? plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
 
-	// // Activate existing leaf if file is already open
-	// if (revealExistingMonacoLeaf(plugin, filePath)) {
-	// 	return;
-	// }
+    if (!existingLeaf) {
+        await leaf.setViewState({
+            type: viewType,
+            active: true,
+            state: {
+                file: filePath,
+                ...(isExternal && { external: true })
+            }
+        });
+    }
 
-	// Open in new tab or current leaf
-	const leaf = plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
-	await leaf.setViewState({
-		type: viewType,
-		active: true,
-		state: {
-			file: filePath,
-			...(isExternal && { external: true, reveal: true })
-		}
-	});
+    // Reveal the leaf in the tab bar and focus it (works for both new and existing leaves)
+    plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+
+    if (position) {
+        // empirical delay, no clean alternative: 150ms to ensure Monaco is ready
+        // to receive the 'scroll-to-position' command after it is opened in a new tab.
+        setTimeout(() => {
+            if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+                leaf.view.editor.send('scroll-to-position', { position });
+            }
+        }, existingLeaf ? 0 : 150);
+    }
 }
