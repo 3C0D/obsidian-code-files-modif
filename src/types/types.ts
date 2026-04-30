@@ -296,3 +296,68 @@ export interface HeaderActionsContext {
 	/** Called to open the theme picker modal */
 	onOpenThemePicker: () => void;
 }
+
+/**
+ * Asset URLs for Monaco editor components and formatters.
+ */
+export interface AssetUrls {
+	vsBase: string;
+	htmlUrl: string;
+	configJsUrl: string;
+	configCssUrl: string;
+	diffJsUrl: string;
+	formattersJsUrl: string;
+	actionsJsUrl: string;
+	prettierBase: string;
+	prettierMarkdownUrl: string;
+	prettierEstreeUrl: string;
+	prettierTypescriptUrl: string;
+	prettierBabelUrl: string;
+	prettierPostcssUrl: string;
+	prettierHtmlUrl: string;
+	prettierYamlUrl: string;
+	prettierGraphqlUrl: string;
+	mermaidFormatterUrl: string;
+	clangFormatterUrl: string;
+	clangWasmUrl: string;
+	ruffFormatterUrl: string;
+	ruffWasmUrl: string;
+	gofmtFormatterUrl: string;
+	gofmtWasmUrl: string;
+}
+
+/**
+ * Context object passed to the message handler builder for a Monaco iframe instance.
+ */
+export interface MessageHandlerContext {
+	/** The iframe element containing the Monaco editor */
+	iframe: HTMLIFrameElement;
+	/** Function to send messages to the iframe */
+	send: (type: string, payload: Record<string, unknown>) => void;
+	/** Reference to the current editor value to avoid closure issues */
+	valueRef: { current: string };
+	/** Unique context identifier for this editor instance */
+	codeContext: string;
+	/** The plugin instance */
+	plugin: CodeFilesPlugin;
+	/** Initialization parameters sent to the iframe */
+	initParams: Record<string, unknown>;
+	/** Function to load project files for IntelliSense */
+	loadProjectFiles: (send: (type: string, payload: Record<string, unknown>) => void) => Promise<void>;
+	/** Whether to auto-focus the editor after init */
+	autoFocus: boolean;
+	/** Callback for content changes */
+	onChange?: () => void;
+	/** Callback for save actions (Ctrl+S) */
+	onSave?: () => void;
+	/** Callback for format diff available */
+	onFormatDiff?: () => void;
+	/** Callback for format diff reverted */
+	onFormatDiffReverted?: () => void;
+	/** Callback to open editor config modal */
+	onOpenEditorConfig?: (ext: string) => void;
+	/** Callback to open theme picker modal */
+	onOpenThemePicker?: () => void;
+	/** Callback to open rename extension modal */
+	onOpenRenameExtension?: () => void;
+}

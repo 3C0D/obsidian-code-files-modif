@@ -28,7 +28,7 @@ import {
 	parseHotkeyOverride,
 	formatHotkey
 } from '../utils/hotkeyUtils.ts';
-import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
+import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import {
 	syncAutoRevealedDotfiles,
 	hideAutoRevealedDotfiles

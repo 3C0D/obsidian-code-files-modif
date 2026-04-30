@@ -12,7 +12,7 @@
 import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
 import { TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { mountCodeEditor } from '../mountCodeEditor.ts';
+import { mountCodeEditor } from '../mountCodeEditor/index.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
 import type { CodeEditorInstance, HeaderActionsContext } from '../../types/types.ts';
 import { viewType } from '../../types/variables.ts';
@@ -27,11 +27,7 @@ import {
 	handleTemporaryReveal,
 	cleanupTemporaryReveal
 } from '../../utils/hiddenFiles/index.ts';
-import {
-	updateExtBadge,
-	updateDirtyBadgeVisibility,
-	setDirty
-} from './headerBadges.ts';
+import { updateExtBadge, updateDirtyBadgeVisibility, setDirty } from './headerBadges.ts';
 import {
 	injectHeaderActions,
 	removeHeaderActions,
@@ -233,8 +229,6 @@ export class CodeEditorView extends TextFileView {
 		setDirty(this.containerEl, isDirtyBadge);
 	}
 
-
-
 	/** Updates the dirty badge visibility based on autoSave setting. */
 	public updateDirtyBadgeVisibility(): void {
 		updateDirtyBadgeVisibility(this.containerEl, this.plugin);
@@ -269,7 +263,7 @@ export class CodeEditorView extends TextFileView {
 			() => this.onCtrlS(),
 			() => this.onFormat(),
 			() => this.onAllBlocksReverted(),
-			(ext) => openEditorConfig(this.plugin, this.codeEditor, ext),
+			(ext: string) => openEditorConfig(this.plugin, this.codeEditor, ext),
 			() => openThemePicker(this.plugin, this.codeEditor),
 			() => openRenameExtension(this.plugin, this.codeEditor, file)
 		);

@@ -5,7 +5,7 @@
  * and writes changes back to the note when closed.
  */
 import { Modal, Notice, setIcon, type Editor } from 'obsidian';
-import { mountCodeEditor } from '../editor/mountCodeEditor.ts';
+import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { resolveThemeParams } from '../utils/themeUtils.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
