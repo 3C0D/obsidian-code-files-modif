@@ -5,7 +5,7 @@ import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';
 import { broadcastOptions } from '../../utils/broadcast.ts';
-import { resolveThemeParams } from '../mountCodeEditor.ts';
+import { resolveThemeParams } from '../../utils/themeUtils.ts';
 
 /** Opens the editor settings modal. */
 export function openEditorConfig(

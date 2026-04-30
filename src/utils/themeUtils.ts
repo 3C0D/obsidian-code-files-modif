@@ -1,11 +1,53 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { resolveThemeParams } from '../editor/mountCodeEditor.ts';
 import type { CodeEditorInstance } from '../types/types.ts';
+import manifest from '../../manifest.json' with { type: 'json' };
+import { BUILTIN_THEMES } from '../types/variables.ts';
 
 let _themes: string[] = [];
 
 export const getThemes = (): string[] => _themes;
+
+/**
+ * Resolves theme parameters for Monaco.
+ * - For built-in themes (vs, vs-dark, etc.), returns only the sanitized theme name.
+ * - For custom themes, fetches the theme JSON from the plugin folder and returns both
+ *   the sanitized name and the JSON string in `themeData`.
+ *
+ * @param plugin
+ * @param theme  - Theme identifier as configured in plugin settings.
+ * @returns Object with:
+ *          - `theme`: sanitized theme name ready for Monaco.
+ *          - `themeData?`: JSON-stringified theme (only for custom themes)
+ */
+export const resolveThemeParams = async (
+	plugin: CodeFilesPlugin,
+	theme: string
+): Promise<{ theme: string; themeData?: string }> => {
+	const pluginBase = normalizePath(
+		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
+	);
+	const resolvedTheme =
+		theme === 'default'
+			? document.body.classList.contains('theme-dark')
+				? 'vs-dark'
+				: 'vs'
+			: theme;
+	// Sanitized theme name. Only alphanumeric and dashes allowed
+	const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
+	let themeData: string | undefined;
+	if (!BUILTIN_THEMES.includes(theme)) {
+		try {
+			const themePath = normalizePath(`${pluginBase}/monaco-themes/${theme}.json`);
+			const url = plugin.app.vault.adapter.getResourcePath(themePath);
+			// Timestamp is appended to the URL by getResourcePath, but it doesn't affect the fetch since it's just a cache buster. The theme JSON is fetched and passed as a string to the iframe, which will parse it and register the theme with Monaco.
+			themeData = JSON.stringify(await (await fetch(url)).json());
+		} catch (e) {
+			console.warn(`code-files: theme "${theme}" not found`, e);
+		}
+	}
+	return { theme: safeThemeId, themeData };
+};
 
 /**
  * Loads available Monaco themes from the plugin's bundled theme list.
