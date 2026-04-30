@@ -155,6 +155,7 @@ export function buildMessageHandler(
 				break;
 			}
 			case 'open-file': {
+				console.debug('open-file case');
 				const vaultPath = data.path as string;
 				const position = data.position as { lineNumber: number; column: number } | null;
 				const file = plugin.app.vault.getFileByPath(vaultPath);
