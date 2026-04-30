@@ -23,7 +23,6 @@ import type CodeFilesPlugin from '../main.ts';
 import { viewType } from '../types/variables.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
-import { revealExistingMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 /**
  * Applies the open file patch to the plugin instance.
@@ -53,9 +52,9 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 					}
 
 					if (isKnownToMonaco) {
-						if (revealExistingMonacoLeaf(plugin, file.path)) {
-							return;
-						}
+						// if (revealExistingMonacoLeaf(plugin, file.path)) {
+						// 	return;
+						// }
 						return this.setViewState(
 							{ type: viewType, state: { file: file.path }, active: true },
 							openState

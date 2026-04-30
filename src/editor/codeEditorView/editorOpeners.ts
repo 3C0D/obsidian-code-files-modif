@@ -2,10 +2,12 @@ import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { viewType } from '../../types/variables.ts';
 
+
 /**
  * Looks for an existing Monaco leaf for the given file path.
  * If found, reveals it and returns true. Otherwise returns false.
  */
+// Not used for the moment (option or better system)
 export function revealExistingMonacoLeaf(
 	plugin: CodeFilesPlugin,
 	filePath: string
@@ -37,10 +39,10 @@ export async function openInMonacoLeaf(
 	const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
 	const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
 
-	// Activate existing leaf if file is already open
-	if (revealExistingMonacoLeaf(plugin, filePath)) {
-		return;
-	}
+	// // Activate existing leaf if file is already open
+	// if (revealExistingMonacoLeaf(plugin, filePath)) {
+	// 	return;
+	// }
 
 	// Open in new tab or current leaf
 	const leaf = plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
