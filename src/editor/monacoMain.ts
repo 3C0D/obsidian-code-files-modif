@@ -5,4 +5,5 @@
 import { initMonacoApp } from './iframe/init.js';
 
 // Expose initMonacoApp to be called from monacoEditor.html after require(['vs/editor/editor.main'])
-(window as unknown as Window & { initMonacoApp: () => void }).initMonacoApp = initMonacoApp;
+(window as unknown as Window & { initMonacoApp: () => void }).initMonacoApp =
+	initMonacoApp;

@@ -207,7 +207,9 @@ function applyParams(params: InitParams): void {
 			selectionOrPosition: Monaco.IRange | Monaco.IPosition | undefined
 		) => {
 			if (!params.projectRootFolder) {
-				showInEditorMessage("To navigate cross-file, define the parent folder as project root folder.");
+				showInEditorMessage(
+					'To navigate cross-file, define the parent folder as project root folder.'
+				);
 				return true; // Don't attempt to open
 			}
 			// resource.path = '/my-project/utils.ts' (without 'file://')

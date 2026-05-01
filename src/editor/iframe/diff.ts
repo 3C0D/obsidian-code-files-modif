@@ -56,18 +56,16 @@ export function closeDiffModal(): void {
 			if (models && models.modified) {
 				const diffText = models.modified.getValue();
 				if (editor && editor.getValue() !== diffText) {
-					editor
-						.getModel()
-						?.pushEditOperations(
-							[],
-							[
-								{
-									range: editor.getModel()!.getFullModelRange(),
-									text: diffText
-								}
-							],
-							() => null
-						);
+					editor.getModel()?.pushEditOperations(
+						[],
+						[
+							{
+								range: editor.getModel()!.getFullModelRange(),
+								text: diffText
+							}
+						],
+						() => null
+					);
 				}
 			}
 		}
