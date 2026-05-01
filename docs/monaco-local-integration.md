@@ -38,23 +38,48 @@ node_modules/monaco-themes/themes/ → {buildPath}/monaco-themes/
 
 **Solutions:**
 
-- **Blob URL** — fetch HTML, patch paths, inject via blob
-- **CSS Inlining** — fetch Monaco CSS, inline in HTML
+- **Blob URL + Base Href** — fetch HTML, inject `<base href>` pointing to plugin directory, inject via blob
+- **Asset Inlining** — fetch all scripts/CSS in parallel, inline as base64 data URLs
 - **Font Patching** — replace `data:` fonts with `app://` URLs
 - **Dynamic Link Blocking** — intercept `appendChild` to block `<link>` tags
 
-### 3. Path Resolution
+### 3. Asset Optimization
 
-**Location:** `mountCodeEditor.ts`
+**Location:** `buildBlobUrl.ts`
+
+**Parallel Fetching:** All assets fetched simultaneously on host side (not sequentially in iframe), eliminating 5-10s rebuild delays.
 
 ```typescript
-// Replace relative paths with absolute app:// URLs
-const vsBase = getResourcePath(`${pluginBase}/vs`).replace(/\?.*$/, '');
-html = html.replace("'./vs'", `'${vsBase}'`);
+// All assets fetched in parallel — avoids sequential iframe round-trips
+const [cssText, prettierBase, bundleJs, ...] = await Promise.all([
+    fetchText(`${urls.vsBase}/editor/editor.main.css`),
+    fetchText(urls.prettierBase),
+    fetchText(urls.bundleJsUrl),
+    // ... all formatters
+]);
+```
 
-// Inline CSS to bypass CSP
-const cssText = await fetch(`${vsBase}/editor/editor.main.css`);
-html = html.replace('</head>', `<style>${cssText}</style></head>`);
+**Base64 Inlining:** Scripts inlined as base64 to avoid HTML parsing conflicts.
+
+```typescript
+// Buffer.from().toString('base64') avoids HTML parser conflicts
+const inlineScript = (text: string): string => {
+    const b64 = Buffer.from(text, 'utf8').toString('base64');
+    return `(0,eval)(atob("${b64}"))`;
+};
+```
+
+**Blob Caching:** Identical blob URL reused across editor instances, revoked only on plugin unload.
+
+### 4. Path Resolution
+
+**Location:** `buildBlobUrl.ts`
+
+```typescript
+// Derive base URL from HTML asset path (strips filename)
+const baseUrl = urls.htmlUrl.replace(/[^/]+$/, '');
+html = html.replace('<meta charset="UTF-8" />',
+    `<meta charset="UTF-8" />\n\t\t<base href="${baseUrl}" />`);
 ```
 
 ### Key Problems Solved
@@ -62,12 +87,16 @@ html = html.replace('</head>', `<style>${cssText}</style></head>`);
 1. **Blocked Resources** — CSP blocks `<link>` and `data:` fonts
     - Solution: inline CSS + patch font URLs to `app://`
 2. **Relative Path Timestamps** — `getResourcePath()` adds timestamps breaking `./vs/loader.js`
-    - Solution: strip timestamps, use absolute `app://` URLs
+    - Solution: `<base href>` injection + absolute `app://` URLs
 3. **Missing Icons** — Codicons font blocked by CSP
     - Solution: copy TTF file, patch CSS to use `app://` URL
-4. **Message Order Issues** — `ready` emitted after editor creation caused race conditions
-    - Solution: send `init` immediately after `ready`, before any content changes
-5. **Hotkey Synchronization** — Obsidian hotkey changes need to propagate to Monaco
+4. **Sequential Asset Loading** — iframe fetches scripts sequentially, causing 5-10s delays after rebuilds
+    - Solution: parallel fetching on host side + blob caching
+5. **HTML Parser Conflicts** — inline scripts containing HTML literals confuse parser
+    - Solution: base64 encoding with `(0,eval)(atob(...))`
+6. **Message Order Issues** — `ready` emitted after editor creation caused race conditions
+    - Solution: `setTimeout(0)` defers AMD require until all inline scripts executed
+7. **Hotkey Synchronization** — Obsidian hotkey changes need to propagate to Monaco
     - Solution: dynamic hotkey detection via `broadcastHotkeys()` with editor reload for active view
 
 ## Architecture Components
@@ -78,7 +107,7 @@ html = html.replace('</head>', `<style>${cssText}</style></head>`);
   - **buildInitParams.ts** — initialization parameters builder (hotkeys, config, theme)
   - **projectLoader.ts** — TypeScript/JavaScript project file loading for IntelliSense
   - **assetUrls.ts** — asset path resolution (Monaco, themes, formatters)
-  - **buildBlobUrl.ts** — blob URL creation with CSP workarounds (CSS inlining, font patching)
+  - **buildBlobUrl.ts** — blob URL creation with optimizations (parallel fetching, base64 inlining, caching)
 - **monacoEditor.html** — load Monaco, formatters, handle messages, create editor
 - **themeUtils.ts** — theme resolution and loading (moved from mountCodeEditor.ts)
 - **Language System** — `staticMap` in `getLanguage.ts` maps 80+ extensions to Monaco language IDs; unknown → `plaintext`
@@ -89,27 +118,27 @@ html = html.replace('</head>', `<style>${cssText}</style></head>`);
 plugin-folder/
 ├── vs/                    # Monaco Editor (12MB)
 ├── monaco-themes/         # 50+ themes (2MB)
-├── formatters/           # Prettier + Mermaid (2MB)
-├── monacoEditor.html     # Iframe HTML
+├── formatters/           # Prettier + Mermaid + clang/ruff/gofmt (2MB)
+├── monacoEditor.html     # Iframe HTML (minimal, scripts inlined)
 ├── iframe/config.ts      # Configuration
-└── monacoHtml.css        # Styles
+└── monacoHtml.css        # Styles (inlined at runtime)
 ```
 
 ## Communication Flow
 
 ```
-1. mountCodeEditor() fetches HTML, patches paths, creates blob URL
-2. iframe loads, Monaco initializes, emits 'ready'
+1. mountCodeEditor() fetches HTML + all assets in parallel, inlines as base64, creates cached blob URL
+2. iframe loads from blob, all scripts execute inline, Monaco initializes, emits 'ready'
 3. Parent receives 'ready', sends 'init' (config, hotkeys) and 'change-value' (content)
 4. iframe creates editor with config, displays content
 5. Parent optionally sends 'load-project-files' (TS/JS files for IntelliSense)
 ```
 
-1. mountCodeEditor() fetches HTML, patches paths, creates blob URL
-2. iframe loads, Monaco initializes, emits 'ready'
-3. Parent receives 'ready', sends 'init' (config, hotkeys) and 'change-value' (content)
-4. iframe creates editor with config, displays content
-5. Parent optionally sends 'load-project-files' (TS/JS files for IntelliSense)
+**Performance Optimizations:**
+- **Parallel Fetching** — all assets downloaded simultaneously on host side
+- **Base64 Inlining** — zero HTML parser conflicts, instant execution
+- **Blob Caching** — identical blob URL reused, no re-fetching per editor
+- **Deferred AMD** — `setTimeout(0)` ensures proper initialization order
 
 ```
 
@@ -117,19 +146,22 @@ plugin-folder/
 
 - **Complete offline** — no external dependencies
 - **Full control** — custom themes, formatters, features
-- **Better performance** — local assets, no network requests
+- **Excellent performance** — parallel fetching + caching = instant loads
 - **Enhanced security** — no external iframe vulnerabilities
 - **Extensibility** — can add custom Monaco features
+- **Robust inlining** — base64 encoding prevents any HTML parser conflicts
 
 ## Technical Challenges
 
-- **CSP restrictions** — required blob URL + CSS inlining
-- **Asset management** — ~21.4MB of local files
-- **Path resolution** — timestamp handling, relative → absolute
+- **CSP restrictions** — required blob URL + base64 inlining
+- **Asset management** — ~21.4MB of local files with parallel optimization
+- **Path resolution** — `<base href>` injection for blob context
 - **Font loading** — Codicons font CSP workarounds
-- **Message coordination** — proper initialization sequence
+- **HTML parser conflicts** — solved with base64 encoding
+- **Loading order** — solved with `setTimeout(0)` deferred AMD
+- **Cache invalidation** — timestamp-based blob cache management
 
-## Key Insight
+## Key Insights
 
 **Obsidian's CSP cannot be overridden from child frames.** All solutions must work within these constraints:
 
@@ -138,9 +170,13 @@ plugin-folder/
 - `font-src 'self' app:`
 - `img-src 'self' app: data:`
 
-The blob URL approach bypasses most restrictions while maintaining security.
+**Blob URLs provide isolation but no implicit base URL.** The `<base href>` injection is crucial for relative path resolution.
+
+**HTML parsers are aggressive even in `<script>` tags.** Base64 encoding is the only reliable way to inline arbitrary JavaScript without parser conflicts.
+
+**Parallel asset fetching dramatically improves rebuild performance.** Sequential iframe requests caused 5-10s delays; host-side parallel fetching reduces this to milliseconds.
 
 ---
 
-**Revised:** ✓
+**Revised:** ✓ (Performance optimizations: parallel fetching, base64 inlining, blob caching)
 ```
