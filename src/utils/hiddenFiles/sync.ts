@@ -53,7 +53,7 @@ export async function syncAutoRevealedDotfiles(
 			})
 			.map((item) => item.path);
 		if (toReveal.length > 0) {
-			await revealFiles(plugin, folder.path, toReveal, true, false);
+			await revealFiles(plugin, folder.path, toReveal, false);
 		}
 	}
 
@@ -88,7 +88,7 @@ export async function autoRevealRegisteredDotfiles(
 			.map((item) => item.path);
 
 		if (toReveal.length > 0) {
-			await revealFiles(plugin, folder.path, toReveal, true, false);
+			await revealFiles(plugin, folder.path, toReveal, false);
 		}
 	}
 }

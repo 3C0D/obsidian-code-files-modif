@@ -1,7 +1,10 @@
-import { Notice, normalizePath } from 'obsidian';
+import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, setBypassPatch } from './state.ts';
 import { decorateFolders } from './badge.ts';
+import { viewType } from '../../types/variables.ts';
+import { getExtension } from '../fileUtils.ts';
+import { getActiveExtensions } from '../extensionUtils.ts';
 
 /**
  * Reveals specified hidden files in the Obsidian UI.
@@ -10,7 +13,6 @@ import { decorateFolders } from './badge.ts';
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path.
  * @param itemPaths - Array of relative paths to reveal.
- * @param silent - Defaults to false. If true, don't show a notice (for auto-reveal).
  * @param persist - Defaults to true. If true, save to revealedFiles settings (manual reveal only).
  * @returns A Promise that resolves when the operation is complete.
  */
@@ -18,7 +20,6 @@ export async function revealFiles(
 	plugin: CodeFilesPlugin,
 	folderPath: string,
 	itemPaths: string[],
-	silent = false,
 	persist = true
 ): Promise<void> {
 	folderPath = normalizePath(folderPath);
@@ -70,9 +71,6 @@ export async function revealFiles(
 	}
 
 	decorateFolders(plugin);
-	if (!silent) {
-		new Notice(`${itemPaths.length} item(s) revealed`);
-	}
 }
 
 /**
@@ -127,7 +125,6 @@ export async function unrevealFiles(
 
 	await plugin.saveSettings();
 	decorateFolders(plugin);
-	new Notice(`${itemPaths.length} file(s) hidden`);
 }
 
 /**
@@ -140,9 +137,14 @@ export async function handleTemporaryReveal(
 ): Promise<void> {
 	if (!plugin.app.vault.getAbstractFileByPath(filePath)) {
 		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-		await revealFiles(plugin, folderPath, [filePath], true, false); // silent, no persist
-		// Track for cleanup on unload
-		if (!plugin.settings.temporaryRevealedPaths.includes(filePath)) {
+		await revealFiles(plugin, folderPath, [filePath], false); // silent, no persist
+		
+		// Don't track as temporary if the extension is registered —
+		// autoRevealRegisteredDotfiles will handle it permanently on layoutReady.
+		// Tracking it as temporary would cause it to be unrevealed on leaf close.
+		const ext = getExtension(filePath.split('/').pop() || '');
+		const isManagedByAutoReveal = ext && getActiveExtensions(plugin.settings).includes(ext);
+		if (!isManagedByAutoReveal && !plugin.settings.temporaryRevealedPaths.includes(filePath)) {
 			plugin.settings.temporaryRevealedPaths.push(filePath);
 			await plugin.saveSettings();
 		}
@@ -159,8 +161,15 @@ export async function cleanupTemporaryReveal(
 ): Promise<void> {
 	const tmp = plugin.settings.temporaryRevealedPaths;
 	if (tmp.includes(filePath)) {
-		// Don't unreveal if a manual reveal already covers this file:
-		// either the file itself is in revealedFiles, or one of its ancestor folders is.
+		// Don't unreveal if the file is still open in another leaf —
+		// Obsidian may have reused this leaf to open another file, closing
+		// the dotfile view without the user explicitly closing it.
+		// Check via getViewState() to catch uninitialized leaves too.
+		const stillOpen = plugin.app.workspace
+			.getLeavesOfType(viewType)
+			.some((l) => l.getViewState().state?.file === filePath);
+		if (stillOpen) return;
+
 		const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
 		const manuallyRevealed = allRevealedItems.some(
 			(p) => filePath === p || filePath.startsWith(p + '/')
@@ -169,7 +178,6 @@ export async function cleanupTemporaryReveal(
 			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
 			await unrevealFiles(plugin, folderPath, [filePath], true);
 		}
-		// Remove from temporary list regardless — file is closed
 		plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
 		await plugin.saveSettings();
 	}
