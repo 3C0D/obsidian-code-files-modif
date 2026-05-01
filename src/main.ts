@@ -29,6 +29,7 @@ import {
 } from './utils/hiddenFiles/sync.ts';
 import { decorateFolders } from './utils/hiddenFiles/index.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
+import { revokeBlobUrlCache } from './editor/mountCodeEditor/buildBlobUrl.ts';
 
 export default class CodeFilesPlugin extends Plugin {
 	settings!: MyPluginSettings;
@@ -89,6 +90,7 @@ export default class CodeFilesPlugin extends Plugin {
 		this._openFilePatch = null;
 		cleanupExplorerBadges();
 		this.ribbonIconEl?.remove();
+		revokeBlobUrlCache();
 	}
 
 	async loadSettings(): Promise<void> {

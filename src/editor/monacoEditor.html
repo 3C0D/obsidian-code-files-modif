@@ -32,7 +32,7 @@
 			http-equiv="Content-Security-Policy"
 			content="default-src 'self' app:; script-src 'self' 'unsafe-eval' 'unsafe-inline' app:; style-src 'self' 'unsafe-inline' app:; img-src 'self' app: data:; worker-src blob:;"
 		/>
-		<link rel="stylesheet" href="./monacoHtml.css" />
+
 		<style>
 			/* Chain all three levels to 100% height: html and body don't inherit
 			   viewport height by default, so #container's height: 100% would resolve to 0 */
@@ -51,8 +51,8 @@
 		<!-- Monaco's mount target: monaco.editor.create() requires a DOM element with measurable dimensions -->
 		<div id="container"></div>
 		<!--
-  require.paths.vs is patched to an absolute app:// URL by mountCodeEditor.ts before
-  this HTML is injected as a blob URL, so ./vs resolves correctly.
+  ./vs resolves correctly because buildBlobUrl.ts injects a <base href> pointing to the plugin
+  directory. This is the only remaining external script — all others are inlined by buildBlobUrl.ts.
 -->
 		<!-- Step 1: tell AMD loader where to find Monaco's files -->
 		<script>
@@ -60,29 +60,23 @@
 		</script>
 		<!-- Step 2: load Monaco's AMD module loader (reads the require config above) -->
 		<script src="./vs/loader.js"></script>
-		<!-- Step 2.5: load Prettier and Mermaid formatters -->
-		<script src="./formatters/prettier-standalone.js"></script>
-		<script src="./formatters/prettier-markdown.js"></script>
-		<script src="./formatters/prettier-estree.js"></script>
-		<script src="./formatters/prettier-typescript.js"></script>
-		<script src="./formatters/prettier-babel.js"></script>
-		<script src="./formatters/prettier-postcss.js"></script>
-		<script src="./formatters/prettier-html.js"></script>
-		<script src="./formatters/prettier-yaml.js"></script>
-		<script src="./formatters/prettier-graphql.js"></script>
-		<script src="./formatters/mermaid-formatter.js"></script>
-		<!-- Step 3: load bundled TypeScript code (replaces monacoHtml.js, monacoDiff.js, monacoFormatters.js, monacoActions.js) -->
-		<script src="./monacoBundle.js"></script>
+		<!-- Step 2: load Monaco's AMD module loader (reads the require config above) -->
+		<script src="./vs/loader.js"></script>
+		<!-- Scripts are injected by buildBlobUrl.ts with proper app:// URLs -->
 		<script>
-			// Step 4: async-load Monaco itself, then call initMonacoApp() from the bundle
-			require(['vs/editor/editor.main'], function () {
-				// All initialization is handled by monacoBundle.js
-				if (typeof initMonacoApp === 'function') {
-					initMonacoApp();
-				} else {
-					console.error('code-files: initMonacoApp not found in monacoBundle.js');
-				}
-			});
+// setTimeout(0) defers the AMD require() until after all synchronous inline scripts
+// (injected by buildBlobUrl.ts) have finished executing, guaranteeing that
+// initMonacoApp() from monacoBundle.js is defined when the Monaco callback fires.
+// DOMContentLoaded is not sufficient here because it can fire before inline scripts complete.
+			setTimeout(function () {
+				require(['vs/editor/editor.main'], function () {
+					if (typeof initMonacoApp === 'function') {
+						initMonacoApp();
+					} else {
+						console.error('code-files: initMonacoApp not found in monacoBundle.js');
+					}
+				});
+			}, 0);
 		</script>
 	</body>
 </html>

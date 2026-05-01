@@ -139,8 +139,7 @@ export const mountCodeEditor = async (
 
 	const destroy = (): void => {
 		win.removeEventListener('message', onMessage);
-		// Revoke the blob URL to free memory — the iframe HTML is no longer needed after close
-		URL.revokeObjectURL(blobUrl);
+		// Note: blob URL is now cached globally, revoked only on plugin unload
 		iframe.remove();
 	};
 
