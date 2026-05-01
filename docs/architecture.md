@@ -15,11 +15,22 @@ CodeEditorView → mountCodeEditor() → iframe (monacoEditor.html) → Monaco E
 
 ### Key Files
 
-- `mountCodeEditor.ts` — iframe creation, postMessage handling
+- `mountCodeEditor/` — Monaco iframe integration (modular)
+  - `mountCodeEditor.ts` — main entry point, iframe creation
+  - `messageHandler.ts` — postMessage protocol handling
+  - `buildInitParams.ts` — initialization parameters builder
+  - `projectLoader.ts` — TypeScript/JavaScript project file loading
+  - `assetUrls.ts` — asset path resolution
+  - `buildBlobUrl.ts` — blob URL creation with CSP workarounds
 - `monacoEditor.html` — Monaco instance, receives messages
 - `codeEditorView.ts` — Obsidian TextFileView wrapper
 - `getLanguage.ts` — extension → language mapping
-- `hiddenFilesUtils.ts` — hidden files scanning, reveal/hide operations, adapter patching
+- `hiddenFiles/` — hidden files management (modular)
+  - `operations.ts` — reveal/hide operations, temporary reveal handling
+  - `badge.ts` — folder decoration with eye badges
+  - `patches.ts` — adapter patching for dotfile support
+  - `scan.ts` — dotfile scanning
+  - `sync.ts` — auto-reveal synchronization
 - `vaultConfigUtils.ts` — vault-level settings management ("Detect all file extensions")
 - `revealHiddenFilesModal.ts` — modal for revealing/hiding dotfiles per folder
 
@@ -92,12 +103,15 @@ staticMap > 'plaintext'
 **Reveal System:**
 
 - `revealedFiles` — map of folder paths to arrays of revealed file paths
+- `temporaryRevealedPaths` — array of file paths temporarily revealed (e.g., workspace restore)
 - `scanDotEntries()` — scans folder for dotfiles, respects exclusion settings, filters by max file size
 - `revealFiles()` — makes dotfiles visible in Obsidian's file explorer
-    - `silent` parameter (default: false) — suppresses notice for auto-reveal operations
     - `persist` parameter (default: true) — saves to settings for manual reveals only
-- `unrevealFiles()` — removes dotfiles from explorer (renamed from `hideFilesInFolder`)
-    - `temporary` parameter (default: false) — skips settings/notice/badges for transient reveals
+    - No longer shows notices (silent by default)
+- `unrevealFiles()` — removes dotfiles from explorer
+    - `temporary` parameter (default: false) — skips settings/badges for transient reveals
+- `handleTemporaryReveal()` — reveals a file temporarily and tracks it in `temporaryRevealedPaths`
+- `cleanupTemporaryReveal()` — unreveals a temporarily revealed file when closed (unless manually revealed)
 - `decorateFolders()` — adds eye icon badge to folders with revealed files
 
 **Auto-Reveal System:**

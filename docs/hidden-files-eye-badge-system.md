@@ -38,35 +38,35 @@ if (hasRevealed && !existing) {
 
 ### 2. `revealFiles()` — Reveal Hidden Files
 
-**Location:** `hiddenFilesUtils.ts`
+**Location:** `hiddenFiles/operations.ts`
 
 **Parameters:**
 - `folderPath` — parent folder
 - `itemPaths` — files to reveal
-- `silent` — if true, no notice (for auto-reveal)
 - `persist` — if true, save to `revealedFiles` settings (manual reveal only)
 
 **Behavior:**
 1. Uses `adapter.reconcileFileInternal()` or `adapter.reconcileFileChanged()` to force Obsidian to display the file
 2. If `persist=true`, adds paths to `plugin.settings.revealedFiles[folderPath]`
 3. Calls `decorateFolders()` to update eye badges
-4. Shows notice if `silent=false`
+4. No longer shows notices (silent by default)
 
 **Used by:**
 - `RevealHiddenFilesModal` — manual reveal (persist=true, scans recursively through subfolders)
-- `syncAutoRevealedDotfiles()` — auto-reveal (persist=false, silent=true)
+- `syncAutoRevealedDotfiles()` — auto-reveal (persist=false)
 - `restoreRevealedFiles()` — on plugin startup
+- `handleTemporaryReveal()` — temporary reveal (persist=false)
 
 ---
 
 ### 3. `unrevealFiles()` — Hide Revealed Files
 
-**Location:** `hiddenFilesUtils.ts`
+**Location:** `hiddenFiles/operations.ts`
 
 **Parameters:**
 - `folderPath` — parent folder
 - `itemPaths` — files to hide
-- `temporary` — if true, skip settings/notice/badges (for transient files)
+- `temporary` — if true, skip settings/badges (for transient files)
 
 **Behavior:**
 1. Sets `_bypassPatch = true` to allow `reconcileDeletion` to work on dotfiles
@@ -74,26 +74,64 @@ if (hasRevealed && !existing) {
 3. If `temporary=false`:
    - Removes paths from `plugin.settings.revealedFiles[folderPath]`
    - Calls `decorateFolders()` to update eye badges
-   - Shows notice
+   - No longer shows notices
 
 **Used by:**
 - `RevealHiddenFilesModal` — manual hide (scans recursively through subfolders)
 - `patchRegisterExtensions()` — when unregistering extensions
 - `hideAutoRevealedDotfiles()` — when disabling auto-reveal
-- `ChooseHiddenFileModal` — temporary reveal for editing (temporary=true)
+- `cleanupTemporaryReveal()` — cleanup after temporary reveal
 
 ---
 
-### 4. `syncAutoRevealedDotfiles()` — Auto-Reveal on Extension Registration
+### 4. `handleTemporaryReveal()` — Temporary File Reveal
 
-**Location:** `hiddenFilesUtils.ts`
+**Location:** `hiddenFiles/operations.ts`
+
+**Purpose:** Reveals a file temporarily (e.g., when restoring workspace state or opening via `ChooseHiddenFileModal`).
+
+**Behavior:**
+1. Checks if file is already visible in vault
+2. If not, calls `revealFiles()` with `persist=false` (silent, no persist)
+3. Tracks file in `plugin.settings.temporaryRevealedPaths` unless:
+   - Extension is registered (managed by auto-reveal)
+   - File is already tracked
+4. Saves settings
+
+**Used by:**
+- `ChooseHiddenFileModal` — when opening hidden files for editing
+- Workspace state restoration (via `codeEditorView.ts`)
+
+---
+
+### 5. `cleanupTemporaryReveal()` — Cleanup Temporary Reveal
+
+**Location:** `hiddenFiles/operations.ts`
+
+**Purpose:** Unreveals a temporarily revealed file when it is closed.
+
+**Behavior:**
+1. Checks if file is in `temporaryRevealedPaths`
+2. Verifies file is not still open in another leaf (prevents premature cleanup)
+3. Checks if file is manually revealed (via `revealedFiles` or ancestor folder)
+4. If not manually revealed, calls `unrevealFiles()` with `temporary=true`
+5. Removes from `temporaryRevealedPaths` and saves settings
+
+**Used by:**
+- `codeEditorView.ts` — in `onClose()` method
+
+---
+
+### 6. `syncAutoRevealedDotfiles()` — Auto-Reveal on Extension Registration
+
+**Location:** `hiddenFiles/sync.ts`
 
 **Triggered by:** `patchRegisterExtensions()` via `around()` on `Plugin.registerExtensions()`
 
 **Behavior:**
 1. Cleans `revealedFiles` by removing entries now managed by auto-reveal
 2. Scans all folders for dotfiles matching newly registered extensions
-3. Calls `revealFiles()` with `persist=false, silent=true` (auto-managed, not persisted)
+3. Calls `revealFiles()` with `persist=false` (auto-managed, not persisted)
 4. Calls `decorateFolders()` to update eye badges
 
 **Key Point:** Auto-revealed files are NOT stored in `revealedFiles` settings.
@@ -104,7 +142,7 @@ if (hasRevealed && !existing) {
 
 ### 1. `patchAdapter()` — Prevent Dotfile Auto-Deletion & Fix Rename
 
-**Location:** `hiddenFilesUtils.ts`
+**Location:** `hiddenFiles/patches.ts`
 
 **Patches:**
 
@@ -129,7 +167,7 @@ Allows dotfile deletion via trash by setting `_bypassPatch=true`.
 
 ### 2. `patchRegisterExtensions()` — Sync Dotfile Visibility with Extension State
 
-**Location:** `hiddenFilesUtils.ts`
+**Location:** `hiddenFiles/patches.ts`
 
 **Patches:**
 - `Plugin.registerExtensions()` — calls `syncAutoRevealedDotfiles()` after registration

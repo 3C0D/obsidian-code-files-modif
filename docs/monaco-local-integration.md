@@ -72,8 +72,15 @@ html = html.replace('</head>', `<style>${cssText}</style></head>`);
 
 ## Architecture Components
 
-- **mountCodeEditor.ts** — fetch HTML, patch paths, create blob URL, manage postMessage
+- **mountCodeEditor/** — modular Monaco integration
+  - **mountCodeEditor.ts** — main entry point, fetch HTML, patch paths, create blob URL, manage postMessage
+  - **messageHandler.ts** — postMessage protocol handling (all message types)
+  - **buildInitParams.ts** — initialization parameters builder (hotkeys, config, theme)
+  - **projectLoader.ts** — TypeScript/JavaScript project file loading for IntelliSense
+  - **assetUrls.ts** — asset path resolution (Monaco, themes, formatters)
+  - **buildBlobUrl.ts** — blob URL creation with CSP workarounds (CSS inlining, font patching)
 - **monacoEditor.html** — load Monaco, formatters, handle messages, create editor
+- **themeUtils.ts** — theme resolution and loading (moved from mountCodeEditor.ts)
 - **Language System** — `staticMap` in `getLanguage.ts` maps 80+ extensions to Monaco language IDs; unknown → `plaintext`
 
 ## Asset Structure

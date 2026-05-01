@@ -31,14 +31,14 @@ new Setting(toggleSection)
 ```
 
 ### Send to Monaco (if applicable)
-**Locations:** `broadcast.ts`, `mountCodeEditor.ts`, `monacoEditor.html`
+**Locations:** `broadcast.ts`, `mountCodeEditor/buildInitParams.ts`, `monacoEditor.html`
 ```typescript
 // In broadcastOptions()
 view.codeEditor?.send('change-options', {
     myOption: this.settings.myOption,
 });
 
-// In initParams
+// In buildInitParams()
 myOption: plugin.settings.myOption,
 
 // In monacoEditor.html message switch
@@ -67,16 +67,14 @@ editor.addAction({
 ```
 
 ### Handle Message
-**Location:** `mountCodeEditor.ts`
+**Location:** `mountCodeEditor/messageHandler.ts`
 ```typescript
 case 'open-my-action': {
-    if (data.context === codeContext) {
-        new MyModal(
-            plugin,
-            ...,
-            () => send('focus', {})  // restoreFocus callback
-        ).open();
-    }
+    new MyModal(
+        plugin,
+        ...,
+        () => send('focus', {})  // restoreFocus callback
+    ).open();
     break;
 }
 ```
