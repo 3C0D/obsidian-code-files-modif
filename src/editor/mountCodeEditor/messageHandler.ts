@@ -156,7 +156,10 @@ export function buildMessageHandler(
 			}
 			case 'open-file': {
 				const vaultPath = data.path as string;
-				const position = data.position as { lineNumber: number; column: number } | null;
+				const position = data.position as {
+					lineNumber: number;
+					column: number;
+				} | null;
 				const file = plugin.app.vault.getFileByPath(vaultPath);
 				if (!file) break;
 				await openInMonacoLeaf(file, plugin, true, position, true);

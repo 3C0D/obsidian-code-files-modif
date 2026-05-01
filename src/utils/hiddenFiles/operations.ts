@@ -138,13 +138,17 @@ export async function handleTemporaryReveal(
 	if (!plugin.app.vault.getAbstractFileByPath(filePath)) {
 		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
 		await revealFiles(plugin, folderPath, [filePath], false); // silent, no persist
-		
+
 		// Don't track as temporary if the extension is registered —
 		// autoRevealRegisteredDotfiles will handle it permanently on layoutReady.
 		// Tracking it as temporary would cause it to be unrevealed on leaf close.
 		const ext = getExtension(filePath.split('/').pop() || '');
-		const isManagedByAutoReveal = ext && getActiveExtensions(plugin.settings).includes(ext);
-		if (!isManagedByAutoReveal && !plugin.settings.temporaryRevealedPaths.includes(filePath)) {
+		const isManagedByAutoReveal =
+			ext && getActiveExtensions(plugin.settings).includes(ext);
+		if (
+			!isManagedByAutoReveal &&
+			!plugin.settings.temporaryRevealedPaths.includes(filePath)
+		) {
 			plugin.settings.temporaryRevealedPaths.push(filePath);
 			await plugin.saveSettings();
 		}
