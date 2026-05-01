@@ -303,11 +303,8 @@ export interface HeaderActionsContext {
 export interface AssetUrls {
 	vsBase: string;
 	htmlUrl: string;
-	configJsUrl: string;
+	bundleJsUrl: string;
 	configCssUrl: string;
-	diffJsUrl: string;
-	formattersJsUrl: string;
-	actionsJsUrl: string;
 	prettierBase: string;
 	prettierMarkdownUrl: string;
 	prettierEstreeUrl: string;

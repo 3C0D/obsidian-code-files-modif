@@ -16,11 +16,8 @@ export function resolveAssetUrls(plugin: CodeFilesPlugin): AssetUrls {
 
 	const htmlUrl = res('monacoEditor.html');
 	const vsBase = res('vs').replace(/\?.*$/, ''); // Strip timestamp for use as base path
-	const configJsUrl = res('monacoHtml.js');
+	const bundleJsUrl = res('monacoBundle.js');
 	const configCssUrl = res('monacoHtml.css');
-	const diffJsUrl = res('monacoDiff.js');
-	const formattersJsUrl = res('monacoFormatters.js');
-	const actionsJsUrl = res('monacoActions.js');
 	const prettierBase = res('formatters/prettier-standalone.js');
 	const prettierMarkdownUrl = res('formatters/prettier-markdown.js');
 	const prettierEstreeUrl = res('formatters/prettier-estree.js');
@@ -41,11 +38,8 @@ export function resolveAssetUrls(plugin: CodeFilesPlugin): AssetUrls {
 	return {
 		vsBase,
 		htmlUrl,
-		configJsUrl,
+		bundleJsUrl,
 		configCssUrl,
-		diffJsUrl,
-		formattersJsUrl,
-		actionsJsUrl,
 		prettierBase,
 		prettierMarkdownUrl,
 		prettierEstreeUrl,

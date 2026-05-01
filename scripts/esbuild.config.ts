@@ -101,12 +101,32 @@ async function main(): Promise<void> {
 		const entryPoints = stylePath ? [mainTsPath, stylePath] : [mainTsPath];
 		const context = await createBuildContext(buildPath, isProd, entryPoints);
 
+		// Create Monaco bundle context (iframe)
+		const monacoBundlePath = path.join(pluginDir, 'src/editor/monacoMain.ts');
+		const monacoBundleOut = path.join(buildPath, 'monacoBundle.js');
+		const monacoContext = await esbuild.context({
+			entryPoints: [monacoBundlePath],
+			bundle: true,
+			format: 'iife',
+			platform: 'browser',
+			target: 'es2020',
+			// Monaco is a global injected by AMD loader — don't bundle it
+			external: ['monaco-editor'],
+			minify: isProd,
+			sourcemap: isProd ? false : 'inline',
+			treeShaking: true,
+			outfile: monacoBundleOut,
+			logLevel: 'info'
+		});
+
 		if (isProd) {
 			await context.rebuild();
+			await monacoContext.rebuild();
 			rl.close();
 			process.exit(0);
 		} else {
 			await context.watch();
+			await monacoContext.watch();
 		}
 	} catch (error) {
 		console.error('Build failed:', error);

@@ -13,12 +13,9 @@ After formatting, view side-by-side diff with selective revert. Users can revert
 ### Key Files
 - `monacoEditor.html` — `openDiffModal()`, `buildRevertWidgets()`, revert logic
 - `monacoHtml.css` — diff overlay, toolbar, widget styles
-- `monacoHtml.js` — `DIFF_EDITOR_OPTIONS` config
+- `src/editor/iframe/config.ts` — `DIFF_EDITOR_OPTIONS` config
 
-### Core Functions
-
-#### Diff Editor Setup
-**Location:** `monacoHtml.js`
+**Location:** `src/editor/iframe/config.ts`
 ```js
 var DIFF_EDITOR_OPTIONS = {
     readOnly: true,              // Prevent direct edits

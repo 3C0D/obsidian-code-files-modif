@@ -18,10 +18,7 @@ export async function buildBlobUrl(urls: AssetUrls): Promise<string> {
 	html = html
 		.replace("'./vs'", `'${urls.vsBase}'`)
 		.replace('"./vs/loader.js"', `"${urls.vsBase}/loader.js"`)
-		.replace('"./monacoHtml.js"', `"${urls.configJsUrl}"`)
-		.replace('"./monacoDiff.js"', `"${urls.diffJsUrl}"`)
-		.replace('"./monacoFormatters.js"', `"${urls.formattersJsUrl}"`)
-		.replace('"./monacoActions.js"', `"${urls.actionsJsUrl}"`)
+		.replace('"./monacoBundle.js"', `"${urls.bundleJsUrl}"`)
 		.replace('<link rel="stylesheet" href="./monacoHtml.css" />', '');
 
 	const cssUrl = `${urls.vsBase}/editor/editor.main.css`;
@@ -77,10 +74,7 @@ function parseEditorConfig(str) {
 <script>window.__RUFF_WASM_URL__ = '${urls.ruffWasmUrl}';</script>
 <script src="${urls.gofmtFormatterUrl}"></script>
 <script>window.__GOFMT_WASM_URL__ = '${urls.gofmtWasmUrl}';</script>
-<script src="${urls.configJsUrl}"></script>
-<script src="${urls.diffJsUrl}"></script>
-<script src="${urls.formattersJsUrl}"></script>
-<script src="${urls.actionsJsUrl}"></script>
+<script src="${urls.bundleJsUrl}"></script>
 <style>${cssText}</style>
 <style>${configCssText}</style>
 <script>

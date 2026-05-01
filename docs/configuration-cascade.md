@@ -168,7 +168,7 @@ Opening a `.md` (Markdown) file:
 
 ### Why No HTML Defaults?
 
-Previous versions had a fourth level with hardcoded defaults in `monacoHtml.js` (e.g., `PRETTIER_PRINT_WIDTH = 80`). These were removed because:
+Previous versions had a fourth level with hardcoded defaults in `src/editor/iframe/config.ts` (e.g., `PRETTIER_PRINT_WIDTH = 80`). These were removed because:
 
 1. **Redundant:** Always overwritten by `applyEditorConfig()` before first use
 2. **Confusing:** Created a false impression of being configurable
@@ -191,7 +191,7 @@ Now, configuration variables in the HTML (`formatOnSave`, `PRETTIER_PRINT_WIDTH`
 
 ## Related Files
 
-- `monacoHtml.js` — Configuration variables (no defaults, set by `applyEditorConfig()`)
+- `src/editor/iframe/config.ts` — Configuration variables (no defaults, set by `applyEditorConfig()`)
 - `monacoEditor.html` — Monaco initialization and `applyEditorConfig()` function
 - `src/types/types.ts` — TypeScript defaults (`DEFAULT_EDITOR_CONFIG`, `getExtensionConfigTemplate()`)
 - `src/utils/settingsUtils.ts` — Merge logic (`buildMergedConfig()`)

@@ -91,7 +91,7 @@ plugin-folder/
 ├── monaco-themes/         # 50+ themes (2MB)
 ├── formatters/           # Prettier + Mermaid (2MB)
 ├── monacoEditor.html     # Iframe HTML
-├── monacoHtml.js         # Configuration
+├── iframe/config.ts      # Configuration
 └── monacoHtml.css        # Styles
 ```
 

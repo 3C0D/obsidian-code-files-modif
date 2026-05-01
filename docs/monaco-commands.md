@@ -165,7 +165,7 @@ const finalCommandPaletteHotkey = parseHotkeyOverride(
 ```
 
 #### 5. Intercept Keypress in Monaco
-**Location:** `monacoActions.js` → `editor.onKeyDown()` (lines 171-184)
+**Location:** `src/editor/iframe/actions.ts` → `editor.onKeyDown()` (lines 171-184)
 ```javascript
 if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
     var hk = currentCommandPaletteHotkey;
@@ -201,7 +201,7 @@ case 'open-obsidian-palette': {
 ```
 
 #### 7. Add Action for F1 Palette
-**Location:** `monacoActions.js` (lines 145-153)
+**Location:** `src/editor/iframe/actions.ts` (lines 145-153)
 ```javascript
 editor.addAction({
     id: 'code-files-obsidian-palette',
@@ -291,7 +291,7 @@ for (const view of views) {
 | File | What to Add |
 |------|-------------|
 | `monacoEditor.html` | Declare global variable (line 95), initialize in `applyParams()` (line 153), handle `update-hotkeys` message (line 327) |
-| `monacoActions.js` | Add `onKeyDown` handler (line 171), add `addAction` for F1 palette (line 145) |
+| `src/editor/iframe/actions.ts` | Add `onKeyDown` handler (line 171), add `addAction` for F1 palette (line 145) |
 | `mountCodeEditor.ts` | Read hotkey with `getObsidianHotkey()` (line 192), pass in `initParams` (line 218), handle postMessage (line 425) |
 | `main.ts` | Initialize `_lastHotkeys` (line 63) |
 | `broadcast.ts` | Add hotkey to comparison (line 180), broadcast to inactive views (line 199), reload active view (line 229) |
