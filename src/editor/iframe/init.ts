@@ -30,6 +30,38 @@ let lastFormatFormatted: string | null = null;
 let currentLang = 'plaintext';
 let initialized = false;
 
+function showInEditorMessage(message: string): void {
+	const container = document.getElementById('container');
+	if (!container) return;
+
+	// Create message element
+	const messageEl = document.createElement('div');
+	messageEl.textContent = message;
+	messageEl.style.cssText = `
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		background: #333;
+		color: #fff;
+		padding: 8px 12px;
+		border-radius: 4px;
+		font-size: 12px;
+		z-index: 1000;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+		max-width: 300px;
+		word-wrap: break-word;
+	`;
+
+	container.appendChild(messageEl);
+
+	// Remove after 5 seconds
+	setTimeout(() => {
+		if (messageEl.parentNode) {
+			messageEl.parentNode.removeChild(messageEl);
+		}
+	}, 5000);
+}
+
 export function applyEditorConfig(cfg: EditorConfig): void {
 	if (!editor || !cfg) return;
 	const modelOpts: Monaco.editor.ITextModelUpdateOptions = {};
@@ -174,6 +206,10 @@ function applyParams(params: InitParams): void {
 			resource: Monaco.Uri,
 			selectionOrPosition: Monaco.IRange | Monaco.IPosition | undefined
 		) => {
+			if (!params.projectRootFolder) {
+				showInEditorMessage("To navigate cross-file, define the parent folder as project root folder.");
+				return true; // Don't attempt to open
+			}
 			// resource.path = '/my-project/utils.ts' (without 'file://')
 			let position = null;
 			if (selectionOrPosition && 'startLineNumber' in selectionOrPosition) {
