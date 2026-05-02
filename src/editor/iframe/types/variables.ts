@@ -3,7 +3,7 @@
 
 // ===== Diff Modal Configuration =====
 
-// Monaco Diff Editor Options
+/** Monaco Diff Editor Options */
 export const DIFF_EDITOR_OPTIONS = {
 	// readOnly: false allows pushEditOperations (for revertBlock)
 	// domReadOnly: true blocks keyboard input but keeps programmatic edits
@@ -24,24 +24,24 @@ export const DIFF_EDITOR_OPTIONS = {
 	enableSplitViewResizing: true
 };
 
-// Timeout (ms) to wait for format changes before giving up
+/** Timeout (ms) to wait for format changes before giving up */
 export const FORMAT_CHANGE_TIMEOUT = 3000;
 
 // ===== Prettier Configuration =====
 
-// Prose wrap mode: 'always', 'never', or 'preserve'
+/** Prose wrap mode: 'always', 'never', or 'preserve' */
 export let PRETTIER_PROSE_WRAP = 'always';
 
-// Maximum line width for Prettier formatting
+/** Maximum line width for Prettier formatting */
 export let PRETTIER_PRINT_WIDTH = 80;
 
-// Tab width for Prettier formatting (synced with Monaco tabSize)
+/** Tab width for Prettier formatting (synced with Monaco tabSize) */
 export let PRETTIER_TAB_WIDTH = 4;
 
-// Use tabs instead of spaces (synced with Monaco insertSpaces)
+/** Use tabs instead of spaces (synced with Monaco insertSpaces) */
 export let PRETTIER_USE_TABS = false;
 
-// Setters for runtime updates
+/** Setters for runtime updates */
 export function setPrettierProseWrap(value: string): void {
 	PRETTIER_PROSE_WRAP = value;
 }

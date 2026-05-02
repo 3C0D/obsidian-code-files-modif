@@ -12,6 +12,8 @@ import type { DataAdapterEx } from 'obsidian-typings';
 import type { ItemView, WorkspaceLeaf } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 
+// ===== Plugin Settings =====
+
 export interface MyPluginSettings {
 	/** File extensions registered with Obsidian to open in Monaco */
 	extensions: string[];

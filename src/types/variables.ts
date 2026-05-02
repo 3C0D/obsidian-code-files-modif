@@ -1,6 +1,8 @@
 import { staticMap } from '../utils/getLanguage.ts';
 import type { MyPluginSettings } from './types.ts';
 
+// ===== Editor Configuration =====
+
 /**
  * Default Monaco editor options applied when no per-extension config exists.
  *
@@ -110,6 +112,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	autoRevealRegisteredDotfiles: true,
 	temporaryRevealedPaths: []
 };
+
+// ===== Formatter Extensions =====
 
 /**
  * Extensions that have integrated formatters.
@@ -356,8 +360,12 @@ export const EXCLUDED_EXTENSIONS = [
 	'eot'
 ];
 
+// ===== Misc Constants =====
+
 /** Obsidian view type identifier for the Monaco editor */
 export const viewType = 'code-editor';
 
 /** Duration (ms) the diff button stays visible in tab header after formatting */
 export const DIFF_BUTTON_DISPLAY_DURATION = 10000;
+
+
