@@ -139,12 +139,15 @@ export async function handleTemporaryReveal(
 		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
 		await revealFiles(plugin, folderPath, [filePath], false); // silent, no persist
 
-		// Don't track as temporary if the extension is registered —
-		// autoRevealRegisteredDotfiles will handle it permanently on layoutReady.
-		// Tracking it as temporary would cause it to be unrevealed on leaf close.
+		// Track as temporary unless managed by autoRevealRegisteredDotfiles.
+		// External files (configDir) are always tracked because they're never
+		// managed by autoRevealRegisteredDotfiles (which only scans dotfiles).
+		const configDir = plugin.app.vault.configDir || '.obsidian';
+		const isExternalFile = filePath.startsWith(configDir + '/');
 		const ext = getExtension(filePath.split('/').pop() || '');
 		const isManagedByAutoReveal =
-			ext && getActiveExtensions(plugin.settings).includes(ext);
+			!isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
+		
 		if (
 			!isManagedByAutoReveal &&
 			!plugin.settings.temporaryRevealedPaths.includes(filePath)
