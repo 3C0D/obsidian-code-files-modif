@@ -161,6 +161,7 @@ export async function handleTemporaryReveal(
 /**
  * Cleans up a temporarily revealed file when it is closed.
  * Unreveals it unless it is covered by a manual reveal (file or ancestor folder).
+ * External files (configDir) are never unrevealed, only removed from temporaryRevealedPaths.
  */
 export async function cleanupTemporaryReveal(
 	plugin: CodeFilesPlugin,
@@ -177,14 +178,21 @@ export async function cleanupTemporaryReveal(
 			.some((l) => l.getViewState().state?.file === filePath);
 		if (stillOpen) return;
 
-		const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
-		const manuallyRevealed = allRevealedItems.some(
-			(p) => filePath === p || filePath.startsWith(p + '/')
-		);
-		if (!manuallyRevealed) {
-			const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-			await unrevealFiles(plugin, folderPath, [filePath], true);
+		// External files (configDir) should never be unrevealed, only removed from tracking
+		const configDir = plugin.app.vault.configDir || '.obsidian';
+		const isExternalFile = filePath.startsWith(configDir + '/');
+		
+		if (!isExternalFile) {
+			const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
+			const manuallyRevealed = allRevealedItems.some(
+				(p) => filePath === p || filePath.startsWith(p + '/')
+			);
+			if (!manuallyRevealed) {
+				const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
+				await unrevealFiles(plugin, folderPath, [filePath], true);
+			}
 		}
+		
 		plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
 		await plugin.saveSettings();
 	}
