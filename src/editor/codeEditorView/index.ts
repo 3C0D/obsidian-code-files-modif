@@ -327,6 +327,9 @@ export class CodeEditorView extends TextFileView {
 	/** Hides the diff action button (called when all blocks are reverted). */
 	private onAllBlocksReverted(): void {
 		this.hideDiffAction();
+		if (this.codeEditor.getValue() === this.data) {
+			this.setDirty(false);
+		}
 	}
 
 	/** Initializes the Monaco editor when a file is loaded into the view. */
