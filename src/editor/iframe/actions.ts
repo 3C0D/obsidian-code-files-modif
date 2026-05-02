@@ -16,6 +16,12 @@ let currentSettingsHotkey: HotkeyConfig | null = null;
 let currentDeleteFileHotkey: HotkeyConfig | null = null;
 let runFormatWithDiff: () => Promise<void>;
 
+/**
+ * Sets the shared state for actions module.
+ * @param editorInstance - The Monaco editor instance
+ * @param ctx - The context identifier for this editor
+ * @param formatFn - Function to run formatting with diff tracking
+ */
 export function setActionsState(
 	editorInstance: Monaco.editor.IStandaloneCodeEditor,
 	ctx: string,
@@ -30,6 +36,12 @@ export function setFormatOnSave(value: boolean): void {
 	formatOnSave = value;
 }
 
+/**
+ * Updates the current hotkey configurations from Obsidian.
+ * @param commandPalette - Hotkey config for command palette (Ctrl+P)
+ * @param settings - Hotkey config for settings (Ctrl+,)
+ * @param deleteFile - Hotkey config for delete file action
+ */
 export function updateHotkeys(
 	commandPalette: HotkeyConfig | null,
 	settings: HotkeyConfig | null,
@@ -40,6 +52,11 @@ export function updateHotkeys(
 	currentDeleteFileHotkey = deleteFile;
 }
 
+/**
+ * Registers all Monaco actions and keyboard handlers.
+ * @param params - Initialization parameters
+ * @param openDiffModal - Function to open the diff modal with original and formatted content
+ */
 export function registerActions(
 	params: InitParams,
 	openDiffModal: (orig: string, fmt: string) => void
@@ -186,9 +203,11 @@ export function registerActions(
 		// Check command palette hotkey (requires Mod)
 		if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
 			const hk = currentCommandPaletteHotkey;
+			// Extract required modifier states from hotkey config
 			const needsShift = hk.modifiers.includes('Shift');
 			const needsAlt = hk.modifiers.includes('Alt');
 			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			// Match only if all modifiers are exactly as required (no extra modifiers)
 			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();
@@ -203,9 +222,11 @@ export function registerActions(
 		// Check settings hotkey (requires Mod)
 		if (currentSettingsHotkey && (e.ctrlKey || e.metaKey)) {
 			const hk = currentSettingsHotkey;
+			// Extract required modifier states from hotkey config
 			const needsShift = hk.modifiers.includes('Shift');
 			const needsAlt = hk.modifiers.includes('Alt');
 			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			// Match only if all modifiers are exactly as required (no extra modifiers)
 			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();
@@ -217,6 +238,7 @@ export function registerActions(
 		// Check delete file hotkey (may or may not require Mod)
 		if (currentDeleteFileHotkey) {
 			const hk = currentDeleteFileHotkey;
+			// Determine if Mod key is required (Mod, Ctrl, or Meta in config)
 			const needsMod =
 				hk.modifiers.includes('Mod') ||
 				hk.modifiers.includes('Ctrl') ||
@@ -225,6 +247,7 @@ export function registerActions(
 			const needsAlt = hk.modifiers.includes('Alt');
 			const hasMod = e.ctrlKey || e.metaKey;
 			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+			// Match only if Mod state matches requirement and other modifiers are exact
 			if (
 				keyMatch &&
 				hasMod === needsMod &&

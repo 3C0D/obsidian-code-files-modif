@@ -15,10 +15,21 @@ import { setLastFormat } from './diff.js';
 
 let context: string | null = null;
 
+/**
+ * Sets the context identifier for the formatter module.
+ * Used for file-specific formatting logic (e.g., excluding .lock files).
+ * @param ctx - The file context/path identifier
+ */
 export function setFormatterContext(ctx: string): void {
 	context = ctx;
 }
 
+/**
+ * Registers all Monaco document formatting edit providers for supported languages.
+ * Most formatters delegate diff tracking to runFormatWithDiff() in init.ts,
+ * but mermaid, python, and go handle setLastFormat() directly because they have
+ * custom logic for determining when formatting actually changed content.
+ */
 export function registerFormatters(): void {
 	// Register Mermaid as a custom language if not already registered
 	if (

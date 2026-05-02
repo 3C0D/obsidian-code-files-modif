@@ -37,15 +37,29 @@ export function setSharedState(
 	currentLang = lang;
 }
 
+/**
+ * Stores the last format operation's original and formatted content.
+ * Used by the "Show Format Diff" action to display differences.
+ * @param original - The original unformatted content
+ * @param formatted - The formatted content after formatting
+ */
 export function setLastFormat(original: string | null, formatted: string | null): void {
 	lastFormatOriginal = original;
 	lastFormatFormatted = formatted;
 }
 
+/**
+ * Retrieves the last stored format operation content.
+ * @returns Object with original and formatted content, null if no format operation occurred
+ */
 export function getLastFormat(): { original: string | null; formatted: string | null } {
 	return { original: lastFormatOriginal, formatted: lastFormatFormatted };
 }
 
+/**
+ * Closes the diff modal and cleans up all associated widgets and event listeners.
+ * Ensures the main editor content stays in sync with any changes made in the diff view.
+ */
 export function closeDiffModal(): void {
 	if (diffOverlayEl) {
 		diffOverlayEl.style.display = 'none';
@@ -103,6 +117,11 @@ function clearRevertWidgets(): void {
 	revertZoneWidgets = [];
 }
 
+/**
+ * Builds revert widgets for each diff hunk, allowing users to revert individual changes.
+ * Uses glyph margin widgets if available (Monaco API), otherwise falls back to overlay widgets.
+ * Glyph API is preferred for better performance and native integration.
+ */
 function buildRevertWidgets(): void {
 	clearRevertWidgets();
 	if (diffScrollDisposable) {
@@ -190,6 +209,13 @@ function buildRevertWidgets(): void {
 	}
 }
 
+/**
+ * Positions an overlay widget at the correct vertical position for a given line number.
+ * Used as fallback when glyph margin widgets are not available.
+ * @param edtr - The Monaco editor instance
+ * @param container - The overlay widget container element
+ * @param lineNumber - The line number to position the widget at
+ */
 function positionOverlayWidget(
 	edtr: Monaco.editor.IStandaloneCodeEditor,
 	container: HTMLDivElement,
@@ -204,6 +230,11 @@ function positionOverlayWidget(
 	container.style.alignItems = 'center';
 }
 
+/**
+ * Reverts a single diff hunk by applying the original content back to both the diff editor and main editor.
+ * Handles various change types: additions, deletions, and modifications.
+ * @param change - The line change object describing what was changed
+ */
 function revertBlock(change: Monaco.editor.ILineChange): void {
 	const models = diffEditorInstance?.getModel();
 	if (!models) return;
@@ -296,6 +327,8 @@ function revertBlock(change: Monaco.editor.ILineChange): void {
 		lastFormatFormatted = editor.getValue();
 	}
 
+	// Delay checking for remaining changes to allow Monaco's diff computation to settle
+	// after the edit operation. 300ms is sufficient for diff recalculation.
 	setTimeout(() => {
 		const remaining = diffEditorInstance?.getLineChanges();
 		if (!remaining || remaining.length === 0) {
@@ -318,6 +351,10 @@ function revertBlock(change: Monaco.editor.ILineChange): void {
 	}, 300);
 }
 
+/**
+ * Reverts all formatting changes by restoring the original pre-formatted content.
+ * Closes the diff modal and cleans up all state.
+ */
 function revertAll(): void {
 	if (!lastFormatOriginal) return;
 
@@ -348,6 +385,13 @@ function revertAll(): void {
 	window.parent.postMessage({ type: 'format-diff-reverted', context }, '*');
 }
 
+/**
+ * Opens the side-by-side diff modal showing original vs formatted content.
+ * Creates the modal DOM elements if they don't exist, sets up the diff editor,
+ * and builds revert widgets for individual change blocks.
+ * @param original - The original unformatted content
+ * @param formatted - The formatted content after formatting
+ */
 export function openDiffModal(original: string, formatted: string): void {
 	if (!diffOverlayEl) {
 		diffOverlayEl = document.createElement('div');

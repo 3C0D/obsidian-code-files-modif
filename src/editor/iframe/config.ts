@@ -1,5 +1,8 @@
 // Monaco Editor HTML Configuration
-// Re-exports from variables.ts for convenience
+// Re-exports from variables.ts for convenience.
+// This module provides an indirection layer between the iframe bundle
+// and variables.ts, allowing dynamic configuration updates from the parent window
+// without exposing the full variables.ts API to the iframe scope.
 
 export {
 	DIFF_EDITOR_OPTIONS,

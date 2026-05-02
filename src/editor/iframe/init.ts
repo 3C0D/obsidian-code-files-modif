@@ -29,6 +29,11 @@ let editorDefaults: Monaco.editor.IStandaloneEditorConstructionOptions = {};
 let currentLang = 'plaintext';
 let initialized = false;
 
+/**
+ * Displays a temporary message overlay in the editor area.
+ * Used for status notifications like "Formatting..." or errors.
+ * @param message - The message text to display
+ */
 function showInEditorMessage(message: string): void {
 	const container = document.getElementById('container');
 	if (!container) return;
@@ -61,6 +66,11 @@ function showInEditorMessage(message: string): void {
 	}, 5000);
 }
 
+/**
+ * Applies dynamic editor configuration settings from the parent window.
+ * Updates tab size, spaces vs tabs, format-on-save, and Prettier options.
+ * @param cfg - The editor configuration object
+ */
 export function applyEditorConfig(cfg: EditorConfig): void {
 	if (!editor || !cfg) return;
 	const modelOpts: Monaco.editor.ITextModelUpdateOptions = {};
@@ -90,6 +100,11 @@ export function applyEditorConfig(cfg: EditorConfig): void {
 	editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
 }
 
+/**
+ * Runs Monaco's built-in formatDocument action and tracks if content changed for diff display.
+ * Uses a fallback timeout because some formatters may not trigger the change event reliably.
+ * FORMAT_CHANGE_TIMEOUT provides a safety net to prevent hanging promises.
+ */
 export function runFormatWithDiff(): Promise<void> {
 	if (!editor) return Promise.resolve();
 	const formatAction = editor.getAction('editor.action.formatDocument');
@@ -120,6 +135,12 @@ export function runFormatWithDiff(): Promise<void> {
 	});
 }
 
+/**
+ * Applies initialization parameters to configure the Monaco editor instance.
+ * Sets up language, theme, editor options, and registers formatters/actions.
+ * Called once during iframe initialization.
+ * @param params - Initialization parameters from the parent window
+ */
 function applyParams(params: InitParams): void {
 	if (initialized) return;
 	initialized = true;
@@ -278,6 +299,10 @@ function applyParams(params: InitParams): void {
 	});
 }
 
+/**
+ * Initializes the Monaco editor application and sets up message handling.
+ * Signals readiness to parent and processes initialization messages.
+ */
 export function initMonacoApp(): void {
 	// Signal that Monaco is fully loaded and ready to receive 'init'
 	window.parent.postMessage({ type: 'ready' }, '*');
