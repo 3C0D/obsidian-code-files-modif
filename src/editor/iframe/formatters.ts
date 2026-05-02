@@ -14,8 +14,6 @@ import {
 import { setLastFormat } from './diff.js';
 
 let context: string | null = null;
-let _lastFormatOriginal: string | null = null;
-let _lastFormatFormatted: string | null = null;
 
 export function setFormatterContext(ctx: string): void {
 	context = ctx;
@@ -79,8 +77,6 @@ export function registerFormatters(): void {
 				const original = model.getValue();
 				const formatted = window.mermaidFormatter.formatMermaid(original);
 				if (formatted !== original) {
-					_lastFormatOriginal = original;
-					_lastFormatFormatted = formatted;
 					setLastFormat(original, formatted);
 					window.parent.postMessage(
 						{ type: 'format-diff-available', context },
@@ -315,8 +311,6 @@ export function registerFormatters(): void {
 					});
 
 					if (formatted !== original) {
-						_lastFormatOriginal = original;
-						_lastFormatFormatted = formatted;
 						setLastFormat(original, formatted);
 						window.parent.postMessage(
 							{ type: 'format-diff-available', context },
@@ -356,8 +350,6 @@ export function registerFormatters(): void {
 					const formatted = window.gofmtFormatter!.format(original);
 
 					if (formatted !== original) {
-						_lastFormatOriginal = original;
-						_lastFormatFormatted = formatted;
 						setLastFormat(original, formatted);
 						window.parent.postMessage(
 							{ type: 'format-diff-available', context },

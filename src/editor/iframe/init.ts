@@ -25,8 +25,7 @@ let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
 let formatOnSave = false;
 let editorDefaults: Monaco.editor.IStandaloneEditorConstructionOptions = {};
-let lastFormatOriginal: string | null = null;
-let lastFormatFormatted: string | null = null;
+
 let currentLang = 'plaintext';
 let initialized = false;
 
@@ -103,8 +102,6 @@ export function runFormatWithDiff(): Promise<void> {
 			clearTimeout(fallback);
 			const formatted = editor!.getValue();
 			if (formatted !== original) {
-				lastFormatOriginal = original;
-				lastFormatFormatted = formatted;
 				setLastFormat(original, formatted);
 				window.parent.postMessage(
 					{ type: 'format-diff-available', context },
@@ -270,7 +267,7 @@ function applyParams(params: InitParams): void {
 	}
 
 	// Register all actions and keyboard handlers
-	registerActions(params, lastFormatOriginal, lastFormatFormatted, openDiffModal);
+	registerActions(params, openDiffModal);
 
 	// Notify parent when content changes (updates dirty badge)
 	editor.onDidChangeModelContent(() => {
@@ -375,12 +372,13 @@ export function initMonacoApp(): void {
 					editor.revealPositionInCenter(data.position);
 				}
 				break;
-			case 'trigger-show-diff':
+			case 'trigger-show-diff': {
 				const { original, formatted } = getLastFormat();
 				if (original && formatted) {
 					openDiffModal(original, formatted);
 				}
 				break;
+			}
 			case 'update-hotkeys':
 				updateHotkeys(
 					data.commandPaletteHotkey || null,

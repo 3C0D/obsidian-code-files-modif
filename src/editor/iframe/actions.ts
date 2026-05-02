@@ -6,6 +6,7 @@
 import './types/types.js'; // Global declarations
 import type * as Monaco from 'monaco-editor';
 import type { InitParams, HotkeyConfig } from './types/types.js';
+import { getLastFormat } from './diff.js';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -41,8 +42,6 @@ export function updateHotkeys(
 
 export function registerActions(
 	params: InitParams,
-	_lastFormatOriginal: string | null,
-	_lastFormatFormatted: string | null,
 	openDiffModal: (orig: string, fmt: string) => void
 ): void {
 	if (!editor) return;
@@ -114,8 +113,9 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 0.6,
 		run: () => {
-			if (_lastFormatOriginal && _lastFormatFormatted) {
-				openDiffModal(_lastFormatOriginal, _lastFormatFormatted);
+			const { original, formatted } = getLastFormat();
+			if (original && formatted) {
+				openDiffModal(original, formatted);
 			}
 		}
 	});
