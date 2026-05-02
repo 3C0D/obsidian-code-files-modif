@@ -15,7 +15,6 @@ export function updateExtBadge(
 
 	// Capture dirty/saving state before removing the badge so it can be restored
 	// on the new badge — otherwise a rename mid-edit silently resets the unsaved indicator.
-	// Capture the current dirty and saving states before removing the badges
 	const existingDirtyBadge = titleContainer.querySelector('.code-files-dirty-badge');
 	const isDirty = existingDirtyBadge?.classList.contains('code-files-dirty-unsaved');
 	const isSaving = existingDirtyBadge?.classList.contains('code-files-dirty-saving');

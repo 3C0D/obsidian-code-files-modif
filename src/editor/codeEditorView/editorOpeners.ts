@@ -72,8 +72,8 @@ export async function openInMonacoLeaf(
 		// to receive the 'scroll-to-position' command after it is opened in a new tab.
 		setTimeout(
 			() => {
-				if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
-					leaf.view.editor.send('scroll-to-position', { position });
+				if (leaf.view instanceof CodeEditorView) {
+					leaf.view.editor?.send('scroll-to-position', { position });
 				}
 			},
 			existingLeaf ? 0 : 150

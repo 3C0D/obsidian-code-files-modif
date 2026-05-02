@@ -150,6 +150,7 @@ export class CodeEditorView extends TextFileView {
 	 * to avoid triggering the internal watcher which would close the tab.
 	 */
 	async save(clear?: boolean): Promise<void> {
+		if (!this.codeEditor) return;
 		if (!this.plugin.settings.autoSave && !this.forceSave) return;
 		const configDir = this.plugin.app.vault.configDir;
 		if (this.file && this.file.path.startsWith(configDir + '/')) {
@@ -320,7 +321,7 @@ export class CodeEditorView extends TextFileView {
 		this.updateFromContext(context);
 	}
 
-	/** Handles content changes in the editor editor. */
+	/** Handles content changes in the editor. */
 	private onContentChange(): void {
 		if (!this.codeEditor) return;
 		if (this.codeEditor.getValue() === this.data) {
