@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
-import './types/types.ts'; // Global declarations
 import type * as Monaco from 'monaco-editor';
 import { DIFF_EDITOR_OPTIONS } from './config.ts';
 

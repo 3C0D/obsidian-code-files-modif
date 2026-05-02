@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
-import './types/types.ts'; // Global declarations
 import type * as Monaco from 'monaco-editor';
 import type { InitParams, EditorConfig } from './types/index.ts';
 import {
@@ -23,7 +22,6 @@ import {
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
-let formatOnSave = false;
 let editorDefaults: Monaco.editor.IStandaloneEditorConstructionOptions = {};
 
 let currentLang = 'plaintext';
@@ -77,8 +75,7 @@ export function applyEditorConfig(cfg: EditorConfig): void {
 	if (cfg.tabSize !== undefined) modelOpts.tabSize = cfg.tabSize;
 	if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
 	if (Object.keys(modelOpts).length) editor.getModel()?.updateOptions(modelOpts);
-	formatOnSave = !!cfg.formatOnSave;
-	setFormatOnSave(formatOnSave);
+	setFormatOnSave(!!cfg.formatOnSave);
 	// Update Prettier printWidth if specified
 	if (cfg.printWidth !== undefined) {
 		setPrettierPrintWidth(cfg.printWidth);
