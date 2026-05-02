@@ -40,6 +40,8 @@ export class CodeEditorView extends TextFileView {
 	private codeEditor!: CodeEditorInstance;
 	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
+	/** Flag to hide the return arrow (set via state.noReturnAction) */
+	private noReturnAction = false;
 	/** Gear icon action (Editor Settings) in the view header */
 	private gearAction: HTMLElement | null = null;
 	/** Theme picker icon action in the view header */
@@ -111,6 +113,9 @@ export class CodeEditorView extends TextFileView {
 		) {
 			state.reveal = true;
 		}
+		if (this.noReturnAction) {
+			state.noReturnAction = true;
+		}
 		return state;
 	}
 
@@ -127,6 +132,11 @@ export class CodeEditorView extends TextFileView {
 		const filePath = typeof state?.file === 'string' ? state.file : undefined;
 		if (filePath && state.reveal) {
 			await handleTemporaryReveal(this.plugin, filePath);
+		}
+		// Reset noReturnAction first, then set it only if explicitly in state
+		this.noReturnAction = false;
+		if (state.noReturnAction) {
+			this.noReturnAction = true;
 		}
 		await super.setState(state, result);
 	}
@@ -173,6 +183,7 @@ export class CodeEditorView extends TextFileView {
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
 			leaf: this.leaf,
+			noReturnAction: this.noReturnAction,
 			gearAction: this.gearAction,
 			themeAction: this.themeAction,
 			snippetFolderAction: this.snippetFolderAction,

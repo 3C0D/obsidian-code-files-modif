@@ -86,9 +86,9 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 		context.onOpenEditorConfig(ext);
 	});
 
-	// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered
+	// Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered AND noReturnAction is false
 	const isUnregistered = !getActiveExtensions(context.plugin.settings).includes(ext);
-	if (isUnregistered) {
+	if (isUnregistered && !context.noReturnAction) {
 		context.returnAction = context.addAction(
 			'undo-2',
 			'Return to default view',

@@ -251,6 +251,7 @@ export interface FolderSection {
  * @property onForceSave - Triggers a force save (bypasses autoSave guard)
 
  * @property leaf - Workspace leaf containing this view
+ * @property noReturnAction - Whether to hide the return arrow (for command palette opens)
  * @property gearAction - Gear button element, null when not mounted
  * @property themeAction - Theme picker button element, null when not mounted
  * @property snippetFolderAction - Snippet folder button element, null when not mounted
@@ -270,6 +271,8 @@ export interface HeaderActionsContext {
 
 	/** The workspace leaf containing this view */
 	leaf: WorkspaceLeaf;
+	/** Whether to hide the return arrow (for command palette opens) */
+	noReturnAction: boolean;
 	// Mutable action button elements — null when not mounted
 	/** Gear/settings action button element */
 	gearAction: HTMLElement | null;

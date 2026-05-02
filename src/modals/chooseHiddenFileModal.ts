@@ -139,7 +139,7 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
 	): Promise<void> {
 		const path = normalizePath(item.path);
 		await handleTemporaryReveal(this.plugin, path);
-		await openInMonacoLeaf(path, this.plugin, true);
+		await openInMonacoLeaf(path, this.plugin, true, null, false, true);
 	}
 
 	renderSuggestion(item: FuzzyMatch<FileSuggestion>, el: HTMLElement): void {

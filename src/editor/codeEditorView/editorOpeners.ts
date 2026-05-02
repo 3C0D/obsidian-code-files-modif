@@ -35,15 +35,17 @@ export function findRootMonacoLeaf(
  * @param fileOrPath - TFile or absolute path of the file to open.
  * @param plugin - The CodeFilesPlugin instance.
  * @param newTab - Whether to open in a new tab or reuse the current leaf.
- * @param position - Optional position to scroll to after opening.
- * @param reuseExisting - Whether to reuse an existing leaf for the file.
+ * @param position - (default: undefined) Optional position to scroll to after opening.
+ * @param reuseExisting - (default: false) Whether to reuse an existing leaf for the file.
+ * @param noReturnAction - (default: false) Whether to hide the return arrow (for explicit user opens).
  */
 export async function openInMonacoLeaf(
 	fileOrPath: TFile | string,
 	plugin: CodeFilesPlugin,
 	newTab: boolean,
 	position?: { lineNumber: number; column: number } | null,
-	reuseExisting = false
+	reuseExisting = false,
+	noReturnAction = false
 ): Promise<void> {
 	const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
 	const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
@@ -56,7 +58,8 @@ export async function openInMonacoLeaf(
 			active: true,
 			state: {
 				file: filePath,
-				...(isExternal && { external: true, reveal: true })
+				...(isExternal && { external: true, reveal: true }),
+				...(noReturnAction && { noReturnAction: true })
 			}
 		});
 	}

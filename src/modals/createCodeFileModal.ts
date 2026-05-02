@@ -191,7 +191,7 @@ export class CreateCodeFileModal extends Modal {
 			const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 			if (existingFile && existingFile instanceof TFile) {
 				new Notice('File already exists, opening...');
-				void openInMonacoLeaf(existingFile, this.plugin, true);
+				void openInMonacoLeaf(existingFile, this.plugin, true, null, false, true);
 			} else {
 				new Notice('File already exists but could not be opened');
 			}
@@ -241,7 +241,7 @@ export class CreateCodeFileModal extends Modal {
 			}
 		}
 
-		void openInMonacoLeaf(newFile, this.plugin, true);
+		void openInMonacoLeaf(newFile, this.plugin, true, null, false, true);
 	}
 
 	onClose(): void {
