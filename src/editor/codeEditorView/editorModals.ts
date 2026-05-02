@@ -4,7 +4,7 @@
  */
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import type { CodeEditorInstance } from '../../types/index.ts';
+import type { CodeEditorInstance, Prettify } from '../../types/index.ts';
 import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';
@@ -14,7 +14,7 @@ import { resolveThemeParams } from '../../utils/themeUtils.ts';
 /** Opens the editor settings modal. */
 export function openEditorConfig(
 	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorInstance | undefined,
+	codeEditor: Prettify<CodeEditorInstance> | undefined,
 	ext: string
 ): void {
 	new EditorSettingsModal(
@@ -43,7 +43,7 @@ export function openThemePicker(
 /** Opens the rename extension modal for the current file. */
 export function openRenameExtension(
 	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorInstance | undefined,
+	codeEditor: Prettify<CodeEditorInstance> | undefined,
 	file: TFile
 ): void {
 	const targetFile = plugin.app.vault.getFileByPath(file.path);

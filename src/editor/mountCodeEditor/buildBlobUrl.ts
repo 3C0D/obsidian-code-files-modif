@@ -1,4 +1,4 @@
-import type { AssetUrls } from '../../types/index.ts';
+import type { AssetUrls, Prettify } from '../../types/index.ts';
 
 // Module-level cache — valid for the lifetime of the plugin session
 let _cachedBlobUrl: string | null = null;
@@ -15,7 +15,7 @@ let _cachedUrlsKey: string | null = null;
  * @param urls - Resolved app:// asset URLs for all Monaco and formatter scripts.
  * @returns A blob: URL pointing to the patched HTML.
  */
-export async function buildBlobUrl(urls: AssetUrls): Promise<string> {
+export async function buildBlobUrl(urls: Prettify<AssetUrls>): Promise<string> {
 	// Invalidate cache if the plugin was rebuilt (URLs contain a new timestamp)
 	const urlsKey = urls.bundleJsUrl;
 	if (_cachedBlobUrl && _cachedUrlsKey === urlsKey) return _cachedBlobUrl;

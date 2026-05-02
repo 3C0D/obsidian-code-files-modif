@@ -5,7 +5,7 @@
  * and diff-based reregistration to avoid redundant registry calls.
  */
 import type { App } from 'obsidian';
-import type { MyPluginSettings } from '../types/index.ts';
+import type { MyPluginSettings, Prettify } from '../types/index.ts';
 import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView/index.ts';
@@ -29,7 +29,7 @@ export function getAllMonacoExtensions(): string[] {
  * @param settings - The plugin settings object
  * @returns An array of active extensions.
  */
-export function getActiveExtensions(settings: MyPluginSettings): string[] {
+export function getActiveExtensions(settings: Prettify<MyPluginSettings>): string[] {
 	const base = new Set([...settings.extensions, ...settings.extraExtensions]);
 	const excluded = new Set(settings.excludedExtensions);
 	return [...base].filter((ext) => !excluded.has(ext));
@@ -45,7 +45,7 @@ export function getActiveExtensions(settings: MyPluginSettings): string[] {
  * @param ext - The extension to add (e.g. "js", "ts")
  * @returns true if the extension was added, false if blocked (empty, native or already registered)
  */
-export function addExtension(settings: MyPluginSettings, ext: string): boolean {
+export function addExtension(settings: Prettify<MyPluginSettings>, ext: string): boolean {
 	// Block empty string
 	if (!ext) {
 		console.warn('code-files: cannot add empty extension');
@@ -83,7 +83,7 @@ export function addExtension(settings: MyPluginSettings, ext: string): boolean {
  * @param settings - The plugin settings object
  * @param ext - The extension to remove (e.g. "js", "ts")
  */
-export function removeExtension(settings: MyPluginSettings, ext: string): void {
+export function removeExtension(settings: Prettify<MyPluginSettings>, ext: string): void {
 	// If in extraExtensions, just remove it — no need to exclude
 	if (settings.extraExtensions.includes(ext)) {
 		settings.extraExtensions = settings.extraExtensions.filter((e) => e !== ext);

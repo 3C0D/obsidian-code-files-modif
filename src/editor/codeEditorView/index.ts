@@ -14,7 +14,7 @@ import { TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { mountCodeEditor } from '../mountCodeEditor/index.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
-import type { CodeEditorInstance, HeaderActionsContext } from '../../types/index.ts';
+import type { CodeEditorInstance, HeaderActionsContext, Prettify } from '../../types/index.ts';
 import { viewType } from '../../types/index.ts';
 import {
 	openEditorConfig,
@@ -37,7 +37,7 @@ import {
 
 export class CodeEditorView extends TextFileView {
 	/** The Monaco Editor instance, created by mountCodeEditor() and destroyed on view close. */
-	private codeEditor: CodeEditorInstance | null = null;
+	private codeEditor: Prettify<CodeEditorInstance> | null = null;
 	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
 	/** Flag to hide the return arrow (set via state.noReturnAction) */
@@ -201,7 +201,7 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/** Updates class properties from the HeaderActionsContext. */
-	private updateFromContext(context: HeaderActionsContext): void {
+	private updateFromContext(context: Prettify<HeaderActionsContext>): void {
 		this.gearAction = context.gearAction;
 		this.themeAction = context.themeAction;
 		this.snippetFolderAction = context.snippetFolderAction;
