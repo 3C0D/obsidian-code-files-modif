@@ -116,8 +116,8 @@ export class CodeEditorView extends TextFileView {
 
 	/**
 	 * Used to restore the view state from the vault.
-	 * For external files (.obsidian/), super.setState may fail because the file
-	 * is not in the vault index. We catch this and manually load the file content.
+	 * For dotfiles and external files (.obsidian/), we reveal them first
+	 * so super.setState can find them in the vault index.
 	 */
 	async setState(
 		state: Record<string, unknown>,
@@ -127,13 +127,7 @@ export class CodeEditorView extends TextFileView {
 		if (filePath && state.reveal) {
 			await handleTemporaryReveal(this.plugin, filePath);
 		}
-
-		try {
-			await super.setState(state, result);
-		} catch (e) {
-			// super.setState may fail for external files not in vault index
-			console.debug('super.setState failed for external file', e);
-		}
+		await super.setState(state, result);
 	}
 
 	/**
@@ -149,8 +143,7 @@ export class CodeEditorView extends TextFileView {
 		const configDir = this.plugin.app.vault.configDir;
 		if (this.file && this.file.path.startsWith(configDir + '/')) {
 			// For external files, use adapter.write() to avoid triggering vault watcher
-			// If codeEditor doesn't exist yet (during restore), use this.data instead
-			const content = this.codeEditor ? this.codeEditor.getValue() : this.data;
+			const content = this.codeEditor.getValue();
 			await this.plugin.app.vault.adapter.write(this.file.path, content);
 			this.data = content;
 		} else {
@@ -349,16 +342,10 @@ export class CodeEditorView extends TextFileView {
 	 * If the file was temporarily revealed (dotfile opened via setState restore),
 	 * unreveals it on close — unless it is also covered by a manual reveal
 	 * (file itself or an ancestor folder in revealedFiles).
-	 * 
-	 * Skip cleanup if codeEditor was never initialized (failed restore during startup).
 	 */
 	async onUnloadFile(file: TFile): Promise<void> {
 		await super.onUnloadFile(file);
-		// Only cleanup temporary reveal if the editor was successfully mounted
-		// If codeEditor doesn't exist, the file was never fully loaded (failed restore)
-		if (this.codeEditor) {
-			await cleanupTemporaryReveal(this.plugin, file.path);
-		}
+		await cleanupTemporaryReveal(this.plugin, file.path);
 		this.cleanup();
 	}
 
@@ -377,8 +364,7 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	getViewData(): string {
-		// Return editor content if available, otherwise return cached data
-		return this.codeEditor ? this.codeEditor.getValue() : this.data;
+		return this.codeEditor.getValue();
 	}
 
 	/**
