@@ -148,7 +148,7 @@ export async function handleTemporaryReveal(
 		const ext = getExtension(filePath.split('/').pop() || '');
 		const isManagedByAutoReveal =
 			!isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
-		
+
 		if (
 			!isManagedByAutoReveal &&
 			!plugin.settings.temporaryRevealedPaths.includes(filePath)
@@ -183,7 +183,7 @@ export async function cleanupTemporaryReveal(
 		// vault.configDir is always defined in the Obsidian API — fallback is purely defensive
 		const configDir = plugin.app.vault.configDir || '.obsidian';
 		const isExternalFile = filePath.startsWith(configDir + '/');
-		
+
 		if (!isExternalFile) {
 			const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
 			const manuallyRevealed = allRevealedItems.some(
@@ -194,7 +194,7 @@ export async function cleanupTemporaryReveal(
 				await unrevealFiles(plugin, folderPath, [filePath], true);
 			}
 		}
-		
+
 		plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
 		await plugin.saveSettings();
 	}

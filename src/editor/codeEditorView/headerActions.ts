@@ -100,26 +100,26 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 		);
 	}
 
- 	// Add snippet controls ONLY when editing a CSS snippet file
- 	// Added LAST so they appear on the LEFT
- 	const configDir = context.plugin.app.vault.configDir;
- 	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
-	
- 	if (isSnippetFile) {
- 		const snippetName = file.basename;
- 		const exists = snippetExists(context.plugin.app, snippetName);
- 
- 		if (Platform.isDesktop) {
- 			context.snippetFolderAction = context.addAction(
- 				'folder',
- 				'Open snippets folder',
- 				() => {
- 					context.plugin.app.openWithDefaultApp(
- 						normalizePath(`${configDir}/snippets`)
- 					);
- 				}
- 			);
- 		}
+	// Add snippet controls ONLY when editing a CSS snippet file
+	// Added LAST so they appear on the LEFT
+	const configDir = context.plugin.app.vault.configDir;
+	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
+
+	if (isSnippetFile) {
+		const snippetName = file.basename;
+		const exists = snippetExists(context.plugin.app, snippetName);
+
+		if (Platform.isDesktop) {
+			context.snippetFolderAction = context.addAction(
+				'folder',
+				'Open snippets folder',
+				() => {
+					context.plugin.app.openWithDefaultApp(
+						normalizePath(`${configDir}/snippets`)
+					);
+				}
+			);
+		}
 
 		// Toggle is always shown even if the snippet isn't indexed yet by Obsidian (exists = false).
 		// In that case isOn = false and no change handler is registered until next file load.

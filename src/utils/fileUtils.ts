@@ -25,6 +25,9 @@ export function getExtension(filename: string): string {
  * @param filePath - The file path
  * @returns The real path if available, otherwise the original filePath
  */
-export function getRealPathSafe(adapter: DataAdapterWithInternal, filePath: string): string {
+export function getRealPathSafe(
+	adapter: DataAdapterWithInternal,
+	filePath: string
+): string {
 	return adapter.getRealPath?.(filePath) ?? filePath;
 }

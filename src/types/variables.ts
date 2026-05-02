@@ -319,12 +319,8 @@ export function getExtensionConfigTemplate(ext: string): string {
 	return DEFAULT_EXTENSION_CONFIG;
 }
 
-
-
 /** Built-in Monaco themes that don't require external JSON files */
 export const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
-
-
 
 /** Extensions to exclude from file lists (binary executables, archives, and files that can't be opened as text) */
 export const EXCLUDED_EXTENSIONS = [

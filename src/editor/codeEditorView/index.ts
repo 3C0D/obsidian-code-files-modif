@@ -14,7 +14,10 @@ import { TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { mountCodeEditor } from '../mountCodeEditor/index.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
-import type { CodeEditorInstance, HeaderActionsContext } from '../../editor/types/index.ts';
+import type {
+	CodeEditorInstance,
+	HeaderActionsContext
+} from '../../editor/types/index.ts';
 import { viewType } from '../../editor/types/index.ts';
 import {
 	openEditorConfig,

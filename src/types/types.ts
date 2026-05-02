@@ -72,12 +72,8 @@ export interface MyPluginSettings {
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */
 export type CssSuggestion = { kind: 'existing' | 'new'; name: string };
 
-
-
 /** Menu item configuration for context menus. */
 export type MenuItem = { title: string; icon: string; action: () => void };
-
-
 
 /**
  * Hotkey configuration object.
@@ -174,9 +170,3 @@ export interface FolderSection {
 	/** Set of paths selected for extension registration */
 	selectedForRegistration: Set<string>;
 }
-
-
-
-
-
-

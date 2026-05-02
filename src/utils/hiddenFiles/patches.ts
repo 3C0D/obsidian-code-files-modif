@@ -194,7 +194,9 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
 					const orig =
 						plugin._origReconcileDeletion ??
 						adapter.reconcileDeletion.bind(adapter);
-					orig(getRealPathSafe(adapter, file.path), file.path).catch(console.error);
+					orig(getRealPathSafe(adapter, file.path), file.path).catch(
+						console.error
+					);
 				}
 			};
 		}
