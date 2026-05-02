@@ -14,7 +14,7 @@ import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { RevealHiddenFilesModal } from '../modals/revealHiddenFilesModal.ts';
 import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
-import type { MenuItems } from '../types/types.ts';
+import type { MenuItem } from '../types/types.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {
@@ -118,8 +118,8 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
 }
 
 /** Builds the submenu items for folders in the file explorer. */
-function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
-	const items: MenuItems[] = [
+function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItem[] {
+	const items: MenuItem[] = [
 		{
 			title: 'Create Code File | Manage extensions',
 			icon: 'file-plus',
@@ -162,9 +162,9 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItems[] {
 }
 
 /** Builds the submenu items for files in the file explorer. */
-function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[] {
+function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] {
 	const ext = getExtension(file.name);
-	const items: MenuItems[] = [];
+	const items: MenuItem[] = [];
 
 	// Check if extension is registered and if it's native to Obsidian
 	const activeExts = getActiveExtensions(plugin.settings);
@@ -230,10 +230,10 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItems[]
 
 /** Builds the submenu items shown in the markdown editor-menu.
  */
-function getFileItems(plugin: CodeFilesPlugin): MenuItems[] {
+function getFileItems(plugin: CodeFilesPlugin): MenuItem[] {
 	const activeFile = plugin.app.workspace.getActiveFile();
 	const isCodeEditor = !!plugin.app.workspace.getActiveViewOfType(CodeEditorView);
-	const items: MenuItems[] = [];
+	const items: MenuItem[] = [];
 	if (!activeFile) {
 		return [];
 	}

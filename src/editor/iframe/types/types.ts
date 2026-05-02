@@ -1,27 +1,7 @@
 // Globals injected by <script> tags before monacoBundle.js
 // Monaco is loaded by AMD loader, Prettier by standalone scripts
 
-// Use global declarations to avoid "unused" errors
-declare global {
-	// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-	const monaco: typeof import('monaco-editor');
-	const prettier: {
-		format(source: string, options: PrettierOptions): Promise<string>;
-	};
-	const prettierPlugins: {
-		markdown: unknown;
-		estree: unknown;
-		typescript: unknown;
-		babel: unknown;
-		postcss: unknown;
-		html: unknown;
-		yaml: unknown;
-		graphql: unknown;
-	};
-}
-
-export {}; // Make this a module
-
+/** Configuration options for Prettier code formatting. */
 export interface PrettierOptions {
 	parser: string;
 	plugins: unknown[];
@@ -41,6 +21,7 @@ export interface ProjectFile {
 	content: string;
 }
 
+/** Parameters used to initialize the Monaco editor iframe. */
 export interface InitParams {
 	context: string;
 	lang?: string;
@@ -60,6 +41,10 @@ export interface InitParams {
 	isUnregisteredExtension?: boolean;
 }
 
+/**
+ * Editor configuration object that can be extended with custom properties.
+ * The `[key: string]: unknown` allows for JSONC extensibility.
+ */
 export interface EditorConfig {
 	tabSize?: number;
 	insertSpaces?: boolean;
@@ -69,7 +54,24 @@ export interface EditorConfig {
 	[key: string]: unknown;
 }
 
+// Use global declarations to avoid "unused" errors
 declare global {
+	// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+	const monaco: typeof import('monaco-editor');
+	const prettier: {
+		format(source: string, options: PrettierOptions): Promise<string>;
+	};
+	const prettierPlugins: {
+		markdown: unknown;
+		estree: unknown;
+		typescript: unknown;
+		babel: unknown;
+		postcss: unknown;
+		html: unknown;
+		yaml: unknown;
+		graphql: unknown;
+	};
+
 	interface Window {
 		_initialized?: boolean;
 		_pendingProjectFiles?: ProjectFile[] | null;

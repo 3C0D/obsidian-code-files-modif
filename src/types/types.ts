@@ -112,7 +112,7 @@ export interface CodeEditorInstance {
 }
 
 /** Menu item configuration for context menus. */
-export type MenuItems = { title: string; icon: string; action: () => void };
+export type MenuItem = { title: string; icon: string; action: () => void };
 
 /**
  * Tool definition for actions that can appear in multiple locations.
@@ -248,7 +248,6 @@ export interface FolderSection {
  * @property plugin - The plugin instance
  * @property codeEditor - Monaco editor control handle
  * @property addAction - Bound ItemView.addAction, adds a button to the view header
- * @property onForceSave - Triggers a force save (bypasses autoSave guard)
 
  * @property leaf - Workspace leaf containing this view
  * @property noReturnAction - Whether to hide the return arrow (for command palette opens)
