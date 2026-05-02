@@ -3,7 +3,7 @@ import { around } from 'monkey-around';
 import type { Plugin, TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
-import { getExtension } from '../fileUtils.ts';
+import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
 
@@ -194,7 +194,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
 					const orig =
 						plugin._origReconcileDeletion ??
 						adapter.reconcileDeletion.bind(adapter);
-					orig(adapter.getRealPath(file.path), file.path).catch(console.error);
+					orig(getRealPathSafe(adapter, file.path), file.path).catch(console.error);
 				}
 			};
 		}

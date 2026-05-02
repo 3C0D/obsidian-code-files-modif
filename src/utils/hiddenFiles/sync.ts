@@ -1,7 +1,7 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter } from './state.ts';
-import { getExtension } from '../fileUtils.ts';
+import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
@@ -106,7 +106,7 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
 
 	for (const [, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
 		for (const itemPath of itemPaths) {
-			const realPath = adapter.getRealPath(itemPath);
+			const realPath = getRealPathSafe(adapter, itemPath);
 			try {
 				const stat = await adapter.stat(itemPath);
 				if (!stat) continue;

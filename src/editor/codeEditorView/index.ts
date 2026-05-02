@@ -118,6 +118,7 @@ export class CodeEditorView extends TextFileView {
 	 * Used to restore the view state from the vault.
 	 * For dotfiles and external files (.obsidian/), we reveal them first
 	 * so super.setState can find them in the vault index.
+	 * No try/catch needed around super.setState since handleTemporaryReveal ensures files are indexed.
 	 */
 	async setState(
 		state: Record<string, unknown>,
@@ -143,7 +144,7 @@ export class CodeEditorView extends TextFileView {
 		const configDir = this.plugin.app.vault.configDir;
 		if (this.file && this.file.path.startsWith(configDir + '/')) {
 			// For external files, use adapter.write() to avoid triggering vault watcher
-			const content = this.codeEditor.getValue();
+			const content = this.getViewData();
 			await this.plugin.app.vault.adapter.write(this.file.path, content);
 			this.data = content;
 		} else {
@@ -332,7 +333,8 @@ export class CodeEditorView extends TextFileView {
 	/** Initializes the Monaco editor when a file is loaded into the view. */
 	async onLoadFile(file: TFile): Promise<void> {
 		// super.onLoadFile reads file content into this.data and calls setViewData().
-		// For external files, leaf.open() doesn't trigger this automatically.
+		// For external files opened via leaf.open(), content is not loaded automatically —
+		// super.onLoadFile handles that case here.
 		await super.onLoadFile(file);
 		await this.mountAndRender(file);
 	}

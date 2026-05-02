@@ -36,7 +36,8 @@ export function removeHeaderActions(context: HeaderActionsContext): void {
  * Shows the diff action in the header for x seconds after a format.
  *
  * @param context The header actions context providing access to the editor and action management methods.
- * Note: This function mutates the provided context object by setting diffAction and diffTimer.
+ * Writes diffAction and diffTimer back onto context. The caller must sync these to the
+ * class instance via updateFromContext() — context is a plain object copy, not a live reference.
  */
 export function showDiffAction(context: HeaderActionsContext): void {
 	hideDiffAction(context);
@@ -120,6 +121,8 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
  			);
  		}
 
+		// Toggle is always shown even if the snippet isn't indexed yet by Obsidian (exists = false).
+		// In that case isOn = false and no change handler is registered until next file load.
 		const isOn = exists && isSnippetEnabled(context.plugin.app, snippetName);
 		const toggleEl = context.addAction(
 			'square',

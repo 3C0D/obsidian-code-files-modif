@@ -13,6 +13,7 @@ import {
 	TFile
 } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
+import { getRealPathSafe } from '../utils/fileUtils.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
@@ -182,7 +183,7 @@ export class CreateCodeFileModal extends Modal {
 				!this.app.vault.getAbstractFileByPath(newPath)
 			) {
 				await adapter.reconcileFileInternal?.(
-					adapter.getRealPath(newPath),
+					getRealPathSafe(adapter, newPath),
 					newPath
 				);
 				await new Promise((resolve) => setTimeout(resolve, 50));
@@ -202,7 +203,7 @@ export class CreateCodeFileModal extends Modal {
 			if (basename.startsWith('.')) {
 				await adapter.write(newPath, '');
 				await adapter.reconcileFileInternal?.(
-					adapter.getRealPath(newPath),
+					getRealPathSafe(adapter, newPath),
 					newPath
 				);
 				await new Promise((resolve) => setTimeout(resolve, 50));

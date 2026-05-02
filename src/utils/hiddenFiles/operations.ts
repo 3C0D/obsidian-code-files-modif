@@ -3,7 +3,7 @@ import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, setBypassPatch } from './state.ts';
 import { decorateFolders } from './badge.ts';
 import { viewType } from '../../types/variables.ts';
-import { getExtension } from '../fileUtils.ts';
+import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
 
 /**
@@ -33,7 +33,7 @@ export async function revealFiles(
 			const stat = await adapter.stat(itemPath);
 			if (!stat) continue;
 
-			const realPath = adapter.getRealPath(itemPath);
+			const realPath = getRealPathSafe(adapter, itemPath);
 
 			// Force Obsidian to "see" and display the item.
 			// Pattern: use reconcileFileInternal if available (Desktop),
@@ -102,7 +102,7 @@ export async function unrevealFiles(
 	setBypassPatch(true);
 	try {
 		for (const filePath of itemPaths) {
-			const realPath = adapter.getRealPath(filePath);
+			const realPath = getRealPathSafe(adapter, filePath);
 			// Remove the file from Obsidian's vault index
 			await adapter.reconcileDeletion(realPath, filePath);
 		}
@@ -142,6 +142,7 @@ export async function handleTemporaryReveal(
 		// Track as temporary unless managed by autoRevealRegisteredDotfiles.
 		// External files (configDir) are always tracked because they're never
 		// managed by autoRevealRegisteredDotfiles (which only scans dotfiles).
+		// vault.configDir is always defined in the Obsidian API — fallback is purely defensive
 		const configDir = plugin.app.vault.configDir || '.obsidian';
 		const isExternalFile = filePath.startsWith(configDir + '/');
 		const ext = getExtension(filePath.split('/').pop() || '');
@@ -179,6 +180,7 @@ export async function cleanupTemporaryReveal(
 		if (stillOpen) return;
 
 		// External files (configDir) should never be unrevealed, only removed from tracking
+		// vault.configDir is always defined in the Obsidian API — fallback is purely defensive
 		const configDir = plugin.app.vault.configDir || '.obsidian';
 		const isExternalFile = filePath.startsWith(configDir + '/');
 		

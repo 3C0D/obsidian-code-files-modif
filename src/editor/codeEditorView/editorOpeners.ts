@@ -21,7 +21,7 @@ export function findRootMonacoLeaf(
 		const isRoot = l.getRoot() === plugin.app.workspace.rootSplit;
 		const viewFilePath =
 			l.view instanceof CodeEditorView ? l.view.file?.path : undefined;
-		const stateFilePath = l.getViewState().state?.file;
+		const stateFilePath = l.getViewState().state?.file as string | undefined;
 		if (!isRoot) return false;
 		return (viewFilePath ?? stateFilePath) === filePath;
 	});
