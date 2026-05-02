@@ -2,7 +2,7 @@
  * Module for managing header actions in the code editor view.
  * Provides functions to add, remove, and manage various header buttons like theme picker, settings, diff display, and snippet controls.
  */
-import { normalizePath, type TFile } from 'obsidian';
+import { normalizePath, type TFile, Platform } from 'obsidian';
 import type { HeaderActionsContext } from '../../types/types.ts';
 import {
 	snippetExists,
@@ -98,23 +98,27 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 		);
 	}
 
-	// Add snippet controls ONLY when editing a CSS snippet file
-	// Added LAST so they appear on the LEFT
-	const configDir = context.plugin.app.vault.configDir;
-	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
-	if (isSnippetFile) {
-		const snippetName = file.basename;
-		const exists = snippetExists(context.plugin.app, snippetName);
-
-		context.snippetFolderAction = context.addAction(
-			'folder',
-			'Open snippets folder',
-			() => {
-				context.plugin.app.openWithDefaultApp(
-					normalizePath(`${configDir}/snippets`)
-				);
-			}
-		);
+ 	// Add snippet controls ONLY when editing a CSS snippet file
+ 	// Added LAST so they appear on the LEFT
+ 	const configDir = context.plugin.app.vault.configDir;
+ 	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
+	const isExternalFile = file.path.startsWith(`${configDir}/`) && !isSnippetFile;
+	
+ 	if (isSnippetFile) {
+ 		const snippetName = file.basename;
+ 		const exists = snippetExists(context.plugin.app, snippetName);
+ 
+ 		if (Platform.isDesktop) {
+ 			context.snippetFolderAction = context.addAction(
+ 				'folder',
+ 				'Open snippets folder',
+ 				() => {
+ 					context.plugin.app.openWithDefaultApp(
+ 						normalizePath(`${configDir}/snippets`)
+ 					);
+ 				}
+ 			);
+ 		}
 
 		const isOn = exists && isSnippetEnabled(context.plugin.app, snippetName);
 		const toggleEl = context.addAction(
@@ -154,5 +158,15 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 				}
 			);
 		}
+	} else if (isExternalFile && Platform.isDesktop) {
+		// Add folder opener for external files (non-snippets in configDir)
+		const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+		context.snippetFolderAction = context.addAction(
+			'folder',
+			`Open ${folderPath}`,
+			() => {
+				context.plugin.app.openWithDefaultApp(normalizePath(folderPath));
+			}
+		);
 	}
 }
