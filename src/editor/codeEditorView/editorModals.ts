@@ -4,7 +4,7 @@
  */
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import type { CodeEditorInstance } from '../../types/types.ts';
+import type { CodeEditorInstance } from '../../editor/types/index.ts';
 import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';

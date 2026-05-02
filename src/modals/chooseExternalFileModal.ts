@@ -8,7 +8,7 @@ import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
-import type { FileSuggestion } from '../types/types.ts';
+import type { FileSuggestion } from '../types/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 

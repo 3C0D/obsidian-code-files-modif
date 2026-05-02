@@ -319,14 +319,12 @@ export function getExtensionConfigTemplate(ext: string): string {
 	return DEFAULT_EXTENSION_CONFIG;
 }
 
-/** Obsidian view type identifier for the Monaco editor */
-export const viewType = 'code-editor';
+
 
 /** Built-in Monaco themes that don't require external JSON files */
 export const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 
-/** Duration (ms) the diff button stays visible in tab header after formatting */
-export const DIFF_BUTTON_DISPLAY_DURATION = 10000;
+
 
 /** Extensions to exclude from file lists (binary executables, archives, and files that can't be opened as text) */
 export const EXCLUDED_EXTENSIONS = [

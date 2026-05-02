@@ -1,6 +1,6 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import type { HiddenItem } from '../../types/types.ts';
+import type { HiddenItem } from '../../types/index.ts';
 import { getAdapter } from './state.ts';
 
 /**

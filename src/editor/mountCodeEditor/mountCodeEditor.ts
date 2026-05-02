@@ -6,7 +6,7 @@
  * Returns a CodeEditorInstance with send(), getValue(), setValue(), destroy().
  */
 import type CodeFilesPlugin from '../../main.ts';
-import { type CodeEditorInstance } from '../../types/types.ts';
+import type { CodeEditorInstance } from '../../editor/types/index.ts';
 
 import { buildMessageHandler } from './messageHandler.ts';
 import { resolveAssetUrls } from './assetUrls.ts';

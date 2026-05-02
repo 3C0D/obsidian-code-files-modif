@@ -11,7 +11,7 @@ import {
 	getExtensionConfigTemplate,
 	FORMATTABLE_EXTENSIONS
 } from '../types/variables.ts';
-import type { CodeEditorInstance } from '../types/types.ts';
+import type { CodeEditorInstance } from '../editor/types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig, saveEditorConfig } from '../utils/settingsUtils.ts';

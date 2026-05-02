@@ -5,7 +5,7 @@
 import type { WorkspaceLeaf } from 'obsidian';
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { viewType } from '../../types/variables.ts';
+import { viewType } from '../../editor/types/index.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 
 /**

@@ -5,7 +5,7 @@
  * Opens the selected or created snippet in Monaco Editor.
  */
 import { normalizePath, Notice, SuggestModal } from 'obsidian';
-import type { CssSuggestion } from '../types/types.ts';
+import type { CssSuggestion } from '../types/index.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 import type CodeFilesPlugin from '../main.ts';
 

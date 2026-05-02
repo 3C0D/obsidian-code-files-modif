@@ -1,6 +1,6 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import type { AssetUrls } from '../../types/types.ts';
+import type { AssetUrls } from '../../editor/types/index.ts';
 import manifest from '../../../manifest.json' with { type: 'json' };
 
 /**

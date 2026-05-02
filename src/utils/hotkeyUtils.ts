@@ -10,7 +10,7 @@
  * 6. Monaco -> Parent: When a hotkey is pressed, Monaco sends a message back to trigger the Obsidian action.
  */
 import { Platform, type App } from 'obsidian';
-import type { HotkeyConfig } from '../types/types.ts';
+import type { HotkeyConfig } from '../types/index.ts';
 
 /**
  * Reads the configured hotkey for a given Obsidian command.

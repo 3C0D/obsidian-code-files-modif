@@ -1,7 +1,7 @@
 /**
  * File utilities for handling extensions and file names.
  */
-import type { DataAdapterWithInternal } from '../types/types.ts';
+import type { DataAdapterWithInternal } from '../types/index.ts';
 
 /**
  * Extracts the extension from a filename.

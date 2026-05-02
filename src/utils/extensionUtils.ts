@@ -5,8 +5,9 @@
  * and diff-based reregistration to avoid redundant registry calls.
  */
 import type { App } from 'obsidian';
-import type { MyPluginSettings } from '../types/types.ts';
-import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
+import type { MyPluginSettings } from '../types/index.ts';
+import { viewType } from '../editor/types/index.ts';
+import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';

@@ -10,7 +10,7 @@ import {
 	reregisterExtensions
 } from '../utils/extensionUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
-import type { FolderSection } from '../types/types.ts';
+import type { FolderSection } from '../types/index.ts';
 
 /**
  * Modal to scan, reveal, and hide dotfiles within a specific folder and its subfolders.

@@ -1,6 +1,6 @@
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
-import type { DataAdapterWithInternal } from '../../types/types.ts';
+import type { DataAdapterWithInternal } from '../../types/index.ts';
 
 /**
  * Global flag used to temporarily bypass the deletion patch.

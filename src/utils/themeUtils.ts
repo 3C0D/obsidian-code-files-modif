@@ -1,6 +1,6 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import type { CodeEditorInstance } from '../types/types.ts';
+import type { CodeEditorInstance } from '../editor/types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 import { BUILTIN_THEMES } from '../types/variables.ts';
 

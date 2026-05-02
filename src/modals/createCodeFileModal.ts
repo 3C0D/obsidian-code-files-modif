@@ -23,7 +23,7 @@ import {
 	registerExtension
 } from '../utils/extensionUtils.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
-import type { DataAdapterWithInternal } from '../types/types.ts';
+import type { DataAdapterWithInternal } from '../types/index.ts';
 import { confirmation } from './confirmationModal.ts';
 
 /** Modal for creating a new code file */
