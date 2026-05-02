@@ -12,6 +12,10 @@ import type { DataAdapterEx } from 'obsidian-typings';
 import type { ItemView, WorkspaceLeaf } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 
+// ===== MessageHandlerContext =====
+
+export type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
 // ===== Plugin Settings =====
 
 export interface MyPluginSettings {

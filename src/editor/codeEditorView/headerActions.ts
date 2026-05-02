@@ -105,61 +105,61 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 	const configDir = context.plugin.app.vault.configDir;
 	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
 
-	if (isSnippetFile) {
-		const snippetName = file.basename;
-		const exists = snippetExists(context.plugin.app, snippetName);
+	if (!isSnippetFile) return;
 
-		if (Platform.isDesktop) {
-			context.snippetFolderAction = context.addAction(
-				'folder',
-				'Open snippets folder',
-				() => {
-					context.plugin.app.openWithDefaultApp(
-						normalizePath(`${configDir}/snippets`)
-					);
-				}
-			);
-		}
+	const snippetName = file.basename;
+	const exists = snippetExists(context.plugin.app, snippetName);
 
-		// Toggle is always shown even if the snippet isn't indexed yet by Obsidian (exists = false).
-		// In that case isOn = false and no change handler is registered until next file load.
-		const isOn = exists && isSnippetEnabled(context.plugin.app, snippetName);
-		const toggleEl = context.addAction(
-			'square',
-			`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
-			async () => {
-				const newState = !isSnippetEnabled(context.plugin.app, snippetName);
-				context.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
-				track.toggleClass('is-on', newState);
-				toggleEl.setAttr(
-					'aria-label',
-					`${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
+	if (Platform.isDesktop) {
+		context.snippetFolderAction = context.addAction(
+			'folder',
+			'Open snippets folder',
+			() => {
+				context.plugin.app.openWithDefaultApp(
+					normalizePath(`${configDir}/snippets`)
 				);
 			}
 		);
-		// Replace the default Obsidian action button with a custom CSS toggle switch
-		toggleEl.empty();
-		toggleEl.addClass('code-files-snippet-toggle-action');
-		// The toggle consists of a track (the background) and a thumb (the circle that moves). The "is-on" class controls the toggle state (on/off).
-		const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
-		if (isOn) track.addClass('is-on');
-		track.createDiv({ cls: 'code-files-toggle-thumb' });
-		context.snippetToggleAction = toggleEl;
+	}
 
-		if (exists) {
-			// Listen for external snippet state changes (from Obsidian settings).
-			// This reassigns the handler after it was nulled during previous cleanup() (e.g. on rename).
-			context.unregisterSnippetHandler = registerSnippetChangeHandler(
-				context.plugin.app,
-				snippetName,
-				(isOn) => {
-					track.toggleClass('is-on', isOn);
-					toggleEl.setAttr(
-						'aria-label',
-						`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
-					);
-				}
+	// Toggle is always shown even if the snippet isn't indexed yet by Obsidian (exists = false).
+	// In that case isOn = false and no change handler is registered until next file load.
+	const isOn = exists && isSnippetEnabled(context.plugin.app, snippetName);
+	const toggleEl = context.addAction(
+		'square',
+		`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`,
+		async () => {
+			const newState = !isSnippetEnabled(context.plugin.app, snippetName);
+			context.plugin.app.customCss.setCssEnabledStatus(snippetName, newState);
+			track.toggleClass('is-on', newState);
+			toggleEl.setAttr(
+				'aria-label',
+				`${newState ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
 			);
 		}
+	);
+	// Replace the default Obsidian action button with a custom CSS toggle switch
+	toggleEl.empty();
+	toggleEl.addClass('code-files-snippet-toggle-action');
+	// The toggle consists of a track (the background) and a thumb (the circle that moves). The "is-on" class controls the toggle state (on/off).
+	const track = toggleEl.createDiv({ cls: 'code-files-toggle-track' });
+	if (isOn) track.addClass('is-on');
+	track.createDiv({ cls: 'code-files-toggle-thumb' });
+	context.snippetToggleAction = toggleEl;
+
+	if (exists) {
+		// Listen for external snippet state changes (from Obsidian settings).
+		// This reassigns the handler after it was nulled during previous cleanup() (e.g. on rename).
+		context.unregisterSnippetHandler = registerSnippetChangeHandler(
+			context.plugin.app,
+			snippetName,
+			(isOn) => {
+				track.toggleClass('is-on', isOn);
+				toggleEl.setAttr(
+					'aria-label',
+					`${isOn ? 'Disable' : 'Enable'} ${snippetName}.css snippet`
+				);
+			}
+		);
 	}
 }

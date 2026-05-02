@@ -1,4 +1,4 @@
-import type { MessageHandlerContext } from '../../types/index.ts';
+import type { MessageHandlerContext, Prettify } from '../../types/index.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
@@ -9,7 +9,7 @@ import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
  * Filtered by source to only process messages from the given iframe.
  */
 export function buildMessageHandler(
-	ctx: MessageHandlerContext
+	ctx: Prettify<MessageHandlerContext>
 ): (event: MessageEvent) => Promise<void> {
 	const {
 		iframe,
