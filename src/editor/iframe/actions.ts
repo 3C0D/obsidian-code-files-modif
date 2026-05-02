@@ -3,10 +3,10 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
-import './types/types.js'; // Global declarations
+import './types/types.ts'; // Global declarations
 import type * as Monaco from 'monaco-editor';
-import type { InitParams, HotkeyConfig } from './types/types.js';
-import { getLastFormat } from './diff.js';
+import type { InitParams, HotkeyConfig } from './types/index.ts';
+import { getLastFormat } from './diff.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;

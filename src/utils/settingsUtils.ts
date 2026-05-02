@@ -5,7 +5,7 @@
  * and buildMergedConfig (cascades default → global → language → extension).
  */
 import type CodeFilesPlugin from '../main.ts';
-import { DEFAULT_SETTINGS, DEFAULT_EDITOR_CONFIG } from '../types/variables.ts';
+import { DEFAULT_SETTINGS, DEFAULT_EDITOR_CONFIG } from '../types/index.ts';
 import { staticMap } from '../utils/getLanguage.ts';
 
 /**

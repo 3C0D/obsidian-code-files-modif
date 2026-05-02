@@ -15,4 +15,4 @@ export {
 	setPrettierPrintWidth,
 	setPrettierTabWidth,
 	setPrettierUseTabs
-} from './types/variables.js';
+} from './types/index.ts';

@@ -10,8 +10,8 @@ import {
 	DEFAULT_EDITOR_CONFIG,
 	getExtensionConfigTemplate,
 	FORMATTABLE_EXTENSIONS
-} from '../types/variables.ts';
-import type { CodeEditorInstance } from '../editor/types/index.ts';
+} from '../types/index.ts';
+import type { CodeEditorInstance } from '../types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig, saveEditorConfig } from '../utils/settingsUtils.ts';

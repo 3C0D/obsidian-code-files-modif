@@ -3,16 +3,16 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
-import './types/types.js'; // Global declarations
+import './types/types.ts'; // Global declarations
 import type * as Monaco from 'monaco-editor';
 import {
 	PRETTIER_PROSE_WRAP,
 	PRETTIER_PRINT_WIDTH,
 	PRETTIER_TAB_WIDTH,
 	PRETTIER_USE_TABS
-} from './config.js';
-import { setLastFormat } from './diff.js';
+} from './config.ts';
 
+import { setLastFormat } from './diff.ts';
 let context: string | null = null;
 
 /**

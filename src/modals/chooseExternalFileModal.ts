@@ -9,7 +9,7 @@ import type CodeFilesPlugin from '../main.ts';
 import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { FileSuggestion } from '../types/index.ts';
-import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
+import { EXCLUDED_EXTENSIONS } from '../types/index.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> {

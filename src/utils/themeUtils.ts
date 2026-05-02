@@ -1,8 +1,8 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import type { CodeEditorInstance } from '../editor/types/index.ts';
+import type { CodeEditorInstance } from '../types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
-import { BUILTIN_THEMES } from '../types/variables.ts';
+import { BUILTIN_THEMES } from '../types/index.ts';
 
 let _themes: string[] = [];
 

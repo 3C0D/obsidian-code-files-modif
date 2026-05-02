@@ -11,6 +11,8 @@ export interface PrettierOptions {
 	proseWrap?: string;
 }
 
+// Mirrors HotkeyConfig from src/types/types.ts — duplicated because the iframe bundle
+// cannot import from the main plugin scope.
 export interface HotkeyConfig {
 	key: string;
 	modifiers: string[];

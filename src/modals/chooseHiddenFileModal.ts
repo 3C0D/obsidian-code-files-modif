@@ -12,7 +12,7 @@ import type CodeFilesPlugin from '../main.ts';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { FileSuggestion } from '../types/index.ts';
 import { getMaxFileSize, handleTemporaryReveal } from '../utils/hiddenFiles/index.ts';
-import { EXCLUDED_EXTENSIONS } from '../types/variables.ts';
+import { EXCLUDED_EXTENSIONS } from '../types/index.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 /** Modal for choosing hidden files in a folder to open in Monaco.

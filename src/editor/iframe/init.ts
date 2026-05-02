@@ -3,23 +3,23 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
-import './types/types.js'; // Global declarations
+import './types/types.ts'; // Global declarations
 import type * as Monaco from 'monaco-editor';
-import type { InitParams, EditorConfig } from './types/types.js';
+import type { InitParams, EditorConfig } from './types/index.ts';
 import {
 	FORMAT_CHANGE_TIMEOUT,
 	setPrettierPrintWidth,
 	setPrettierTabWidth,
 	setPrettierUseTabs
-} from './config.js';
-import { setSharedState, setLastFormat, getLastFormat, openDiffModal } from './diff.js';
-import { registerFormatters, setFormatterContext } from './formatters.js';
+} from './config.ts';
+import { setSharedState, setLastFormat, getLastFormat, openDiffModal } from './diff.ts';
+import { registerFormatters, setFormatterContext } from './formatters.ts';
 import {
 	registerActions,
 	setActionsState,
 	setFormatOnSave,
 	updateHotkeys
-} from './actions.js';
+} from './actions.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;

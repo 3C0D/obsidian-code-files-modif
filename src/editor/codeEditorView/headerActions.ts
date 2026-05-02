@@ -3,14 +3,14 @@
  * Provides functions to add, remove, and manage various header buttons like theme picker, settings, diff display, and snippet controls.
  */
 import { normalizePath, type TFile, Platform } from 'obsidian';
-import type { HeaderActionsContext } from '../../editor/types/index.ts';
+import type { HeaderActionsContext } from '../../types/index.ts';
 import {
 	snippetExists,
 	isSnippetEnabled,
 	registerSnippetChangeHandler
 } from '../../utils/snippetUtils.ts';
 import { getActiveExtensions } from '../../utils/extensionUtils.ts';
-import { DIFF_BUTTON_DISPLAY_DURATION } from '../../editor/types/index.ts';
+import { DIFF_BUTTON_DISPLAY_DURATION } from '../../types/index.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
 
 /**

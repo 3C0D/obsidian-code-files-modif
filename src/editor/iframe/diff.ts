@@ -3,9 +3,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
-import './types/types.js'; // Global declarations
+import './types/types.ts'; // Global declarations
 import type * as Monaco from 'monaco-editor';
-import { DIFF_EDITOR_OPTIONS } from './config.js';
+import { DIFF_EDITOR_OPTIONS } from './config.ts';
 
 // Diff editor singleton - created once, reused
 let diffEditorInstance: Monaco.editor.IStandaloneDiffEditor | null = null;

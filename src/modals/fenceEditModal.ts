@@ -9,7 +9,7 @@ import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { resolveThemeParams } from '../utils/themeUtils.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
-import type { CodeEditorInstance } from '../editor/types/index.ts';
+import type { CodeEditorInstance } from '../types/index.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';

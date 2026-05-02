@@ -7,14 +7,14 @@
 import type { App } from 'obsidian';
 import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import type { CodeEditorInstance } from '../editor/types/index.ts';
+import type { CodeEditorInstance } from '../types/index.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
 	DEFAULT_EDITOR_CONFIG,
 	DEFAULT_SETTINGS,
 	FORMATTABLE_EXTENSIONS,
 	getExtensionConfigTemplate
-} from '../types/variables.ts';
+} from '../types/index.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
 	getActiveExtensions,

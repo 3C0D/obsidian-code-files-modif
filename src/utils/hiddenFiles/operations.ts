@@ -2,7 +2,7 @@ import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, setBypassPatch } from './state.ts';
 import { decorateFolders } from './badge.ts';
-import { viewType } from '../../editor/types/index.ts';
+import { viewType } from '../../types/index.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
 

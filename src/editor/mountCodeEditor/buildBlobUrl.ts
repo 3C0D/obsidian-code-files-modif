@@ -1,4 +1,4 @@
-import type { AssetUrls } from '../../editor/types/index.ts';
+import type { AssetUrls } from '../../types/index.ts';
 
 // Module-level cache — valid for the lifetime of the plugin session
 let _cachedBlobUrl: string | null = null;

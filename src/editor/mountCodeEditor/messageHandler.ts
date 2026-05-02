@@ -1,4 +1,4 @@
-import type { MessageHandlerContext } from '../../editor/types/index.ts';
+import type { MessageHandlerContext } from '../../types/index.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';

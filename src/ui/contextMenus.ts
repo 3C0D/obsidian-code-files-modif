@@ -15,7 +15,7 @@ import { RevealHiddenFilesModal } from '../modals/revealHiddenFilesModal.ts';
 import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItem } from '../types/index.ts';
-import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/variables.ts';
+import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {
 	addExtension,

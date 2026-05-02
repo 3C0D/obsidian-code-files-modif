@@ -1,4 +1,4 @@
 // Export all types and variables for the iframe
+export * from './types.ts';
 
-export * from './types.js';
-export * from './variables.js';
+export * from './variables.ts';

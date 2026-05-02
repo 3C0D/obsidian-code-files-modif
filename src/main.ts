@@ -2,7 +2,7 @@ import { Plugin } from 'obsidian';
 import { CodeEditorView } from './editor/codeEditorView/index.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/index.ts';
-import { viewType } from './editor/types/index.ts';
+import { viewType } from './types/index.ts';
 
 import { initExtensions, getActiveExtensions } from './utils/extensionUtils.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
