@@ -43,6 +43,7 @@ export function showDiffAction(context: HeaderActionsContext): void {
 	hideDiffAction(context);
 
 	context.diffAction = context.addAction('diff', 'Show Format Diff', () => {
+		// on click
 		context.codeEditor?.send('trigger-show-diff', {});
 	});
 
@@ -103,7 +104,6 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
  	// Added LAST so they appear on the LEFT
  	const configDir = context.plugin.app.vault.configDir;
  	const isSnippetFile = file.path.startsWith(`${configDir}/snippets`) && ext === 'css';
-	const isExternalFile = file.path.startsWith(`${configDir}/`) && !isSnippetFile;
 	
  	if (isSnippetFile) {
  		const snippetName = file.basename;
@@ -161,15 +161,5 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 				}
 			);
 		}
-	} else if (isExternalFile && Platform.isDesktop) {
-		// Add folder opener for external files (non-snippets in configDir)
-		const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-		context.snippetFolderAction = context.addAction(
-			'folder',
-			`Open ${folderPath}`,
-			() => {
-				context.plugin.app.openWithDefaultApp(normalizePath(folderPath));
-			}
-		);
 	}
 }

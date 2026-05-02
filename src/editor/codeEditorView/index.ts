@@ -37,7 +37,7 @@ import {
 
 export class CodeEditorView extends TextFileView {
 	/** The Monaco Editor instance, created by mountCodeEditor() and destroyed on view close. */
-	private codeEditor!: CodeEditorInstance;
+	private codeEditor: CodeEditorInstance | null = null;
 	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
 	/** Flag to hide the return arrow (set via state.noReturnAction) */
@@ -70,7 +70,7 @@ export class CodeEditorView extends TextFileView {
 
 	/** Expose the Monaco editor instance (MountCodeEditor Instance) to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
 	get editor(): CodeEditorInstance | undefined {
-		return this.codeEditor;
+		return this.codeEditor ?? undefined;
 	}
 
 	getDisplayText(): string {
@@ -170,7 +170,7 @@ export class CodeEditorView extends TextFileView {
 		this.removeHeaderActions();
 		this.unregisterThemeHandler?.();
 		this.unregisterThemeHandler = null;
-		this.codeEditor = null!;
+		this.codeEditor = null;
 	}
 
 	/**
@@ -193,8 +193,9 @@ export class CodeEditorView extends TextFileView {
 			diffTimer: this.diffTimer,
 			unregisterSnippetHandler: this.unregisterSnippetHandler,
 			onOpenEditorConfig: (ext: string) =>
-				openEditorConfig(this.plugin, this.codeEditor, ext),
-			onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor)
+				openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext),
+			onOpenThemePicker: () =>
+				openThemePicker(this.plugin, this.codeEditor ?? undefined)
 		};
 	}
 
@@ -268,14 +269,20 @@ export class CodeEditorView extends TextFileView {
 			() => this.onCtrlS(),
 			() => this.onFormat(),
 			() => this.onAllBlocksReverted(),
-			(ext: string) => openEditorConfig(this.plugin, this.codeEditor, ext),
-			() => openThemePicker(this.plugin, this.codeEditor),
-			() => openRenameExtension(this.plugin, this.codeEditor, file)
+			(ext: string) => {
+				openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext);
+			},
+			() => {
+				openThemePicker(this.plugin, this.codeEditor ?? undefined);
+			},
+			() => {
+				openRenameExtension(this.plugin, this.codeEditor ?? undefined, file);
+			}
 		);
 		// Register theme change handler to follow Obsidian's theme when set to 'default'
 		this.unregisterThemeHandler = registerThemeChangeHandler(
 			this.plugin,
-			this.codeEditor
+			this.codeEditor ?? undefined
 		);
 	}
 
@@ -283,35 +290,39 @@ export class CodeEditorView extends TextFileView {
 	private async mountAndRender(file: TFile): Promise<void> {
 		await this.mountEditor(file);
 		this.contentEl.style.overflow = 'hidden';
-		this.contentEl.append(this.codeEditor.iframe);
+		if (this.codeEditor) {
+			this.contentEl.append(this.codeEditor.iframe);
+		}
 		this.updateExtBadge(file);
 		this.injectHeaderActions(file);
 	}
 
 	/**
-	 * Shows the diff action button in the header for a few seconds after a format.
-	 * Delegates to the standalone `showDiffAction()` helper via a {@link HeaderActionsContext}.
+	 * Shows the diff action button in the view header for a few seconds after a format.
 	 *
-	 * Mutates after call:
-	 * - `this.diffAction` and `this.diffTimer` are updated from the context returned by the helper.
+	 * Uses a snapshot/mutate/sync pattern because {@link showDiffAction} receives a plain
+	 * object copy of `this` state, not `this` itself: mutations to `context` do not
+	 * propagate back automatically.
+	 *
+	 * @see {@link buildContext} for snapshot creation
+	 * @see {@link updateFromContext} for syncing mutations back to the class instance
 	 */
 	private showDiffAction(): void {
-		const context = this.buildContext();
-		showDiffAction(context);
-		this.diffAction = context.diffAction;
-		this.diffTimer = context.diffTimer;
+		const context = this.buildContext(); // 1. snapshot
+		showDiffAction(context); // 2. mutates context.diffAction + context.diffTimer
+		this.updateFromContext(context); // 3. sync back to class instance
 	}
 
 	/** Hides the diff action immediately (called when all blocks are reverted) */
 	private hideDiffAction(): void {
 		const context = this.buildContext();
 		hideDiffAction(context);
-		this.diffAction = context.diffAction;
-		this.diffTimer = context.diffTimer;
+		this.updateFromContext(context);
 	}
 
 	/** Handles content changes in the editor editor. */
 	private onContentChange(): void {
+		if (!this.codeEditor) return;
 		if (this.codeEditor.getValue() === this.data) {
 			this.setDirty(false);
 		} else {
@@ -322,6 +333,7 @@ export class CodeEditorView extends TextFileView {
 
 	/** Handles manual saves (Ctrl+S). */
 	private onCtrlS(): void {
+		if (!this.codeEditor) return;
 		this.forceSave = true;
 		void this.save().then(() => {
 			this.setDirty(false);
@@ -336,7 +348,7 @@ export class CodeEditorView extends TextFileView {
 	/** Hides the diff action button (called when all blocks are reverted). */
 	private onAllBlocksReverted(): void {
 		this.hideDiffAction();
-		if (this.codeEditor.getValue() === this.data) {
+		if (this.codeEditor && this.codeEditor.getValue() === this.data) {
 			this.setDirty(false);
 		}
 	}
@@ -377,7 +389,7 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	getViewData(): string {
-		return this.codeEditor.getValue();
+		return this.codeEditor?.getValue() ?? '';
 	}
 
 	/**

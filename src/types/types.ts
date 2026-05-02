@@ -265,7 +265,7 @@ export interface HeaderActionsContext {
 	/** The plugin instance */
 	plugin: CodeFilesPlugin;
 	/** The Monaco editor control handle */
-	codeEditor: CodeEditorInstance;
+	codeEditor: CodeEditorInstance | null;
 	/** Bound ItemView.addAction — adds a button to the view header */
 	addAction: ItemView['addAction'];
 

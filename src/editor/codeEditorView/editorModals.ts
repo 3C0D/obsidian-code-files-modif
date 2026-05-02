@@ -46,9 +46,9 @@ export function openRenameExtension(
 	codeEditor: CodeEditorInstance | undefined,
 	file: TFile
 ): void {
-	const f = plugin.app.vault.getFileByPath(file.path);
-	if (!f) return;
-	new RenameExtensionModal(plugin, f, () =>
+	const targetFile = plugin.app.vault.getFileByPath(file.path);
+	if (!targetFile) return;
+	new RenameExtensionModal(plugin, targetFile, () =>
 		setTimeout(() => codeEditor?.send('focus', {}), 50)
 	).open();
 }

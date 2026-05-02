@@ -17,11 +17,11 @@ export function findRootMonacoLeaf(
 	filePath: string
 ): WorkspaceLeaf | null {
 	const allLeaves = plugin.app.workspace.getLeavesOfType(viewType);
-	const existingLeaf = allLeaves.find((l) => {
-		const isRoot = l.getRoot() === plugin.app.workspace.rootSplit;
+	const existingLeaf = allLeaves.find((leaf) => {
+		const isRoot = leaf.getRoot() === plugin.app.workspace.rootSplit;
 		const viewFilePath =
-			l.view instanceof CodeEditorView ? l.view.file?.path : undefined;
-		const stateFilePath = l.getViewState().state?.file as string | undefined;
+			leaf.view instanceof CodeEditorView ? leaf.view.file?.path : undefined;
+		const stateFilePath = leaf.getViewState().state?.file as string | undefined;
 		if (!isRoot) return false;
 		return (viewFilePath ?? stateFilePath) === filePath;
 	});

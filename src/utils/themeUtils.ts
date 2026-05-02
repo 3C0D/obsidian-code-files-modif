@@ -81,12 +81,12 @@ export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
  * */
 export function registerThemeChangeHandler(
 	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorInstance
+	codeEditor: CodeEditorInstance | undefined
 ): () => void {
 	const handler = async (): Promise<void> => {
 		if (plugin.settings.theme === 'default') {
 			const params = await resolveThemeParams(plugin, 'default');
-			codeEditor.send('change-theme', params);
+			codeEditor?.send('change-theme', params);
 		}
 	};
 	plugin.app.workspace.on('css-change', handler);
