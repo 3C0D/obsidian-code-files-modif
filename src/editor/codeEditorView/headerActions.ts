@@ -1,3 +1,7 @@
+/**
+ * Module for managing header actions in the code editor view.
+ * Provides functions to add, remove, and manage various header buttons like theme picker, settings, diff display, and snippet controls.
+ */
 import { normalizePath, type TFile } from 'obsidian';
 import type { HeaderActionsContext } from '../../types/types.ts';
 import {
@@ -32,6 +36,7 @@ export function removeHeaderActions(context: HeaderActionsContext): void {
  * Shows the diff action in the header for x seconds after a format.
  *
  * @param context The header actions context providing access to the editor and action management methods.
+ * Note: This function mutates the provided context object by setting diffAction and diffTimer.
  */
 export function showDiffAction(context: HeaderActionsContext): void {
 	hideDiffAction(context);
@@ -69,10 +74,12 @@ export function hideDiffAction(context: HeaderActionsContext): void {
 export function injectHeaderActions(context: HeaderActionsContext, file: TFile): void {
 	removeHeaderActions(context);
 
+	// Add theme picker action
 	context.themeAction = context.addAction('palette', 'Change Theme', () => {
 		context.onOpenThemePicker();
 	});
 
+	// Add editor settings action
 	const ext = getExtension(file.name);
 	context.gearAction = context.addAction('settings', 'Editor Settings', () => {
 		context.onOpenEditorConfig(ext);

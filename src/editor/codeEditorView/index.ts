@@ -166,18 +166,14 @@ export class CodeEditorView extends TextFileView {
 	}
 
 	/**
-	 * Bundles current class state and callbacks into a HeaderActionsContext
-	 * to pass to the standalone helpers in headerActions.ts.
-	 * After each call, mutable properties (diffAction, diffTimer, etc.)
-	 * must be synced back from the context to the class.
+	 * Snapshots the current header state into a {@link HeaderActionsContext}.
+	 * After any helper call that mutates the context, sync back with {@link updateFromContext}.
 	 */
 	private buildContext(): HeaderActionsContext {
 		return {
 			plugin: this.plugin,
 			codeEditor: this.codeEditor,
 			addAction: this.addAction.bind(this),
-			onShowDiff: () => this.showDiffAction(),
-			onHideDiff: () => this.hideDiffAction(),
 			leaf: this.leaf,
 			gearAction: this.gearAction,
 			themeAction: this.themeAction,
@@ -286,11 +282,6 @@ export class CodeEditorView extends TextFileView {
 	/**
 	 * Shows the diff action button in the header for a few seconds after a format.
 	 * Delegates to the standalone `showDiffAction()` helper via a {@link HeaderActionsContext}.
-	 *
-	 * Callbacks injected into context:
-	 * - `onForceSave` : sets `this.forceSave = true`
-	 * - `onShowDiff`  : calls `this.showDiffAction()` (self-reference)
-	 * - `onHideDiff`  : calls `this.hideDiffAction()`
 	 *
 	 * Mutates after call:
 	 * - `this.diffAction` and `this.diffTimer` are updated from the context returned by the helper.

@@ -1,3 +1,7 @@
+/**
+ * Module for managing the opening of files in the Monaco editor.
+ * Provides utilities to find existing editor leaves and open files in new or existing tabs.
+ */
 import type { WorkspaceLeaf } from 'obsidian';
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';

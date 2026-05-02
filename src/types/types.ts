@@ -249,8 +249,7 @@ export interface FolderSection {
  * @property codeEditor - Monaco editor control handle
  * @property addAction - Bound ItemView.addAction, adds a button to the view header
  * @property onForceSave - Triggers a force save (bypasses autoSave guard)
- * @property onShowDiff - Shows the diff action button
- * @property onHideDiff - Hides the diff action button
+
  * @property leaf - Workspace leaf containing this view
  * @property gearAction - Gear button element, null when not mounted
  * @property themeAction - Theme picker button element, null when not mounted
@@ -268,10 +267,7 @@ export interface HeaderActionsContext {
 	codeEditor: CodeEditorInstance;
 	/** Bound ItemView.addAction — adds a button to the view header */
 	addAction: ItemView['addAction'];
-	/** Called to show the diff action button */
-	onShowDiff: () => void;
-	/** Called to hide the diff action button */
-	onHideDiff: () => void;
+
 	/** The workspace leaf containing this view */
 	leaf: WorkspaceLeaf;
 	// Mutable action button elements — null when not mounted

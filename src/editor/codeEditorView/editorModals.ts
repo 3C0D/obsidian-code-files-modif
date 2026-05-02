@@ -1,3 +1,7 @@
+/**
+ * Module for opening various modals in the code editor.
+ * Provides functions to launch configuration, theme picker, and rename extension dialogs.
+ */
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import type { CodeEditorInstance } from '../../types/types.ts';
