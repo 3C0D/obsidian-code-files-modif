@@ -4,7 +4,7 @@
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
 import type * as Monaco from 'monaco-editor';
-import type { InitParams, EditorConfig } from './types/index.ts';
+import type { InitParams, EditorConfig, Prettify } from './types/index.ts';
 import {
 	FORMAT_CHANGE_TIMEOUT,
 	setPrettierPrintWidth,
@@ -138,7 +138,7 @@ export function runFormatWithDiff(): Promise<void> {
  * Called once during iframe initialization.
  * @param params - Initialization parameters from the parent window
  */
-function applyParams(params: InitParams): void {
+function applyParams(params: Prettify<InitParams>): void {
 	if (initialized) return;
 	initialized = true;
 	context = params.context;

@@ -4,7 +4,7 @@
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
 import type * as Monaco from 'monaco-editor';
-import type { InitParams, HotkeyConfig } from './types/index.ts';
+import type { InitParams, HotkeyConfig, Prettify } from './types/index.ts';
 import { getLastFormat } from './diff.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
@@ -57,7 +57,7 @@ export function updateHotkeys(
  * @param openDiffModal - Function to open the diff modal with original and formatted content
  */
 export function registerActions(
-	params: InitParams,
+	params: Prettify<InitParams>,
 	openDiffModal: (orig: string, fmt: string) => void
 ): void {
 	if (!editor) return;

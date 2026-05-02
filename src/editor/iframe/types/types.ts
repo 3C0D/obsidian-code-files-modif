@@ -1,6 +1,8 @@
 // Globals injected by <script> tags before monacoBundle.js
 // Monaco is loaded by AMD loader, Prettier by standalone scripts
 
+export type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
 /** Configuration options for Prettier code formatting. */
 export interface PrettierOptions {
 	parser: string;
