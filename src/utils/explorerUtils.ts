@@ -55,13 +55,12 @@ let debounceTimeout: NodeJS.Timeout | null = null;
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 	const updateBadges = (): void => {
 		const activeExts = getActiveExtensions(plugin.settings);
-		const leaves = plugin.app.workspace.getLeavesOfType('file-explorer');
+		const view = plugin.app.workspace.getLeavesOfType('file-explorer')?.first()?.view as
+			| FileExplorerView
+			| undefined;
+		if (!view?.fileItems) return;
 
-		for (const leaf of leaves) {
-			const view = leaf.view as FileExplorerView;
-			if (!view.fileItems) continue;
-
-			for (const item of Object.values(view.fileItems)) {
+		for (const item of Object.values(view.fileItems)) {
 				if (!(item.file instanceof TFile)) continue; // Guard first: skip folders
 
 				const file = item.file; // Narrowed automatically to TFile
@@ -86,7 +85,6 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 					tagEl?.classList.add('code-files-unregistered-badge');
 				}
 			}
-		}
 	};
 
 	const debouncedUpdate = (): void => {
@@ -111,14 +109,14 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 			explorerObserver.disconnect();
 		}
 
-		const leaves = plugin.app.workspace.getLeavesOfType('file-explorer');
-		for (const leaf of leaves) {
-			const view = leaf.view as FileExplorerView;
-			explorerObserver.observe(view.containerEl, {
-				childList: true,
-				subtree: true
-			});
-		}
+		const view = plugin.app.workspace.getLeavesOfType('file-explorer')?.first()?.view as
+			| FileExplorerView
+			| undefined;
+		if (!view) return;
+		explorerObserver.observe(view.containerEl, {
+			childList: true,
+			subtree: true
+		});
 		debouncedUpdate();
 	};
 
