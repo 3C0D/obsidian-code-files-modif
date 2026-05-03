@@ -1,5 +1,7 @@
-// Monaco Editor Actions and Keyboard Handlers
-// All custom actions registered in Monaco's context menu and command palette
+/**
+ * Monaco Editor Actions and Keyboard Handlers
+ * All custom actions registered in Monaco's context menu and command palette
+ */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
@@ -14,6 +16,16 @@ let currentCommandPaletteHotkey: HotkeyConfig | null = null;
 let currentSettingsHotkey: HotkeyConfig | null = null;
 let currentDeleteFileHotkey: HotkeyConfig | null = null;
 let runFormatWithDiff: () => Promise<void>;
+let parentOrigin = '*';
+
+/**
+ * Captures the parent window origin from the init message event.
+ * Must be called once before any postMessage is sent to the parent.
+ * @param origin - The origin of the parent window (from event.origin)
+ */
+export function setParentOrigin(origin: string): void {
+	parentOrigin = origin;
+}
 
 /**
  * Sets the shared state for actions module.
@@ -72,7 +84,7 @@ export function registerActions(
 			run: () => {
 				window.parent.postMessage(
 					{ type: 'return-to-default-view', context },
-					'*'
+					parentOrigin
 				);
 			}
 		});
@@ -85,7 +97,7 @@ export function registerActions(
 		editor!.updateOptions({ wordWrap: next });
 		window.parent.postMessage(
 			{ type: 'word-wrap-toggled', wordWrap: next, context },
-			'*'
+			parentOrigin
 		);
 	});
 
@@ -100,13 +112,13 @@ export function registerActions(
 					runFormatWithDiff().then(() => {
 						window.parent.postMessage(
 							{ type: 'save-document', context },
-							'*'
+							parentOrigin
 						);
 					});
 					return;
 				}
 			}
-			window.parent.postMessage({ type: 'save-document', context }, '*');
+			window.parent.postMessage({ type: 'save-document', context }, parentOrigin);
 		}
 	});
 
@@ -143,7 +155,7 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 1,
 		run: () => {
-			window.parent.postMessage({ type: 'open-rename-extension', context }, '*');
+			window.parent.postMessage({ type: 'open-rename-extension', context }, parentOrigin);
 		}
 	});
 
@@ -153,7 +165,7 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 2,
 		run: () => {
-			window.parent.postMessage({ type: 'open-theme-picker', context }, '*');
+			window.parent.postMessage({ type: 'open-theme-picker', context }, parentOrigin);
 		}
 	});
 
@@ -163,7 +175,7 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 3,
 		run: () => {
-			window.parent.postMessage({ type: 'open-formatter-config', context }, '*');
+			window.parent.postMessage({ type: 'open-formatter-config', context }, parentOrigin);
 		}
 	});
 
@@ -171,7 +183,7 @@ export function registerActions(
 		id: 'code-files-obsidian-settings',
 		label: '🔧 Obsidian Settings (Ctrl+,)',
 		run: () => {
-			window.parent.postMessage({ type: 'open-settings', context }, '*');
+			window.parent.postMessage({ type: 'open-settings', context }, parentOrigin);
 		}
 	});
 
@@ -179,7 +191,7 @@ export function registerActions(
 		id: 'code-files-obsidian-palette',
 		label: '🎹 Obsidian Command Palette (Ctrl+P)',
 		run: () => {
-			window.parent.postMessage({ type: 'open-obsidian-palette', context }, '*');
+			window.parent.postMessage({ type: 'open-obsidian-palette', context }, parentOrigin);
 		}
 	});
 
@@ -189,7 +201,7 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 4,
 		run: () => {
-			window.parent.postMessage({ type: 'delete-file', context }, '*');
+			window.parent.postMessage({ type: 'delete-file', context }, parentOrigin);
 		}
 	});
 
@@ -212,7 +224,7 @@ export function registerActions(
 				e.stopPropagation();
 				window.parent.postMessage(
 					{ type: 'open-obsidian-palette', context },
-					'*'
+					parentOrigin
 				);
 				return;
 			}
@@ -229,7 +241,7 @@ export function registerActions(
 			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();
-				window.parent.postMessage({ type: 'open-settings', context }, '*');
+				window.parent.postMessage({ type: 'open-settings', context }, parentOrigin);
 				return;
 			}
 		}
@@ -255,7 +267,7 @@ export function registerActions(
 			) {
 				e.preventDefault();
 				e.stopPropagation();
-				window.parent.postMessage({ type: 'delete-file', context }, '*');
+				window.parent.postMessage({ type: 'delete-file', context }, parentOrigin);
 			}
 		}
 	});

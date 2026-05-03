@@ -1,10 +1,14 @@
-// Monaco Diff Modal and Revert Widgets
-// Handles side-by-side diff view and block-by-block revert functionality
+/**
+ * Monaco Diff Modal and Revert Widgets
+ * Handles side-by-side diff view and block-by-block revert functionality
+ */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
 import type * as Monaco from 'monaco-editor';
 import { DIFF_EDITOR_OPTIONS } from './config.ts';
+
+let parentOrigin = '*';
 
 // Diff editor singleton - created once, reused
 let diffEditorInstance: Monaco.editor.IStandaloneDiffEditor | null = null;
@@ -34,6 +38,15 @@ export function setSharedState(
 	editor = editorInstance;
 	context = ctx;
 	currentLang = lang;
+}
+
+/**
+ * Captures the parent window origin from the init message event.
+ * Must be called once before any postMessage is sent to the parent.
+ * @param origin - The origin of the parent window (from event.origin)
+ */
+export function setParentOrigin(origin: string): void {
+	parentOrigin = origin;
 }
 
 /**
@@ -343,7 +356,7 @@ function revertBlock(change: Monaco.editor.ILineChange): void {
 				diffScrollDisposable = null;
 			}
 			if (editor) editor.focus();
-			window.parent.postMessage({ type: 'format-diff-reverted', context }, '*');
+			window.parent.postMessage({ type: 'format-diff-reverted', context }, parentOrigin);
 		} else {
 			buildRevertWidgets();
 		}
@@ -381,7 +394,7 @@ function revertAll(): void {
 	}
 	if (editor) editor.focus();
 
-	window.parent.postMessage({ type: 'format-diff-reverted', context }, '*');
+	window.parent.postMessage({ type: 'format-diff-reverted', context }, parentOrigin);
 }
 
 /**

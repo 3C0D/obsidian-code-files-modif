@@ -1,5 +1,7 @@
-// Monaco Editor Initialization and Message Handling
-// Main initialization logic extracted from monacoEditor.html inline script
+/**
+ * Monaco Editor Initialization and Message Handling
+ * Main initialization logic extracted from monacoEditor.html inline script
+ */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
@@ -11,14 +13,17 @@ import {
 	setPrettierTabWidth,
 	setPrettierUseTabs
 } from './config.ts';
-import { setSharedState, setLastFormat, getLastFormat, openDiffModal } from './diff.ts';
-import { registerFormatters, setFormatterContext } from './formatters.ts';
+import { setSharedState, setLastFormat, getLastFormat, openDiffModal, setParentOrigin as setDiffParentOrigin } from './diff.ts';
+import { registerFormatters, setFormatterContext, setParentOrigin as setFormattersParentOrigin } from './formatters.ts';
 import {
 	registerActions,
 	setActionsState,
 	setFormatOnSave,
-	updateHotkeys
+	updateHotkeys,
+	setParentOrigin as setActionsParentOrigin
 } from './actions.ts';
+
+let parentOrigin = '*';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -117,7 +122,7 @@ export function runFormatWithDiff(): Promise<void> {
 				setLastFormat(original, formatted);
 				window.parent.postMessage(
 					{ type: 'format-diff-available', context },
-					'*'
+					parentOrigin
 				);
 			}
 			resolve();
@@ -248,7 +253,7 @@ function applyParams(params: Prettify<InitParams>): void {
 					position,
 					context
 				},
-				'*'
+				parentOrigin
 			);
 			return true; // "handled, don't open inline"
 		}
@@ -292,7 +297,7 @@ function applyParams(params: Prettify<InitParams>): void {
 	editor.onDidChangeModelContent(() => {
 		window.parent.postMessage(
 			{ type: 'change', value: editor!.getValue(), context },
-			'*'
+			parentOrigin
 		);
 	});
 }
@@ -303,7 +308,7 @@ function applyParams(params: Prettify<InitParams>): void {
  */
 export function initMonacoApp(): void {
 	// Signal that Monaco is fully loaded and ready to receive 'init'
-	window.parent.postMessage({ type: 'ready' }, '*');
+	window.parent.postMessage({ type: 'ready' }, parentOrigin);
 
 	window.addEventListener('message', (e) => {
 		const data = e.data;
@@ -311,6 +316,10 @@ export function initMonacoApp(): void {
 
 		switch (data.type) {
 			case 'init':
+				parentOrigin = e.origin;
+				setActionsParentOrigin(e.origin);
+				setDiffParentOrigin(e.origin);
+				setFormattersParentOrigin(e.origin);
 				applyParams(data);
 				window._initialized = true;
 				if (window._pendingProjectFiles) {
