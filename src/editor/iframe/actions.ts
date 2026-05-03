@@ -8,6 +8,7 @@
 import type * as Monaco from 'monaco-editor';
 import type { InitParams, HotkeyConfig, Prettify } from './types/index.ts';
 import { getLastFormat } from './diff.ts';
+import { parentOrigin } from './utils.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -16,16 +17,14 @@ let currentCommandPaletteHotkey: HotkeyConfig | null = null;
 let currentSettingsHotkey: HotkeyConfig | null = null;
 let currentDeleteFileHotkey: HotkeyConfig | null = null;
 let runFormatWithDiff: () => Promise<void>;
-let parentOrigin = '*';
+
 
 /**
  * Captures the parent window origin from the init message event.
  * Must be called once before any postMessage is sent to the parent.
  * @param origin - The origin of the parent window (from event.origin)
  */
-export function setParentOrigin(origin: string): void {
-	parentOrigin = origin;
-}
+export { setParentOrigin } from './utils.ts';
 
 /**
  * Sets the shared state for actions module.

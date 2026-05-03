@@ -12,18 +12,16 @@ import {
 	PRETTIER_USE_TABS
 } from './config.ts';
 import { setLastFormat } from './diff.ts';
+import { parentOrigin } from './utils.ts';
 
 let context: string | null = null;
-let parentOrigin = '*';
 
 /**
  * Captures the parent window origin from the init message event.
  * Must be called once before any postMessage is sent to the parent.
  * @param origin - The origin of the parent window (from event.origin)
  */
-export function setParentOrigin(origin: string): void {
-	parentOrigin = origin;
-}
+export { setParentOrigin } from './utils.ts';
 
 /**
  * Sets the context identifier for the formatter module.

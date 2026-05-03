@@ -7,8 +7,7 @@
 
 import type * as Monaco from 'monaco-editor';
 import { DIFF_EDITOR_OPTIONS } from './config.ts';
-
-let parentOrigin = '*';
+import { parentOrigin } from './utils.ts';
 
 // Diff editor singleton - created once, reused
 let diffEditorInstance: Monaco.editor.IStandaloneDiffEditor | null = null;
@@ -45,9 +44,7 @@ export function setSharedState(
  * Must be called once before any postMessage is sent to the parent.
  * @param origin - The origin of the parent window (from event.origin)
  */
-export function setParentOrigin(origin: string): void {
-	parentOrigin = origin;
-}
+export { setParentOrigin } from './utils.ts';
 
 /**
  * Stores the last format operation's original and formatted content.
