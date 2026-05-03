@@ -1,3 +1,8 @@
+/**
+ * Builds blob URLs for the Monaco iframe HTML to work around CSP restrictions in Obsidian.
+ * Why: Obsidian blocks external scripts and styles in child frames, so we inline and patch them.
+ * How: Fetches HTML, inlines CSS, patches font faces, and creates a blob URL for the iframe src.
+ */
 import type { AssetUrls, Prettify } from '../../types/index.ts';
 
 // Module-level cache — valid for the lifetime of the plugin session

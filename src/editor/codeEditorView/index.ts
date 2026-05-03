@@ -185,6 +185,8 @@ export class CodeEditorView extends TextFileView {
 	/**
 	 * Snapshots the current header state into a {@link HeaderActionsContext}.
 	 * After any helper call that mutates the context, sync back with {@link updateFromContext}.
+	 * 
+	 * @returns The header actions context
 	 */
 	private buildContext(): HeaderActionsContext {
 		return {
