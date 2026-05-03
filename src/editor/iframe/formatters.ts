@@ -12,18 +12,9 @@ import {
 	PRETTIER_USE_TABS
 } from './config.ts';
 import { setLastFormat } from './diff.ts';
+import { getParentOrigin } from './utils.ts';
 
 let context: string | null = null;
-let parentOrigin = '*';
-
-/**
- * Captures the parent window origin from the init message event.
- * Must be called once before any postMessage is sent to the parent.
- * @param origin - The origin of the parent window (from event.origin)
- */
-export function setParentOrigin(origin: string): void {
-	parentOrigin = origin;
-}
 
 /**
  * Sets the context identifier for the formatter module.
@@ -101,7 +92,7 @@ export function registerFormatters(): void {
 					setLastFormat(original, formatted);
 					window.parent.postMessage(
 						{ type: 'format-diff-available', context },
-						parentOrigin
+						getParentOrigin()
 					);
 				}
 				return [{ range: model.getFullModelRange(), text: formatted }];
@@ -335,7 +326,7 @@ export function registerFormatters(): void {
 						setLastFormat(original, formatted);
 						window.parent.postMessage(
 							{ type: 'format-diff-available', context },
-							parentOrigin
+							getParentOrigin()
 						);
 					}
 
@@ -374,7 +365,7 @@ export function registerFormatters(): void {
 						setLastFormat(original, formatted);
 						window.parent.postMessage(
 							{ type: 'format-diff-available', context },
-							parentOrigin
+							getParentOrigin()
 						);
 					}
 
