@@ -5,16 +5,24 @@
  * - Theme picker, settings gear, return arrow (unregistered extensions), diff viewer
  * - CSS snippet controls (folder opener, enable/disable toggle) when editing snippets
  *
- * The Monaco Editor instance (CodeEditorInstance) is created by mountCodeEditor() and embedded
+ * The code editor control handle (CodeEditorHandle) is created by mountCodeEditor() and embedded
  * as an iframe. This view handles all Obsidian-specific concerns (file I/O, header UI, lifecycle)
  * while delegating editor functionality to the isolated Monaco iframe via postMessage.
+ *
+ * Note: The actual Monaco Editor instance resides within the isolated iframe and is not directly
+ * accessible from this code. All interactions with the editor are performed via postMessage
+ * communication through the CodeEditorHandle handle.
  */
 import type { WorkspaceLeaf, ViewStateResult } from 'obsidian';
 import { TextFileView, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { mountCodeEditor } from '../mountCodeEditor/index.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
-import type { CodeEditorInstance, HeaderActionsContext, Prettify } from '../../types/index.ts';
+import type {
+	CodeEditorHandle,
+	HeaderActionsContext,
+	Prettify
+} from '../../types/index.ts';
 import { viewType } from '../../types/index.ts';
 import {
 	openEditorConfig,
@@ -36,8 +44,8 @@ import {
 } from './headerActions.ts';
 
 export class CodeEditorView extends TextFileView {
-	/** The Monaco Editor instance, created by mountCodeEditor() and destroyed on view close. */
-	private codeEditor: Prettify<CodeEditorInstance> | null = null;
+	/** The code editor control handle (CodeEditorHandle), created by mountCodeEditor() and destroyed on view close. */
+	private codeEditor: Prettify<CodeEditorHandle> | null = null;
 	/** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
 	private forceSave = false;
 	/** Flag to hide the return arrow (set via state.noReturnAction) */
@@ -68,8 +76,8 @@ export class CodeEditorView extends TextFileView {
 		super(leaf);
 	}
 
-	/** Expose the Monaco editor instance (MountCodeEditor Instance) to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
-	get editor(): CodeEditorInstance | undefined {
+	/** Expose the code editor control handle (CodeEditorHandle) to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
+	get editor(): CodeEditorHandle | undefined {
 		return this.codeEditor ?? undefined;
 	}
 
@@ -254,8 +262,8 @@ export class CodeEditorView extends TextFileView {
 		this.updateFromContext(context);
 	}
 
-	/** Creates the Monaco editor instance with callbacks for content changes
-	 *  (dirty + requestSave) and manual saves (Ctrl+S).
+	/** Orchestrates the mounting of a Monaco Editor by creating an isolated iframe
+	 *  and returning a control handle (CodeEditorHandle).
 	 *  contentEl is passed to resolve the owner document/window, which differs
 	 *  from the main window when opened in an Obsidian popout window. */
 	public async mountEditor(file: TFile): Promise<void> {
@@ -379,7 +387,7 @@ export class CodeEditorView extends TextFileView {
 		this.codeEditor?.clear();
 	}
 
-	/** Rebuilds Monaco editor after the file is renamed (destroys old instance, mounts new one, updates badges). */
+	/** Rebuilds Monaco editor after the file is renamed (destroys old handle, mounts new one, updates badges). */
 	async onRename(file: TFile): Promise<void> {
 		await super.onRename(file);
 		// Destroys codeEditor instance and listeners

@@ -73,7 +73,10 @@ export function hideDiffAction(context: Prettify<HeaderActionsContext>): void {
 /**
  * Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets).
  */
-export function injectHeaderActions(context: Prettify<HeaderActionsContext>, file: TFile): void {
+export function injectHeaderActions(
+	context: Prettify<HeaderActionsContext>,
+	file: TFile
+): void {
 	removeHeaderActions(context);
 
 	// Add theme picker action

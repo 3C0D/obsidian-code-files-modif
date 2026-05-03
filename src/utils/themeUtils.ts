@@ -1,6 +1,6 @@
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import type { CodeEditorInstance } from '../types/index.ts';
+import type { CodeEditorHandle } from '../types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 import { BUILTIN_THEMES } from '../types/index.ts';
 
@@ -81,7 +81,7 @@ export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
  * */
 export function registerThemeChangeHandler(
 	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorInstance | undefined
+	codeEditor: CodeEditorHandle | undefined
 ): () => void {
 	const handler = async (): Promise<void> => {
 		if (plugin.settings.theme === 'default') {

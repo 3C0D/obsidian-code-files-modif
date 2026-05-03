@@ -212,6 +212,7 @@ function applyParams(params: Prettify<InitParams>): void {
 		monaco.editor.createModel('', params.lang || 'plaintext', modelUri);
 	opts.model = model;
 
+	// Create editor instance
 	editor = monaco.editor.create(document.getElementById('container')!, opts);
 
 	// Intercept cross-file navigation (Ctrl+Click on imports)

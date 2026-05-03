@@ -2,8 +2,21 @@ Voici les grands chemins logiques de `CodeEditorView` :
 
 ---
 
+**0. Mécanisme de création de l'éditeur Monaco et échanges**
+- `mountCodeEditor()` (appelé depuis `mountEditor`) crée l'iframe avec blob URL (via `buildBlobUrl.ts` : contenant l'HTML de `monacoEditor.html` modifié et les scripts Monaco inlinés qui chargent automatiquement l'éditeur)
+- Iframe charge asynchrone → exécute scripts → `iframe/init.ts` crée l'instance Monaco (`monaco.editor.create`)
+- Iframe envoie `'ready'` (postMessage) → parent reçoit → envoie `'init'` (config, contenu)
+- Échanges bidirectionnels via postMessage : `'change-value'`, `'change-theme'`, `'save-document'`, etc.
+- L'instance Monaco reste dans l'iframe ; le parent contrôle via `CodeEditorHandle` (proxy)
+
+**Note** : `monacoEditor.html` est un template HTML avec des placeholders (ex. `<!-- MONACO_SCRIPT -->`) qui sont remplacés par les vrais scripts Monaco inlinés dans `buildBlobUrl.ts`. Le blob URL contient l'HTML final modifié, prêt à charger et initialiser l'éditeur.
+
+---
+
 **1. Ouverture d'un fichier**
-`onLoadFile` → `mountAndRender` → `mountEditor` (crée l'iframe Monaco + enregistre `unregisterThemeHandler`) + `updateExtBadge` (badge `.ext` dans le header) + `injectHeaderActions` (icônes gear, palette, etc.)
+`onLoadFile` → `mountAndRender` → `mountEditor` (crée l'iframe + enregistre `unregisterThemeHandler`) + `updateExtBadge` (badge `.ext` dans le header) + `injectHeaderActions` (icônes gear, palette, etc.)
+
+L'instance Monaco est créée asynchrone à l'intérieur de l'iframe (via `monacoEditor.html` → `iframe/init.ts` → `monaco.editor.create`), une fois l'iframe chargé.
 
 ---
 

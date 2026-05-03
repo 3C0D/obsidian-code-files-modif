@@ -16,16 +16,16 @@ let _cachedUrlsKey: string | null = null;
  * @returns A blob: URL pointing to the patched HTML.
  */
 export async function buildBlobUrl(urls: Prettify<AssetUrls>): Promise<string> {
-	// Invalidate cache if the plugin was rebuilt (URLs contain a new timestamp)
+	// Check if plugin assets have changed (URLs contain timestamps); reuse cache if unchanged. Usefull on Dev Mode.
 	const urlsKey = urls.bundleJsUrl;
 	if (_cachedBlobUrl && _cachedUrlsKey === urlsKey) return _cachedBlobUrl;
-	if (_cachedBlobUrl) {
-		URL.revokeObjectURL(_cachedBlobUrl);
-		_cachedBlobUrl = null;
-	}
-	_cachedUrlsKey = urlsKey;
-	let html = await (await fetch(urls.htmlUrl)).text();
+	// Invalidate previous cache to free memory and prepare for rebuild
+	revokeBlobUrlCache();
 
+	_cachedUrlsKey = urlsKey;
+
+	// Inject <base href> for loader.js
+	let html = await (await fetch(urls.htmlUrl)).text();
 	const baseUrl = urls.htmlUrl.replace(/[^/]+$/, '');
 	html = html.replace(
 		'<meta charset="UTF-8" />',

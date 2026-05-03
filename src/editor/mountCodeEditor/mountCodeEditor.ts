@@ -3,10 +3,10 @@
  * Handles bidirectional postMessage communication (init, change-value, change-theme, etc.),
  * local Monaco loading (fetch HTML, patch ./vs paths to app://, inline CSS),
  * and works around Obsidian's CSP constraints (blob URL, appendChild interception, @font-face patching).
- * Returns a CodeEditorInstance with send(), getValue(), setValue(), destroy().
+ * Returns a CodeEditorHandle with send(), getValue(), setValue(), destroy().
  */
 import type CodeFilesPlugin from '../../main.ts';
-import type { CodeEditorInstance } from '../../types/index.ts';
+import type { CodeEditorHandle } from '../../types/index.ts';
 
 import { buildMessageHandler } from './messageHandler.ts';
 import { resolveAssetUrls } from './assetUrls.ts';
@@ -15,7 +15,8 @@ import { buildBlobUrl } from './buildBlobUrl.ts';
 import { loadProjectFiles } from './projectLoader.ts';
 
 /**
- * Creates a Monaco Editor instance isolated in an iframe and returns a control handle.
+ * Orchestrates the mounting of a Monaco Editor by creating an isolated iframe
+ * and returning a control handle (CodeEditorHandle).
  *
  * Why an iframe?
  * Monaco requires a full browser environment and conflicts with Obsidian's DOM if loaded directly.
@@ -40,7 +41,7 @@ import { loadProjectFiles } from './projectLoader.ts';
  * @param onOpenThemePicker - Optional callback invoked when the user requests theme picker
  * @param onOpenRenameExtension - Optional callback invoked when the user requests Rename (Name/ext)
  * @param autoFocus - Optional flag to disable automatic focus on editor ready (default: true)
- * @returns A CodeEditorInstance with methods to control the editor (send, getValue, setValue, destroy)
+ * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy)
  */
 export const mountCodeEditor = async (
 	plugin: CodeFilesPlugin,
@@ -56,7 +57,7 @@ export const mountCodeEditor = async (
 	onOpenThemePicker?: () => void,
 	onOpenRenameExtension?: () => void,
 	autoFocus = true
-): Promise<CodeEditorInstance> => {
+): Promise<CodeEditorHandle> => {
 	// Use the document/window of the container element to support Obsidian popout windows
 	const doc = containerEl.ownerDocument;
 	const win = doc.win;

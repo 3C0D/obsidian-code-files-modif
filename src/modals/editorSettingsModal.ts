@@ -11,7 +11,7 @@ import {
 	getExtensionConfigTemplate,
 	FORMATTABLE_EXTENSIONS
 } from '../types/index.ts';
-import type { CodeEditorInstance, Prettify } from '../types/index.ts';
+import type { CodeEditorHandle, Prettify } from '../types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig, saveEditorConfig } from '../utils/settingsUtils.ts';
@@ -26,7 +26,7 @@ import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
 export class EditorSettingsModal extends Modal {
-	private codeEditor!: Prettify<CodeEditorInstance>;
+	private codeEditor!: Prettify<CodeEditorHandle>;
 	private isGlobal = false;
 
 	/**

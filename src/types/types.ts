@@ -194,7 +194,7 @@ export interface FolderSection {
  * @property clear    - Clear content
  * @property destroy  - Remove iframe, revoke blob URL, detach message listener
  */
-export interface CodeEditorInstance {
+export interface CodeEditorHandle {
 	/** The iframe element containing the Monaco editor */
 	iframe: HTMLIFrameElement;
 	/**
@@ -270,7 +270,7 @@ export interface HeaderActionsContext {
 	/** The plugin instance */
 	plugin: CodeFilesPlugin;
 	/** The Monaco editor control handle */
-	codeEditor: CodeEditorInstance | null;
+	codeEditor: CodeEditorHandle | null;
 	/** Bound ItemView.addAction — adds a button to the view header */
 	addAction: ItemView['addAction'];
 
@@ -305,8 +305,10 @@ export interface HeaderActionsContext {
  * Asset URLs for Monaco editor components and formatters.
  */
 export interface AssetUrls {
+	/** Base URL for VS Code assets */
 	vsBase: string;
 	htmlUrl: string;
+	/** URL for the bundle JavaScript file */
 	bundleJsUrl: string;
 	configCssUrl: string;
 	prettierBase: string;

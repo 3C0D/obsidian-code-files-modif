@@ -4,7 +4,7 @@
  */
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import type { CodeEditorInstance, Prettify } from '../../types/index.ts';
+import type { CodeEditorHandle, Prettify } from '../../types/index.ts';
 import { EditorSettingsModal } from '../../modals/editorSettingsModal.ts';
 import { ChooseThemeModal } from '../../modals/chooseThemeModal.ts';
 import { RenameExtensionModal } from '../../modals/renameExtensionModal.ts';
@@ -14,7 +14,7 @@ import { resolveThemeParams } from '../../utils/themeUtils.ts';
 /** Opens the editor settings modal. */
 export function openEditorConfig(
 	plugin: CodeFilesPlugin,
-	codeEditor: Prettify<CodeEditorInstance> | undefined,
+	codeEditor: Prettify<CodeEditorHandle> | undefined,
 	ext: string
 ): void {
 	new EditorSettingsModal(
@@ -31,7 +31,7 @@ export function openEditorConfig(
 /** Opens the theme picker modal. */
 export function openThemePicker(
 	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorInstance | undefined
+	codeEditor: CodeEditorHandle | undefined
 ): void {
 	const applyTheme = async (theme: string): Promise<void> => {
 		const params = await resolveThemeParams(plugin, theme);
@@ -43,7 +43,7 @@ export function openThemePicker(
 /** Opens the rename extension modal for the current file. */
 export function openRenameExtension(
 	plugin: CodeFilesPlugin,
-	codeEditor: Prettify<CodeEditorInstance> | undefined,
+	codeEditor: Prettify<CodeEditorHandle> | undefined,
 	file: TFile
 ): void {
 	const targetFile = plugin.app.vault.getFileByPath(file.path);

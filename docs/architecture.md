@@ -2,7 +2,7 @@
 
 ## Summary
 
-Monaco Editor integration via iframe with postMessage communication. Single entry point `mountCodeEditor()` creates isolated Monaco instances with blob URLs to bypass CSP restrictions.
+Monaco Editor integration via iframe with postMessage communication. Single entry point `mountCodeEditor()` creates isolated Monaco instances with blob URLs to bypass CSP restrictions. The actual Monaco editor objects reside in the iframes; the main code interacts with them through `CodeEditorHandle` proxies that manage postMessage communication.
 
 ## Core Components
 

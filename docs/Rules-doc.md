@@ -17,6 +17,7 @@ For understanding how features work:
 ## Writing Rules
 
 ### Code Examples
+- **General reference docs**: Replace full code blocks with concise references to locations and key options, followed by a brief explanation of what the feature does. E.g., under each section title, add 1-2 sentences explaining the purpose, then the code reference.
 - **Repetitive concepts**: Show first example, reference others with similar code
 - **CSS styles**: Show only important parts or beginning, indicate location
 - **Non-critical code**: Reference location instead of full reproduction

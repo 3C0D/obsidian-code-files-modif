@@ -9,14 +9,14 @@ import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { resolveThemeParams } from '../utils/themeUtils.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
-import type { CodeEditorInstance, Prettify } from '../types/index.ts';
+import type { CodeEditorHandle, Prettify } from '../types/index.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
 
 /** Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed. */
 export class FenceEditModal extends Modal {
-	private codeEditor!: Prettify<CodeEditorInstance>;
+	private codeEditor!: Prettify<CodeEditorHandle>;
 
 	/**
 	 * @param plugin - The plugin instance

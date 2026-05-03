@@ -4,7 +4,7 @@ import type { AssetUrls } from '../../types/index.ts';
 import manifest from '../../../manifest.json' with { type: 'json' };
 
 /**
- * Resolves all plugin asset URLs needed to mount the Monaco iframe.
+ * Resolves all plugin asset URLs needed to mount the Monaco iframe, in mountCodeEditor.
  * Uses the vault adapter to get app:// URLs for local plugin files.
  */
 export function resolveAssetUrls(plugin: CodeFilesPlugin): AssetUrls {

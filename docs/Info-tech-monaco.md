@@ -9,247 +9,57 @@
 
 - [Monaco Editor Reference Sheet](#monaco-editor-reference-sheet)
 	- [Table of Contents](#table-of-contents)
-	- [1. Create an editor](#1-create-an-editor)
-	- [2. IEditorOptions — Display](#2-ieditoroptions--display)
-	- [3. IEditorOptions — Cursor](#3-ieditoroptions--cursor)
-	- [4. IEditorOptions — Editing behavior](#4-ieditoroptions--editing-behavior)
-	- [5. IEditorOptions — IntelliSense](#5-ieditoroptions--intellisense)
-		- [Registering a SignatureHelpProvider (required for custom languages)](#registering-a-signaturehelpprovider-required-for-custom-languages)
-	- [6. Diff editor](#6-diff-editor)
-	- [7. Default keyboard shortcuts](#7-default-keyboard-shortcuts)
-	- [8. Custom keybindings](#8-custom-keybindings)
-	- [9. Actions (with label + context menu)](#9-actions-with-label--context-menu)
-	- [10. Models (multi-file)](#10-models-multi-file)
-	- [11. Decorations](#11-decorations)
-	- [12. Markers (errors / warnings)](#12-markers-errors--warnings)
-	- [13. Language providers](#13-language-providers)
-	- [14. Custom language with Monarch](#14-custom-language-with-monarch)
-	- [15. Textmate grammars](#15-textmate-grammars)
-	- [16. Useful events](#16-useful-events)
-	- [17. What Monaco cannot do out of the box](#17-what-monaco-cannot-do-out-of-the-box)
+- [1. Create an editor](#1-create-an-editor)
+- [2. IEditorOptions — Display](#2-ieditoroptions--display)
+- [3. IEditorOptions — Editing behavior](#3-ieditoroptions--editing-behavior)
+- [4. Diff editor](#4-diff-editor)
+- [5. Default keyboard shortcuts](#5-default-keyboard-shortcuts)
+- [6. Custom keybindings](#6-custom-keybindings)
+- [7. Actions (with label + context menu)](#7-actions-with-label--context-menu)
+- [8. Models (multi-file)](#8-models-multi-file)
+- [9. Textmate grammars](#9-textmate-grammars)
+- [10. Useful events](#10-useful-events)
+- [11. What Monaco cannot do out of the box](#11-what-monaco-cannot-do-out-of-the-box)
 
 ---
 
 ## 1. Create an editor
 
-```ts
-import * as monaco from 'monaco-editor';
+Creates a Monaco Editor instance in a DOM container.
 
-const editor = monaco.editor.create(
-  document.getElementById('container')!,
-  {
-    value: '// start typing...',
-    language: 'typescript',
-    theme: 'vs-dark',
-  }
-);
+`const editor = monaco.editor.create` in `src/editor/iframe/init.ts:216` with options like `value`, `language`, `theme`.
 
-// Always dispose when done (clears model listeners, DOM references, workers)
-editor.dispose();
-```
+Always call `editor.dispose()` when done (clears model listeners, DOM references, workers).
 
 ---
 
 ## 2. IEditorOptions — Display
 
-```ts
-editor.updateOptions({
-  theme: 'vs' | 'vs-dark' | 'hc-black',
+Options to control the visual appearance of the editor (theme, font, minimap, etc.).
 
-  fontSize: 14,
-  fontFamily: 'Fira Code, monospace',
-  // Requires a font with ligature support (e.g. Fira Code, Cascadia Mono) 
-  fontLigatures: true,
-  lineHeight: 22,
-
-  // 'on' | 'off' | 'relative' | ((lineNumber: number) => string)
-  // Use a function for fully custom line number rendering
-  lineNumbers: 'on',
-
-  // Margin between line numbers and editor content; used for breakpoint icons etc.
-  glyphMargin: true,
-
-  folding: true,
-  // 'mouseover': fold arrows only visible on hover; 'always': always visible
-  showFoldingControls: 'mouseover',
-
-  minimap: {
-    enabled: true,
-    side: 'right',        // 'right' | 'left'
-    renderCharacters: false,
-    maxColumn: 120,
-  },
-
-  // 'off' | 'on' | 'wordWrapColumn' | 'bounded'
-  // 'wordWrapColumn': wraps at wordWrapColumn chars
-  // 'bounded': wraps at min(viewport width, wordWrapColumn)
-  wordWrap: 'off',
-  wordWrapColumn: 120,
-
-  // How wrapped lines are indented relative to their parent line
-  // 'none' | 'same' | 'indent' | 'deepIndent'
-  wrappingIndent: 'same',
-
-  // 'none' | 'boundary' | 'selection' | 'trailing' | 'all'
-  renderWhitespace: 'none',
-
-  // Vertical guide lines at specific columns
-  rulers: [80, 120],
-
-  bracketPairColorization: { enabled: true },
-
-  occurrencesHighlight: 'singleFile',
-});
-```
+`editor.updateOptions` in `src/editor/iframe/init.ts:97` with options like `theme: 'vs' | 'vs-dark' | 'hc-black'`, `fontSize: 14`, `fontFamily: 'Fira Code'`, `fontLigatures: requires ligature font`, `lineHeight: 22`, `lineNumbers: 'on'`, `glyphMargin: true`, `folding: true`, `showFoldingControls: 'mouseover'`, `minimap: { enabled: true, side: 'right', renderCharacters: false, maxColumn: 120 }`, `wordWrap: 'off' | 'on' | 'wordWrapColumn' | 'bounded'`, `wordWrapColumn: 120`, `wrappingIndent: 'same'`, `renderWhitespace: 'none'`, `rulers: [80, 120]`, `bracketPairColorization: { enabled: true }`, `occurrencesHighlight: 'singleFile'`.
 
 ---
 
-## 3. IEditorOptions — Cursor
+## 3. IEditorOptions — Editing behavior
 
-```ts
-editor.updateOptions({
-  cursorStyle: 'line' | 'block' | 'underline' | 'line-thin' | 'block-outline' | 'underline-thin',
+Options to control editing behavior (indentation, formatting, selections, etc.).
 
-  // Animation style of the blinking cursor
-  cursorBlinking: 'blink' | 'smooth' | 'phase' | 'expand' | 'solid',
-
-  // Animates cursor movement between positions (like VS Code)
-  cursorSmoothCaretAnimation: 'on' | 'off' | 'explicit',
-
-  // Minimum number of lines always visible above/below the cursor when scrolling
-  cursorSurroundingLines: 3,
-
-  // Smooth scroll animation when the editor scrolls to a position programmatically
-  smoothScrolling: true,
-
-  // Allows scrolling past the last line (useful to keep last line centered)
-  scrollBeyondLastLine: true,
-});
-```
+`editor.updateOptions` in `src/editor/iframe/init.ts:75-92` with options like `readOnly: false`, `automaticLayout: true`, `tabSize: 2`, `insertSpaces: true`, `detectIndentation: false`, `formatOnPaste: true`, `formatOnType: false`, `autoIndent: 'advanced'`, `multiCursorModifier: 'alt' | 'ctrlCmd'`, `columnSelection: false`.
 
 ---
 
-## 4. IEditorOptions — Editing behavior
+## 4. Diff editor
 
-```ts
-editor.updateOptions({
-  readOnly: false,
+Creates a diff editor to compare two versions of code.
 
-  // Automatically recomputes layout when the container DOM element is resized.
-  // Should be true in modals or tab-based UIs where the editor starts hidden.
-  automaticLayout: true,
-
-  tabSize: 2,
-  insertSpaces: true,
-
-  // When true, overrides tabSize and insertSpaces by analyzing the file content.
-  // Set to false if you want to enforce your own config unconditionally.
-  detectIndentation: false,
-
-  formatOnPaste: true,
-  formatOnType: false,  // requires a registered formatter for the language
-
-  // 'none' | 'keep' | 'brackets' | 'advanced' | 'full'
-  // 'advanced': indent/dedent based on language bracket rules
-  // 'full': like 'advanced' but also reformats on type — requires a formatter
-  autoIndent: 'advanced',
-
-  // Hold Alt (or Ctrl) to place additional cursors
-  multiCursorModifier: 'alt' | 'ctrlCmd',
-
-  // Selects columns when dragging with mouse (rectangular selection)
-  columnSelection: false,
-});
-```
+`monaco.editor.createDiffEditor` in `src/editor/iframe/diff.ts:439-440` with options like `renderSideBySide: true`, `ignoreTrimWhitespace: true`, `originalEditable: false`. Then `diffEditor.setModel` with `original` and `modified` models.
 
 ---
 
-## 5. IEditorOptions — IntelliSense
+## 5. Default keyboard shortcuts
 
-```ts
-editor.updateOptions({
-  // Where snippets appear in the suggestion list relative to other items
-  // 'top' | 'bottom' | 'inline' | 'none'
-  snippetSuggestions: 'inline',
-
-  // Show suggestions while typing (can be boolean or fine-grained object)
-  quickSuggestions: {
-    other: 'on',
-    comments: 'off',
-    strings: 'off',
-  },
-
-  // Trigger suggestions automatically on language-specific characters (e.g. '.' in JS)
-  suggestOnTriggerCharacters: true,
-
-  // Whether pressing Enter accepts the highlighted suggestion
-  acceptSuggestionOnEnter: 'smart', // 'on' | 'off' | 'smart'
-
-  // Tab completion: cycle through suggestions with Tab
-  tabCompletion: 'on',
-
-  // Signature help: the popup showing function parameters as you type
-  // Only works if a SignatureHelpProvider is registered for the language.
-  // JS/TS get this for free via the built-in TypeScript worker.
-  parameterHints: {
-    enabled: true,
-    // If true, pressing the trigger key again cycles through overloads
-    cycle: false,
-  },
-
-  // Delay before hover tooltip appears (ms)
-  hover: {
-    enabled: true,
-    delay: 300,
-    sticky: true, // tooltip stays open when you move the mouse into it
-  },
-});
-```
-
-### Registering a SignatureHelpProvider (required for custom languages)
-
-```ts
-// parameterHints does nothing unless this is registered for your language.
-monaco.languages.registerSignatureHelpProvider('mylang', {
-  signatureHelpTriggerCharacters: ['(', ','],
-  provideSignatureHelp: (model, position) => ({
-    value: {
-      signatures: [{
-        label: 'myFunc(a: string, b: number): void',
-        documentation: 'Does something useful.',
-        parameters: [
-          { label: 'a: string', documentation: 'First arg' },
-          { label: 'b: number', documentation: 'Second arg' },
-        ],
-      }],
-      activeSignature: 0,
-      activeParameter: 0, // highlights the correct parameter based on cursor position
-    },
-    dispose: () => {},
-  }),
-});
-```
-
----
-
-## 6. Diff editor
-
-```ts
-const diffEditor = monaco.editor.createDiffEditor(container, {
-  renderSideBySide: true,     // false = inline diff
-  ignoreTrimWhitespace: true, // ignores leading/trailing whitespace changes
-  originalEditable: false,    // make the left pane read-only
-});
-
-diffEditor.setModel({
-  original: monaco.editor.createModel(oldContent, 'typescript'),
-  modified: monaco.editor.createModel(newContent, 'typescript'),
-});
-```
-
----
-
-## 7. Default keyboard shortcuts
+Default keyboard shortcuts in Monaco Editor.
 
 | Shortcut | Action |
 |----------|--------|
@@ -274,274 +84,33 @@ diffEditor.setModel({
 
 ---
 
-## 8. Custom keybindings
+## 6. Custom keybindings
 
-```ts
-// Add a keybinding — works as Ctrl+S on Windows/Linux, Cmd+S on macOS
-editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-  console.log('save triggered');
-});
+Add or remove custom keyboard shortcuts for editor actions.
 
-// Remove a built-in keybinding by passing null as the handler.
-// Useful to prevent Monaco from intercepting browser/Obsidian shortcuts.
-editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP, null!);
-
-// Combine modifiers
-editor.addCommand(
-  monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
-  () => { /* format */ }
-);
-```
+`editor.addCommand` in `src/editor/iframe/actions.ts:82` with key combinations like `monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS` to add or remove keybindings. Pass `null` as handler to remove built-in bindings.
 
 ---
 
-## 9. Actions (with label + context menu)
+## 7. Actions (with label + context menu)
 
-```ts
-// More powerful than addCommand: appears in the Command Palette and right-click menu
-editor.addAction({
-  id: 'save-file',             // unique ID, used to trigger it programmatically
-  label: 'Save File',          // shown in Command Palette and context menu
-  keybindings: [
-    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-  ],
-  // The group that appears in the right-click context menu
-  contextMenuGroupId: 'navigation',
-  contextMenuOrder: 1.5,       // lower = higher in the group
-  run: (ed) => {
-    // ed is the editor instance
-    const value = ed.getValue();
-    console.log('saving:', value);
-  },
-});
+Add custom actions that appear in the Command Palette and right-click context menu.
 
-// Trigger an action programmatically (built-in or custom)
-editor.trigger('source', 'editor.action.formatDocument', {});
-editor.trigger('source', 'save-file', {});
-```
+`editor.addAction` in `src/editor/iframe/actions.ts:67-186` with `id`, `label`, `keybindings`, `contextMenuGroupId`, `contextMenuOrder`, `run`. Trigger with `editor.trigger('source', 'actionId')`.
 
 ---
 
-## 10. Models (multi-file)
+## 8. Models (multi-file)
 
-```ts
-// A model is the data layer (content + language + URI).
-// An editor is just a view — you can swap models without recreating the editor.
+Manage text models for multi-file editing (content, language, URI).
 
-const model = monaco.editor.createModel(
-  content,
-  'typescript',
-  monaco.Uri.parse('file:///src/main.ts') // URI is used by providers to resolve imports
-);
-
-editor.setModel(model);
-
-// Save and restore view state (cursor, scroll, folding) when switching files
-const savedState = editor.saveViewState();
-editor.setModel(otherModel);
-editor.restoreViewState(savedState);
-
-// Retrieve a model by URI (useful in providers to resolve cross-file references)
-const existing = monaco.editor.getModel(monaco.Uri.parse('file:///src/other.ts'));
-
-model.getValue();             // get full content as string
-model.setValue('new content');
-model.getLineCount();
-model.getLineContent(1);
-
-// Programmatic edits — these go through the undo stack
-model.pushEditOperations([], [{
-  range: new monaco.Range(1, 1, 1, 5),
-  text: 'hello',
-}], () => null);
-
-model.dispose(); // always dispose models you no longer need
-```
+`monaco.editor.createModel` in `src/editor/iframe/init.ts:212` with content, language, URI. `editor.setModel(model)`, `editor.saveViewState()`/`restoreViewState(state)`. `model.getValue()`, `setValue()`, `pushEditOperations()`. `monaco.editor.getModel(uri)` by URI.
 
 ---
 
-## 11. Decorations
+## 9. Textmate grammars
 
-```ts
-// Decorations are visual overlays: background colors, icons in the gutter, etc.
-// They do NOT affect the text content.
-
-const collection = editor.createDecorationsCollection([
-  {
-    range: new monaco.Range(2, 1, 2, 1), // line 2, whole line
-    options: {
-      isWholeLine: true,
-      className: 'my-line-highlight',         // CSS class on the line content
-      glyphMarginClassName: 'my-glyph-icon',  // CSS class in the glyph margin
-      overviewRuler: {
-        color: '#ff0000',
-        position: monaco.editor.OverviewRulerLane.Left,
-      },
-    },
-  },
-]);
-
-// Update decorations later
-collection.set([/* new decoration list */]);
-
-// Remove all decorations in this collection
-collection.clear();
-```
-
----
-
-## 12. Markers (errors / warnings)
-
-```ts
-// Markers are the red/yellow underlines. They appear in the Problems panel
-// and as squiggles in the editor. Unlike decorations, they carry semantic meaning.
-
-monaco.editor.setModelMarkers(model, 'my-linter', [
-  {
-    severity: monaco.MarkerSeverity.Error,   // Error | Warning | Info | Hint
-    message: 'Unexpected token',
-    startLineNumber: 3,
-    startColumn: 5,
-    endLineNumber: 3,
-    endColumn: 12,
-    // Optional: links the marker to a diagnostic code (shown as a link in the tooltip)
-    code: { value: 'E001', target: monaco.Uri.parse('https://my-docs/E001') },
-  },
-]);
-
-// Clear markers for a given owner
-monaco.editor.setModelMarkers(model, 'my-linter', []);
-```
-
----
-
-## 13. Language providers
-
-All providers are registered globally on the `monaco.languages` namespace and apply to all editors sharing models of the given language.
-
-```ts
-// --- Completion ---
-monaco.languages.registerCompletionItemProvider('mylang', {
-  triggerCharacters: ['.'],
-  provideCompletionItems: (model, position) => {
-    const word = model.getWordUntilPosition(position);
-    return {
-      suggestions: [{
-        label: 'myFunction',
-        kind: monaco.languages.CompletionItemKind.Function,
-        insertText: 'myFunction(${1:arg})',
-        // InsertAsSnippet enables tab stops ($1, $2...) in insertText
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: 'Does something.',
-        range: {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: word.startColumn,
-          endColumn: word.endColumn,
-        },
-      }],
-    };
-  },
-});
-
-// --- Hover ---
-monaco.languages.registerHoverProvider('mylang', {
-  provideHover: (model, position) => ({
-    contents: [
-      { value: '**myFunction**' },   // Markdown is supported
-      { value: 'Does something.' },
-    ],
-  }),
-});
-
-// --- Go to Definition ---
-monaco.languages.registerDefinitionProvider('mylang', {
-  provideDefinition: (model, position) => ({
-    uri: monaco.Uri.parse('file:///src/other.ts'),
-    range: new monaco.Range(10, 1, 10, 20),
-  }),
-});
-
-// --- Code actions (lightbulb / quick fix) ---
-monaco.languages.registerCodeActionProvider('mylang', {
-  provideCodeActions: (model, range, context) => ({
-    actions: [{
-      title: 'Fix this issue',
-      kind: 'quickfix',
-      edit: {
-        edits: [{
-          resource: model.uri,
-          textEdit: { range, text: 'fixed text' },
-        }],
-      },
-    }],
-    dispose: () => {},
-  }),
-});
-```
-
----
-
-## 14. Custom language with Monarch
-
-Monarch is Monaco's built-in tokenizer. It uses regex rules — simpler than Textmate grammars but sufficient for most custom DSLs.
-
-```ts
-monaco.languages.register({ id: 'mylang' });
-
-// Monarch tokenizer: each rule is [regex, token_type]
-// Token types map to CSS classes: e.g. 'keyword' → 'mtk...' class
-monaco.languages.setMonarchTokensProvider('mylang', {
-  keywords: ['if', 'else', 'return', 'function'],
-
-  tokenizer: {
-    root: [
-      // Keywords — check against the list above
-      [/[a-zA-Z_]\w*/, {
-        cases: {
-          '@keywords': 'keyword',
-          '@default': 'identifier',
-        },
-      }],
-
-      // Strings
-      [/".*?"/, 'string'],
-      [/'.*?'/, 'string'],
-
-      // Numbers
-      [/\d+(\.\d+)?/, 'number'],
-
-      // Line comments
-      [/\/\/.*$/, 'comment'],
-
-      // Whitespace (ignored visually but needed to advance the tokenizer)
-      [/\s+/, 'white'],
-    ],
-  },
-});
-
-// Register bracket configuration for auto-close and bracket matching
-monaco.languages.setLanguageConfiguration('mylang', {
-  brackets: [['(', ')'], ['{', '}'], ['[', ']']],
-  autoClosingPairs: [
-    { open: '(', close: ')' },
-    { open: '{', close: '}' },
-    { open: '"', close: '"' },
-  ],
-  surroundingPairs: [
-    { open: '(', close: ')' },
-    { open: '"', close: '"' },
-  ],
-  comments: {
-    lineComment: '//',
-    blockComment: ['/*', '*/'],
-  },
-});
-```
-
----
-
-## 15. Textmate grammars
+Using Textmate grammars for syntax highlighting (not natively supported, requires additional packages).
 
 Monaco's native tokenizer is Monarch. Textmate grammars (`.tmLanguage`, `.tmLanguage.json`) are **not supported natively**.
 
@@ -561,42 +130,17 @@ monaco-editor + vscode-oniguruma + vscode-textmate + monaco-tm
 
 ---
 
-## 16. Useful events
+## 10. Useful events
 
-```ts
-// Content changed — fires on every keystroke / programmatic edit
-editor.onDidChangeModelContent((e) => {
-  // e.changes: list of { range, text, rangeLength }
-});
+Event listeners for editor state changes (content, cursor, focus, etc.).
 
-// Cursor moved
-editor.onDidChangeCursorPosition((e) => {
-  console.log(e.position); // { lineNumber, column }
-});
-
-// Selection changed
-editor.onDidChangeCursorSelection((e) => {
-  console.log(e.selection); // { startLineNumber, startColumn, endLineNumber, endColumn }
-});
-
-// Editor gained / lost focus
-editor.onDidFocusEditorWidget(() => { /* ... */ });
-editor.onDidBlurEditorWidget(() => { /* ... */ });
-
-// Model swapped (e.g. after setModel())
-editor.onDidChangeModel((e) => {
-  // e.oldModelUrl, e.newModelUrl
-});
-
-// Scroll position changed
-editor.onDidScrollChange((e) => {
-  // e.scrollTop, e.scrollLeft, e.scrollHeight, e.scrollWidth
-});
-```
+`editor.onDidChangeModelContent` in `src/editor/iframe/init.ts:112,292` for content changes, `onDidChangeCursorPosition` for cursor moves, `onDidChangeCursorSelection` for selections, `onDidFocusEditorWidget`/`onDidBlurEditorWidget` for focus, `onDidChangeModel` for model swaps, `onDidScrollChange` for scrolling.
 
 ---
 
-## 17. What Monaco cannot do out of the box
+## 11. What Monaco cannot do out of the box
+
+Features not available in Monaco by default.
 
 | Feature | Workaround |
 |---------|------------|

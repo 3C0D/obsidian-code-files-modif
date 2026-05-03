@@ -1,3 +1,6 @@
+/**
+ * Monkey-patches Modal.prototype.open to prevent "n.instanceOf is not a function" crashes.
+ */
 import { around } from 'monkey-around';
 import { Modal } from 'obsidian';
 
