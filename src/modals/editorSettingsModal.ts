@@ -304,20 +304,14 @@ export class EditorSettingsModal extends Modal {
 		);
 
 		// Mount the Monaco editor with the initial config value
-		this.codeEditor = await mountCodeEditor(
-			this.plugin,
-			'json',
+		this.codeEditor = await mountCodeEditor({
+			plugin: this.plugin,
+			language: 'json',
 			initialValue,
-			`editor-settings-config.jsonc`,
-			this.contentEl,
-			() => debouncedSave(),
-			undefined,
-			undefined,
-			undefined,
-			undefined,
-			undefined,
-			undefined
-		);
+			codeContext: 'editor-settings-config.jsonc',
+			containerEl: this.contentEl,
+			onChange: () => debouncedSave(),
+		});
 		editorContainer.append(this.codeEditor.iframe);
 	}
 

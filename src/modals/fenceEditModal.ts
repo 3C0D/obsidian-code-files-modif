@@ -88,18 +88,14 @@ export class FenceEditModal extends Modal {
 		});
 		this.titleEl.appendChild(paletteEl);
 
-		this.codeEditor = await mountCodeEditor(
-			this.plugin,
-			this.language,
-			this.code,
-			`modal-editor.${this.langKey}`,
-			this.contentEl,
-			undefined,
-			undefined,
-			undefined,
-			undefined,
+		this.codeEditor = await mountCodeEditor({
+			plugin: this.plugin,
+			language: this.language,
+			initialValue: this.code,
+			codeContext: `modal-editor.${this.langKey}`,
+			containerEl: this.contentEl,
 			// onOpenEditorConfig
-			(ext) => {
+			onOpenEditorConfig: (ext) => {
 				new EditorSettingsModal(
 					this.plugin,
 					ext,
@@ -109,7 +105,7 @@ export class FenceEditModal extends Modal {
 				).open();
 			},
 			// onOpenThemePicker
-			() => {
+			onOpenThemePicker: () => {
 				const applyTheme = async (theme: string): Promise<void> => {
 					const params = await resolveThemeParams(this.plugin, theme);
 					this.codeEditor?.send('change-theme', params);
@@ -117,9 +113,9 @@ export class FenceEditModal extends Modal {
 				new ChooseThemeModal(this.plugin, applyTheme, () =>
 					this.codeEditor?.send('focus', {})
 				).open();
-			}
+			},
 			// onOpenRenameExtension: undefined (fences don't have a file path)
-		);
+		});
 
 		this.contentEl.append(this.codeEditor.iframe);
 

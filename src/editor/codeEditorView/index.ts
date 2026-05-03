@@ -268,26 +268,20 @@ export class CodeEditorView extends TextFileView {
 	 *  from the main window when opened in an Obsidian popout window. */
 	public async mountEditor(file: TFile): Promise<void> {
 		const ext = getExtension(file.name);
-		this.codeEditor = await mountCodeEditor(
-			this.plugin,
-			getLanguage(ext),
-			this.data,
-			this.getFilePath(file),
-			this.contentEl,
-			() => this.onContentChange(),
-			() => this.onCtrlS(),
-			() => this.onFormat(),
-			() => this.onAllBlocksReverted(),
-			(ext: string) => {
-				openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext);
-			},
-			() => {
-				openThemePicker(this.plugin, this.codeEditor ?? undefined);
-			},
-			() => {
-				openRenameExtension(this.plugin, this.codeEditor ?? undefined, file);
-			}
-		);
+		this.codeEditor = await mountCodeEditor({
+			plugin: this.plugin,
+			language: getLanguage(ext),
+			initialValue: this.data,
+			codeContext: this.getFilePath(file),
+			containerEl: this.contentEl,
+			onChange: () => this.onContentChange(),
+			onSave: () => this.onCtrlS(),
+			onFormatDiff: () => this.onFormat(),
+			onFormatDiffReverted: () => this.onAllBlocksReverted(),
+			onOpenEditorConfig: (ext: string) => openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext),
+			onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor ?? undefined),
+			onOpenRenameExtension: () => openRenameExtension(this.plugin, this.codeEditor ?? undefined, file),
+		});
 		// Register theme change handler to follow Obsidian's theme when set to 'default'
 		this.unregisterThemeHandler = registerThemeChangeHandler(
 			this.plugin,

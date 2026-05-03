@@ -263,21 +263,15 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
 		// Initialize Monaco editor
 		void (async () => {
-			this.codeEditor = await mountCodeEditor(
-				this.plugin,
-				'json',
-				DEFAULT_EDITOR_CONFIG,
-				'settings-editor-config.jsonc',
+			this.codeEditor = await mountCodeEditor({
+				plugin: this.plugin,
+				language: 'json',
+				initialValue: DEFAULT_EDITOR_CONFIG,
+				codeContext: 'settings-editor-config.jsonc',
 				containerEl,
-				() => debouncedSave(),
-				undefined,
-				undefined,
-				undefined,
-				undefined,
-				undefined,
-				undefined,
-				false // autoFocus: false to prevent focus on settings tab open
-			);
+				onChange: () => debouncedSave(),
+				autoFocus: false, // prevent focus on settings tab open
+			});
 			editorContainer.append(this.codeEditor.iframe);
 			// Restore last selected extension or default to global
 			if (selectedExt && formattableExts.includes(selectedExt)) {

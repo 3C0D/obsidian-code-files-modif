@@ -5,8 +5,7 @@
  * and works around Obsidian's CSP constraints (blob URL, appendChild interception, @font-face patching).
  * Returns a CodeEditorHandle with send(), getValue(), setValue(), destroy().
  */
-import type CodeFilesPlugin from '../../main.ts';
-import type { CodeEditorHandle } from '../../types/index.ts';
+import type { CodeEditorHandle, MountCodeEditorOptions, Prettify } from '../../types/index.ts';
 
 import { buildMessageHandler } from './messageHandler.ts';
 import { resolveAssetUrls } from './assetUrls.ts';
@@ -29,35 +28,41 @@ import { loadProjectFiles } from './projectLoader.ts';
  * - Solution: fetch the HTML, rewrite ./vs paths to absolute app:// URLs (timestamp stripped),
  *   inline the Monaco CSS (Obsidian's CSP blocks external <link> in child frames),
  *   then serve via a blob URL which bypasses the parent CSP for its own inline content.
- *
- * @param plugin - The plugin instance
- * @param language - Monaco language ID (e.g. 'typescript', 'javascript', 'markdown')
- * @param initialValue - Initial content to display in the editor
- * @param codeContext - Unique identifier for this editor instance (file path or modal ID), used to filter postMessage events. Avoids cross-talk between multiple open editors.
- * @param onChange - Optional callback invoked when the editor content changes
- * @param onSave - Optional callback invoked when the user presses Ctrl+S
- * @param onFormatDiff - Optional callback invoked when a format diff is available (after formatting)
- * @param onOpenEditorConfig - Optional callback invoked when the user requests editor settings
- * @param onOpenThemePicker - Optional callback invoked when the user requests theme picker
- * @param onOpenRenameExtension - Optional callback invoked when the user requests Rename (Name/ext)
- * @param autoFocus - Optional flag to disable automatic focus on editor ready (default: true)
+ * 
+ * @param options - Configuration object containing all required parameters and optional callbacks
+ * @param options.plugin - The plugin instance.
+ * @param options.language - The programming language of the code.
+ * @param options.initialValue - The initial value of the code.
+ * @param options.codeContext - The context of the code (file path or modal ID).
+ * @param options.containerEl - The container element to mount the iframe.
+ * @param options.onChange - Optional callback for when the code changes.
+ * @param options.onSave - Optional callback for when the code is saved.
+ * @param options.onFormatDiff - Optional callback for when the code is formatted.
+ * @param options.onFormatDiffReverted - Optional callback for when the formatted code is reverted.
+ * @param options.onOpenEditorConfig - Optional callback for when the editor config is opened.
+ * @param options.onOpenThemePicker - Optional callback for when the theme picker is opened.
+ * @param options.onOpenRenameExtension - Optional callback for when the rename extension is opened.
+ * @param options.autoFocus - Defaults to true. If true, the editor is focused on mount.
  * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy)
  */
 export const mountCodeEditor = async (
-	plugin: CodeFilesPlugin,
-	language: string,
-	initialValue: string,
-	codeContext: string,
-	containerEl: HTMLElement,
-	onChange?: () => void,
-	onSave?: () => void,
-	onFormatDiff?: () => void,
-	onFormatDiffReverted?: () => void,
-	onOpenEditorConfig?: (ext: string) => void,
-	onOpenThemePicker?: () => void,
-	onOpenRenameExtension?: () => void,
-	autoFocus = true
+	options: Prettify<MountCodeEditorOptions>
 ): Promise<CodeEditorHandle> => {
+		const {
+		plugin,
+		language,
+		initialValue,
+		codeContext,
+		containerEl,
+		onChange,
+		onSave,
+		onFormatDiff,
+		onFormatDiffReverted,
+		onOpenEditorConfig,
+		onOpenThemePicker,
+		onOpenRenameExtension,
+		autoFocus = true
+	} = options;
 	// Use the document/window of the container element to support Obsidian popout windows
 	const doc = containerEl.ownerDocument;
 	const win = doc.win;

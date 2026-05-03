@@ -180,19 +180,53 @@ export interface FolderSection {
 }
 
 /**
- * Control handle for a Monaco editor embedded in an iframe (blob URL).
- * Returned by mountCodeEditor() and used by CodeEditorView, FenceEditModal, and EditorSettingsModal
- * to communicate with the isolated Monaco instance via postMessage.
+ * Parameters for mountCodeEditor().
  *
- * The iframe is isolated from Obsidian's scope; all writes and lifecycle ops go through postMessage,
- * reads return a locally-cached value kept in sync via 'change' events.
+ * The editor runs in an isolated iframe (blob URL) to avoid conflicts with Obsidian's DOM
+ * and CSP constraints. All communication goes through postMessage; reads return a locally-cached
+ * value kept in sync via 'change' events from the iframe.
  *
- * @property iframe   - The iframe DOM element
- * @property send     - Send a typed command to the iframe (theme, options, content...)
- * @property getValue - Get current content (local cache, no postMessage)
- * @property setValue - Set content and sync to iframe
- * @property clear    - Clear content
- * @property destroy  - Remove iframe, revoke blob URL, detach message listener
+ * Why a blob URL? getResourcePath() appends a cache-busting timestamp that breaks relative
+ * ./vs paths. file:// is blocked by Electron's CSP. The blob URL bypasses the parent CSP
+ * for its own inline content and allows path rewriting at fetch time.
+ */
+export interface MountCodeEditorOptions {
+	/** The plugin instance */
+	plugin: CodeFilesPlugin;
+	/** Monaco language ID (e.g. 'typescript', 'javascript', 'markdown') */
+	language: string;
+	/** Initial content to display in the editor */
+	initialValue: string;
+	/** Unique identifier for this editor instance (file path or modal ID), used to filter postMessage events */
+	codeContext: string;
+	/** The HTMLElement to append the editor iframe to */
+	containerEl: HTMLElement;
+	/** Optional callback invoked when the editor content changes */
+	onChange?: () => void;
+	/** Optional callback invoked when the user presses Ctrl+S */
+	onSave?: () => void;
+	/** Optional callback invoked when a format diff is available (after formatting) */
+	onFormatDiff?: () => void;
+	/** Optional callback invoked when all blocks are reverted */
+	onFormatDiffReverted?: () => void;
+	/** Optional callback invoked when the user requests editor settings */
+	onOpenEditorConfig?: (ext: string) => void;
+	/** Optional callback invoked when the user requests theme picker */
+	onOpenThemePicker?: () => void;
+	/** Optional callback invoked when the user requests Rename (Name/ext) */
+	onOpenRenameExtension?: () => void;
+	/** Optional flag to disable automatic focus on editor ready (default: true) */
+	autoFocus?: boolean;
+}
+
+/**
+ * Handle for a mounted editor instance.
+ * @property iframe - The iframe element containing the Monaco editor
+ * @property send - Sends a typed postMessage to the Monaco iframe
+ * @property clear - Clears the editor content
+ * @property getValue - Returns the current editor content
+ * @property setValue - Sets the editor content
+ * @property destroy - Removes the iframe, revokes the blob URL, and cleans up the message listener
  */
 export interface CodeEditorHandle {
 	/** The iframe element containing the Monaco editor */
