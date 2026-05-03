@@ -23,7 +23,7 @@ const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
  *  @param plugin - The plugin instance.
  */
 export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
-	const view = plugin.app.workspace.getLeavesOfType('file-explorer')?.first()?.view as
+	const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
 		| FileExplorerView
 		| undefined;
 	if (!view?.fileItems) return;
@@ -55,7 +55,7 @@ let debounceTimeout: NodeJS.Timeout | null = null;
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 	const updateBadges = (): void => {
 		const activeExts = getActiveExtensions(plugin.settings);
-		const view = plugin.app.workspace.getLeavesOfType('file-explorer')?.first()?.view as
+		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
 			| FileExplorerView
 			| undefined;
 		if (!view?.fileItems) return;
@@ -109,7 +109,7 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 			explorerObserver.disconnect();
 		}
 
-		const view = plugin.app.workspace.getLeavesOfType('file-explorer')?.first()?.view as
+		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
 			| FileExplorerView
 			| undefined;
 		if (!view) return;
