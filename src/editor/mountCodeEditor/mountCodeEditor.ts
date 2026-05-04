@@ -11,7 +11,7 @@ import type {
 	Prettify
 } from '../../types/index.ts';
 
-import { buildMessageHandler, activeProcesses } from './messageHandler.ts';
+import { buildMessageHandler } from './messageHandler.ts';
 import { resolveAssetUrls } from './assetUrls.ts';
 import { buildInitParams } from './buildInitParams.ts';
 import { buildBlobUrl } from './buildBlobUrl.ts';
@@ -111,7 +111,7 @@ export const mountCodeEditor = async (
 		iframe.contentWindow?.postMessage({ type, ...payload }, '*');
 	};
 
-	const onMessage = buildMessageHandler({
+	const { handler: onMessage, cleanup } = buildMessageHandler({
 		iframe,
 		send,
 		valueRef,
@@ -148,9 +148,7 @@ export const mountCodeEditor = async (
 	const getValue = (): string => valueRef.current;
 
 	const destroy = (): void => {
-		// Kill any active process for this editor context
-		activeProcesses.get(codeContext)?.kill();
-		activeProcesses.delete(codeContext);
+		cleanup(); // Kill any active process for this editor context
 		win.removeEventListener('message', onMessage);
 		// Note: blob URL is now cached globally, revoked only on plugin unload
 		iframe.remove();

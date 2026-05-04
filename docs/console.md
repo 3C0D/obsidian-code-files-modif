@@ -37,7 +37,7 @@ par :
 ```html
 <div id="wrapper">
     <div id="container"></div>
-    <div id="console-pane">
+    <div id="console-pane" tabindex="0">
         <div id="console-output"></div>
         <div id="console-input-bar">
             <input id="console-input-field" type="text" spellcheck="false" />
@@ -75,6 +75,7 @@ Ajoute à la fin du fichier :
 #container {
     flex: 1;
     min-height: 0;
+    overflow: hidden;
 }
 
 #console-pane {
@@ -206,10 +207,11 @@ case 'run-command': {
 
     // basePath = chemin absolu du vault (FileSystemAdapter, Desktop uniquement)
     const basePath = (plugin.app.vault.adapter as any).basePath;
+    const fileDir = require('path').join(basePath, codeContext.replace(/[^/\\]*$/, ''));
 
     try {
         const proc = spawn(cmd, args, {
-            cwd: basePath,
+            cwd: fileDir,  // dossier du fichier, pas racine du vault
             stdio: ['ignore', 'pipe', 'pipe'],
             shell: true  // Délègue au shell système qui a le bon PATH
         });
@@ -223,8 +225,11 @@ case 'run-command': {
             send('console-output', { text: chunk.toString() });
         });
         proc.on('close', (code) => {
-            send('console-output', { text: `\nProcess exited with code ${code}\n` });
-            activeProcesses.delete(codeContext);
+            // Laisser un tick pour que les derniers chunks data soient traités
+            setTimeout(() => {
+                send('console-output', { text: `\nProcess exited with code ${code}\n` });
+                activeProcesses.delete(codeContext);
+            }, 50);
         });
         proc.on('error', (err) => {
             send('console-output', { text: `Error: ${err.message}\n` });
@@ -285,6 +290,10 @@ case 'console-toggle': {
     pane?.classList.toggle('visible');
     // Forcer Monaco à recalculer sa hauteur après le toggle
     editor?.layout();
+    // Si la console vient de se fermer, redonner le focus à Monaco
+    if (!pane?.classList.contains('visible')) {
+        editor?.focus();
+    }
     break;
 }
 
@@ -301,6 +310,8 @@ case 'console-output': {
 ```
 
 Appeler `initConsolePane(context)` à la fin de `applyParams()`, après `registerActions()`.
+
+- `Ctrl+J` fonctionne depuis Monaco, l'input field et le pane entier, via des listeners natifs sur `keydown`.
 
 ---
 
@@ -366,6 +377,11 @@ Clic Run ou Enter dans #console-input-field (iframe)
 
   L'option `shell: true` est la plus rapide à tester. Elle fait passer la commande par `cmd.exe` sur Windows ou `/bin/sh` sur Mac/Linux, qui ont le PATH complet de l'utilisateur. L'inconvénient est que ça rend le parsing de la commande dépendant du shell, mais pour l'usage console c'est acceptable.
 
+- Le `cwd` utilise le dossier du fichier courant (`fileDir`) au lieu de la racine du vault (`basePath`), pour que les commandes comme `ts-node sum.ts` trouvent le fichier correctement même s'il est dans un sous-dossier.
+- Race condition entre les événements `data` et `close` sur stdout : un `setTimeout(50)` dans le handler `close` permet aux derniers chunks `data` d'être traités avant d'envoyer le message de fin, évitant les sorties manquées dues au buffering de stdout dans Node.js.
+- `Ctrl+C` dans la console envoie `stop-command` pour interrompre le process en cours.
+- Cleanup propre des process actifs lors de la destruction de l'iframe, via une fonction `cleanup` exposée par `buildMessageHandler`.
+
 ---
 
 ## État d'avancement
@@ -381,13 +397,15 @@ Clic Run ou Enter dans #console-input-field (iframe)
 
 ---
 
-## Perspectives d'évolution
+## Perspectives d'évolution (à tester)
 
 **Immédiat et utile**
 
 Historique des commandes avec flèche haut/bas, comme dans un vrai terminal. Un tableau `history: string[]` et un index, géré dans le `keydown` de l'input field.
 
-Pré-remplissage automatique de la commande selon l'extension du fichier ouvert. `.ts` → `ts-node`, `.py` → `python`, `.js` → `node`. Le `context` (chemin du fichier) est disponible dans `initConsolePane`, donc on peut déduire l'extension au moment de l'init et pré-remplir l'input.
+Support de `clear`/`cls` pour vider la console. Géré côté iframe en interceptant la commande avant d'envoyer au parent, pour éviter les problèmes de built-in shell cross-platform.
+
+Pré-remplissage automatique de la commande selon l'extension du fichier ouvert. `.ts` → `npx ts-node`, `.py` → `python`, `.js` → `node`. Implémenté dans `initConsolePane` pour pré-remplir l'input avec le nom du fichier.
 
 **Un peu plus de travail**
 
@@ -400,3 +418,32 @@ Couleurs ANSI dans la sortie. Bundler `ansi_up` dans `monacoBundle.js` et rempla
 Stdin interactif : pour l'instant `stdio: ['ignore', 'pipe', 'pipe']` ignore stdin. Passer à un vrai pipe stdin permettrait d'interagir avec des scripts qui attendent une saisie (`input()` en Python, `readline` en Node).
 
 Lequel t'intéresse en premier ?
+
+---
+
+## Fichiers concernés par l'installation de la console
+
+- `docs\console.md`
+- `package.json` 								→ ansi_up^6.0.6
+
+- `src\editor\iframe\actions.ts` 				→ Ctrl+J + toggle-console
+- `src\editor\mountCodeEditor\messageHandler.ts`→ cases toggle-console, run-command, stop-command + stdio: ['ignore', 'pipe', 'pipe'],shell: true | buildMessageHandler {handler, cleanup}
+- `src\editor\iframe\init.ts` 					→ initConsolePane → listener sendCommand (postMessage 'run-command') + case 'console-output' & 'console-toggle' | Pré remplissage automatique selon l'extension de l'input | clear/cls command | stop command via Ctrl/Meta+C, Ctrl/Meta J sur input et pane+ focus
+- `src\editor\monacoEditor.html` 				→ ~~container~~ wrapper/divs: container+console-pane(tabindex=0)  + activeProcesses kill
+- `src\editor\monacoHtml.css` 					→ styles (console-pane+console-input+console-run+console-stop)+wrapper+container
+
+
+---
+
+## Problèmes
+
+- Commentaires en anglais! plus de commentaires (sur le pourquoi, comment si pas évident)
+- messageHandler.ts → cases console-view et init.ts → cases console-output
+- src\editor\iframe\actions.ts → Raccourci contrôle J. meta ??
+
+---
+
+## Questions
+
+- Est ce que console est obligatoirement dektop ?
+- opencode c'est quoi ?

@@ -5,6 +5,7 @@ import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
 import { spawn, type ChildProcess } from 'child_process';
+import { getDataAdapterEx } from 'obsidian-typings/implementations';
 
 // Map to track active processes per context
 export const activeProcesses = new Map<string, ChildProcess>();
@@ -14,7 +15,7 @@ export const activeProcesses = new Map<string, ChildProcess>();
  */
 export function buildMessageHandler(
 	ctx: Prettify<MessageHandlerContext>
-): (event: MessageEvent) => Promise<void> {
+): { handler: (event: MessageEvent) => Promise<void>; cleanup: () => void } {
 	const {
 		iframe,
 		send,
@@ -33,7 +34,7 @@ export function buildMessageHandler(
 		onOpenRenameExtension
 	} = ctx;
 
-	return async ({ data, source }: MessageEvent): Promise<void> => {
+	const onMessage = async ({ data, source }: MessageEvent): Promise<void> => {
 		// Guard against messages from other iframes or sources
 		if (source !== iframe.contentWindow) return;
 
@@ -190,13 +191,18 @@ export function buildMessageHandler(
 				const args = parts.slice(1);
 
 				// basePath = chemin absolu du vault (FileSystemAdapter, Desktop uniquement)
-				const basePath = (plugin.app.vault.adapter as any).basePath;
+				const adapter = getDataAdapterEx(plugin.app);
+				const basePath = adapter.basePath;
+				const fileDir = require('path').join(
+					basePath,
+					codeContext.replace(/[^/\\]*$/, '')
+				);
 
 				try {
 					const proc = spawn(cmd, args, {
-						cwd: basePath,
+						cwd: fileDir, // dossier du fichier, pas racine du vault
 						stdio: ['ignore', 'pipe', 'pipe'],
-						shell: true  // Délègue au shell système qui a le bon PATH
+						shell: true // Délègue au shell système qui a le bon PATH
 					});
 					activeProcesses.set(codeContext, proc);
 
@@ -208,8 +214,13 @@ export function buildMessageHandler(
 						send('console-output', { text: chunk.toString() });
 					});
 					proc.on('close', (code) => {
-						send('console-output', { text: `\nProcess exited with code ${code}\n` });
-						activeProcesses.delete(codeContext);
+						// Laisser un tick pour que les derniers chunks data soient traités
+						setTimeout(() => {
+							send('console-output', {
+								text: `\nProcess exited with code ${code}\n`
+							});
+							activeProcesses.delete(codeContext);
+						}, 50);
 					});
 					proc.on('error', (err) => {
 						send('console-output', { text: `Error: ${err.message}\n` });
@@ -229,6 +240,14 @@ export function buildMessageHandler(
 
 			default:
 				break;
+		}
+	};
+
+	return {
+		handler: onMessage,
+		cleanup: () => {
+			activeProcesses.get(codeContext)?.kill('SIGINT');
+			activeProcesses.delete(codeContext);
 		}
 	};
 }

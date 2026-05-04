@@ -147,19 +147,46 @@ function initConsolePane(ctx: string): void {
 	const stopBtn = document.getElementById('console-stop-btn');
 	if (!pane || !output || !input || !runBtn || !stopBtn) return;
 
+	// Pré-remplissage automatique selon l'extension du fichier
+	const ext = ctx.match(/\.([^./\\]+)$/)?.[1];
+	if (ext === 'ts') input.value = 'npx ts-node ' + ctx.split('/').pop();
+	else if (ext === 'py') input.value = 'python ' + ctx.split('/').pop();
+	else if (ext === 'js') input.value = 'node ' + ctx.split('/').pop();
+
 	const sendCommand = (): void => {
 		const cmd = input.value.trim();
 		if (!cmd) return;
+		if (cmd === 'clear' || cmd === 'cls') {
+			output.innerHTML = '';
+			input.value = '';
+			return;
+		}
 		output.innerHTML += `<span>$ ${cmd}\n</span>`;
 		output.scrollTop = output.scrollHeight;
 		window.parent.postMessage({ type: 'run-command', cmd, context: ctx }, getParentOrigin());
 	};
+
+	pane.addEventListener('keydown', (e) => {
+		if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+			e.preventDefault();
+			window.parent.postMessage({ type: 'stop-command', context: ctx }, getParentOrigin());
+		}
+		if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
+			e.preventDefault();
+			window.parent.postMessage({ type: 'toggle-console', context: ctx }, getParentOrigin());
+		}
+	});
 
 	runBtn.addEventListener('click', sendCommand);
 	stopBtn.addEventListener('click', () => {
 		window.parent.postMessage({ type: 'stop-command', context: ctx }, getParentOrigin());
 	});
 	input.addEventListener('keydown', (e) => {
+		if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
+			e.preventDefault();
+			window.parent.postMessage({ type: 'toggle-console', context: ctx }, getParentOrigin());
+			return;
+		}
 		if (e.key === 'Enter') sendCommand();
 	});
 }
@@ -491,6 +518,10 @@ export function initMonacoApp(): void {
 				pane?.classList.toggle('visible');
 				// Forcer Monaco à recalculer sa hauteur après le toggle
 				editor?.layout();
+				// Si la console vient de se fermer, redonner le focus à Monaco
+				if (!pane?.classList.contains('visible')) {
+					editor?.focus();
+				}
 				break;
 			}
 			case 'console-output': {
