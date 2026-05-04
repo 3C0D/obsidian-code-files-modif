@@ -3,6 +3,7 @@ import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
+import { Platform } from 'obsidian';
 
 /**
  * Builds the postMessage handler for a Monaco iframe instance.
@@ -163,6 +164,15 @@ export function buildMessageHandler(
 				const file = plugin.app.vault.getFileByPath(vaultPath);
 				if (!file) break;
 				await openInMonacoLeaf(file, plugin, true, position, true);
+				break;
+			}
+			case 'open-console': {
+				if (!Platform.isDesktop) break;
+				const leaf = plugin.app.workspace.getLeaf('split', 'horizontal');
+				await leaf.setViewState({
+					type: 'console-view',
+					state: { file: codeContext }
+				});
 				break;
 			}
 			default:

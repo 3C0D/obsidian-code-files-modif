@@ -81,16 +81,24 @@ export function registerActions(
 		});
 	}
 
-	// Alt+Z toggles word wrap and persists the setting
-	editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, () => {
-		const current = editor!.getRawOptions().wordWrap;
-		const next = current === 'on' ? 'off' : 'on';
-		editor!.updateOptions({ wordWrap: next });
-		window.parent.postMessage(
-			{ type: 'word-wrap-toggled', wordWrap: next, context },
-			getParentOrigin()
-		);
-	});
+  // Alt+Z toggles word wrap and persists the setting
+  editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, () => {
+    const current = editor!.getRawOptions().wordWrap;
+    const next = current === 'on' ? 'off' : 'on';
+    editor!.updateOptions({ wordWrap: next });
+    window.parent.postMessage(
+      { type: 'word-wrap-toggled', wordWrap: next, context },
+      getParentOrigin()
+    );
+  });
+
+  // Ctrl+J opens integrated console
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
+    window.parent.postMessage(
+      { type: 'open-console', context },
+      getParentOrigin()
+    );
+  });
 
 	editor.addAction({
 		id: 'code-files-save',
@@ -193,6 +201,16 @@ export function registerActions(
 		contextMenuOrder: 4,
 		run: () => {
 			window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
+		}
+	});
+
+	editor.addAction({
+		id: 'code-files-open-console',
+		label: '🖥️ Open Console',
+		contextMenuGroupId: 'code-files',
+		contextMenuOrder: 5,
+		run: () => {
+			window.parent.postMessage({ type: 'open-console', context }, getParentOrigin());
 		}
 	});
 

@@ -45,15 +45,16 @@
     "jiti": "latest",
     "mermaid-formatter": "^0.3.0",
     "monaco-editor": "^0.55.1",
+    "monkey-around": "latest",
     "obsidian": "*",
     "obsidian-typings": "latest",
     "prettier": "^3.8.1",
     "tslib": "2.4.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "monkey-around": "latest"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
+    "ansi_up": "^6.0.6",
     "monaco-themes": "latest"
   },
   "engines": {
