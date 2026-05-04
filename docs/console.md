@@ -210,7 +210,8 @@ case 'run-command': {
     try {
         const proc = spawn(cmd, args, {
             cwd: basePath,
-            stdio: ['ignore', 'pipe', 'pipe']
+            stdio: ['ignore', 'pipe', 'pipe'],
+            shell: true  // Délègue au shell système qui a le bon PATH
         });
         activeProcesses.set(codeContext, proc);
 
@@ -331,16 +332,71 @@ Clic Run ou Enter dans #console-input-field (iframe)
 - `editor.layout()` est indispensable après le toggle : Monaco ne détecte pas le changement
   de hauteur de son conteneur si `automaticLayout: true` n'est pas actif ou si le resize
   est trop rapide.
+- ENOENT sur `tsc` signifie que le process enfant ne trouve pas l'exécutable dans son PATH. Le `spawn` côté Obsidian hérite d'un PATH limité qui ne contient pas les binaires npm globaux.
+
+  Deux solutions :
+
+  **1. Passer le shell comme interpréteur** (plus simple) :
+
+  Dans `messageHandler.ts`, remplace :
+  ```ts
+  const proc = spawn(cmd, args, {
+      cwd: basePath,
+      stdio: ['ignore', 'pipe', 'pipe']
+  });
+  ```
+  par :
+  ```ts
+  const proc = spawn(cmd, args, {
+      cwd: basePath,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true  // délègue au shell système qui a le bon PATH
+  });
+  ```
+
+  **2. Injecter le PATH explicitement** (plus propre mais plus complexe) :
+
+  ```ts
+  const proc = spawn(cmd, args, {
+      cwd: basePath,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: process.env.PATH }
+  });
+  ```
+
+  L'option `shell: true` est la plus rapide à tester. Elle fait passer la commande par `cmd.exe` sur Windows ou `/bin/sh` sur Mac/Linux, qui ont le PATH complet de l'utilisateur. L'inconvénient est que ça rend le parsing de la commande dépendant du shell, mais pour l'usage console c'est acceptable.
 
 ---
 
 ## État d'avancement
 
-- [ ] `monacoEditor.html` : restructuration DOM
-- [ ] `monacoHtml.css` : styles console
-- [ ] `actions.ts` : `Ctrl+J` + action menu contextuel
-- [ ] `messageHandler.ts` : cases `toggle-console`, `run-command`, `stop-command`
-- [ ] `init.ts` : `initConsolePane()` + cases `console-toggle`, `console-output`
-- [ ] Tester le toggle et le resize Monaco
-- [ ] Tester `node`, `python`, `ts-node` sur les trois OS
-- [ ] Gérer le kill propre dans `destroy()` du CodeEditorHandle
+- [x] `monacoEditor.html` : restructuration DOM
+- [x] `monacoHtml.css` : styles console
+- [x] `actions.ts` : `Ctrl+J` + action menu contextuel
+- [x] `messageHandler.ts` : cases `toggle-console`, `run-command`, `stop-command`
+- [x] `init.ts` : `initConsolePane()` + cases `console-toggle`, `console-output`
+- [x] Tester le toggle et le resize Monaco
+- [x] Tester `node`, `python`, `ts-node` sur les trois OS
+- [x] Gérer le kill propre dans `destroy()` du CodeEditorHandle
+
+---
+
+## Perspectives d'évolution
+
+**Immédiat et utile**
+
+Historique des commandes avec flèche haut/bas, comme dans un vrai terminal. Un tableau `history: string[]` et un index, géré dans le `keydown` de l'input field.
+
+Pré-remplissage automatique de la commande selon l'extension du fichier ouvert. `.ts` → `ts-node`, `.py` → `python`, `.js` → `node`. Le `context` (chemin du fichier) est disponible dans `initConsolePane`, donc on peut déduire l'extension au moment de l'init et pré-remplir l'input.
+
+**Un peu plus de travail**
+
+Redimensionnement du panneau console par drag sur la bordure du haut, comme dans VSCode. Un `mousedown` sur `#console-pane`'s border top, puis `mousemove` pour ajuster la hauteur.
+
+Couleurs ANSI dans la sortie. Bundler `ansi_up` dans `monacoBundle.js` et remplacer le strip regex par un vrai rendu HTML coloré.
+
+**Plus ambitieux**
+
+Stdin interactif : pour l'instant `stdio: ['ignore', 'pipe', 'pipe']` ignore stdin. Passer à un vrai pipe stdin permettrait d'interagir avec des scripts qui attendent une saisie (`input()` en Python, `readline` en Node).
+
+Lequel t'intéresse en premier ?

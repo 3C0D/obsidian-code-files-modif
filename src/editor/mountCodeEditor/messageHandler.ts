@@ -195,7 +195,8 @@ export function buildMessageHandler(
 				try {
 					const proc = spawn(cmd, args, {
 						cwd: basePath,
-						stdio: ['ignore', 'pipe', 'pipe']
+						stdio: ['ignore', 'pipe', 'pipe'],
+						shell: true  // Délègue au shell système qui a le bon PATH
 					});
 					activeProcesses.set(codeContext, proc);
 
