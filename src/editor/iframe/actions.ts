@@ -238,7 +238,6 @@ export function registerActions(
 	});
 
 
-
 	// Dynamic shortcuts from Obsidian hotkey config.
 	// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
 	// so it works regardless of keyboard layout and follows user-configured hotkeys.

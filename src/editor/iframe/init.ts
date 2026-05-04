@@ -147,8 +147,8 @@ function initConsolePane(ctx: string): void {
 	const stopBtn = document.getElementById('console-stop-btn');
 	if (!pane || !output || !input || !runBtn || !stopBtn) return;
 
-	// Pré-remplissage automatique selon l'extension du fichier
-	const ext = ctx.match(/\.([^./\\]+)$/)?.[1];
+ 	// Auto-fill based on file extension
+ 	const ext = ctx.match(/\.([^./\\]+)$/)?.[1];
 	if (ext === 'ts') input.value = 'npx ts-node ' + ctx.split('/').pop();
 	else if (ext === 'py') input.value = 'python ' + ctx.split('/').pop();
 	else if (ext === 'js') input.value = 'node ' + ctx.split('/').pop();
@@ -516,9 +516,9 @@ export function initMonacoApp(): void {
 			case 'console-toggle': {
 				const pane = document.getElementById('console-pane');
 				pane?.classList.toggle('visible');
-				// Forcer Monaco à recalculer sa hauteur après le toggle
+				// Force Monaco to recalculate its height after the toggle
 				editor?.layout();
-				// Si la console vient de se fermer, redonner le focus à Monaco
+				// If the console is closing, return focus to Monaco
 				if (!pane?.classList.contains('visible')) {
 					editor?.focus();
 				}
@@ -527,7 +527,7 @@ export function initMonacoApp(): void {
 			case 'console-output': {
 				const output = document.getElementById('console-output');
 				if (output) {
-					// ansi_up n'est pas disponible dans l'iframe — on strip les séquences ANSI
+					// ansi_up is not available in the iframe — we strip ANSI sequences
 					const clean = (data.text as string).replace(/\x1b\[[0-9;]*m/g, '');
 					output.innerHTML += clean;
 					output.scrollTop = output.scrollHeight;

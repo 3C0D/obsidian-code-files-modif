@@ -173,7 +173,7 @@ export function buildMessageHandler(
 
 			case 'toggle-console': {
 				if (!Platform.isDesktop) break;
-				// Répercute le toggle à l'iframe — l'état visible/caché est géré dans l'iframe
+				// Reflect the toggle to the iframe — the visible/hidden state is managed in the iframe
 				send('console-toggle', {});
 				break;
 			}
@@ -183,30 +183,30 @@ export function buildMessageHandler(
 				const cmdLine = data.cmd as string;
 				if (!cmdLine?.trim()) break;
 
-				// Kill le process précédent pour ce contexte
+				// Kill the previous process for this context
 				activeProcesses.get(codeContext)?.kill();
 
 				const parts = cmdLine.trim().split(/\s+/);
 				const cmd = parts[0];
 				const args = parts.slice(1);
 
-				// basePath = chemin absolu du vault (FileSystemAdapter, Desktop uniquement)
+				// basePath = absolute path of the vault (FileSystemAdapter, Desktop only)
 				const adapter = getDataAdapterEx(plugin.app);
 				const basePath = adapter.basePath;
 				const fileDir = require('path').join(
 					basePath,
 					codeContext.replace(/[^/\\]*$/, '')
-				);
+				); // folder of the file, not vault root
 
 				try {
 					const proc = spawn(cmd, args, {
-						cwd: fileDir, // dossier du fichier, pas racine du vault
+						cwd: fileDir, // folder of the file, not vault root
 						stdio: ['ignore', 'pipe', 'pipe'],
-						shell: true // Délègue au shell système qui a le bon PATH
+						shell: true // Delegate to the system shell which has the correct PATH
 					});
 					activeProcesses.set(codeContext, proc);
 
-					// Streamer stdout/stderr vers l'iframe via postMessage
+					// Stream stdout/stderr to the iframe via postMessage
 					proc.stdout?.on('data', (chunk) => {
 						send('console-output', { text: chunk.toString() });
 					});
@@ -214,7 +214,7 @@ export function buildMessageHandler(
 						send('console-output', { text: chunk.toString() });
 					});
 					proc.on('close', (code) => {
-						// Laisser un tick pour que les derniers chunks data soient traités
+						// Allow a tick for the last data chunks to be processed
 						setTimeout(() => {
 							send('console-output', {
 								text: `\nProcess exited with code ${code}\n`
