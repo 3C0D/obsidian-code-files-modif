@@ -52,7 +52,8 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
 	): Promise<void> {
 		const listed = await this.plugin.app.vault.adapter.list(folderPath);
 
-		for (const filePath of listed.files) {
+		for (const rawPath of listed.files) {
+			const filePath = normalizePath(rawPath);
 			if (explorerPaths.has(filePath)) continue;
 
 			const fileName = filePath.split('/').pop() ?? '';
@@ -77,7 +78,8 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
 			}
 		}
 
-		for (const subFolder of listed.folders) {
+		for (const rawSubFolder of listed.folders) {
+			const subFolder = normalizePath(rawSubFolder);
 			const folderName = subFolder.split('/').pop() ?? '';
 			// Skip dot-folders (e.g., .git, .obsidian) as they contain system/VCS data not meant for editing
 			if (folderName.startsWith('.')) continue;

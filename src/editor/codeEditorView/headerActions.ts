@@ -2,7 +2,7 @@
  * Module for managing header actions in the code editor view.
  * Provides functions to add, remove, and manage various header buttons like theme picker, settings, diff display, and snippet controls.
  */
-import { normalizePath, type TFile, Platform } from 'obsidian';
+import { type TFile, Platform } from 'obsidian';
 import type { HeaderActionsContext, Prettify } from '../../types/index.ts';
 import {
 	snippetExists,
@@ -118,9 +118,7 @@ export function injectHeaderActions(
 			'folder',
 			'Open snippets folder',
 			() => {
-				context.plugin.app.openWithDefaultApp(
-					normalizePath(`${configDir}/snippets`)
-				);
+				context.plugin.app.openWithDefaultApp(`${configDir}/snippets`);
 			}
 		);
 	}

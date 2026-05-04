@@ -1,6 +1,6 @@
 import { type DataAdapterEx } from 'obsidian-typings';
 import { around } from 'monkey-around';
-import type { Plugin, TAbstractFile } from 'obsidian';
+import { type Plugin, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';

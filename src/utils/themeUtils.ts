@@ -1,4 +1,3 @@
-import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
@@ -24,9 +23,7 @@ export const resolveThemeParams = async (
 	plugin: CodeFilesPlugin,
 	theme: string
 ): Promise<{ theme: string; themeData?: string }> => {
-	const pluginBase = normalizePath(
-		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
-	);
+	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 	const resolvedTheme =
 		theme === 'default'
 			? document.body.classList.contains('theme-dark')
@@ -38,7 +35,7 @@ export const resolveThemeParams = async (
 	let themeData: string | undefined;
 	if (!BUILTIN_THEMES.includes(theme)) {
 		try {
-			const themePath = normalizePath(`${pluginBase}/monaco-themes/${theme}.json`);
+			const themePath = `${pluginBase}/monaco-themes/${theme}.json`;
 			const url = plugin.app.vault.adapter.getResourcePath(themePath);
 			// Timestamp is appended to the URL by getResourcePath, but it doesn't affect the fetch since it's just a cache buster. The theme JSON is fetched and passed as a string to the iframe, which will parse it and register the theme with Monaco.
 			themeData = JSON.stringify(await (await fetch(url)).json());
@@ -59,10 +56,8 @@ export const resolveThemeParams = async (
 export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
 	if (_themes.length > 0) return;
 	try {
-		const pluginBase = normalizePath(
-			`${plugin.app.vault.configDir}/plugins/${plugin.manifest.id}`
-		);
-		const themelistPath = normalizePath(`${pluginBase}/monaco-themes/themelist.json`);
+		const pluginBase = `${plugin.app.vault.configDir}/plugins/${plugin.manifest.id}`;
+		const themelistPath = `${pluginBase}/monaco-themes/themelist.json`;
 		const themelistUrl = plugin.app.vault.adapter.getResourcePath(themelistPath);
 		const themelist = await (await fetch(themelistUrl)).json();
 		_themes = Object.values(themelist);

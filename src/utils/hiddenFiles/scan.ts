@@ -29,7 +29,6 @@ export async function scanDotEntries(
 	plugin: CodeFilesPlugin,
 	folderPath: string
 ): Promise<HiddenItem[]> {
-	folderPath = normalizePath(folderPath);
 	if (folderPath === '/') folderPath = '';
 
 	const adapter = getAdapter(plugin);

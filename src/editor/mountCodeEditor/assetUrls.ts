@@ -8,9 +8,7 @@ import manifest from '../../../manifest.json' with { type: 'json' };
  * Uses the vault adapter to get app:// URLs for local plugin files.
  */
 export function resolveAssetUrls(plugin: CodeFilesPlugin): AssetUrls {
-	const pluginBase = normalizePath(
-		`${plugin.app.vault.configDir}/plugins/${manifest.id}`
-	);
+	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
 	const res = (name: string): string =>
 		plugin.app.vault.adapter.getResourcePath(normalizePath(`${pluginBase}/${name}`));
 

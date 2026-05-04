@@ -28,7 +28,7 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
 
 	private async loadFiles(): Promise<void> {
 		try {
-			const configPath = normalizePath(this.plugin.app.vault.configDir);
+			const configPath = this.plugin.app.vault.configDir;
 			await this.scanFolder(configPath);
 
 			if (this.files.length === 0) {
