@@ -100,7 +100,7 @@ export function buildMessageHandler(
 				const modal = cmdPalette.instance.modal;
 				const uninstall = around(modal, {
 					onClose(old) {
-						return () => {
+						return function(this: unknown) {
 							const result = old.apply(this);
 							uninstall();
 							send('focus', {});
