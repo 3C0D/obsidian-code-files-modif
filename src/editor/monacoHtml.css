@@ -74,3 +74,71 @@
 	right: 16px;
 	bottom: 16px; /* 16px margin at the bottom */
 }
+
+/* Console pane layout */
+#wrapper {
+	display: flex;
+	flex-direction: column;
+}
+
+#container {
+	flex: 1;
+	min-height: 0;
+}
+
+#console-pane {
+	display: none; /* Hidden by default, toggled via Ctrl+J */
+	height: 200px;
+	flex-direction: column;
+	border-top: 1px solid #444;
+	background: #1e1e1e;
+	color: #ccc;
+	font-family: monospace;
+	font-size: 12px;
+}
+
+#console-pane.visible {
+	display: flex;
+}
+
+#console-output {
+	flex: 1;
+	overflow-y: auto;
+	padding: 6px 8px;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+#console-input-bar {
+	display: flex;
+	padding: 4px 8px;
+	gap: 6px;
+	border-top: 1px solid #333;
+	align-items: center;
+}
+
+#console-input-field {
+	flex: 1;
+	background: #2d2d2d;
+	color: #ccc;
+	border: 1px solid #444;
+	padding: 2px 6px;
+	font-family: monospace;
+	font-size: 12px;
+	outline: none;
+	color-scheme: dark;
+}
+
+#console-run-btn,
+#console-stop-btn {
+	padding: 2px 8px;
+	cursor: pointer;
+	font-size: 11px;
+	background: #2d2d2d;
+	color: #ccc;
+	border: 1px solid #555;
+	border-radius: 3px;
+}
+
+#console-run-btn:hover { background: #3a3a3a; }
+#console-stop-btn:hover { background: #3a3a3a; }

@@ -4,7 +4,10 @@ import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
+import { spawn, type ChildProcess } from 'child_process';
 
+// Map to track active processes per context
+export const activeProcesses = new Map<string, ChildProcess>();
 /**
  * Builds the postMessage handler for a Monaco iframe instance.
  * Filtered by source to only process messages from the given iframe.
@@ -65,7 +68,7 @@ export function buildMessageHandler(
 				// Wait 200ms after close to ensure Obsidian has saved the new hotkeys.
 				const uninstall = around(plugin.app.setting, {
 					onClose(old) {
-						return function(this: unknown) {
+						return function (this: unknown) {
 							const result = old.apply(this);
 							uninstall();
 							setTimeout(() => {
@@ -101,7 +104,7 @@ export function buildMessageHandler(
 				const modal = cmdPalette.instance.modal;
 				const uninstall = around(modal, {
 					onClose(old) {
-						return function(this: unknown) {
+						return function (this: unknown) {
 							const result = old.apply(this);
 							uninstall();
 							send('focus', {});
@@ -166,15 +169,63 @@ export function buildMessageHandler(
 				await openInMonacoLeaf(file, plugin, true, position, true);
 				break;
 			}
-			case 'open-console': {
+
+			case 'toggle-console': {
 				if (!Platform.isDesktop) break;
-				const leaf = plugin.app.workspace.getLeaf('split', 'horizontal');
-				await leaf.setViewState({
-					type: 'console-view',
-					state: { file: codeContext }
-				});
+				// Répercute le toggle à l'iframe — l'état visible/caché est géré dans l'iframe
+				send('console-toggle', {});
 				break;
 			}
+
+			case 'run-command': {
+				if (!Platform.isDesktop) break;
+				const cmdLine = data.cmd as string;
+				if (!cmdLine?.trim()) break;
+
+				// Kill le process précédent pour ce contexte
+				activeProcesses.get(codeContext)?.kill();
+
+				const parts = cmdLine.trim().split(/\s+/);
+				const cmd = parts[0];
+				const args = parts.slice(1);
+
+				// basePath = chemin absolu du vault (FileSystemAdapter, Desktop uniquement)
+				const basePath = (plugin.app.vault.adapter as any).basePath;
+
+				try {
+					const proc = spawn(cmd, args, {
+						cwd: basePath,
+						stdio: ['ignore', 'pipe', 'pipe']
+					});
+					activeProcesses.set(codeContext, proc);
+
+					// Streamer stdout/stderr vers l'iframe via postMessage
+					proc.stdout?.on('data', (chunk) => {
+						send('console-output', { text: chunk.toString() });
+					});
+					proc.stderr?.on('data', (chunk) => {
+						send('console-output', { text: chunk.toString() });
+					});
+					proc.on('close', (code) => {
+						send('console-output', { text: `\nProcess exited with code ${code}\n` });
+						activeProcesses.delete(codeContext);
+					});
+					proc.on('error', (err) => {
+						send('console-output', { text: `Error: ${err.message}\n` });
+						activeProcesses.delete(codeContext);
+					});
+				} catch (err) {
+					send('console-output', { text: `Failed to start: ${err}\n` });
+				}
+				break;
+			}
+
+			case 'stop-command': {
+				activeProcesses.get(codeContext)?.kill('SIGINT');
+				activeProcesses.delete(codeContext);
+				break;
+			}
+
 			default:
 				break;
 		}

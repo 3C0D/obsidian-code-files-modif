@@ -1,6 +1,5 @@
-import { Plugin, Platform } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { CodeEditorView } from './editor/codeEditorView/index.ts';
-import { ConsoleView } from './editor/consoleView/index.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/index.ts';
 import { viewType } from './types/index.ts';
@@ -54,9 +53,6 @@ export default class CodeFilesPlugin extends Plugin {
 		this._lastHotkeys = serializeMonacoHotkeys(this.app);
 
 		this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
-		if (Platform.isDesktop) {
-			this.registerView('console-view', (leaf) => new ConsoleView(leaf, this));
-		}
 		initExtensions(this);
 		addRibbonIcon(this);
 		registerCommands(this);

@@ -136,6 +136,35 @@ export function runFormatWithDiff(): Promise<void> {
 }
 
 /**
+ * Initializes the console pane UI and event handlers.
+ * @param ctx - The editor context identifier
+ */
+function initConsolePane(ctx: string): void {
+	const pane = document.getElementById('console-pane');
+	const output = document.getElementById('console-output');
+	const input = document.getElementById('console-input-field') as HTMLInputElement;
+	const runBtn = document.getElementById('console-run-btn');
+	const stopBtn = document.getElementById('console-stop-btn');
+	if (!pane || !output || !input || !runBtn || !stopBtn) return;
+
+	const sendCommand = (): void => {
+		const cmd = input.value.trim();
+		if (!cmd) return;
+		output.innerHTML += `<span>$ ${cmd}\n</span>`;
+		output.scrollTop = output.scrollHeight;
+		window.parent.postMessage({ type: 'run-command', cmd, context: ctx }, getParentOrigin());
+	};
+
+	runBtn.addEventListener('click', sendCommand);
+	stopBtn.addEventListener('click', () => {
+		window.parent.postMessage({ type: 'stop-command', context: ctx }, getParentOrigin());
+	});
+	input.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') sendCommand();
+	});
+}
+
+/**
  * Applies initialization parameters to configure the Monaco editor instance.
  * Sets up language, theme, editor options, and registers formatters/actions.
  * Called once during iframe initialization.
@@ -290,6 +319,9 @@ function applyParams(params: Prettify<InitParams>): void {
 
 	// Register all actions and keyboard handlers
 	registerActions(params, openDiffModal);
+
+	// Initialize console pane
+	initConsolePane(context!);
 
 	// Notify parent when content changes (updates dirty badge)
 	editor.onDidChangeModelContent(() => {
@@ -454,6 +486,23 @@ export function initMonacoApp(): void {
 					}
 				}
 				break;
+			case 'console-toggle': {
+				const pane = document.getElementById('console-pane');
+				pane?.classList.toggle('visible');
+				// Forcer Monaco à recalculer sa hauteur après le toggle
+				editor?.layout();
+				break;
+			}
+			case 'console-output': {
+				const output = document.getElementById('console-output');
+				if (output) {
+					// ansi_up n'est pas disponible dans l'iframe — on strip les séquences ANSI
+					const clean = (data.text as string).replace(/\x1b\[[0-9;]*m/g, '');
+					output.innerHTML += clean;
+					output.scrollTop = output.scrollHeight;
+				}
+				break;
+			}
 		}
 	});
 }

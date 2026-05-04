@@ -92,13 +92,15 @@ export function registerActions(
     );
   });
 
-  // Ctrl+J opens integrated console
+  // Ctrl+J toggles the integrated console
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
     window.parent.postMessage(
-      { type: 'open-console', context },
+      { type: 'toggle-console', context },
       getParentOrigin()
     );
   });
+
+
 
 	editor.addAction({
 		id: 'code-files-save',
@@ -117,7 +119,10 @@ export function registerActions(
 					return;
 				}
 			}
-			window.parent.postMessage({ type: 'save-document', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'save-document', context },
+				getParentOrigin()
+			);
 		}
 	});
 
@@ -154,7 +159,10 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 1,
 		run: () => {
-			window.parent.postMessage({ type: 'open-rename-extension', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'open-rename-extension', context },
+				getParentOrigin()
+			);
 		}
 	});
 
@@ -164,7 +172,10 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 2,
 		run: () => {
-			window.parent.postMessage({ type: 'open-theme-picker', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'open-theme-picker', context },
+				getParentOrigin()
+			);
 		}
 	});
 
@@ -174,7 +185,10 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 3,
 		run: () => {
-			window.parent.postMessage({ type: 'open-formatter-config', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'open-formatter-config', context },
+				getParentOrigin()
+			);
 		}
 	});
 
@@ -182,7 +196,10 @@ export function registerActions(
 		id: 'code-files-obsidian-settings',
 		label: '🔧 Obsidian Settings (Ctrl+,)',
 		run: () => {
-			window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'open-settings', context },
+				getParentOrigin()
+			);
 		}
 	});
 
@@ -190,7 +207,10 @@ export function registerActions(
 		id: 'code-files-obsidian-palette',
 		label: '🎹 Obsidian Command Palette (Ctrl+P)',
 		run: () => {
-			window.parent.postMessage({ type: 'open-obsidian-palette', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'open-obsidian-palette', context },
+				getParentOrigin()
+			);
 		}
 	});
 
@@ -210,9 +230,14 @@ export function registerActions(
 		contextMenuGroupId: 'code-files',
 		contextMenuOrder: 5,
 		run: () => {
-			window.parent.postMessage({ type: 'open-console', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'toggle-console', context },
+				getParentOrigin()
+			);
 		}
 	});
+
+
 
 	// Dynamic shortcuts from Obsidian hotkey config.
 	// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
@@ -250,7 +275,10 @@ export function registerActions(
 			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
 				e.preventDefault();
 				e.stopPropagation();
-				window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
+				window.parent.postMessage(
+					{ type: 'open-settings', context },
+					getParentOrigin()
+				);
 				return;
 			}
 		}
@@ -276,7 +304,10 @@ export function registerActions(
 			) {
 				e.preventDefault();
 				e.stopPropagation();
-				window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
+				window.parent.postMessage(
+					{ type: 'delete-file', context },
+					getParentOrigin()
+				);
 			}
 		}
 	});

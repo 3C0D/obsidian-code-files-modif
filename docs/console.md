@@ -1,172 +1,346 @@
-# Terminal intégré sous Monaco
+# Console intégrée dans l'iframe Monaco
 
 ## Vision
 
-Ouvrir une console directement sous l'éditeur Monaco via `Ctrl+J`. La console connaît le fichier en cours et peut le lancer immédiatement. Elle est indépendante de l'éditeur : elle persiste si on change d'onglet, et plusieurs instances peuvent coexister.
+Console intégrée directement dans l'iframe Monaco, pas dans une leaf Obsidian séparée.
+`Ctrl+J` toggle un panneau en bas de l'éditeur. L'UI est dans l'iframe, le process
+(`child_process.spawn`) tourne côté parent Obsidian via postMessage.
 
-Feature Desktop uniquement (`Platform.isDesktop`). Sur mobile : no-op silencieux.
+**Cas d'usage principal** : lancer le fichier courant (`node`, `python`, `ts-node`).
 
-**Cas d'usage principal : lancer le fichier courant.** `node fichier.js`, `python script.py`, `ts-node fichier.ts`. Le reste (grep, npm install, tests) est secondaire.
-
----
-
-## Architecture : Monaco comme zone de saisie
-
-Plutôt que xterm.js (émulateur de terminal complet), on réutilise `mountCodeEditor` — déjà utilisé pour l'éditeur principal et les mini-éditeurs dans les settings. La ConsoleView est divisée en deux zones :
-
-```
-┌─────────────────────────────────────┐
-│  Zone de sortie (div scrollable)    │  ← stdout / stderr du process
-│  logs, erreurs, résultat du script  │
-│                                     │
-├─────────────────────────────────────┤
-│  Zone de saisie (mini Monaco)       │  ← mountCodeEditor, language: 'shell'
-│  $ node mon-fichier.ts              │  ← hauteur fixe ~60-80px
-└─────────────────────────────────────┘
-```
-
-**Pourquoi pas xterm.js ?**
-xterm.js est un émulateur de terminal complet (~500 ko) conçu pour interpréter les séquences ANSI d'un vrai shell. C'est la solution de VSCode. Mais VSCode hérite aussi de ses limitations : pas d'insertion libre du curseur en milieu de ligne, édition de ligne gérée par readline/bash et non par l'éditeur lui-même.
-
-**Pourquoi Monaco est meilleur ici ?**
-La zone de saisie Monaco offre nativement : insertion libre du curseur n'importe où sur la ligne, sélection, copier-coller, historique gérable en JS, et potentiellement l'autocomplétion. C'est une expérience d'édition supérieure à ce que propose VSCode dans son terminal intégré. Pas de nouvelle dépendance : `mountCodeEditor` existe déjà.
-
-La zone de sortie est un simple `<div>` scrollable. Pour les séquences ANSI de couleur dans la sortie (ex. logs colorés de Node.js), un parser ANSI léger suffit (`ansi_up`, ~10 ko) — pas besoin d'un émulateur complet.
+**Desktop uniquement** : le spawn est conditionné à `Platform.isDesktop` côté parent.
 
 ---
 
-## Flux de déclenchement
+## Fichiers concernés
 
-```
-Monaco (iframe)
-  └─ Ctrl+J détecté dans onKeyDown
-       └─ postMessage { type: 'open-console', context: filePath }
-            └─ messageHandler.ts (côté parent)
-                 └─ app.workspace.splitActiveLeaf('horizontal')
-                      └─ new ConsoleView(filePath)
-```
-
-1. `actions.ts` : ajouter `Ctrl+J` dans `registerActions` → `postMessage { type: 'open-console', context }`.
-2. `messageHandler.ts` : nouveau case `'open-console'` → ouvre la leaf en dessous.
-3. `ConsoleView` : vue Obsidian avec zone de sortie + mini Monaco.
+| Fichier | Action |
+|---|---|
+| `monacoEditor.html` | Ajouter `#wrapper` + `#console-pane` |
+| `monacoHtml.css` | Styles du panneau console |
+| `src/editor/iframe/actions.ts` | Ajouter `Ctrl+J` + action menu contextuel |
+| `src/editor/iframe/init.ts` | Gérer les messages `console-toggle` et `console-output` |
+| `src/editor/mountCodeEditor/messageHandler.ts` | Gérer `toggle-console` et `run-command` |
+| `buildBlobUrl.ts` | Aucune modification nécessaire |
+| `assetUrls.ts` | Aucune modification nécessaire |
+| `mountCodeEditor.ts` | Aucune modification nécessaire |
 
 ---
 
-## Raccourci dans Monaco
+## 1. monacoEditor.html
 
-Dans `actions.ts`, ajouter dans `registerActions` :
+Remplace :
+```html
+<div id="container"></div>
+```
+par :
+```html
+<div id="wrapper">
+    <div id="container"></div>
+    <div id="console-pane">
+        <div id="console-output"></div>
+        <div id="console-input-bar">
+            <input id="console-input-field" type="text" spellcheck="false" />
+            <button id="console-run-btn">Run</button>
+            <button id="console-stop-btn">Stop</button>
+        </div>
+    </div>
+</div>
+```
+
+Dans le `<style>` inline, remplace :
+```css
+html, body, #container {
+```
+par :
+```css
+html, body, #wrapper {
+```
+Et retire `height: 100%` du `#container` (géré par flex désormais).
+
+---
+
+## 2. monacoHtml.css
+
+Ajoute à la fin du fichier :
+
+```css
+#wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+#container {
+    flex: 1;
+    min-height: 0;
+}
+
+#console-pane {
+    display: none; /* toggled via JS */
+    height: 200px;
+    flex-direction: column;
+    border-top: 1px solid #444;
+    background: #1e1e1e;
+    color: #ccc;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+#console-pane.visible {
+    display: flex;
+}
+
+#console-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 8px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+#console-input-bar {
+    display: flex;
+    padding: 4px 8px;
+    gap: 6px;
+    border-top: 1px solid #333;
+    align-items: center;
+}
+
+#console-input-field {
+    flex: 1;
+    background: #2d2d2d;
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 12px;
+    outline: none;
+}
+
+#console-run-btn,
+#console-stop-btn {
+    padding: 2px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    background: #2d2d2d;
+    color: #ccc;
+    border: 1px solid #555;
+    border-radius: 3px;
+}
+
+#console-run-btn:hover { background: #3a3a3a; }
+#console-stop-btn:hover { background: #3a3a3a; }
+```
+
+---
+
+## 3. actions.ts (iframe)
+
+Ajouter dans `registerActions()`, après le bloc `Alt+Z` :
 
 ```ts
+// Ctrl+J toggles the integrated console
 editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
-  window.parent.postMessage(
-    { type: 'open-console', context },
-    getParentOrigin()
-  );
+    window.parent.postMessage(
+        { type: 'toggle-console', context },
+        getParentOrigin()
+    );
 });
 ```
 
-Dans `messageHandler.ts`, case `'open-console'` :
+Ajouter dans le menu contextuel, après `code-files-delete-file` :
 
 ```ts
-case 'open-console': {
-  if (!Platform.isDesktop) break;
-  const leaf = plugin.app.workspace.splitActiveLeaf('horizontal');
-  await leaf.setViewState({
-    type: 'console-view',
-    state: { file: codeContext }
-  });
-  break;
+editor.addAction({
+    id: 'code-files-open-console',
+    label: '🖥️ Open Console',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 5,
+    run: () => {
+        window.parent.postMessage(
+            { type: 'toggle-console', context },
+            getParentOrigin()
+        );
+    }
+});
+```
+
+---
+
+## 4. messageHandler.ts (parent)
+
+Ajouter l'import :
+```ts
+import { Platform } from 'obsidian';
+import { spawn, type ChildProcess } from 'child_process';
+```
+
+Ajouter une Map pour tracker les process actifs (au niveau module) :
+```ts
+const activeProcesses = new Map<string, ChildProcess>();
+```
+
+Ajouter deux cases avant le `default` :
+
+```ts
+case 'toggle-console': {
+    if (!Platform.isDesktop) break;
+    // Répercute le toggle à l'iframe — l'état visible/caché est géré dans l'iframe
+    send('console-toggle', {});
+    break;
+}
+
+case 'run-command': {
+    if (!Platform.isDesktop) break;
+    const cmdLine = data.cmd as string;
+    if (!cmdLine?.trim()) break;
+
+    // Kill le process précédent pour ce contexte
+    activeProcesses.get(codeContext)?.kill();
+
+    const parts = cmdLine.trim().split(/\s+/);
+    const cmd = parts[0];
+    const args = parts.slice(1);
+
+    // basePath = chemin absolu du vault (FileSystemAdapter, Desktop uniquement)
+    const basePath = (plugin.app.vault.adapter as any).basePath;
+
+    try {
+        const proc = spawn(cmd, args, {
+            cwd: basePath,
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+        activeProcesses.set(codeContext, proc);
+
+        // Streamer stdout/stderr vers l'iframe via postMessage
+        proc.stdout?.on('data', (chunk) => {
+            send('console-output', { text: chunk.toString() });
+        });
+        proc.stderr?.on('data', (chunk) => {
+            send('console-output', { text: chunk.toString() });
+        });
+        proc.on('close', (code) => {
+            send('console-output', { text: `\nProcess exited with code ${code}\n` });
+            activeProcesses.delete(codeContext);
+        });
+        proc.on('error', (err) => {
+            send('console-output', { text: `Error: ${err.message}\n` });
+            activeProcesses.delete(codeContext);
+        });
+    } catch (err) {
+        send('console-output', { text: `Failed to start: ${err}\n` });
+    }
+    break;
+}
+
+case 'stop-command': {
+    activeProcesses.get(codeContext)?.kill('SIGINT');
+    activeProcesses.delete(codeContext);
+    break;
 }
 ```
 
 ---
 
-## Architecture de ConsoleView
+## 5. init.ts (iframe)
+
+Ajouter une fonction d'initialisation du panneau console et ses handlers,
+appelée à la fin de `applyParams()` :
 
 ```ts
-// src/editor/consoleView/index.ts
-export class ConsoleView extends ItemView {
-  private outputEl: HTMLDivElement;
-  private inputEditor: CodeEditorHandle | null = null;
-  private currentProcess: ChildProcess | null = null;
-  private filePath: string;
+function initConsolePane(ctx: string): void {
+    const pane = document.getElementById('console-pane');
+    const output = document.getElementById('console-output');
+    const input = document.getElementById('console-input-field') as HTMLInputElement;
+    const runBtn = document.getElementById('console-run-btn');
+    const stopBtn = document.getElementById('console-stop-btn');
+    if (!pane || !output || !input || !runBtn || !stopBtn) return;
 
-  async onOpen(): Promise<void> {
-    // Zone de sortie
-    this.outputEl = this.contentEl.createDiv({ cls: 'console-output' });
+    const sendCommand = (): void => {
+        const cmd = input.value.trim();
+        if (!cmd) return;
+        output.innerHTML += `<span>$ ${cmd}\n</span>`;
+        output.scrollTop = output.scrollHeight;
+        window.parent.postMessage({ type: 'run-command', cmd, context: ctx }, getParentOrigin());
+    };
 
-    // Mini Monaco pour la saisie (réutilise mountCodeEditor)
-    const inputContainer = this.contentEl.createDiv({ cls: 'console-input' });
-    this.inputEditor = await mountCodeEditor({
-      plugin: this.plugin,
-      language: 'shell',
-      initialValue: `node ${this.filePath}`,
-      codeContext: 'console-input',
-      containerEl: inputContainer,
-      onSave: () => this.runCommand()  // Entrée → lancer
+    runBtn.addEventListener('click', sendCommand);
+    stopBtn.addEventListener('click', () => {
+        window.parent.postMessage({ type: 'stop-command', context: ctx }, getParentOrigin());
     });
-  }
-
-  private runCommand(): void {
-    // Killer le process précédent si actif
-    this.currentProcess?.kill();
-    const cmd = this.inputEditor?.getValue() ?? '';
-    // Parser cmd et spawner le process
-    // Pipe stdout/stderr → this.outputEl
-  }
-
-  async onClose(): Promise<void> {
-    this.currentProcess?.kill();
-    this.inputEditor?.destroy();
-  }
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendCommand();
+    });
 }
 ```
 
-### Interaction avec le fichier courant
+Dans le switch de `window.addEventListener('message', ...)`, ajouter :
 
-- `filePath` est transmis via le postMessage depuis Monaco.
-- La zone de saisie est pré-remplie avec la commande d'exécution par défaut selon l'extension (`.ts` → `ts-node`, `.py` → `python`, `.js` → `node`).
-- Un bouton "Run" relance la dernière commande sans retaper.
-- `Ctrl+C` envoie `SIGINT` au process enfant.
+```ts
+case 'console-toggle': {
+    const pane = document.getElementById('console-pane');
+    pane?.classList.toggle('visible');
+    // Forcer Monaco à recalculer sa hauteur après le toggle
+    editor?.layout();
+    break;
+}
+
+case 'console-output': {
+    const output = document.getElementById('console-output');
+    if (output) {
+        // ansi_up n'est pas disponible dans l'iframe — on strip les séquences ANSI
+        const clean = (data.text as string).replace(/\x1b\[[0-9;]*m/g, '');
+        output.innerHTML += clean;
+        output.scrollTop = output.scrollHeight;
+    }
+    break;
+}
+```
+
+Appeler `initConsolePane(context)` à la fin de `applyParams()`, après `registerActions()`.
 
 ---
 
-## Console de debug : eruda (optionnel, séparé)
+## Séquence complète
 
-Pour déboguer l'iframe Monaco elle-même, pas le fichier utilisateur.
+```
+Ctrl+J dans Monaco (iframe)
+  └─ postMessage { type: 'toggle-console', context }
+       └─ messageHandler.ts → send('console-toggle', {})
+            └─ init.ts → classList.toggle('visible') + editor.layout()
 
-- **eruda** : ~350 ko minifié, ~100 ko gzippé. Négligeable (plugin = 21,4 Mo).
-- Injecté dans l'iframe via `buildBlobUrl.ts`, chargé uniquement à la demande.
-- Expose un panneau DevTools miniature dans l'iframe : logs Monaco internes, erreurs silencieuses dans `registerFormatters()` ou `buildRevertWidgets()`, messages postMessage, état du DOM de l'iframe (diff overlay, glyph widgets). Sans eruda, ces infos ne sont accessibles qu'en ouvrant les DevTools Electron et en naviguant manuellement dans le bon frame.
-- Conditionné à un flag debug dans les settings du plugin. Pas destiné aux utilisateurs finaux.
-
-Usage distinct de la ConsoleView : eruda inspecte l'iframe Monaco, la ConsoleView exécute des fichiers sur le système de fichiers réel.
+Clic Run ou Enter dans #console-input-field (iframe)
+  └─ postMessage { type: 'run-command', cmd, context }
+       └─ messageHandler.ts → spawn(cmd, args, { cwd: basePath })
+            └─ stdout/stderr → send('console-output', { text })
+                 └─ init.ts → #console-output.innerHTML += text
+```
 
 ---
 
-## Poids des dépendances
+## Notes importantes
 
-| Package | Rôle | Taille minifiée | Taille gzippée |
-|---|---|---|---|
-| `ansi_up` | Parser ANSI pour la zone de sortie | ~10 ko | ~4 ko |
-| `eruda` (optionnel) | Debug iframe Monaco | ~350 ko | ~100 ko |
-
-`mountCodeEditor` et `child_process` (Node.js natif) : zéro dépendance supplémentaire.
-
-Contexte : plugin actuel = 21,4 Mo.
+- `ansi_up` n'est pas dans l'iframe (pas bundlé dans `monacoBundle.js`). Strip ANSI basique
+  avec `/\x1b\[[0-9;]*m/g` dans l'iframe. Si on veut les couleurs, il faut soit bundler
+  `ansi_up` dans `monacoBundle.js`, soit l'injecter via `buildBlobUrl.ts` comme les autres assets.
+- `activeProcesses` dans `messageHandler.ts` : attention aux fuites si l'iframe est détruite
+  avant que le process se termine. Killer dans le `destroy()` du `CodeEditorHandle` en appelant
+  `send('stop-command', {})` avant de retirer le listener.
+- `editor.layout()` est indispensable après le toggle : Monaco ne détecte pas le changement
+  de hauteur de son conteneur si `automaticLayout: true` n'est pas actif ou si le resize
+  est trop rapide.
 
 ---
 
 ## État d'avancement
 
-- [ ] Ajouter `Ctrl+J` dans `actions.ts`
-- [ ] Ajouter case `'open-console'` dans `messageHandler.ts`
-- [ ] Créer `ConsoleView` avec zone de sortie + mini Monaco
-- [ ] Enregistrer le view type dans `main.ts`
-- [ ] Connecter `child_process.spawn` à la zone de sortie
-- [ ] Parser les séquences ANSI dans la sortie (`ansi_up`)
-- [ ] Détecter l'extension du fichier pour pré-remplir la commande
-- [ ] Gérer `Ctrl+C` → `SIGINT` sur le process enfant
-- [ ] Gérer la fermeture propre du process enfant
-- [ ] Protéger avec `Platform.isDesktop`
-- [ ] (Optionnel) Intégrer eruda pour le debug de l'iframe Monaco
+- [ ] `monacoEditor.html` : restructuration DOM
+- [ ] `monacoHtml.css` : styles console
+- [ ] `actions.ts` : `Ctrl+J` + action menu contextuel
+- [ ] `messageHandler.ts` : cases `toggle-console`, `run-command`, `stop-command`
+- [ ] `init.ts` : `initConsolePane()` + cases `console-toggle`, `console-output`
+- [ ] Tester le toggle et le resize Monaco
+- [ ] Tester `node`, `python`, `ts-node` sur les trois OS
+- [ ] Gérer le kill propre dans `destroy()` du CodeEditorHandle

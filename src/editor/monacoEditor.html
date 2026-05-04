@@ -35,10 +35,10 @@
 
 		<style>
 			/* Chain all three levels to 100% height: html and body don't inherit
-			   viewport height by default, so #container's height: 100% would resolve to 0 */
+			   viewport height by default, so #wrapper's height: 100% would resolve to 0 */
 			html,
 			body,
-			#container {
+			#wrapper {
 				margin: 0;
 				padding: 0;
 				width: 100%;
@@ -48,8 +48,18 @@
 		</style>
 	</head>
 	<body>
-		<!-- Monaco's mount target: monaco.editor.create() requires a DOM element with measurable dimensions -->
-		<div id="container"></div>
+		<div id="wrapper">
+			<!-- Monaco's mount target: monaco.editor.create() requires a DOM element with measurable dimensions -->
+			<div id="container"></div>
+			<div id="console-pane">
+				<div id="console-output"></div>
+				<div id="console-input-bar">
+					<input id="console-input-field" type="text" spellcheck="false" />
+					<button id="console-run-btn">Run</button>
+					<button id="console-stop-btn">Stop</button>
+				</div>
+			</div>
+		</div>
 		<!--
   ./vs resolves correctly because buildBlobUrl.ts injects a <base href> pointing to the plugin
   directory. This is the only remaining external script — all others are inlined by buildBlobUrl.ts.
