@@ -64,7 +64,7 @@ export function buildMessageHandler(
 				// Wait 200ms after close to ensure Obsidian has saved the new hotkeys.
 				const uninstall = around(plugin.app.setting, {
 					onClose(old) {
-						return () => {
+						return function(this: unknown) {
 							const result = old.apply(this);
 							uninstall();
 							setTimeout(() => {
