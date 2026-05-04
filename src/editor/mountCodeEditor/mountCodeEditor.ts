@@ -5,7 +5,11 @@
  * and works around Obsidian's CSP constraints (blob URL, appendChild interception, @font-face patching).
  * Returns a CodeEditorHandle with send(), getValue(), setValue(), destroy().
  */
-import type { CodeEditorHandle, MountCodeEditorOptions, Prettify } from '../../types/index.ts';
+import type {
+	CodeEditorHandle,
+	MountCodeEditorOptions,
+	Prettify
+} from '../../types/index.ts';
 
 import { buildMessageHandler } from './messageHandler.ts';
 import { resolveAssetUrls } from './assetUrls.ts';
@@ -28,7 +32,7 @@ import { loadProjectFiles } from './projectLoader.ts';
  * - Solution: fetch the HTML, rewrite ./vs paths to absolute app:// URLs (timestamp stripped),
  *   inline the Monaco CSS (Obsidian's CSP blocks external <link> in child frames),
  *   then serve via a blob URL which bypasses the parent CSP for its own inline content.
- * 
+ *
  * @param options - Configuration object containing all required parameters and optional callbacks
  * @param options.plugin - The plugin instance.
  * @param options.language - The programming language of the code.
@@ -48,7 +52,7 @@ import { loadProjectFiles } from './projectLoader.ts';
 export const mountCodeEditor = async (
 	options: Prettify<MountCodeEditorOptions>
 ): Promise<CodeEditorHandle> => {
-		const {
+	const {
 		plugin,
 		language,
 		initialValue,

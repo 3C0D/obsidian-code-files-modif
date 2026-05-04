@@ -185,7 +185,7 @@ export class CodeEditorView extends TextFileView {
 	/**
 	 * Snapshots the current header state into a {@link HeaderActionsContext}.
 	 * After any helper call that mutates the context, sync back with {@link updateFromContext}.
-	 * 
+	 *
 	 * @returns The header actions context
 	 */
 	private buildContext(): HeaderActionsContext {
@@ -280,9 +280,12 @@ export class CodeEditorView extends TextFileView {
 			onSave: () => this.onCtrlS(),
 			onFormatDiff: () => this.onFormat(),
 			onFormatDiffReverted: () => this.onAllBlocksReverted(),
-			onOpenEditorConfig: (ext: string) => openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext),
-			onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor ?? undefined),
-			onOpenRenameExtension: () => openRenameExtension(this.plugin, this.codeEditor ?? undefined, file),
+			onOpenEditorConfig: (ext: string) =>
+				openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext),
+			onOpenThemePicker: () =>
+				openThemePicker(this.plugin, this.codeEditor ?? undefined),
+			onOpenRenameExtension: () =>
+				openRenameExtension(this.plugin, this.codeEditor ?? undefined, file)
 		});
 		// Register theme change handler to follow Obsidian's theme when set to 'default'
 		this.unregisterThemeHandler = registerThemeChangeHandler(

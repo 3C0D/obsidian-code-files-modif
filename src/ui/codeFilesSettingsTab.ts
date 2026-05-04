@@ -270,7 +270,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 				codeContext: 'settings-editor-config.jsonc',
 				containerEl,
 				onChange: () => debouncedSave(),
-				autoFocus: false, // prevent focus on settings tab open
+				autoFocus: false // prevent focus on settings tab open
 			});
 			editorContainer.append(this.codeEditor.iframe);
 			// Restore last selected extension or default to global

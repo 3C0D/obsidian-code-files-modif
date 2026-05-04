@@ -55,36 +55,35 @@ let debounceTimeout: NodeJS.Timeout | null = null;
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 	const updateBadges = (): void => {
 		const activeExts = getActiveExtensions(plugin.settings);
-		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
-			| FileExplorerView
-			| undefined;
+		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()
+			?.view as FileExplorerView | undefined;
 		if (!view?.fileItems) return;
 
 		for (const item of Object.values(view.fileItems)) {
-				if (!(item.file instanceof TFile)) continue; // Guard first: skip folders
+			if (!(item.file instanceof TFile)) continue; // Guard first: skip folders
 
-				const file = item.file; // Narrowed automatically to TFile
-				const treeItem = item as FileTreeItem;
-				const selfEl = treeItem.selfEl || treeItem.el;
-				const tagEl = selfEl?.querySelector('.nav-file-tag');
+			const file = item.file; // Narrowed automatically to TFile
+			const treeItem = item as FileTreeItem;
+			const selfEl = treeItem.selfEl || treeItem.el;
+			const tagEl = selfEl?.querySelector('.nav-file-tag');
 
-				// Unregistered badge cleanup
-				if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
+			// Unregistered badge cleanup
+			if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
 
-				// Dotfile badge
-				if (!file.extension) {
-					const ext = getExtension(file.name);
-					if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
-						tagEl.textContent = ext.toUpperCase();
-					}
-					continue; // dotfiles are not "unregistered"
+			// Dotfile badge
+			if (!file.extension) {
+				const ext = getExtension(file.name);
+				if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
+					tagEl.textContent = ext.toUpperCase();
 				}
-
-				// Unregistered badge
-				if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
-					tagEl?.classList.add('code-files-unregistered-badge');
-				}
+				continue; // dotfiles are not "unregistered"
 			}
+
+			// Unregistered badge
+			if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
+				tagEl?.classList.add('code-files-unregistered-badge');
+			}
+		}
 	};
 
 	const debouncedUpdate = (): void => {
@@ -109,9 +108,8 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 			explorerObserver.disconnect();
 		}
 
-		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
-			| FileExplorerView
-			| undefined;
+		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()
+			?.view as FileExplorerView | undefined;
 		if (!view) return;
 		explorerObserver.observe(view.containerEl, {
 			childList: true,

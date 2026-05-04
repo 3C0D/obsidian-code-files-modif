@@ -113,7 +113,7 @@ export class FenceEditModal extends Modal {
 				new ChooseThemeModal(this.plugin, applyTheme, () =>
 					this.codeEditor?.send('focus', {})
 				).open();
-			},
+			}
 			// onOpenRenameExtension: undefined (fences don't have a file path)
 		});
 

@@ -346,7 +346,10 @@ function revertBlock(change: Monaco.editor.ILineChange): void {
 				diffScrollDisposable = null;
 			}
 			if (editor) editor.focus();
-			window.parent.postMessage({ type: 'format-diff-reverted', context }, getParentOrigin());
+			window.parent.postMessage(
+				{ type: 'format-diff-reverted', context },
+				getParentOrigin()
+			);
 		} else {
 			buildRevertWidgets();
 		}
@@ -384,7 +387,10 @@ function revertAll(): void {
 	}
 	if (editor) editor.focus();
 
-	window.parent.postMessage({ type: 'format-diff-reverted', context }, getParentOrigin());
+	window.parent.postMessage(
+		{ type: 'format-diff-reverted', context },
+		getParentOrigin()
+	);
 }
 
 /**

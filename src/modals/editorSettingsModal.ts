@@ -310,7 +310,7 @@ export class EditorSettingsModal extends Modal {
 			initialValue,
 			codeContext: 'editor-settings-config.jsonc',
 			containerEl: this.contentEl,
-			onChange: () => debouncedSave(),
+			onChange: () => debouncedSave()
 		});
 		editorContainer.append(this.codeEditor.iframe);
 	}
