@@ -20,30 +20,30 @@ export const getThemes = (): string[] => _themes;
  *          - `themeData?`: JSON-stringified theme (only for custom themes)
  */
 export const resolveThemeParams = async (
-	plugin: CodeFilesPlugin,
-	theme: string
+  plugin: CodeFilesPlugin,
+  theme: string
 ): Promise<{ theme: string; themeData?: string }> => {
-	const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
-	const resolvedTheme =
-		theme === 'default'
-			? document.body.classList.contains('theme-dark')
-				? 'vs-dark'
-				: 'vs'
-			: theme;
-	// Sanitized theme name. Only alphanumeric and dashes allowed
-	const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
-	let themeData: string | undefined;
-	if (!BUILTIN_THEMES.includes(theme)) {
-		try {
-			const themePath = `${pluginBase}/monaco-themes/${theme}.json`;
-			const url = plugin.app.vault.adapter.getResourcePath(themePath);
-			// Timestamp is appended to the URL by getResourcePath, but it doesn't affect the fetch since it's just a cache buster. The theme JSON is fetched and passed as a string to the iframe, which will parse it and register the theme with Monaco.
-			themeData = JSON.stringify(await (await fetch(url)).json());
-		} catch (e) {
-			console.warn(`code-files: theme "${theme}" not found`, e);
-		}
-	}
-	return { theme: safeThemeId, themeData };
+  const pluginBase = `${plugin.app.vault.configDir}/plugins/${manifest.id}`;
+  const resolvedTheme =
+    theme === 'default'
+      ? document.body.classList.contains('theme-dark')
+        ? 'vs-dark'
+        : 'vs'
+      : theme;
+  // Sanitized theme name. Only alphanumeric and dashes allowed
+  const safeThemeId = resolvedTheme.replace(/[^a-z0-9\-]/gi, '-');
+  let themeData: string | undefined;
+  if (!BUILTIN_THEMES.includes(theme)) {
+    try {
+      const themePath = `${pluginBase}/monaco-themes/${theme}.json`;
+      const url = plugin.app.vault.adapter.getResourcePath(themePath);
+      // Timestamp is appended to the URL by getResourcePath, but it doesn't affect the fetch since it's just a cache buster. The theme JSON is fetched and passed as a string to the iframe, which will parse it and register the theme with Monaco.
+      themeData = JSON.stringify(await (await fetch(url)).json());
+    } catch (e) {
+      console.warn(`code-files: theme "${theme}" not found`, e);
+    }
+  }
+  return { theme: safeThemeId, themeData };
 };
 
 /**
@@ -54,17 +54,17 @@ export const resolveThemeParams = async (
  * @returns A Promise that resolves when themes have been loaded (or failed).
  */
 export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
-	if (_themes.length > 0) return;
-	try {
-		const pluginBase = `${plugin.app.vault.configDir}/plugins/${plugin.manifest.id}`;
-		const themelistPath = `${pluginBase}/monaco-themes/themelist.json`;
-		const themelistUrl = plugin.app.vault.adapter.getResourcePath(themelistPath);
-		const themelist = await (await fetch(themelistUrl)).json();
-		_themes = Object.values(themelist);
-	} catch (e) {
-		console.warn('code-files: failed to load themelist', e);
-		_themes = [];
-	}
+  if (_themes.length > 0) return;
+  try {
+    const pluginBase = `${plugin.app.vault.configDir}/plugins/${plugin.manifest.id}`;
+    const themelistPath = `${pluginBase}/monaco-themes/themelist.json`;
+    const themelistUrl = plugin.app.vault.adapter.getResourcePath(themelistPath);
+    const themelist = await (await fetch(themelistUrl)).json();
+    _themes = Object.values(themelist);
+  } catch (e) {
+    console.warn('code-files: failed to load themelist', e);
+    _themes = [];
+  }
 }
 
 /** Registers a listener that updates Monaco's theme when Obsidian switches dark/light mode.
@@ -75,15 +75,15 @@ export async function loadThemes(plugin: CodeFilesPlugin): Promise<void> {
  * @returns () => void - function to unregister the event listener
  * */
 export function registerThemeChangeHandler(
-	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorHandle | undefined
+  plugin: CodeFilesPlugin,
+  codeEditor: CodeEditorHandle | undefined
 ): () => void {
-	const handler = async (): Promise<void> => {
-		if (plugin.settings.theme === 'default') {
-			const params = await resolveThemeParams(plugin, 'default');
-			codeEditor?.send('change-theme', params);
-		}
-	};
-	plugin.app.workspace.on('css-change', handler);
-	return () => plugin.app.workspace.off('css-change', handler);
+  const handler = async (): Promise<void> => {
+    if (plugin.settings.theme === 'default') {
+      const params = await resolveThemeParams(plugin, 'default');
+      codeEditor?.send('change-theme', params);
+    }
+  };
+  plugin.app.workspace.on('css-change', handler);
+  return () => plugin.app.workspace.off('css-change', handler);
 }

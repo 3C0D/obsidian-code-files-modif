@@ -15,39 +15,39 @@ const OVERLAY_CLASS = 'code-editor-iframe-blocker';
  * @param plugin - The plugin instance.
  */
 export function patchMenuOverlay(plugin: CodeFilesPlugin): void {
-	// Places a transparent overlay on all Monaco editor views to intercept mouse events
-	const showOverlays = (): void => {
-		document
-			.querySelectorAll<HTMLElement>('[data-type="code-editor"] .view-content')
-			.forEach((view) => {
-				if (view.querySelector(`.${OVERLAY_CLASS}`)) return;
-				const overlay = document.createElement('div');
-				overlay.className = OVERLAY_CLASS;
-				overlay.style.cssText = 'position:absolute;inset:0;z-index:9999;';
-				view.style.position = 'relative';
-				view.appendChild(overlay);
-			});
-	};
+  // Places a transparent overlay on all Monaco editor views to intercept mouse events
+  const showOverlays = (): void => {
+    document
+      .querySelectorAll<HTMLElement>('[data-type="code-editor"] .view-content')
+      .forEach((view) => {
+        if (view.querySelector(`.${OVERLAY_CLASS}`)) return;
+        const overlay = document.createElement('div');
+        overlay.className = OVERLAY_CLASS;
+        overlay.style.cssText = 'position:absolute;inset:0;z-index:9999;';
+        view.style.position = 'relative';
+        view.appendChild(overlay);
+      });
+  };
 
-	// Removes the transparent overlays
-	const removeOverlays = (): void => {
-		document.querySelectorAll(`.${OVERLAY_CLASS}`).forEach((el) => el.remove());
-	};
+  // Removes the transparent overlays
+  const removeOverlays = (): void => {
+    document.querySelectorAll(`.${OVERLAY_CLASS}`).forEach((el) => el.remove());
+  };
 
-	// Patch Menu.hide to remove overlays shortly after a menu is closed
-	plugin.register(
-		around(Menu.prototype, {
-			hide(next: Menu['hide']) {
-				return function (this: Menu) {
-					removeOverlays();
-					return next.call(this);
-				};
-			}
-		})
-	);
+  // Patch Menu.hide to remove overlays shortly after a menu is closed
+  plugin.register(
+    around(Menu.prototype, {
+      hide(next: Menu['hide']) {
+        return function (this: Menu) {
+          removeOverlays();
+          return next.call(this);
+        };
+      }
+    })
+  );
 
-	// Add overlays globally when any context menu is opened
-	plugin.registerDomEvent(document.body, 'contextmenu', () => {
-		showOverlays();
-	});
+  // Add overlays globally when any context menu is opened
+  plugin.registerDomEvent(document.body, 'contextmenu', () => {
+    showOverlays();
+  });
 }

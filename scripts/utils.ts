@@ -5,24 +5,24 @@ import * as readline from 'readline';
 import { execSync } from 'child_process';
 
 export function createReadlineInterface(): readline.Interface {
-	return readline.createInterface({
-		input: process.stdin as NodeJS.ReadableStream,
-		output: process.stdout as NodeJS.WritableStream
-	});
+  return readline.createInterface({
+    input: process.stdin as NodeJS.ReadableStream,
+    output: process.stdout as NodeJS.WritableStream
+  });
 }
 
 export const askQuestion = async (
-	question: string,
-	rl: readline.Interface
+  question: string,
+  rl: readline.Interface
 ): Promise<string> => {
-	try {
-		return await new Promise((resolve) =>
-			rl.question(question, (input) => resolve(input.trim()))
-		);
-	} catch (error) {
-		console.error('Error asking question:', error);
-		throw error;
-	}
+  try {
+    return await new Promise((resolve) =>
+      rl.question(question, (input) => resolve(input.trim()))
+    );
+  } catch (error) {
+    console.error('Error asking question:', error);
+    throw error;
+  }
 };
 
 /**
@@ -32,221 +32,221 @@ export const askQuestion = async (
  * Invalid input defaults to no for safety
  */
 export const askConfirmation = async (
-	question: string,
-	rl: readline.Interface
+  question: string,
+  rl: readline.Interface
 ): Promise<boolean> => {
-	const answer = await askQuestion(`${question} [Y/n]: `, rl);
-	const response = answer.toLowerCase();
+  const answer = await askQuestion(`${question} [Y/n]: `, rl);
+  const response = answer.toLowerCase();
 
-	// Accept: y, yes, Y, YES, or empty (default to yes)
-	// Reject: n, no, N, NO
-	const isYes = response === '' || response === 'y' || response === 'yes';
-	const isNo = response === 'n' || response === 'no';
+  // Accept: y, yes, Y, YES, or empty (default to yes)
+  // Reject: n, no, N, NO
+  const isYes = response === '' || response === 'y' || response === 'yes';
+  const isNo = response === 'n' || response === 'no';
 
-	if (isNo) {
-		return false;
-	} else if (isYes) {
-		return true;
-	} else {
-		console.log('Please answer Y (yes) or n (no). Defaulting to no for safety.');
-		return false;
-	}
+  if (isNo) {
+    return false;
+  } else if (isYes) {
+    return true;
+  } else {
+    console.log('Please answer Y (yes) or n (no). Defaulting to no for safety.');
+    return false;
+  }
 };
 
 export const cleanInput = (inputStr: string): string => {
-	if (!inputStr) return '';
-	return inputStr.trim().replace(/["`]/g, "'").replace(/\r\n/g, '\n');
+  if (!inputStr) return '';
+  return inputStr.trim().replace(/["`]/g, "'").replace(/\r\n/g, '\n');
 };
 
 export const isValidPath = async (pathToCheck: string): Promise<boolean> => {
-	if (!pathToCheck) return false;
+  if (!pathToCheck) return false;
 
-	try {
-		// Using async fs.access is preferred over synchronous existsSync
-		// as it doesn't block the main thread/event loop
-		await access(pathToCheck.trim());
-		return true;
-	} catch {
-		return false;
-	}
+  try {
+    // Using async fs.access is preferred over synchronous existsSync
+    // as it doesn't block the main thread/event loop
+    await access(pathToCheck.trim());
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export async function copyFilesToTargetDir(buildPath: string): Promise<void> {
-	const pluginDir = process.cwd();
-	const manifestSrc = path.join(pluginDir, 'manifest.json');
-	const manifestDest = path.join(buildPath, 'manifest.json');
-	const cssDest = path.join(buildPath, 'styles.css');
-	const folderToRemove = path.join(buildPath, '_.._');
+  const pluginDir = process.cwd();
+  const manifestSrc = path.join(pluginDir, 'manifest.json');
+  const manifestDest = path.join(buildPath, 'manifest.json');
+  const cssDest = path.join(buildPath, 'styles.css');
+  const folderToRemove = path.join(buildPath, '_.._');
 
-	try {
-		await mkdir(buildPath, { recursive: true });
-	} catch (error: unknown) {
-		if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-			console.error(
-				`Error creating directory: ${error instanceof Error ? error.message : String(error)}`
-			);
-		}
-	}
+  try {
+    await mkdir(buildPath, { recursive: true });
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      console.error(
+        `Error creating directory: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
 
-	// Copy manifest
-	try {
-		await copyFile(manifestSrc, manifestDest);
-	} catch (error: unknown) {
-		console.error(
-			`Error copying manifest: ${error instanceof Error ? error.message : String(error)}`
-		);
-	}
+  // Copy manifest
+  try {
+    await copyFile(manifestSrc, manifestDest);
+  } catch (error: unknown) {
+    console.error(
+      `Error copying manifest: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 
-	// Copy CSS
-	try {
-		const srcStylesPath = path.join(pluginDir, 'src/styles.css');
-		const rootStylesPath = path.join(pluginDir, 'styles.css');
+  // Copy CSS
+  try {
+    const srcStylesPath = path.join(pluginDir, 'src/styles.css');
+    const rootStylesPath = path.join(pluginDir, 'styles.css');
 
-		// First check if CSS exists in src/styles.css
-		if (await isValidPath(srcStylesPath)) {
-			await copyFile(srcStylesPath, cssDest);
-		}
-		// Otherwise, check if it exists in the root
-		else if (await isValidPath(rootStylesPath)) {
-			await copyFile(rootStylesPath, cssDest);
-			if (await isValidPath(folderToRemove)) {
-				await rm(folderToRemove, { recursive: true });
-			}
-		} else {
-			return;
-		}
-	} catch (error: unknown) {
-		console.error(
-			`Error copying CSS: ${error instanceof Error ? error.message : String(error)}`
-		);
-	}
+    // First check if CSS exists in src/styles.css
+    if (await isValidPath(srcStylesPath)) {
+      await copyFile(srcStylesPath, cssDest);
+    }
+    // Otherwise, check if it exists in the root
+    else if (await isValidPath(rootStylesPath)) {
+      await copyFile(rootStylesPath, cssDest);
+      if (await isValidPath(folderToRemove)) {
+        await rm(folderToRemove, { recursive: true });
+      }
+    } else {
+      return;
+    }
+  } catch (error: unknown) {
+    console.error(
+      `Error copying CSS: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 export function gitExec(command: string): void {
-	try {
-		execSync(command, { stdio: 'inherit' });
-	} catch (error: unknown) {
-		console.error(
-			`Error executing '${command}':`,
-			error instanceof Error ? error.message : String(error)
-		);
-		throw error;
-	}
+  try {
+    execSync(command, { stdio: 'inherit' });
+  } catch (error: unknown) {
+    console.error(
+      `Error executing '${command}':`,
+      error instanceof Error ? error.message : String(error)
+    );
+    throw error;
+  }
 }
 
 /**
  * Ensure Git repository is synchronized with remote before pushing
  */
 export async function ensureGitSync(): Promise<void> {
-	try {
-		console.log('🔄 Checking Git synchronization...');
+  try {
+    console.log('🔄 Checking Git synchronization...');
 
-		// Fetch latest changes from remote
-		execSync('git fetch origin', { stdio: 'pipe' });
+    // Fetch latest changes from remote
+    execSync('git fetch origin', { stdio: 'pipe' });
 
-		// Check if branch is behind remote
-		const status = execSync('git status --porcelain -b', { encoding: 'utf8' });
+    // Check if branch is behind remote
+    const status = execSync('git status --porcelain -b', { encoding: 'utf8' });
 
-		if (status.includes('behind')) {
-			console.log('📥 Branch behind remote. Pulling changes...');
-			execSync('git pull', { stdio: 'inherit' });
-			console.log('✅ Successfully pulled remote changes');
-		} else {
-			console.log('✅ Repository is synchronized with remote');
-		}
-	} catch (error: unknown) {
-		console.error(
-			`❌ Git sync failed: ${error instanceof Error ? error.message : String(error)}`
-		);
-		throw error;
-	}
+    if (status.includes('behind')) {
+      console.log('📥 Branch behind remote. Pulling changes...');
+      execSync('git pull', { stdio: 'inherit' });
+      console.log('✅ Successfully pulled remote changes');
+    } else {
+      console.log('✅ Repository is synchronized with remote');
+    }
+  } catch (error: unknown) {
+    console.error(
+      `❌ Git sync failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+    throw error;
+  }
 }
 
 /** Returns true if the current path is inside an Obsidian plugins folder */
 export function isInPluginsFolder(currentPath: string): boolean {
-	return currentPath.includes(path.join('.obsidian', 'plugins'));
+  return currentPath.includes(path.join('.obsidian', 'plugins'));
 }
 
 /** Validates that a path points to an Obsidian vault with a plugins directory */
 export function validateVaultPath(vaultPath: string): boolean {
-	return (
-		existsSync(path.join(vaultPath, '.obsidian')) &&
-		existsSync(path.join(vaultPath, '.obsidian', 'plugins'))
-	);
+  return (
+    existsSync(path.join(vaultPath, '.obsidian')) &&
+    existsSync(path.join(vaultPath, '.obsidian', 'plugins'))
+  );
 }
 
 /** Resolves the full plugin install path from a vault path */
 export function getVaultPath(vaultPath: string, pluginId: string): string {
-	if (!validateVaultPath(vaultPath)) {
-		console.error(`❌ Invalid vault path: ${vaultPath}`);
-		console.error(`   The path must contain a .obsidian/plugins directory`);
-		process.exit(1);
-	}
-	const pluginsPath = path.join('.obsidian', 'plugins');
-	return vaultPath.includes(pluginsPath)
-		? path.join(vaultPath, pluginId)
-		: path.join(vaultPath, '.obsidian', 'plugins', pluginId);
+  if (!validateVaultPath(vaultPath)) {
+    console.error(`❌ Invalid vault path: ${vaultPath}`);
+    console.error(`   The path must contain a .obsidian/plugins directory`);
+    process.exit(1);
+  }
+  const pluginsPath = path.join('.obsidian', 'plugins');
+  return vaultPath.includes(pluginsPath)
+    ? path.join(vaultPath, pluginId)
+    : path.join(vaultPath, '.obsidian', 'plugins', pluginId);
 }
 
 /** Updates or adds an env key in the .env file */
 export async function updateEnvFile(
-	envKey: string,
-	vaultPath: string,
-	envPath: string
+  envKey: string,
+  vaultPath: string,
+  envPath: string
 ): Promise<void> {
-	let envContent = '';
-	try {
-		envContent = readFileSync(envPath, 'utf8');
-	} catch {
-		/* file doesn't exist yet */
-	}
-	const regex = new RegExp(`^${envKey}=.*$`, 'm');
-	const newLine = `${envKey}=${vaultPath}`;
-	envContent = regex.test(envContent)
-		? envContent.replace(regex, newLine)
-		: envContent + (envContent.endsWith('\n') ? '' : '\n') + newLine + '\n';
-	await writeFile(envPath, envContent);
-	console.log(`✅ Updated ${envKey} in .env file`);
+  let envContent = '';
+  try {
+    envContent = readFileSync(envPath, 'utf8');
+  } catch {
+    /* file doesn't exist yet */
+  }
+  const regex = new RegExp(`^${envKey}=.*$`, 'm');
+  const newLine = `${envKey}=${vaultPath}`;
+  envContent = regex.test(envContent)
+    ? envContent.replace(regex, newLine)
+    : envContent + (envContent.endsWith('\n') ? '' : '\n') + newLine + '\n';
+  await writeFile(envPath, envContent);
+  console.log(`✅ Updated ${envKey} in .env file`);
 }
 
 /**
  * Prompt the user for a vault path if it's missing or still a placeholder in the .env file.
  */
 export async function promptForVaultPath(
-	envKey: string,
-	rl: readline.Interface
+  envKey: string,
+  rl: readline.Interface
 ): Promise<string> {
-	const vaultType = envKey === 'REAL_VAULT' ? 'real' : 'test';
-	const usage =
-		envKey === 'REAL_VAULT'
-			? 'for final plugin installation'
-			: 'for development and testing';
+  const vaultType = envKey === 'REAL_VAULT' ? 'real' : 'test';
+  const usage =
+    envKey === 'REAL_VAULT'
+      ? 'for final plugin installation'
+      : 'for development and testing';
 
-	console.log(`❓ ${envKey} path is required ${usage}`);
-	const vaultPath = await askQuestion(
-		`📝 Enter your ${vaultType} vault path (or Ctrl+C to cancel): `,
-		rl
-	);
+  console.log(`❓ ${envKey} path is required ${usage}`);
+  const vaultPath = await askQuestion(
+    `📝 Enter your ${vaultType} vault path (or Ctrl+C to cancel): `,
+    rl
+  );
 
-	if (!vaultPath) {
-		console.log('❌ No path provided, exiting...');
-		process.exit(1);
-	}
+  if (!vaultPath) {
+    console.log('❌ No path provided, exiting...');
+    process.exit(1);
+  }
 
-	return vaultPath;
+  return vaultPath;
 }
 
 /** Creates a .env file with placeholder paths if it doesn't exist */
 export async function ensureEnvFile(envPath: string): Promise<void> {
-	if (await isValidPath(envPath)) return;
-	const template =
-		[
-			'# Obsidian vault paths for plugin development',
-			'# TEST_VAULT: path to your test/development vault (used with yarn dev)',
-			'# REAL_VAULT: path to your production vault (used with yarn real)',
-			'TEST_VAULT=/path/to/your/test/vault',
-			'REAL_VAULT=/path/to/your/real/vault'
-		].join('\n') + '\n';
-	await writeFile(envPath, template);
-	console.log('📄 Created .env with placeholder paths');
+  if (await isValidPath(envPath)) return;
+  const template =
+    [
+      '# Obsidian vault paths for plugin development',
+      '# TEST_VAULT: path to your test/development vault (used with yarn dev)',
+      '# REAL_VAULT: path to your production vault (used with yarn real)',
+      'TEST_VAULT=/path/to/your/test/vault',
+      'REAL_VAULT=/path/to/your/real/vault'
+    ].join('\n') + '\n';
+  await writeFile(envPath, template);
+  console.log('📄 Created .env with placeholder paths');
 }

@@ -3,34 +3,34 @@ import { readFileSync } from 'fs';
 import fs from 'fs';
 import { type Interface } from 'readline';
 import {
-	isValidPath,
-	isInPluginsFolder,
-	getVaultPath,
-	updateEnvFile,
-	ensureEnvFile,
-	promptForVaultPath
+  isValidPath,
+  isInPluginsFolder,
+  getVaultPath,
+  updateEnvFile,
+  ensureEnvFile,
+  promptForVaultPath
 } from '../utils.js';
 import { config } from 'dotenv';
 
 interface Manifest {
-	id: string;
+  id: string;
 }
 
 export { Manifest };
 
 export function checkManifest(pluginDir: string): Manifest {
-	const manifestPath = path.join(pluginDir, 'manifest.json');
+  const manifestPath = path.join(pluginDir, 'manifest.json');
 
-	// Check if manifest exists (for plugin-config itself, it might not exist)
-	if (!fs.existsSync(manifestPath)) {
-		console.log(
-			'⚠️  No manifest.json found - this script is designed for Obsidian plugins'
-		);
-		console.log("   If you're building plugin-config itself, use 'tsc' instead");
-		process.exit(0);
-	}
+  // Check if manifest exists (for plugin-config itself, it might not exist)
+  if (!fs.existsSync(manifestPath)) {
+    console.log(
+      '⚠️  No manifest.json found - this script is designed for Obsidian plugins'
+    );
+    console.log("   If you're building plugin-config itself, use 'tsc' instead");
+    process.exit(0);
+  }
 
-	return JSON.parse(readFileSync(manifestPath, 'utf-8'));
+  return JSON.parse(readFileSync(manifestPath, 'utf-8'));
 }
 
 /**
@@ -39,12 +39,10 @@ export function checkManifest(pluginDir: string): Manifest {
  * - manifest.json exists and is valid JSON
  */
 export async function validateEnvironment(pluginDir: string): Promise<void> {
-	const srcMainPath = path.join(pluginDir, 'src/main.ts');
-	if (!(await isValidPath(srcMainPath))) {
-		throw new Error(
-			'Invalid path for src/main.ts. main.ts must be in the src directory'
-		);
-	}
+  const srcMainPath = path.join(pluginDir, 'src/main.ts');
+  if (!(await isValidPath(srcMainPath))) {
+    throw new Error('Invalid path for src/main.ts. main.ts must be in the src directory');
+  }
 }
 
 /**
@@ -57,34 +55,34 @@ export async function validateEnvironment(pluginDir: string): Promise<void> {
  * @return The path to build the plugin to (either the vault plugins folder or the initial folder for in-place development)
  */
 export async function getBuildPath(
-	pluginDir: string,
-	manifest: Manifest,
-	_isProd: boolean,
-	rl: Interface
+  pluginDir: string,
+  manifest: Manifest,
+  _isProd: boolean,
+  rl: Interface
 ): Promise<string> {
-	// In-place development: already inside a plugins folder
-	if (isInPluginsFolder(pluginDir)) {
-		console.log('ℹ️  Building in Obsidian plugins folder (in-place development)');
-		return pluginDir;
-	}
+  // In-place development: already inside a plugins folder
+  if (isInPluginsFolder(pluginDir)) {
+    console.log('ℹ️  Building in Obsidian plugins folder (in-place development)');
+    return pluginDir;
+  }
 
-	// External development
-	const useRealVault = process.argv.includes('-r') || process.argv.includes('real');
-	const envKey = useRealVault ? 'REAL_VAULT' : 'TEST_VAULT';
-	const envPath = path.join(pluginDir, '.env');
+  // External development
+  const useRealVault = process.argv.includes('-r') || process.argv.includes('real');
+  const envKey = useRealVault ? 'REAL_VAULT' : 'TEST_VAULT';
+  const envPath = path.join(pluginDir, '.env');
 
-	await ensureEnvFile(envPath);
-	config(); // reload after potential creation
+  await ensureEnvFile(envPath);
+  config(); // reload after potential creation
 
-	const vaultPath = process.env[envKey]?.trim();
+  const vaultPath = process.env[envKey]?.trim();
 
-	// Prompt if missing or still a placeholder
-	if (!vaultPath || vaultPath.startsWith('/path/to/your/')) {
-		const newPath = await promptForVaultPath(envKey, rl);
-		await updateEnvFile(envKey, newPath, envPath);
-		config();
-		return getVaultPath(newPath, manifest.id);
-	}
+  // Prompt if missing or still a placeholder
+  if (!vaultPath || vaultPath.startsWith('/path/to/your/')) {
+    const newPath = await promptForVaultPath(envKey, rl);
+    await updateEnvFile(envKey, newPath, envPath);
+    config();
+    return getVaultPath(newPath, manifest.id);
+  }
 
-	return getVaultPath(vaultPath, manifest.id);
+  return getVaultPath(vaultPath, manifest.id);
 }

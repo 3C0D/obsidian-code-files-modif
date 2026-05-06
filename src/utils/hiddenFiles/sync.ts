@@ -16,48 +16,48 @@ import { revealFiles, unrevealFiles } from './operations.ts';
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function syncAutoRevealedDotfiles(
-	plugin: CodeFilesPlugin,
-	extensions: string[]
+  plugin: CodeFilesPlugin,
+  extensions: string[]
 ): Promise<void> {
-	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
+  if (!plugin.settings.autoRevealRegisteredDotfiles) return;
 
-	const extSet = new Set(extensions);
+  const extSet = new Set(extensions);
 
-	// For each folder in revealedFiles, remove entries now auto-managed
-	let changed = false;
-	for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
-		const cleaned = paths.filter((p) => {
-			const ext = getExtension(p.split('/').pop() || '');
-			return !ext || !extSet.has(ext); // keep extension-less files (LICENSE, README) — not extension-managed
-		});
-		if (cleaned.length !== paths.length) {
-			changed = true;
-			if (cleaned.length > 0) {
-				plugin.settings.revealedFiles[folderPath] = cleaned;
-			} else {
-				delete plugin.settings.revealedFiles[folderPath];
-			}
-		}
-	}
-	if (changed) await plugin.saveSettings();
+  // For each folder in revealedFiles, remove entries now auto-managed
+  let changed = false;
+  for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
+    const cleaned = paths.filter((p) => {
+      const ext = getExtension(p.split('/').pop() || '');
+      return !ext || !extSet.has(ext); // keep extension-less files (LICENSE, README) — not extension-managed
+    });
+    if (cleaned.length !== paths.length) {
+      changed = true;
+      if (cleaned.length > 0) {
+        plugin.settings.revealedFiles[folderPath] = cleaned;
+      } else {
+        delete plugin.settings.revealedFiles[folderPath];
+      }
+    }
+  }
+  if (changed) await plugin.saveSettings();
 
-	// Auto-reveal dotfiles matching the new extensions
-	const allFolders = plugin.app.vault.getAllFolders();
-	for (const folder of allFolders) {
-		const items = await scanDotEntries(plugin, folder.path);
-		const toReveal = items
-			.filter((item) => {
-				if (item.isFolder) return false;
-				const ext = getExtension(item.name);
-				return ext && extSet.has(ext);
-			})
-			.map((item) => item.path);
-		if (toReveal.length > 0) {
-			await revealFiles(plugin, folder.path, toReveal, false);
-		}
-	}
+  // Auto-reveal dotfiles matching the new extensions
+  const allFolders = plugin.app.vault.getAllFolders();
+  for (const folder of allFolders) {
+    const items = await scanDotEntries(plugin, folder.path);
+    const toReveal = items
+      .filter((item) => {
+        if (item.isFolder) return false;
+        const ext = getExtension(item.name);
+        return ext && extSet.has(ext);
+      })
+      .map((item) => item.path);
+    if (toReveal.length > 0) {
+      await revealFiles(plugin, folder.path, toReveal, false);
+    }
+  }
 
-	decorateFolders(plugin);
+  decorateFolders(plugin);
 }
 
 /**
@@ -68,29 +68,29 @@ export async function syncAutoRevealedDotfiles(
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function autoRevealRegisteredDotfiles(
-	plugin: CodeFilesPlugin
+  plugin: CodeFilesPlugin
 ): Promise<void> {
-	if (!plugin.settings.autoRevealRegisteredDotfiles) return;
+  if (!plugin.settings.autoRevealRegisteredDotfiles) return;
 
-	const activeExts = getActiveExtensions(plugin.settings);
+  const activeExts = getActiveExtensions(plugin.settings);
 
-	const allFolders = plugin.app.vault.getAllFolders();
-	for (const folder of allFolders) {
-		const items = await scanDotEntries(plugin, folder.path);
-		const toReveal = items
-			.filter((item) => {
-				if (item.isFolder) return false;
-				const ext = getExtension(item.name);
-				if (!ext || !activeExts.includes(ext)) return false;
-				const revealed = plugin.settings.revealedFiles[folder.path] || [];
-				return !revealed.includes(item.path);
-			})
-			.map((item) => item.path);
+  const allFolders = plugin.app.vault.getAllFolders();
+  for (const folder of allFolders) {
+    const items = await scanDotEntries(plugin, folder.path);
+    const toReveal = items
+      .filter((item) => {
+        if (item.isFolder) return false;
+        const ext = getExtension(item.name);
+        if (!ext || !activeExts.includes(ext)) return false;
+        const revealed = plugin.settings.revealedFiles[folder.path] || [];
+        return !revealed.includes(item.path);
+      })
+      .map((item) => item.path);
 
-		if (toReveal.length > 0) {
-			await revealFiles(plugin, folder.path, toReveal, false);
-		}
-	}
+    if (toReveal.length > 0) {
+      await revealFiles(plugin, folder.path, toReveal, false);
+    }
+  }
 }
 
 /**
@@ -102,45 +102,39 @@ export async function autoRevealRegisteredDotfiles(
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
-	const adapter = getAdapter(plugin);
+  const adapter = getAdapter(plugin);
 
-	for (const [, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
-		for (const itemPath of itemPaths) {
-			const realPath = getRealPathSafe(adapter, itemPath);
-			try {
-				const stat = await adapter.stat(itemPath);
-				if (!stat) continue;
+  for (const [, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
+    for (const itemPath of itemPaths) {
+      const realPath = getRealPathSafe(adapter, itemPath);
+      try {
+        const stat = await adapter.stat(itemPath);
+        if (!stat) continue;
 
-				// Manually trigger Obsidian's internal reconciliation to add the item back to the UI.
-				// Pattern: use reconcileFileInternal if available (Desktop),
-				// otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
-				if (stat.type === 'folder') {
-					await adapter.reconcileFolderCreation(realPath, itemPath);
-				} else {
-					if (adapter.reconcileFileInternal) {
-						await adapter.reconcileFileInternal(realPath, itemPath);
-					} else if (
-						adapter.fs?.stat &&
-						adapter.reconcileFileChanged &&
-						adapter.getFullRealPath
-					) {
-						const fsStat = await adapter.fs.stat(
-							adapter.getFullRealPath(realPath)
-						);
-						if (fsStat.type === 'file') {
-							await adapter.reconcileFileChanged(
-								realPath,
-								itemPath,
-								fsStat
-							);
-						}
-					}
-				}
-			} catch {
-				// File or folder no longer exists or access denied
-			}
-		}
-	}
+        // Manually trigger Obsidian's internal reconciliation to add the item back to the UI.
+        // Pattern: use reconcileFileInternal if available (Desktop),
+        // otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
+        if (stat.type === 'folder') {
+          await adapter.reconcileFolderCreation(realPath, itemPath);
+        } else {
+          if (adapter.reconcileFileInternal) {
+            await adapter.reconcileFileInternal(realPath, itemPath);
+          } else if (
+            adapter.fs?.stat &&
+            adapter.reconcileFileChanged &&
+            adapter.getFullRealPath
+          ) {
+            const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
+            if (fsStat.type === 'file') {
+              await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
+            }
+          }
+        }
+      } catch {
+        // File or folder no longer exists or access denied
+      }
+    }
+  }
 }
 
 /**
@@ -153,33 +147,33 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
-	const adapter = getAdapter(plugin);
-	let changed = false;
+  const adapter = getAdapter(plugin);
+  let changed = false;
 
-	for (const [folderPath, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
-		let normFolderPath = normalizePath(folderPath);
-		if (normFolderPath === '/') normFolderPath = '';
+  for (const [folderPath, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
+    let normFolderPath = normalizePath(folderPath);
+    if (normFolderPath === '/') normFolderPath = '';
 
-		// Verify each revealed file still exists using the cross-platform adapter
-		const valid: string[] = [];
-		for (const p of itemPaths) {
-			const normItemPath = normalizePath(p);
-			if (await adapter.exists(normItemPath)) {
-				valid.push(normItemPath);
-			}
-		}
+    // Verify each revealed file still exists using the cross-platform adapter
+    const valid: string[] = [];
+    for (const p of itemPaths) {
+      const normItemPath = normalizePath(p);
+      if (await adapter.exists(normItemPath)) {
+        valid.push(normItemPath);
+      }
+    }
 
-		// Update settings if any path was normalized or a stale entry was removed
-		if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
-			changed = true;
-			delete plugin.settings.revealedFiles[folderPath];
-			if (valid.length > 0) {
-				plugin.settings.revealedFiles[normFolderPath] = valid;
-			}
-		}
-	}
+    // Update settings if any path was normalized or a stale entry was removed
+    if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
+      changed = true;
+      delete plugin.settings.revealedFiles[folderPath];
+      if (valid.length > 0) {
+        plugin.settings.revealedFiles[normFolderPath] = valid;
+      }
+    }
+  }
 
-	if (changed) await plugin.saveSettings();
+  if (changed) await plugin.saveSettings();
 }
 
 /**
@@ -190,24 +184,24 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
-	const activeExts = getActiveExtensions(plugin.settings);
-	// flat because Object.values returns an array of arrays
-	const revealedPaths = new Set(Object.values(plugin.settings.revealedFiles).flat());
+  const activeExts = getActiveExtensions(plugin.settings);
+  // flat because Object.values returns an array of arrays
+  const revealedPaths = new Set(Object.values(plugin.settings.revealedFiles).flat());
 
-	const toHide = new Map<string, string[]>();
+  const toHide = new Map<string, string[]>();
 
-	for (const file of plugin.app.vault.getFiles()) {
-		// dotfiles have extension ""
-		if (file.extension) continue; // only dotfiles
-		const ext = getExtension(file.name);
-		if (!ext || !activeExts.includes(ext)) continue;
-		if (revealedPaths.has(file.path)) continue;
-		const folder = file.parent?.path ?? '';
-		if (!toHide.has(folder)) toHide.set(folder, []);
-		toHide.get(folder)!.push(file.path);
-	}
+  for (const file of plugin.app.vault.getFiles()) {
+    // dotfiles have extension ""
+    if (file.extension) continue; // only dotfiles
+    const ext = getExtension(file.name);
+    if (!ext || !activeExts.includes(ext)) continue;
+    if (revealedPaths.has(file.path)) continue;
+    const folder = file.parent?.path ?? '';
+    if (!toHide.has(folder)) toHide.set(folder, []);
+    toHide.get(folder)!.push(file.path);
+  }
 
-	for (const [folderPath, paths] of toHide) {
-		await unrevealFiles(plugin, folderPath, paths);
-	}
+  for (const [folderPath, paths] of toHide) {
+    await unrevealFiles(plugin, folderPath, paths);
+  }
 }

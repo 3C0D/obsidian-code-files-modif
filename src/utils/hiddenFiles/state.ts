@@ -15,7 +15,7 @@ export let _bypassPatch = false;
  * @param value - The value to set.
  */
 export function setBypassPatch(value: boolean): void {
-	_bypassPatch = value;
+  _bypassPatch = value;
 }
 
 /**
@@ -24,5 +24,5 @@ export function setBypassPatch(value: boolean): void {
  * @returns The platform-specific data adapter.
  */
 export function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
-	return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
+  return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }

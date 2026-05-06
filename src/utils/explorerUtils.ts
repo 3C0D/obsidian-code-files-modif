@@ -23,21 +23,21 @@ const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
  *  @param plugin - The plugin instance.
  */
 export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
-	const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
-		| FileExplorerView
-		| undefined;
-	if (!view?.fileItems) return;
+  const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
+    | FileExplorerView
+    | undefined;
+  if (!view?.fileItems) return;
 
-	const getTitleEl = (item: FolderTreeItem): HTMLElement | null =>
-		item.el?.querySelector<HTMLElement>('.nav-folder-title-content') ?? null;
+  const getTitleEl = (item: FolderTreeItem): HTMLElement | null =>
+    item.el?.querySelector<HTMLElement>('.nav-folder-title-content') ?? null;
 
-	for (const [path, item] of Object.entries(view.fileItems)) {
-		if (!(item.file instanceof TFolder)) continue;
-		getTitleEl(item as FolderTreeItem)?.classList.toggle(
-			PROJECT_ROOT_CLASS,
-			path === plugin.settings.projectRootFolder
-		);
-	}
+  for (const [path, item] of Object.entries(view.fileItems)) {
+    if (!(item.file instanceof TFolder)) continue;
+    getTitleEl(item as FolderTreeItem)?.classList.toggle(
+      PROJECT_ROOT_CLASS,
+      path === plugin.settings.projectRootFolder
+    );
+  }
 }
 
 let explorerObserver: MutationObserver | null = null;
@@ -53,89 +53,91 @@ let debounceTimeout: NodeJS.Timeout | null = null;
  *  @param plugin - The plugin instance.
  */
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
-	const updateBadges = (): void => {
-		const activeExts = getActiveExtensions(plugin.settings);
-		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()
-			?.view as FileExplorerView | undefined;
-		if (!view?.fileItems) return;
+  const updateBadges = (): void => {
+    const activeExts = getActiveExtensions(plugin.settings);
+    const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
+      | FileExplorerView
+      | undefined;
+    if (!view?.fileItems) return;
 
-		for (const item of Object.values(view.fileItems)) {
-			if (!(item.file instanceof TFile)) continue; // Guard first: skip folders
+    for (const item of Object.values(view.fileItems)) {
+      if (!(item.file instanceof TFile)) continue; // Guard first: skip folders
 
-			const file = item.file; // Narrowed automatically to TFile
-			const treeItem = item as FileTreeItem;
-			const selfEl = treeItem.selfEl || treeItem.el;
-			const tagEl = selfEl?.querySelector('.nav-file-tag');
+      const file = item.file; // Narrowed automatically to TFile
+      const treeItem = item as FileTreeItem;
+      const selfEl = treeItem.selfEl || treeItem.el;
+      const tagEl = selfEl?.querySelector('.nav-file-tag');
 
-			// Unregistered badge cleanup
-			if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
+      // Unregistered badge cleanup
+      if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
 
-			// Dotfile badge
-			if (!file.extension) {
-				const ext = getExtension(file.name);
-				if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
-					tagEl.textContent = ext.toUpperCase();
-				}
-				continue; // dotfiles are not "unregistered"
-			}
+      // Dotfile badge
+      if (!file.extension) {
+        const ext = getExtension(file.name);
+        if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
+          tagEl.textContent = ext.toUpperCase();
+        }
+        continue; // dotfiles are not "unregistered"
+      }
 
-			// Unregistered badge
-			if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
-				tagEl?.classList.add('code-files-unregistered-badge');
-			}
-		}
-	};
+      // Unregistered badge
+      if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
+        tagEl?.classList.add('code-files-unregistered-badge');
+      }
+    }
+  };
 
-	const debouncedUpdate = (): void => {
-		if (debounceTimeout) clearTimeout(debounceTimeout);
-		debounceTimeout = setTimeout(() => {
-			debounceTimeout = null;
-			updateBadges();
-		}, 50);
-	};
+  const debouncedUpdate = (): void => {
+    if (debounceTimeout) clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      debounceTimeout = null;
+      updateBadges();
+    }, 50);
+  };
 
-	const reattachObservers = (): void => {
-		if (!explorerObserver) {
-			explorerObserver = new MutationObserver((mutations) => {
-				for (const mut of mutations) {
-					if (mut.addedNodes.length > 0) {
-						debouncedUpdate();
-						break;
-					}
-				}
-			});
-		} else {
-			explorerObserver.disconnect();
-		}
+  const reattachObservers = (): void => {
+    if (!explorerObserver) {
+      explorerObserver = new MutationObserver((mutations) => {
+        for (const mut of mutations) {
+          if (mut.addedNodes.length > 0) {
+            debouncedUpdate();
+            break;
+          }
+        }
+      });
+    } else {
+      explorerObserver.disconnect();
+    }
 
-		const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()
-			?.view as FileExplorerView | undefined;
-		if (!view) return;
-		explorerObserver.observe(view.containerEl, {
-			childList: true,
-			subtree: true
-		});
-		debouncedUpdate();
-	};
+    const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
+      | FileExplorerView
+      | undefined;
+    if (!view) return;
+    explorerObserver.observe(view.containerEl, {
+      childList: true,
+      subtree: true
+    });
+    debouncedUpdate();
+  };
 
-	plugin.registerEvent(plugin.app.workspace.on('layout-change', reattachObservers));
-	plugin.registerEvent(plugin.app.vault.on('rename', debouncedUpdate));
+  plugin.registerEvent(plugin.app.workspace.on('layout-change', reattachObservers));
+  plugin.registerEvent(plugin.app.vault.on('rename', debouncedUpdate));
 
-	// Initial attach if layout is already ready
-	if (plugin.app.workspace.layoutReady) {
-		reattachObservers();
-	} else {
-		plugin.app.workspace.onLayoutReady(reattachObservers);
-	}
+  // Initial attach if layout is already ready
+  if (plugin.app.workspace.layoutReady) {
+    reattachObservers();
+  } else {
+    plugin.app.workspace.onLayoutReady(reattachObservers);
+  }
 }
 
 export function cleanupExplorerBadges(): void {
-	if (debounceTimeout) {
-		clearTimeout(debounceTimeout);
-		debounceTimeout = null;
-	}
-	if (explorerObserver) {
-		explorerObserver.disconnect();
-		explorerObserver = null;
-	}
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = null;
+  }
+  if (explorerObserver) {
+    explorerObserver.disconnect();
+    explorerObserver = null;
+  }
 }

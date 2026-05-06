@@ -17,60 +17,56 @@ import { getActiveExtensions } from '../extensionUtils.ts';
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function revealFiles(
-	plugin: CodeFilesPlugin,
-	folderPath: string,
-	itemPaths: string[],
-	persist = true
+  plugin: CodeFilesPlugin,
+  folderPath: string,
+  itemPaths: string[],
+  persist = true
 ): Promise<void> {
-	folderPath = normalizePath(folderPath);
-	if (folderPath === '/') folderPath = '';
-	itemPaths = itemPaths.map((p) => normalizePath(p));
-	const adapter = getAdapter(plugin);
+  folderPath = normalizePath(folderPath);
+  if (folderPath === '/') folderPath = '';
+  itemPaths = itemPaths.map((p) => normalizePath(p));
+  const adapter = getAdapter(plugin);
 
-	for (const itemPath of itemPaths) {
-		try {
-			// to check if the file exists
-			const stat = await adapter.stat(itemPath);
-			if (!stat) continue;
+  for (const itemPath of itemPaths) {
+    try {
+      // to check if the file exists
+      const stat = await adapter.stat(itemPath);
+      if (!stat) continue;
 
-			const realPath = getRealPathSafe(adapter, itemPath);
+      const realPath = getRealPathSafe(adapter, itemPath);
 
-			// Force Obsidian to "see" and display the item.
-			// Pattern: use reconcileFileInternal if available (Desktop),
-			// otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
-			if (stat.type === 'folder') {
-				await adapter.reconcileFolderCreation(realPath, itemPath);
-			} else {
-				if (adapter.reconcileFileInternal) {
-					await adapter.reconcileFileInternal(realPath, itemPath);
-				} else if (
-					adapter.fs?.stat &&
-					adapter.reconcileFileChanged &&
-					adapter.getFullRealPath
-				) {
-					const fsStat = await adapter.fs.stat(
-						adapter.getFullRealPath(realPath)
-					);
-					if (fsStat.type === 'file') {
-						await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
-					}
-				}
-			}
-		} catch (e) {
-			console.error(`Reveal error ${itemPath}:`, e);
-		}
-	}
+      // Force Obsidian to "see" and display the item.
+      // Pattern: use reconcileFileInternal if available (Desktop),
+      // otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
+      if (stat.type === 'folder') {
+        await adapter.reconcileFolderCreation(realPath, itemPath);
+      } else {
+        if (adapter.reconcileFileInternal) {
+          await adapter.reconcileFileInternal(realPath, itemPath);
+        } else if (
+          adapter.fs?.stat &&
+          adapter.reconcileFileChanged &&
+          adapter.getFullRealPath
+        ) {
+          const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
+          if (fsStat.type === 'file') {
+            await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`Reveal error ${itemPath}:`, e);
+    }
+  }
 
-	// Persist the revealed state in settings (only for manual reveals)
-	if (persist) {
-		const existing = plugin.settings.revealedFiles[folderPath] ?? [];
-		plugin.settings.revealedFiles[folderPath] = [
-			...new Set([...existing, ...itemPaths])
-		];
-		await plugin.saveSettings();
-	}
+  // Persist the revealed state in settings (only for manual reveals)
+  if (persist) {
+    const existing = plugin.settings.revealedFiles[folderPath] ?? [];
+    plugin.settings.revealedFiles[folderPath] = [...new Set([...existing, ...itemPaths])];
+    await plugin.saveSettings();
+  }
 
-	decorateFolders(plugin);
+  decorateFolders(plugin);
 }
 
 /**
@@ -88,43 +84,43 @@ export async function revealFiles(
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function unrevealFiles(
-	plugin: CodeFilesPlugin,
-	folderPath: string,
-	itemPaths: string[],
-	temporary = false
+  plugin: CodeFilesPlugin,
+  folderPath: string,
+  itemPaths: string[],
+  temporary = false
 ): Promise<void> {
-	folderPath = normalizePath(folderPath);
-	if (folderPath === '/') folderPath = '';
-	itemPaths = itemPaths.map((p) => normalizePath(p));
-	const adapter = getAdapter(plugin);
+  folderPath = normalizePath(folderPath);
+  if (folderPath === '/') folderPath = '';
+  itemPaths = itemPaths.map((p) => normalizePath(p));
+  const adapter = getAdapter(plugin);
 
-	// Temporarily allow reconcileDeletion to work for dotfiles
-	setBypassPatch(true);
-	try {
-		for (const filePath of itemPaths) {
-			const realPath = getRealPathSafe(adapter, filePath);
-			// Remove the file from Obsidian's vault index
-			await adapter.reconcileDeletion(realPath, filePath);
-		}
-	} finally {
-		setBypassPatch(false);
-	}
+  // Temporarily allow reconcileDeletion to work for dotfiles
+  setBypassPatch(true);
+  try {
+    for (const filePath of itemPaths) {
+      const realPath = getRealPathSafe(adapter, filePath);
+      // Remove the file from Obsidian's vault index
+      await adapter.reconcileDeletion(realPath, filePath);
+    }
+  } finally {
+    setBypassPatch(false);
+  }
 
-	if (temporary) return; // skip settings, notice, badges
+  if (temporary) return; // skip settings, notice, badges
 
-	// Remove from persisted settings
-	const remaining = (plugin.settings.revealedFiles[folderPath] || []).filter(
-		(p) => !itemPaths.includes(p)
-	);
+  // Remove from persisted settings
+  const remaining = (plugin.settings.revealedFiles[folderPath] || []).filter(
+    (p) => !itemPaths.includes(p)
+  );
 
-	if (remaining.length > 0) {
-		plugin.settings.revealedFiles[folderPath] = remaining;
-	} else {
-		delete plugin.settings.revealedFiles[folderPath];
-	}
+  if (remaining.length > 0) {
+    plugin.settings.revealedFiles[folderPath] = remaining;
+  } else {
+    delete plugin.settings.revealedFiles[folderPath];
+  }
 
-	await plugin.saveSettings();
-	decorateFolders(plugin);
+  await plugin.saveSettings();
+  decorateFolders(plugin);
 }
 
 /**
@@ -132,31 +128,31 @@ export async function unrevealFiles(
  * Tracks the file in temporaryRevealedPaths so it can be unrevealed on close.
  */
 export async function handleTemporaryReveal(
-	plugin: CodeFilesPlugin,
-	filePath: string
+  plugin: CodeFilesPlugin,
+  filePath: string
 ): Promise<void> {
-	if (!plugin.app.vault.getAbstractFileByPath(filePath)) {
-		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-		await revealFiles(plugin, folderPath, [filePath], false); // silent, no persist
+  if (!plugin.app.vault.getAbstractFileByPath(filePath)) {
+    const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
+    await revealFiles(plugin, folderPath, [filePath], false); // silent, no persist
 
-		// Track as temporary unless managed by autoRevealRegisteredDotfiles.
-		// External files (configDir) are always tracked because they're never
-		// managed by autoRevealRegisteredDotfiles (which only scans dotfiles).
-		// vault.configDir is always defined in the Obsidian API — fallback is purely defensive
-		const configDir = plugin.app.vault.configDir || '.obsidian';
-		const isExternalFile = filePath.startsWith(configDir + '/');
-		const ext = getExtension(filePath.split('/').pop() || '');
-		const isManagedByAutoReveal =
-			!isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
+    // Track as temporary unless managed by autoRevealRegisteredDotfiles.
+    // External files (configDir) are always tracked because they're never
+    // managed by autoRevealRegisteredDotfiles (which only scans dotfiles).
+    // vault.configDir is always defined in the Obsidian API — fallback is purely defensive
+    const configDir = plugin.app.vault.configDir || '.obsidian';
+    const isExternalFile = filePath.startsWith(configDir + '/');
+    const ext = getExtension(filePath.split('/').pop() || '');
+    const isManagedByAutoReveal =
+      !isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
 
-		if (
-			!isManagedByAutoReveal &&
-			!plugin.settings.temporaryRevealedPaths.includes(filePath)
-		) {
-			plugin.settings.temporaryRevealedPaths.push(filePath);
-			await plugin.saveSettings();
-		}
-	}
+    if (
+      !isManagedByAutoReveal &&
+      !plugin.settings.temporaryRevealedPaths.includes(filePath)
+    ) {
+      plugin.settings.temporaryRevealedPaths.push(filePath);
+      await plugin.saveSettings();
+    }
+  }
 }
 
 /**
@@ -165,37 +161,37 @@ export async function handleTemporaryReveal(
  * External files (configDir) are never unrevealed, only removed from temporaryRevealedPaths.
  */
 export async function cleanupTemporaryReveal(
-	plugin: CodeFilesPlugin,
-	filePath: string
+  plugin: CodeFilesPlugin,
+  filePath: string
 ): Promise<void> {
-	const tmp = plugin.settings.temporaryRevealedPaths;
-	if (tmp.includes(filePath)) {
-		// Don't unreveal if the file is still open in another leaf —
-		// Obsidian may have reused this leaf to open another file, closing
-		// the dotfile view without the user explicitly closing it.
-		// Check via getViewState() to catch uninitialized leaves too.
-		const stillOpen = plugin.app.workspace
-			.getLeavesOfType(viewType)
-			.some((l) => l.getViewState().state?.file === filePath);
-		if (stillOpen) return;
+  const tmp = plugin.settings.temporaryRevealedPaths;
+  if (tmp.includes(filePath)) {
+    // Don't unreveal if the file is still open in another leaf —
+    // Obsidian may have reused this leaf to open another file, closing
+    // the dotfile view without the user explicitly closing it.
+    // Check via getViewState() to catch uninitialized leaves too.
+    const stillOpen = plugin.app.workspace
+      .getLeavesOfType(viewType)
+      .some((l) => l.getViewState().state?.file === filePath);
+    if (stillOpen) return;
 
-		// External files (configDir) should never be unrevealed, only removed from tracking
-		// vault.configDir is always defined in the Obsidian API — fallback is purely defensive
-		const configDir = plugin.app.vault.configDir || '.obsidian';
-		const isExternalFile = filePath.startsWith(configDir + '/');
+    // External files (configDir) should never be unrevealed, only removed from tracking
+    // vault.configDir is always defined in the Obsidian API — fallback is purely defensive
+    const configDir = plugin.app.vault.configDir || '.obsidian';
+    const isExternalFile = filePath.startsWith(configDir + '/');
 
-		if (!isExternalFile) {
-			const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
-			const manuallyRevealed = allRevealedItems.some(
-				(p) => filePath === p || filePath.startsWith(p + '/')
-			);
-			if (!manuallyRevealed) {
-				const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-				await unrevealFiles(plugin, folderPath, [filePath], true);
-			}
-		}
+    if (!isExternalFile) {
+      const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
+      const manuallyRevealed = allRevealedItems.some(
+        (p) => filePath === p || filePath.startsWith(p + '/')
+      );
+      if (!manuallyRevealed) {
+        const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
+        await unrevealFiles(plugin, folderPath, [filePath], true);
+      }
+    }
 
-		plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
-		await plugin.saveSettings();
-	}
+    plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
+    await plugin.saveSettings();
+  }
 }

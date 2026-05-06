@@ -5,23 +5,23 @@
 
 /** Monaco Diff Editor Options */
 export const DIFF_EDITOR_OPTIONS = {
-	// readOnly: false allows pushEditOperations (for revertBlock)
-	// domReadOnly: true blocks keyboard input but keeps programmatic edits
-	readOnly: false,
-	domReadOnly: true,
+  // readOnly: false allows pushEditOperations (for revertBlock)
+  // domReadOnly: true blocks keyboard input but keeps programmatic edits
+  readOnly: false,
+  domReadOnly: true,
 
-	// Show side-by-side comparison (true) or inline diff (false)
-	renderSideBySide: true,
+  // Show side-by-side comparison (true) or inline diff (false)
+  renderSideBySide: true,
 
-	// Automatically adjust layout when container size changes
-	automaticLayout: true,
+  // Automatically adjust layout when container size changes
+  automaticLayout: true,
 
-	// Show whitespace changes (spaces, tabs, line breaks)
-	// Set to true to ignore whitespace-only changes
-	ignoreTrimWhitespace: false,
+  // Show whitespace changes (spaces, tabs, line breaks)
+  // Set to true to ignore whitespace-only changes
+  ignoreTrimWhitespace: false,
 
-	// Allow resizing the split between original and modified
-	enableSplitViewResizing: true
+  // Allow resizing the split between original and modified
+  enableSplitViewResizing: true
 };
 
 /** Timeout (ms) to wait for format changes before giving up */
@@ -43,17 +43,17 @@ export let PRETTIER_USE_TABS = false;
 
 /** Setters for runtime updates */
 export function setPrettierProseWrap(value: string): void {
-	PRETTIER_PROSE_WRAP = value;
+  PRETTIER_PROSE_WRAP = value;
 }
 
 export function setPrettierPrintWidth(value: number): void {
-	PRETTIER_PRINT_WIDTH = value;
+  PRETTIER_PRINT_WIDTH = value;
 }
 
 export function setPrettierTabWidth(value: number): void {
-	PRETTIER_TAB_WIDTH = value;
+  PRETTIER_TAB_WIDTH = value;
 }
 
 export function setPrettierUseTabs(value: boolean): void {
-	PRETTIER_USE_TABS = value;
+  PRETTIER_USE_TABS = value;
 }

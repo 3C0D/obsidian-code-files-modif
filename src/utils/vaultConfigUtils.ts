@@ -14,12 +14,12 @@ import { Notice } from 'obsidian';
  * @returns `true` if the setting was just enabled (caller should show a notice), `false` if already enabled
  */
 export function ensureDetectAllExtensions(plugin: CodeFilesPlugin): boolean {
-	const vault = plugin.app.vault;
-	if (!vault.getConfig('showUnsupportedFiles' as ConfigItem)) {
-		vault.setConfig('showUnsupportedFiles' as ConfigItem, true);
-		return true;
-	}
-	return false;
+  const vault = plugin.app.vault;
+  if (!vault.getConfig('showUnsupportedFiles' as ConfigItem)) {
+    vault.setConfig('showUnsupportedFiles' as ConfigItem, true);
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -27,8 +27,8 @@ export function ensureDetectAllExtensions(plugin: CodeFilesPlugin): boolean {
  * Called from onLayoutReady if ensureDetectAllExtensions returned true.
  */
 export function showDetectAllExtensionsNotice(): void {
-	new Notice(
-		'Code Files: "Detect all file extensions" enabled in Obsidian settings. Required to see and open dotfiles (.env, etc.) in the Monaco editor.',
-		6000
-	);
+  new Notice(
+    'Code Files: "Detect all file extensions" enabled in Obsidian settings. Required to see and open dotfiles (.env, etc.) in the Monaco editor.',
+    6000
+  );
 }

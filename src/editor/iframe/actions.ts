@@ -25,17 +25,17 @@ let runFormatWithDiff: () => Promise<void>;
  * @param formatFn - Function to run formatting with diff tracking
  */
 export function setActionsState(
-	editorInstance: Monaco.editor.IStandaloneCodeEditor,
-	ctx: string,
-	formatFn: () => Promise<void>
+  editorInstance: Monaco.editor.IStandaloneCodeEditor,
+  ctx: string,
+  formatFn: () => Promise<void>
 ): void {
-	editor = editorInstance;
-	context = ctx;
-	runFormatWithDiff = formatFn;
+  editor = editorInstance;
+  context = ctx;
+  runFormatWithDiff = formatFn;
 }
 
 export function setFormatOnSave(value: boolean): void {
-	formatOnSave = value;
+  formatOnSave = value;
 }
 
 /**
@@ -45,13 +45,13 @@ export function setFormatOnSave(value: boolean): void {
  * @param deleteFile - Hotkey config for delete file action
  */
 export function updateHotkeys(
-	commandPalette: HotkeyConfig | null,
-	settings: HotkeyConfig | null,
-	deleteFile: HotkeyConfig | null
+  commandPalette: HotkeyConfig | null,
+  settings: HotkeyConfig | null,
+  deleteFile: HotkeyConfig | null
 ): void {
-	currentCommandPaletteHotkey = commandPalette;
-	currentSettingsHotkey = settings;
-	currentDeleteFileHotkey = deleteFile;
+  currentCommandPaletteHotkey = commandPalette;
+  currentSettingsHotkey = settings;
+  currentDeleteFileHotkey = deleteFile;
 }
 
 /**
@@ -60,26 +60,26 @@ export function updateHotkeys(
  * @param openDiffModal - Function to open the diff modal with original and formatted content
  */
 export function registerActions(
-	params: Prettify<InitParams>,
-	openDiffModal: (orig: string, fmt: string) => void
+  params: Prettify<InitParams>,
+  openDiffModal: (orig: string, fmt: string) => void
 ): void {
-	if (!editor) return;
+  if (!editor) return;
 
-	// Add "Return to Default View" action if this is an unregistered extension
-	if (params.isUnregisteredExtension) {
-		editor.addAction({
-			id: 'code-files-return-to-default-view',
-			label: '↩️ Return to Default View',
-			contextMenuGroupId: 'code-files',
-			contextMenuOrder: 0,
-			run: () => {
-				window.parent.postMessage(
-					{ type: 'return-to-default-view', context },
-					getParentOrigin()
-				);
-			}
-		});
-	}
+  // Add "Return to Default View" action if this is an unregistered extension
+  if (params.isUnregisteredExtension) {
+    editor.addAction({
+      id: 'code-files-return-to-default-view',
+      label: '↩️ Return to Default View',
+      contextMenuGroupId: 'code-files',
+      contextMenuOrder: 0,
+      run: () => {
+        window.parent.postMessage(
+          { type: 'return-to-default-view', context },
+          getParentOrigin()
+        );
+      }
+    });
+  }
 
   // Alt+Z toggles word wrap and persists the setting
   editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, () => {
@@ -94,220 +94,199 @@ export function registerActions(
 
   // Ctrl+J toggles the integrated console
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
-    window.parent.postMessage(
-      { type: 'toggle-console', context },
-      getParentOrigin()
-    );
+    window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
   });
 
+  editor.addAction({
+    id: 'code-files-save',
+    label: 'Save',
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+    run: () => {
+      if (formatOnSave) {
+        const formatAction = editor!.getAction('editor.action.formatDocument');
+        if (formatAction && formatAction.isSupported()) {
+          runFormatWithDiff().then(() => {
+            window.parent.postMessage(
+              { type: 'save-document', context },
+              getParentOrigin()
+            );
+          });
+          return;
+        }
+      }
+      window.parent.postMessage({ type: 'save-document', context }, getParentOrigin());
+    }
+  });
 
+  // Add "Format Document" action for all file types
+  editor.addAction({
+    id: 'code-files-format-document',
+    label: '📝 Format Document',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 0.5,
+    keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
+    run: () => {
+      runFormatWithDiff();
+    }
+  });
 
-	editor.addAction({
-		id: 'code-files-save',
-		label: 'Save',
-		keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-		run: () => {
-			if (formatOnSave) {
-				const formatAction = editor!.getAction('editor.action.formatDocument');
-				if (formatAction && formatAction.isSupported()) {
-					runFormatWithDiff().then(() => {
-						window.parent.postMessage(
-							{ type: 'save-document', context },
-							getParentOrigin()
-						);
-					});
-					return;
-				}
-			}
-			window.parent.postMessage(
-				{ type: 'save-document', context },
-				getParentOrigin()
-			);
-		}
-	});
+  // Add "Show Format Diff" action for all file types
+  editor.addAction({
+    id: 'code-files-show-format-diff-global',
+    label: '⟷ Show Format Diff',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 0.6,
+    run: () => {
+      const { original, formatted } = getLastFormat();
+      if (original && formatted) {
+        openDiffModal(original, formatted);
+      }
+    }
+  });
 
-	// Add "Format Document" action for all file types
-	editor.addAction({
-		id: 'code-files-format-document',
-		label: '📝 Format Document',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 0.5,
-		keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
-		run: () => {
-			runFormatWithDiff();
-		}
-	});
+  // Add a context menu action in Monaco to open the formatter config for this file
+  editor.addAction({
+    id: 'code-files-rename-extension',
+    label: '🍋🟩 Rename Extension',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 1,
+    run: () => {
+      window.parent.postMessage(
+        { type: 'open-rename-extension', context },
+        getParentOrigin()
+      );
+    }
+  });
 
-	// Add "Show Format Diff" action for all file types
-	editor.addAction({
-		id: 'code-files-show-format-diff-global',
-		label: '⟷ Show Format Diff',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 0.6,
-		run: () => {
-			const { original, formatted } = getLastFormat();
-			if (original && formatted) {
-				openDiffModal(original, formatted);
-			}
-		}
-	});
+  editor.addAction({
+    id: 'code-files-change-theme',
+    label: '🍒 Change Theme',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 2,
+    run: () => {
+      window.parent.postMessage(
+        { type: 'open-theme-picker', context },
+        getParentOrigin()
+      );
+    }
+  });
 
-	// Add a context menu action in Monaco to open the formatter config for this file
-	editor.addAction({
-		id: 'code-files-rename-extension',
-		label: '🍋🟩 Rename Extension',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 1,
-		run: () => {
-			window.parent.postMessage(
-				{ type: 'open-rename-extension', context },
-				getParentOrigin()
-			);
-		}
-	});
+  editor.addAction({
+    id: 'code-files-formatter-config',
+    label: '📐 Formatter Config',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 3,
+    run: () => {
+      window.parent.postMessage(
+        { type: 'open-formatter-config', context },
+        getParentOrigin()
+      );
+    }
+  });
 
-	editor.addAction({
-		id: 'code-files-change-theme',
-		label: '🍒 Change Theme',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 2,
-		run: () => {
-			window.parent.postMessage(
-				{ type: 'open-theme-picker', context },
-				getParentOrigin()
-			);
-		}
-	});
+  editor.addAction({
+    id: 'code-files-obsidian-settings',
+    label: '🔧 Obsidian Settings (Ctrl+,)',
+    run: () => {
+      window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
+    }
+  });
 
-	editor.addAction({
-		id: 'code-files-formatter-config',
-		label: '📐 Formatter Config',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 3,
-		run: () => {
-			window.parent.postMessage(
-				{ type: 'open-formatter-config', context },
-				getParentOrigin()
-			);
-		}
-	});
+  editor.addAction({
+    id: 'code-files-obsidian-palette',
+    label: '🎹 Obsidian Command Palette (Ctrl+P)',
+    run: () => {
+      window.parent.postMessage(
+        { type: 'open-obsidian-palette', context },
+        getParentOrigin()
+      );
+    }
+  });
 
-	editor.addAction({
-		id: 'code-files-obsidian-settings',
-		label: '🔧 Obsidian Settings (Ctrl+,)',
-		run: () => {
-			window.parent.postMessage(
-				{ type: 'open-settings', context },
-				getParentOrigin()
-			);
-		}
-	});
+  editor.addAction({
+    id: 'code-files-delete-file',
+    label: '🗑️ Delete File',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 4,
+    run: () => {
+      window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
+    }
+  });
 
-	editor.addAction({
-		id: 'code-files-obsidian-palette',
-		label: '🎹 Obsidian Command Palette (Ctrl+P)',
-		run: () => {
-			window.parent.postMessage(
-				{ type: 'open-obsidian-palette', context },
-				getParentOrigin()
-			);
-		}
-	});
+  editor.addAction({
+    id: 'code-files-open-console',
+    label: '🖥️ Open Console',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 5,
+    run: () => {
+      window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
+    }
+  });
 
-	editor.addAction({
-		id: 'code-files-delete-file',
-		label: '🗑️ Delete File',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 4,
-		run: () => {
-			window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
-		}
-	});
+  // Dynamic shortcuts from Obsidian hotkey config.
+  // Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
+  // so it works regardless of keyboard layout and follows user-configured hotkeys.
+  editor.onKeyDown((e: Monaco.IKeyboardEvent) => {
+    const key = e.browserEvent.key;
 
-	editor.addAction({
-		id: 'code-files-open-console',
-		label: '🖥️ Open Console',
-		contextMenuGroupId: 'code-files',
-		contextMenuOrder: 5,
-		run: () => {
-			window.parent.postMessage(
-				{ type: 'toggle-console', context },
-				getParentOrigin()
-			);
-		}
-	});
+    // Check command palette hotkey (requires Mod)
+    if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
+      const hk = currentCommandPaletteHotkey;
+      // Extract required modifier states from hotkey config
+      const needsShift = hk.modifiers.includes('Shift');
+      const needsAlt = hk.modifiers.includes('Alt');
+      const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+      // Match only if all modifiers are exactly as required (no extra modifiers)
+      if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.parent.postMessage(
+          { type: 'open-obsidian-palette', context },
+          getParentOrigin()
+        );
+        return;
+      }
+    }
 
+    // Check settings hotkey (requires Mod)
+    if (currentSettingsHotkey && (e.ctrlKey || e.metaKey)) {
+      const hk = currentSettingsHotkey;
+      // Extract required modifier states from hotkey config
+      const needsShift = hk.modifiers.includes('Shift');
+      const needsAlt = hk.modifiers.includes('Alt');
+      const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+      // Match only if all modifiers are exactly as required (no extra modifiers)
+      if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
+        return;
+      }
+    }
 
-	// Dynamic shortcuts from Obsidian hotkey config.
-	// Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
-	// so it works regardless of keyboard layout and follows user-configured hotkeys.
-	editor.onKeyDown((e: Monaco.IKeyboardEvent) => {
-		const key = e.browserEvent.key;
-
-		// Check command palette hotkey (requires Mod)
-		if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
-			const hk = currentCommandPaletteHotkey;
-			// Extract required modifier states from hotkey config
-			const needsShift = hk.modifiers.includes('Shift');
-			const needsAlt = hk.modifiers.includes('Alt');
-			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
-			// Match only if all modifiers are exactly as required (no extra modifiers)
-			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
-				e.preventDefault();
-				e.stopPropagation();
-				window.parent.postMessage(
-					{ type: 'open-obsidian-palette', context },
-					getParentOrigin()
-				);
-				return;
-			}
-		}
-
-		// Check settings hotkey (requires Mod)
-		if (currentSettingsHotkey && (e.ctrlKey || e.metaKey)) {
-			const hk = currentSettingsHotkey;
-			// Extract required modifier states from hotkey config
-			const needsShift = hk.modifiers.includes('Shift');
-			const needsAlt = hk.modifiers.includes('Alt');
-			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
-			// Match only if all modifiers are exactly as required (no extra modifiers)
-			if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
-				e.preventDefault();
-				e.stopPropagation();
-				window.parent.postMessage(
-					{ type: 'open-settings', context },
-					getParentOrigin()
-				);
-				return;
-			}
-		}
-
-		// Check delete file hotkey (may or may not require Mod)
-		if (currentDeleteFileHotkey) {
-			const hk = currentDeleteFileHotkey;
-			// Determine if Mod key is required (Mod, Ctrl, or Meta in config)
-			const needsMod =
-				hk.modifiers.includes('Mod') ||
-				hk.modifiers.includes('Ctrl') ||
-				hk.modifiers.includes('Meta');
-			const needsShift = hk.modifiers.includes('Shift');
-			const needsAlt = hk.modifiers.includes('Alt');
-			const hasMod = e.ctrlKey || e.metaKey;
-			const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
-			// Match only if Mod state matches requirement and other modifiers are exact
-			if (
-				keyMatch &&
-				hasMod === needsMod &&
-				e.shiftKey === needsShift &&
-				e.altKey === needsAlt
-			) {
-				e.preventDefault();
-				e.stopPropagation();
-				window.parent.postMessage(
-					{ type: 'delete-file', context },
-					getParentOrigin()
-				);
-			}
-		}
-	});
+    // Check delete file hotkey (may or may not require Mod)
+    if (currentDeleteFileHotkey) {
+      const hk = currentDeleteFileHotkey;
+      // Determine if Mod key is required (Mod, Ctrl, or Meta in config)
+      const needsMod =
+        hk.modifiers.includes('Mod') ||
+        hk.modifiers.includes('Ctrl') ||
+        hk.modifiers.includes('Meta');
+      const needsShift = hk.modifiers.includes('Shift');
+      const needsAlt = hk.modifiers.includes('Alt');
+      const hasMod = e.ctrlKey || e.metaKey;
+      const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
+      // Match only if Mod state matches requirement and other modifiers are exact
+      if (
+        keyMatch &&
+        hasMod === needsMod &&
+        e.shiftKey === needsShift &&
+        e.altKey === needsAlt
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
+      }
+    }
+  });
 }

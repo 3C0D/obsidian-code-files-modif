@@ -12,23 +12,23 @@ import type CodeFilesPlugin from '../main.ts';
  * @returns A Promise that resolves with an array of { path, content } objects for all JS/TS files in the project root.
  */
 export async function readProjectFiles(
-	plugin: CodeFilesPlugin
+  plugin: CodeFilesPlugin
 ): Promise<{ path: string; content: string }[]> {
-	const root = plugin.settings.projectRootFolder;
-	if (!root) return [];
+  const root = plugin.settings.projectRootFolder;
+  if (!root) return [];
 
-	const files: { path: string; content: string }[] = [];
-	for (const file of plugin.app.vault.getFiles()) {
-		if (!file.path.startsWith(root + '/')) continue;
-		if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
-		try {
-			files.push({
-				path: file.path,
-				content: await plugin.app.vault.cachedRead(file)
-			});
-		} catch {
-			/* skip unreadable files */
-		}
-	}
-	return files;
+  const files: { path: string; content: string }[] = [];
+  for (const file of plugin.app.vault.getFiles()) {
+    if (!file.path.startsWith(root + '/')) continue;
+    if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
+    try {
+      files.push({
+        path: file.path,
+        content: await plugin.app.vault.cachedRead(file)
+      });
+    } catch {
+      /* skip unreadable files */
+    }
+  }
+  return files;
 }

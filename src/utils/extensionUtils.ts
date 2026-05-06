@@ -18,7 +18,7 @@ import { getExtension } from './fileUtils.ts';
  * @returns An array of all known code extensions.
  * */
 export function getAllMonacoExtensions(): string[] {
-	return Object.keys(staticMap);
+  return Object.keys(staticMap);
 }
 
 /**
@@ -30,9 +30,9 @@ export function getAllMonacoExtensions(): string[] {
  * @returns An array of active extensions.
  */
 export function getActiveExtensions(settings: Prettify<MyPluginSettings>): string[] {
-	const base = new Set([...settings.extensions, ...settings.extraExtensions]);
-	const excluded = new Set(settings.excludedExtensions);
-	return [...base].filter((ext) => !excluded.has(ext));
+  const base = new Set([...settings.extensions, ...settings.extraExtensions]);
+  const excluded = new Set(settings.excludedExtensions);
+  return [...base].filter((ext) => !excluded.has(ext));
 }
 
 /**
@@ -46,32 +46,32 @@ export function getActiveExtensions(settings: Prettify<MyPluginSettings>): strin
  * @returns true if the extension was added, false if blocked (empty, native or already registered)
  */
 export function addExtension(settings: Prettify<MyPluginSettings>, ext: string): boolean {
-	// Block empty string
-	if (!ext) {
-		console.warn('code-files: cannot add empty extension');
-		return false;
-	}
-	// Block native extensions
-	if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
-		// console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
-		return false;
-	}
+  // Block empty string
+  if (!ext) {
+    console.warn('code-files: cannot add empty extension');
+    return false;
+  }
+  // Block native extensions
+  if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
+    // console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
+    return false;
+  }
 
-	// Block already registered extensions
-	if (getActiveExtensions(settings).includes(ext)) {
-		// console.warn(`code-files: cannot add "${ext}" - already registered`);
-		return false;
-	}
+  // Block already registered extensions
+  if (getActiveExtensions(settings).includes(ext)) {
+    // console.warn(`code-files: cannot add "${ext}" - already registered`);
+    return false;
+  }
 
-	// Remove from excludedExtensions if present
-	settings.excludedExtensions = settings.excludedExtensions.filter((e) => e !== ext);
+  // Remove from excludedExtensions if present
+  settings.excludedExtensions = settings.excludedExtensions.filter((e) => e !== ext);
 
-	// Add to extraExtensions only if not already in base extensions
-	if (!settings.extensions.includes(ext)) {
-		settings.extraExtensions = [...settings.extraExtensions, ext];
-	}
+  // Add to extraExtensions only if not already in base extensions
+  if (!settings.extensions.includes(ext)) {
+    settings.extraExtensions = [...settings.extraExtensions, ext];
+  }
 
-	return true;
+  return true;
 }
 
 /**
@@ -84,13 +84,13 @@ export function addExtension(settings: Prettify<MyPluginSettings>, ext: string):
  * @param ext - The extension to remove (e.g. "js", "ts")
  */
 export function removeExtension(settings: Prettify<MyPluginSettings>, ext: string): void {
-	// If in extraExtensions, just remove it — no need to exclude
-	if (settings.extraExtensions.includes(ext)) {
-		settings.extraExtensions = settings.extraExtensions.filter((e) => e !== ext);
-		return;
-	}
-	// If in base extensions, must add to excludedExtensions to override
-	settings.excludedExtensions = [...settings.excludedExtensions, ext];
+  // If in extraExtensions, just remove it — no need to exclude
+  if (settings.extraExtensions.includes(ext)) {
+    settings.extraExtensions = settings.extraExtensions.filter((e) => e !== ext);
+    return;
+  }
+  // If in base extensions, must add to excludedExtensions to override
+  settings.excludedExtensions = [...settings.excludedExtensions, ext];
 }
 
 // Not used
@@ -102,7 +102,7 @@ export function removeExtension(settings: Prettify<MyPluginSettings>, ext: strin
  * @returns true if the extension is handled by CodeFilesPlugin, false otherwise
  * */
 export function isCodeFilesExtension(app: App, ext: string): boolean {
-	return app.viewRegistry.typeByExtension[ext] === viewType;
+  return app.viewRegistry.typeByExtension[ext] === viewType;
 }
 
 /**
@@ -112,7 +112,7 @@ export function isCodeFilesExtension(app: App, ext: string): boolean {
  * @returns An array of open CodeEditorView instances
  */
 export function getCodeEditorViews(app: App): CodeEditorView[] {
-	return app.workspace.getLeavesOfType(viewType).map((l) => l.view as CodeEditorView);
+  return app.workspace.getLeavesOfType(viewType).map((l) => l.view as CodeEditorView);
 }
 
 /**
@@ -122,13 +122,13 @@ export function getCodeEditorViews(app: App): CodeEditorView[] {
  * @param ext - The extension to register (e.g. "js", "ts")
  */
 export function registerExtension(plugin: CodeFilesPlugin, ext: string): void {
-	if (!plugin.app.viewRegistry.getTypeByExtension(ext)) {
-		try {
-			plugin.registerExtensions([ext], viewType);
-		} catch (e) {
-			console.warn(`code-files: could not register extension "${ext}":`, e);
-		}
-	}
+  if (!plugin.app.viewRegistry.getTypeByExtension(ext)) {
+    try {
+      plugin.registerExtensions([ext], viewType);
+    } catch (e) {
+      console.warn(`code-files: could not register extension "${ext}":`, e);
+    }
+  }
 }
 
 /**
@@ -140,15 +140,15 @@ export function registerExtension(plugin: CodeFilesPlugin, ext: string): void {
  * @param ext - The extension to unregister (e.g. "js", "ts")
  */
 export function unregisterExtension(plugin: CodeFilesPlugin, ext: string): void {
-	try {
-		plugin.app.viewRegistry.unregisterExtensions([ext]);
-		plugin.app.workspace.getLeavesOfType(viewType).forEach((leaf) => {
-			const view = leaf.view as CodeEditorView;
-			if (view.file && getExtension(view.file.name) === ext) leaf.detach();
-		});
-	} catch (e) {
-		console.warn(`code-files: could not unregister extension "${ext}":`, e);
-	}
+  try {
+    plugin.app.viewRegistry.unregisterExtensions([ext]);
+    plugin.app.workspace.getLeavesOfType(viewType).forEach((leaf) => {
+      const view = leaf.view as CodeEditorView;
+      if (view.file && getExtension(view.file.name) === ext) leaf.detach();
+    });
+  } catch (e) {
+    console.warn(`code-files: could not unregister extension "${ext}":`, e);
+  }
 }
 
 /**
@@ -159,7 +159,7 @@ export function unregisterExtension(plugin: CodeFilesPlugin, ext: string): void 
  * @param plugin - The CodeFilesPlugin instance
  */
 export function syncRegisteredExts(plugin: CodeFilesPlugin): void {
-	plugin._registeredExts = new Set(getActiveExtensions(plugin.settings));
+  plugin._registeredExts = new Set(getActiveExtensions(plugin.settings));
 }
 
 /**
@@ -170,15 +170,15 @@ export function syncRegisteredExts(plugin: CodeFilesPlugin): void {
  * @returns A Promise that resolves when the extensions have been re-registered
  */
 export async function reregisterExtensions(plugin: CodeFilesPlugin): Promise<void> {
-	const next = new Set(getActiveExtensions(plugin.settings));
-	for (const ext of plugin._registeredExts) {
-		if (!next.has(ext)) unregisterExtension(plugin, ext);
-	}
-	for (const ext of next) {
-		if (!plugin._registeredExts.has(ext)) registerExtension(plugin, ext);
-	}
-	plugin._registeredExts = next;
-	await plugin.saveSettings();
+  const next = new Set(getActiveExtensions(plugin.settings));
+  for (const ext of plugin._registeredExts) {
+    if (!next.has(ext)) unregisterExtension(plugin, ext);
+  }
+  for (const ext of next) {
+    if (!plugin._registeredExts.has(ext)) registerExtension(plugin, ext);
+  }
+  plugin._registeredExts = next;
+  await plugin.saveSettings();
 }
 
 /**
@@ -190,9 +190,9 @@ export async function reregisterExtensions(plugin: CodeFilesPlugin): Promise<voi
  * @param plugin - The CodeFilesPlugin instance
  */
 export function initExtensions(plugin: CodeFilesPlugin): void {
-	const activeExts = getActiveExtensions(plugin.settings);
-	for (const ext of activeExts) {
-		registerExtension(plugin, ext);
-	}
-	plugin._registeredExts = new Set(activeExts);
+  const activeExts = getActiveExtensions(plugin.settings);
+  for (const ext of activeExts) {
+    registerExtension(plugin, ext);
+  }
+  plugin._registeredExts = new Set(activeExts);
 }

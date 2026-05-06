@@ -21,30 +21,30 @@ import type { HotkeyConfig } from '../types/index.ts';
  * @returns Hotkey config with modifiers and key, or null if not found
  */
 export function getObsidianHotkey(app: App, commandId: string): HotkeyConfig | null {
-	// Check custom hotkeys first (user-defined in settings)
-	const custom = app.hotkeyManager.getHotkeys(commandId);
-	if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
-		const mods = custom[0].modifiers;
-		return {
-			modifiers: Array.isArray(mods) ? mods : [mods],
-			key: custom[0].key
-		};
-	}
-	// Fall back to default command hotkeys
-	const cmd = app.commands?.commands?.[commandId];
-	if (
-		cmd?.hotkeys &&
-		cmd.hotkeys.length > 0 &&
-		cmd.hotkeys[0].modifiers &&
-		cmd.hotkeys[0].key
-	) {
-		const mods = cmd.hotkeys[0].modifiers;
-		return {
-			modifiers: Array.isArray(mods) ? mods : [mods],
-			key: cmd.hotkeys[0].key
-		};
-	}
-	return null;
+  // Check custom hotkeys first (user-defined in settings)
+  const custom = app.hotkeyManager.getHotkeys(commandId);
+  if (custom && custom.length > 0 && custom[0].modifiers && custom[0].key) {
+    const mods = custom[0].modifiers;
+    return {
+      modifiers: Array.isArray(mods) ? mods : [mods],
+      key: custom[0].key
+    };
+  }
+  // Fall back to default command hotkeys
+  const cmd = app.commands?.commands?.[commandId];
+  if (
+    cmd?.hotkeys &&
+    cmd.hotkeys.length > 0 &&
+    cmd.hotkeys[0].modifiers &&
+    cmd.hotkeys[0].key
+  ) {
+    const mods = cmd.hotkeys[0].modifiers;
+    return {
+      modifiers: Array.isArray(mods) ? mods : [mods],
+      key: cmd.hotkeys[0].key
+    };
+  }
+  return null;
 }
 
 /**
@@ -61,42 +61,42 @@ export function getObsidianHotkey(app: App, commandId: string): HotkeyConfig | n
  * @returns HotkeyConfig if valid, or null if invalid
  */
 export function parseHotkeyOverride(override: string): HotkeyConfig | null {
-	if (!override || !override.trim()) return null;
+  if (!override || !override.trim()) return null;
 
-	const parts = override
-		.trim()
-		.split(/[+\s]+/)
-		.map((p) => p.trim())
-		.filter((p) => p.length > 0);
+  const parts = override
+    .trim()
+    .split(/[+\s]+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
 
-	if (parts.length === 0) return null;
+  if (parts.length === 0) return null;
 
-	const modifiers: string[] = [];
-	let key = '';
+  const modifiers: string[] = [];
+  let key = '';
 
-	for (const part of parts) {
-		const lower = part.toLowerCase();
-		if (
-			lower === 'ctrl' ||
-			lower === 'cmd' ||
-			lower === 'command' ||
-			lower === 'meta' ||
-			lower === 'mod'
-		) {
-			modifiers.push('Mod');
-		} else if (lower === 'shift') {
-			modifiers.push('Shift');
-		} else if (lower === 'alt') {
-			modifiers.push('Alt');
-		} else {
-			// Last non-modifier part is assumed to be the key
-			key = part.length === 1 ? part.toUpperCase() : part;
-		}
-	}
+  for (const part of parts) {
+    const lower = part.toLowerCase();
+    if (
+      lower === 'ctrl' ||
+      lower === 'cmd' ||
+      lower === 'command' ||
+      lower === 'meta' ||
+      lower === 'mod'
+    ) {
+      modifiers.push('Mod');
+    } else if (lower === 'shift') {
+      modifiers.push('Shift');
+    } else if (lower === 'alt') {
+      modifiers.push('Alt');
+    } else {
+      // Last non-modifier part is assumed to be the key
+      key = part.length === 1 ? part.toUpperCase() : part;
+    }
+  }
 
-	if (!key) return null;
+  if (!key) return null;
 
-	return { modifiers, key };
+  return { modifiers, key };
 }
 
 /**
@@ -107,11 +107,11 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
  * @returns Formatted hotkey string
  */
 export function formatHotkey(config: HotkeyConfig, resolveMod: boolean = false): string {
-	let mods = config.modifiers;
-	if (resolveMod) {
-		mods = mods.map((m) => (m === 'Mod' ? (Platform.isWin ? 'Ctrl' : 'Cmd') : m));
-	}
-	return [...mods, config.key].join('+');
+  let mods = config.modifiers;
+  if (resolveMod) {
+    mods = mods.map((m) => (m === 'Mod' ? (Platform.isWin ? 'Ctrl' : 'Cmd') : m));
+  }
+  return [...mods, config.key].join('+');
 }
 
 /**
@@ -122,17 +122,17 @@ export function formatHotkey(config: HotkeyConfig, resolveMod: boolean = false):
  * @returns JSON string of all hotkey configs
  */
 export function serializeMonacoHotkeys(app: App): string {
-	const settingsHotkey = getObsidianHotkey(app, 'app:open-settings') ?? {
-		modifiers: ['Mod'],
-		key: ','
-	};
-	const paletteHotkey = getObsidianHotkey(app, 'command-palette:open') ?? {
-		modifiers: ['Mod'],
-		key: 'p'
-	};
-	const deleteFileHotkey = getObsidianHotkey(app, 'app:delete-file') ?? {
-		modifiers: ['Mod'],
-		key: 'Delete'
-	};
-	return JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });
+  const settingsHotkey = getObsidianHotkey(app, 'app:open-settings') ?? {
+    modifiers: ['Mod'],
+    key: ','
+  };
+  const paletteHotkey = getObsidianHotkey(app, 'command-palette:open') ?? {
+    modifiers: ['Mod'],
+    key: 'p'
+  };
+  const deleteFileHotkey = getObsidianHotkey(app, 'app:delete-file') ?? {
+    modifiers: ['Mod'],
+    key: 'Delete'
+  };
+  return JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });
 }

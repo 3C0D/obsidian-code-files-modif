@@ -11,7 +11,7 @@ let parentOrigin = '*';
  * @param origin - The origin of the parent window (from event.origin)
  */
 export function setParentOrigin(origin: string): void {
-	parentOrigin = origin;
+  parentOrigin = origin;
 }
 
 /**
@@ -19,5 +19,5 @@ export function setParentOrigin(origin: string): void {
  * @returns The parent window origin, or '*' if not yet captured
  */
 export function getParentOrigin(): string {
-	return parentOrigin;
+  return parentOrigin;
 }

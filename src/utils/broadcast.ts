@@ -26,12 +26,12 @@ import { getObsidianHotkey, parseHotkeyOverride, formatHotkey } from './hotkeyUt
  * @param plugin - The plugin instance.
  */
 export function broadcastOptions(plugin: CodeFilesPlugin): void {
-	for (const view of getCodeEditorViews(plugin.app)) {
-		view.editor?.send('change-options', {
-			noSemanticValidation: !plugin.settings.semanticValidation,
-			noSyntaxValidation: !plugin.settings.syntaxValidation
-		});
-	}
+  for (const view of getCodeEditorViews(plugin.app)) {
+    view.editor?.send('change-options', {
+      noSemanticValidation: !plugin.settings.semanticValidation,
+      noSyntaxValidation: !plugin.settings.syntaxValidation
+    });
+  }
 }
 
 /**
@@ -44,11 +44,11 @@ export function broadcastOptions(plugin: CodeFilesPlugin): void {
  * @param plugin - The plugin instance.
  */
 export function broadcastBrightness(plugin: CodeFilesPlugin): void {
-	for (const view of getCodeEditorViews(plugin.app)) {
-		if (view.editor?.iframe) {
-			view.editor.iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
-		}
-	}
+  for (const view of getCodeEditorViews(plugin.app)) {
+    if (view.editor?.iframe) {
+      view.editor.iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
+    }
+  }
 }
 
 /**
@@ -68,24 +68,24 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
  * @param ext - The file extension to target.
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
-	const views = getCodeEditorViews(plugin.app);
-	const targets =
-		ext === '*'
-			? views
-			: views.filter((v) => {
-					if (!v.file) return false;
-					const fileExt = getExtension(v.file.name);
-					// Match if extension is exactly ext
-					if (fileExt === ext) return true;
-					// Match if extension maps to ext as a language
-					const language = staticMap[fileExt] ?? 'plaintext';
-					return language === ext;
-				});
-	for (const view of targets) {
-		const fileExt = view.file ? getExtension(view.file.name) : '';
-		const config = buildMergedConfig(plugin, fileExt);
-		view.editor?.send('change-editor-config', { config });
-	}
+  const views = getCodeEditorViews(plugin.app);
+  const targets =
+    ext === '*'
+      ? views
+      : views.filter((v) => {
+          if (!v.file) return false;
+          const fileExt = getExtension(v.file.name);
+          // Match if extension is exactly ext
+          if (fileExt === ext) return true;
+          // Match if extension maps to ext as a language
+          const language = staticMap[fileExt] ?? 'plaintext';
+          return language === ext;
+        });
+  for (const view of targets) {
+    const fileExt = view.file ? getExtension(view.file.name) : '';
+    const config = buildMergedConfig(plugin, fileExt);
+    view.editor?.send('change-editor-config', { config });
+  }
 }
 
 /**
@@ -113,10 +113,10 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
  * @param plugin - The plugin instance.
  */
 export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<void> {
-	const files = await readProjectFiles(plugin);
-	for (const view of getCodeEditorViews(plugin.app)) {
-		view.editor?.send('load-project-files', { files });
-	}
+  const files = await readProjectFiles(plugin);
+  for (const view of getCodeEditorViews(plugin.app)) {
+    view.editor?.send('load-project-files', { files });
+  }
 }
 
 /**
@@ -132,56 +132,54 @@ export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<vo
  * @param plugin - The plugin instance.
  */
 export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
-	// Apply overrides if they exist (overrides are stored as 'Mod' internally)
-	const resolveHotkey = (
-		commandId: string,
-		fallback: { modifiers: string[]; key: string },
-		override: string
-	): { modifiers: string[]; key: string } =>
-		parseHotkeyOverride(override) ??
-		getObsidianHotkey(plugin.app, commandId) ??
-		fallback;
+  // Apply overrides if they exist (overrides are stored as 'Mod' internally)
+  const resolveHotkey = (
+    commandId: string,
+    fallback: { modifiers: string[]; key: string },
+    override: string
+  ): { modifiers: string[]; key: string } =>
+    parseHotkeyOverride(override) ?? getObsidianHotkey(plugin.app, commandId) ?? fallback;
 
-	const finalSettingsHotkey = resolveHotkey(
-		'app:open-settings',
-		{ modifiers: ['Mod'], key: ',' },
-		plugin.settings.settingsHotkeyOverride
-	);
-	const finalPaletteHotkey = resolveHotkey(
-		'command-palette:open',
-		{ modifiers: ['Mod'], key: 'p' },
-		plugin.settings.commandPaletteHotkeyOverride
-	);
-	const finalDeleteFileHotkey = resolveHotkey(
-		'app:delete-file',
-		{ modifiers: ['Mod'], key: 'Delete' },
-		plugin.settings.deleteFileHotkeyOverride
-	);
+  const finalSettingsHotkey = resolveHotkey(
+    'app:open-settings',
+    { modifiers: ['Mod'], key: ',' },
+    plugin.settings.settingsHotkeyOverride
+  );
+  const finalPaletteHotkey = resolveHotkey(
+    'command-palette:open',
+    { modifiers: ['Mod'], key: 'p' },
+    plugin.settings.commandPaletteHotkeyOverride
+  );
+  const finalDeleteFileHotkey = resolveHotkey(
+    'app:delete-file',
+    { modifiers: ['Mod'], key: 'Delete' },
+    plugin.settings.deleteFileHotkeyOverride
+  );
 
-	const currentHotkeys = JSON.stringify({
-		settingsHotkey: finalSettingsHotkey,
-		paletteHotkey: finalPaletteHotkey,
-		deleteFileHotkey: finalDeleteFileHotkey
-	});
+  const currentHotkeys = JSON.stringify({
+    settingsHotkey: finalSettingsHotkey,
+    paletteHotkey: finalPaletteHotkey,
+    deleteFileHotkey: finalDeleteFileHotkey
+  });
 
-	if (currentHotkeys === plugin._lastHotkeys) return;
-	plugin._lastHotkeys = currentHotkeys;
+  if (currentHotkeys === plugin._lastHotkeys) return;
+  plugin._lastHotkeys = currentHotkeys;
 
-	// Broadcast hotkey updates to all open views
-	for (const view of getCodeEditorViews(plugin.app)) {
-		view.editor?.send('update-hotkeys', {
-			commandPaletteHotkey: finalPaletteHotkey,
-			settingsHotkey: finalSettingsHotkey,
-			deleteFileHotkey: finalDeleteFileHotkey
-		});
-	}
+  // Broadcast hotkey updates to all open views
+  for (const view of getCodeEditorViews(plugin.app)) {
+    view.editor?.send('update-hotkeys', {
+      commandPaletteHotkey: finalPaletteHotkey,
+      settingsHotkey: finalSettingsHotkey,
+      deleteFileHotkey: finalDeleteFileHotkey
+    });
+  }
 
-	// Show notice to user using resolved hotkey strings
-	const settingsStr = formatHotkey(finalSettingsHotkey, true);
-	const paletteStr = formatHotkey(finalPaletteHotkey, true);
-	const deleteStr = formatHotkey(finalDeleteFileHotkey, true);
+  // Show notice to user using resolved hotkey strings
+  const settingsStr = formatHotkey(finalSettingsHotkey, true);
+  const paletteStr = formatHotkey(finalPaletteHotkey, true);
+  const deleteStr = formatHotkey(finalDeleteFileHotkey, true);
 
-	new Notice(
-		`Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
-	);
+  new Notice(
+    `Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
+  );
 }

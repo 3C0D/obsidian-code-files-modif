@@ -30,36 +30,35 @@ import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
  * @returns The uninstaller function to restore original behavior.
  */
 export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
-	const uninstaller = around(WorkspaceLeaf.prototype, {
-		openFile(next: WorkspaceLeaf['openFile']) {
-			return async function (
-				this: WorkspaceLeaf,
-				file: TFile,
-				openState?: OpenViewState // navigation state (cursor position, scroll, etc.)
-			) {
-				// Intercept files with no Obsidian extension (dotfiles + extension-less)
-				if (file && !file.extension) {
-					const ext = getExtension(file.name);
-					const isKnownToObsidian =
-						!!plugin.app.viewRegistry.typeByExtension[ext];
-					const isKnownToMonaco =
-						!ext || getActiveExtensions(plugin.settings).includes(ext);
+  const uninstaller = around(WorkspaceLeaf.prototype, {
+    openFile(next: WorkspaceLeaf['openFile']) {
+      return async function (
+        this: WorkspaceLeaf,
+        file: TFile,
+        openState?: OpenViewState // navigation state (cursor position, scroll, etc.)
+      ) {
+        // Intercept files with no Obsidian extension (dotfiles + extension-less)
+        if (file && !file.extension) {
+          const ext = getExtension(file.name);
+          const isKnownToObsidian = !!plugin.app.viewRegistry.typeByExtension[ext];
+          const isKnownToMonaco =
+            !ext || getActiveExtensions(plugin.settings).includes(ext);
 
-					// Avoid openining tabs for unknown extensions
-					if (!isKnownToObsidian && !isKnownToMonaco) {
-						return; // Unknown everywhere — do nothing
-					}
+          // Avoid openining tabs for unknown extensions
+          if (!isKnownToObsidian && !isKnownToMonaco) {
+            return; // Unknown everywhere — do nothing
+          }
 
-					if (isKnownToMonaco) {
-						await openInMonacoLeaf(file, plugin, false, null, false);
-						return;
-					}
-				}
-				// Fall through to original Obsidian behavior
-				return next.call(this, file, openState);
-			};
-		}
-	});
+          if (isKnownToMonaco) {
+            await openInMonacoLeaf(file, plugin, false, null, false);
+            return;
+          }
+        }
+        // Fall through to original Obsidian behavior
+        return next.call(this, file, openState);
+      };
+    }
+  });
 
-	return uninstaller;
+  return uninstaller;
 }

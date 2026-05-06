@@ -27,12 +27,12 @@ import { staticMap } from '../utils/getLanguage.ts';
  * Keep both in sync if regex patterns change.
  */
 export function parseEditorConfig(str: string): unknown {
-	return JSON.parse(
-		str
-			.replace(/\/\/[^\n]*/g, '')
-			.replace(/\/\*[\s\S]*?\*\//g, '')
-			.replace(/,(\s*[}\]])/g, '$1')
-	);
+  return JSON.parse(
+    str
+      .replace(/\/\/[^\n]*/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/,(\s*[}\]])/g, '$1')
+  );
 }
 
 /**
@@ -47,15 +47,15 @@ export function parseEditorConfig(str: string): unknown {
  * @internal
  */
 export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
-	const loaded = await plugin.loadData();
-	plugin.settings = {
-		...DEFAULT_SETTINGS,
-		...loaded,
-		editorConfigs: {
-			'*': DEFAULT_EDITOR_CONFIG,
-			...(loaded?.editorConfigs ?? {})
-		}
-	};
+  const loaded = await plugin.loadData();
+  plugin.settings = {
+    ...DEFAULT_SETTINGS,
+    ...loaded,
+    editorConfigs: {
+      '*': DEFAULT_EDITOR_CONFIG,
+      ...(loaded?.editorConfigs ?? {})
+    }
+  };
 }
 
 /**
@@ -66,7 +66,7 @@ export async function loadSettings(plugin: CodeFilesPlugin): Promise<void> {
  * @internal
  */
 export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
-	await plugin.saveData(plugin.settings);
+  await plugin.saveData(plugin.settings);
 }
 
 /**
@@ -78,24 +78,24 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
  * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
  */
 export function saveEditorConfig(
-	plugin: CodeFilesPlugin,
-	key: string,
-	value: string
+  plugin: CodeFilesPlugin,
+  key: string,
+  value: string
 ): boolean {
-	try {
-		// Validate only — throws if JSON is invalid, value is stored as-is with its comments
-		parseEditorConfig(value);
+  try {
+    // Validate only — throws if JSON is invalid, value is stored as-is with its comments
+    parseEditorConfig(value);
 
-		const previous = plugin.settings.editorConfigs[key];
-		// Early exit if nothing changed (comparing raw strings including comments)
-		if (previous?.trim() === value.trim()) return false;
+    const previous = plugin.settings.editorConfigs[key];
+    // Early exit if nothing changed (comparing raw strings including comments)
+    if (previous?.trim() === value.trim()) return false;
 
-		// Persist as-is (with comments) and let the caller broadcast
-		plugin.settings.editorConfigs[key] = value;
-		return true;
-	} catch {
-		return false;
-	}
+    // Persist as-is (with comments) and let the caller broadcast
+    plugin.settings.editorConfigs[key] = value;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -117,40 +117,37 @@ export function saveEditorConfig(
  * @returns The merged JSON string.
  */
 export function buildMergedConfig(plugin: CodeFilesPlugin, ext: string): string {
-	// Parse a stored JSONC config string, falling back to an empty object if missing or corrupted
-	const safeParse = (
-		raw: string | undefined,
-		fallback: string = '{}'
-	): Record<string, unknown> => {
-		try {
-			return parseEditorConfig(raw ?? fallback) as Record<string, unknown>;
-		} catch {
-			return {};
-		}
-	};
+  // Parse a stored JSONC config string, falling back to an empty object if missing or corrupted
+  const safeParse = (
+    raw: string | undefined,
+    fallback: string = '{}'
+  ): Record<string, unknown> => {
+    try {
+      return parseEditorConfig(raw ?? fallback) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  };
 
-	// Global config (*) — fallback to DEFAULT_EDITOR_CONFIG if missing or corrupted
-	const globalCfg = safeParse(
-		plugin.settings.editorConfigs['*'],
-		DEFAULT_EDITOR_CONFIG
-	);
+  // Global config (*) — fallback to DEFAULT_EDITOR_CONFIG if missing or corrupted
+  const globalCfg = safeParse(plugin.settings.editorConfigs['*'], DEFAULT_EDITOR_CONFIG);
 
-	// No extension (e.g. extensionless files like LICENSE/README, or extensionless internal context) — global config only
-	if (!ext) return JSON.stringify(globalCfg);
+  // No extension (e.g. extensionless files like LICENSE/README, or extensionless internal context) — global config only
+  if (!ext) return JSON.stringify(globalCfg);
 
-	// Get the Monaco language for this extension
-	const language = staticMap[ext] ?? 'plaintext';
+  // Get the Monaco language for this extension
+  const language = staticMap[ext] ?? 'plaintext';
 
-	// Apply language config as fallback (if extension maps to a different language, e.g. jsonc → json)
-	const languageCfg =
-		language !== ext &&
-		language !== 'plaintext' &&
-		plugin.settings.editorConfigs[language]
-			? safeParse(plugin.settings.editorConfigs[language])
-			: {};
+  // Apply language config as fallback (if extension maps to a different language, e.g. jsonc → json)
+  const languageCfg =
+    language !== ext &&
+    language !== 'plaintext' &&
+    plugin.settings.editorConfigs[language]
+      ? safeParse(plugin.settings.editorConfigs[language])
+      : {};
 
-	// Apply extension-specific config (highest priority)
-	const extCfg = safeParse(plugin.settings.editorConfigs[ext]);
+  // Apply extension-specific config (highest priority)
+  const extCfg = safeParse(plugin.settings.editorConfigs[ext]);
 
-	return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
+  return JSON.stringify({ ...globalCfg, ...languageCfg, ...extCfg });
 }

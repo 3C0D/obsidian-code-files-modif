@@ -6,58 +6,58 @@ import { getExtension } from '../../utils/fileUtils.ts';
  * Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled.
  */
 export function updateExtBadge(
-	containerEl: HTMLElement,
-	file: TFile,
-	plugin: CodeFilesPlugin
+  containerEl: HTMLElement,
+  file: TFile,
+  plugin: CodeFilesPlugin
 ): void {
-	const titleContainer = containerEl.querySelector('.view-header-title-container');
-	if (!titleContainer) return;
+  const titleContainer = containerEl.querySelector('.view-header-title-container');
+  if (!titleContainer) return;
 
-	// Capture dirty/saving state before removing the badge so it can be restored
-	// on the new badge — otherwise a rename mid-edit silently resets the unsaved indicator.
-	const existingDirtyBadge = titleContainer.querySelector('.code-files-dirty-badge');
-	const isDirty = existingDirtyBadge?.classList.contains('code-files-dirty-unsaved');
-	const isSaving = existingDirtyBadge?.classList.contains('code-files-dirty-saving');
+  // Capture dirty/saving state before removing the badge so it can be restored
+  // on the new badge — otherwise a rename mid-edit silently resets the unsaved indicator.
+  const existingDirtyBadge = titleContainer.querySelector('.code-files-dirty-badge');
+  const isDirty = existingDirtyBadge?.classList.contains('code-files-dirty-unsaved');
+  const isSaving = existingDirtyBadge?.classList.contains('code-files-dirty-saving');
 
-	titleContainer.querySelector('.code-files-ext-badge')?.remove();
-	titleContainer.querySelector('.code-files-dirty-badge')?.remove();
-	const ext = getExtension(file.name);
-	const badge = createEl('span', {
-		text: ext ? `.${ext}` : file.name,
-		cls: 'code-files-ext-badge'
-	});
-	titleContainer.appendChild(badge);
-	if (!plugin.settings.autoSave) {
-		const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
-		if (isDirty) dirtyBadge.addClass('code-files-dirty-unsaved');
-		if (isSaving) dirtyBadge.addClass('code-files-dirty-saving');
-		titleContainer.appendChild(dirtyBadge);
-	}
+  titleContainer.querySelector('.code-files-ext-badge')?.remove();
+  titleContainer.querySelector('.code-files-dirty-badge')?.remove();
+  const ext = getExtension(file.name);
+  const badge = createEl('span', {
+    text: ext ? `.${ext}` : file.name,
+    cls: 'code-files-ext-badge'
+  });
+  titleContainer.appendChild(badge);
+  if (!plugin.settings.autoSave) {
+    const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
+    if (isDirty) dirtyBadge.addClass('code-files-dirty-unsaved');
+    if (isSaving) dirtyBadge.addClass('code-files-dirty-saving');
+    titleContainer.appendChild(dirtyBadge);
+  }
 }
 
 /**
  * Updates the dirty badge visibility based on autoSave setting.
  */
 export function updateDirtyBadgeVisibility(
-	containerEl: HTMLElement,
-	plugin: CodeFilesPlugin
+  containerEl: HTMLElement,
+  plugin: CodeFilesPlugin
 ): void {
-	const titleContainer = containerEl.querySelector('.view-header-title-container');
-	if (!titleContainer) return;
-	const existingBadge = titleContainer.querySelector('.code-files-dirty-badge');
-	if (plugin.settings.autoSave) {
-		existingBadge?.remove();
-	} else if (!existingBadge) {
-		const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
-		titleContainer.appendChild(dirtyBadge);
-	}
+  const titleContainer = containerEl.querySelector('.view-header-title-container');
+  if (!titleContainer) return;
+  const existingBadge = titleContainer.querySelector('.code-files-dirty-badge');
+  if (plugin.settings.autoSave) {
+    existingBadge?.remove();
+  } else if (!existingBadge) {
+    const dirtyBadge = createEl('span', { cls: 'code-files-dirty-badge' });
+    titleContainer.appendChild(dirtyBadge);
+  }
 }
 
 /**
  * Updates the dirty badge styling to show/hide the unsaved indicator in the header.
  */
 export function setDirty(containerEl: HTMLElement, isDirtyBadge: boolean): void {
-	const badge = containerEl.querySelector('.code-files-dirty-badge');
-	if (!badge) return;
-	badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
+  const badge = containerEl.querySelector('.code-files-dirty-badge');
+  if (!badge) return;
+  badge.toggleClass('code-files-dirty-unsaved', isDirtyBadge);
 }

@@ -17,88 +17,87 @@ import { broadcastOptions, broadcastEditorConfig } from '../utils/broadcast.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 export function registerCommands(plugin: CodeFilesPlugin): void {
-	plugin.addCommand({
-		id: 'create',
-		name: 'Create new Code File',
-		callback: () => {
-			new CreateCodeFileModal(plugin).open();
-		}
-	});
+  plugin.addCommand({
+    id: 'create',
+    name: 'Create new Code File',
+    callback: () => {
+      new CreateCodeFileModal(plugin).open();
+    }
+  });
 
-	plugin.addCommand({
-		id: 'open-codeblock-in-monaco',
-		name: 'Open current code block in Monaco Editor',
-		editorCheckCallback: (checking, editor) => {
-			// Check if the cursor is inside a valid code block.
-			const context = FenceEditContext.create(plugin, editor);
-			if (!context) return false;
-			if (!checking) FenceEditModal.openOnCurrentCode(plugin, editor, context);
-			return true;
-		}
-	});
+  plugin.addCommand({
+    id: 'open-codeblock-in-monaco',
+    name: 'Open current code block in Monaco Editor',
+    editorCheckCallback: (checking, editor) => {
+      // Check if the cursor is inside a valid code block.
+      const context = FenceEditContext.create(plugin, editor);
+      if (!context) return false;
+      if (!checking) FenceEditModal.openOnCurrentCode(plugin, editor, context);
+      return true;
+    }
+  });
 
-	plugin.addCommand({
-		id: 'open-current-file-in-monaco',
-		name: 'Open current file in Monaco Editor',
-		editorCheckCallback: (checking, _editor, ctx) => {
-			if (!ctx.file) return false;
-			if (!checking) void openInMonacoLeaf(ctx.file, plugin, false);
-			return true;
-		}
-	});
+  plugin.addCommand({
+    id: 'open-current-file-in-monaco',
+    name: 'Open current file in Monaco Editor',
+    editorCheckCallback: (checking, _editor, ctx) => {
+      if (!ctx.file) return false;
+      if (!checking) void openInMonacoLeaf(ctx.file, plugin, false);
+      return true;
+    }
+  });
 
-	plugin.addCommand({
-		id: 'open-css-snippet',
-		name: 'Edit/create CSS snippet',
-		callback: () =>
-			new ChooseCssFileModal(plugin, plugin.app.customCss.snippets).open()
-	});
+  plugin.addCommand({
+    id: 'open-css-snippet',
+    name: 'Edit/create CSS snippet',
+    callback: () => new ChooseCssFileModal(plugin, plugin.app.customCss.snippets).open()
+  });
 
-	plugin.addCommand({
-		id: 'rename-extension',
-		name: 'Rename current file (name/ext)',
-		checkCallback: (checking) => {
-			const file = plugin.app.workspace.getActiveFile();
-			if (!file) return false;
-			if (!checking) new RenameExtensionModal(plugin, file).open();
-			return true;
-		}
-	});
+  plugin.addCommand({
+    id: 'rename-extension',
+    name: 'Rename current file (name/ext)',
+    checkCallback: (checking) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file) return false;
+      if (!checking) new RenameExtensionModal(plugin, file).open();
+      return true;
+    }
+  });
 
-	plugin.addCommand({
-		id: 'editor-config',
-		name: 'Open editor settings',
-		checkCallback: (checking) => {
-			const view = plugin.app.workspace.getActiveViewOfType(CodeEditorView);
-			if (!view?.file) return false;
-			if (!checking) {
-				// onConfigApplied broadcasts to
-				// all matching iframes because
-				// the palette isn't tied to one.
-				new EditorSettingsModal(
-					plugin,
-					view.file.extension,
-					() => broadcastOptions(plugin),
-					() => broadcastEditorConfig(plugin, view.file!.extension)
-				).open();
-			}
-			return true;
-		}
-	});
+  plugin.addCommand({
+    id: 'editor-config',
+    name: 'Open editor settings',
+    checkCallback: (checking) => {
+      const view = plugin.app.workspace.getActiveViewOfType(CodeEditorView);
+      if (!view?.file) return false;
+      if (!checking) {
+        // onConfigApplied broadcasts to
+        // all matching iframes because
+        // the palette isn't tied to one.
+        new EditorSettingsModal(
+          plugin,
+          view.file.extension,
+          () => broadcastOptions(plugin),
+          () => broadcastEditorConfig(plugin, view.file!.extension)
+        ).open();
+      }
+      return true;
+    }
+  });
 
-	plugin.addCommand({
-		id: 'open-hidden-files-vault',
-		name: 'Open hidden files in vault',
-		callback: () => {
-			new ChooseHiddenFileModal(plugin).open();
-		}
-	});
+  plugin.addCommand({
+    id: 'open-hidden-files-vault',
+    name: 'Open hidden files in vault',
+    callback: () => {
+      new ChooseHiddenFileModal(plugin).open();
+    }
+  });
 
-	plugin.addCommand({
-		id: 'open-external-file-browser',
-		name: `Open config files (${plugin.app.vault.configDir}/)`,
-		callback: () => {
-			new ExternalFileBrowserModal(plugin).open();
-		}
-	});
+  plugin.addCommand({
+    id: 'open-external-file-browser',
+    name: `Open config files (${plugin.app.vault.configDir}/)`,
+    callback: () => {
+      new ExternalFileBrowserModal(plugin).open();
+    }
+  });
 }

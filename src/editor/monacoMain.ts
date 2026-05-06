@@ -10,9 +10,9 @@ import { initMonacoApp } from './iframe/init.ts';
 
 // Extend Window interface to include initMonacoApp for type safety
 declare global {
-	interface Window {
-		initMonacoApp: () => void;
-	}
+  interface Window {
+    initMonacoApp: () => void;
+  }
 }
 
 // Expose initMonacoApp to be called from monacoEditor.html after require(['vs/editor/editor.main'])

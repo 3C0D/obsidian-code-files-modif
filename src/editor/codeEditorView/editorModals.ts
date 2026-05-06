@@ -13,42 +13,42 @@ import { resolveThemeParams } from '../../utils/themeUtils.ts';
 
 /** Opens the editor settings modal. */
 export function openEditorConfig(
-	plugin: CodeFilesPlugin,
-	codeEditor: Prettify<CodeEditorHandle> | undefined,
-	ext: string
+  plugin: CodeFilesPlugin,
+  codeEditor: Prettify<CodeEditorHandle> | undefined,
+  ext: string
 ): void {
-	new EditorSettingsModal(
-		plugin,
-		ext,
-		() => broadcastOptions(plugin),
-		(config) => {
-			codeEditor?.send('change-editor-config', { config });
-		},
-		() => codeEditor?.send('focus', {})
-	).open();
+  new EditorSettingsModal(
+    plugin,
+    ext,
+    () => broadcastOptions(plugin),
+    (config) => {
+      codeEditor?.send('change-editor-config', { config });
+    },
+    () => codeEditor?.send('focus', {})
+  ).open();
 }
 
 /** Opens the theme picker modal. */
 export function openThemePicker(
-	plugin: CodeFilesPlugin,
-	codeEditor: CodeEditorHandle | undefined
+  plugin: CodeFilesPlugin,
+  codeEditor: CodeEditorHandle | undefined
 ): void {
-	const applyTheme = async (theme: string): Promise<void> => {
-		const params = await resolveThemeParams(plugin, theme);
-		codeEditor?.send('change-theme', params);
-	};
-	new ChooseThemeModal(plugin, applyTheme, () => codeEditor?.send('focus', {})).open();
+  const applyTheme = async (theme: string): Promise<void> => {
+    const params = await resolveThemeParams(plugin, theme);
+    codeEditor?.send('change-theme', params);
+  };
+  new ChooseThemeModal(plugin, applyTheme, () => codeEditor?.send('focus', {})).open();
 }
 
 /** Opens the rename extension modal for the current file. */
 export function openRenameExtension(
-	plugin: CodeFilesPlugin,
-	codeEditor: Prettify<CodeEditorHandle> | undefined,
-	file: TFile
+  plugin: CodeFilesPlugin,
+  codeEditor: Prettify<CodeEditorHandle> | undefined,
+  file: TFile
 ): void {
-	const targetFile = plugin.app.vault.getFileByPath(file.path);
-	if (!targetFile) return;
-	new RenameExtensionModal(plugin, targetFile, () =>
-		setTimeout(() => codeEditor?.send('focus', {}), 50)
-	).open();
+  const targetFile = plugin.app.vault.getFileByPath(file.path);
+  if (!targetFile) return;
+  new RenameExtensionModal(plugin, targetFile, () =>
+    setTimeout(() => codeEditor?.send('focus', {}), 50)
+  ).open();
 }

@@ -12,9 +12,9 @@ import type { DataAdapterWithInternal, Prettify } from '../types/index.ts';
  * @returns The extension of the file, without the leading dot
  */
 export function getExtension(filename: string): string {
-	if (filename.startsWith('.') && !filename.includes('.', 1)) return filename.slice(1);
-	const lastDot = filename.lastIndexOf('.');
-	return lastDot > 0 ? filename.slice(lastDot + 1) : '';
+  if (filename.startsWith('.') && !filename.includes('.', 1)) return filename.slice(1);
+  const lastDot = filename.lastIndexOf('.');
+  return lastDot > 0 ? filename.slice(lastDot + 1) : '';
 }
 
 /**
@@ -26,8 +26,8 @@ export function getExtension(filename: string): string {
  * @returns The real path if available, otherwise the original filePath
  */
 export function getRealPathSafe(
-	adapter: Prettify<DataAdapterWithInternal>,
-	filePath: string
+  adapter: Prettify<DataAdapterWithInternal>,
+  filePath: string
 ): string {
-	return adapter.getRealPath?.(filePath) ?? filePath;
+  return adapter.getRealPath?.(filePath) ?? filePath;
 }

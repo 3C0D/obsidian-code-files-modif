@@ -6,9 +6,9 @@
  * Returns a CodeEditorHandle with send(), getValue(), setValue(), destroy().
  */
 import type {
-	CodeEditorHandle,
-	MountCodeEditorOptions,
-	Prettify
+  CodeEditorHandle,
+  MountCodeEditorOptions,
+  Prettify
 } from '../../types/index.ts';
 
 import { buildMessageHandler } from './messageHandler.ts';
@@ -50,116 +50,116 @@ import { loadProjectFiles } from './projectLoader.ts';
  * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy)
  */
 export const mountCodeEditor = async (
-	options: Prettify<MountCodeEditorOptions>
+  options: Prettify<MountCodeEditorOptions>
 ): Promise<CodeEditorHandle> => {
-	const {
-		plugin,
-		language,
-		initialValue,
-		codeContext,
-		containerEl,
-		onChange,
-		onSave,
-		onFormatDiff,
-		onFormatDiffReverted,
-		onOpenEditorConfig,
-		onOpenThemePicker,
-		onOpenRenameExtension,
-		autoFocus = true
-	} = options;
-	// Use the document/window of the container element to support Obsidian popout windows
-	const doc = containerEl.ownerDocument;
-	const win = doc.win;
-	const valueRef = { current: initialValue };
-	// Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
-	// Use doc.body to support popout windows (each window has its own document/body)
-	const defaultTheme = doc.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs';
-	const theme =
-		plugin.settings.theme === 'default' ? defaultTheme : plugin.settings.theme;
+  const {
+    plugin,
+    language,
+    initialValue,
+    codeContext,
+    containerEl,
+    onChange,
+    onSave,
+    onFormatDiff,
+    onFormatDiffReverted,
+    onOpenEditorConfig,
+    onOpenThemePicker,
+    onOpenRenameExtension,
+    autoFocus = true
+  } = options;
+  // Use the document/window of the container element to support Obsidian popout windows
+  const doc = containerEl.ownerDocument;
+  const win = doc.win;
+  const valueRef = { current: initialValue };
+  // Determine default theme: 'vs-dark' if Obsidian is in dark mode, 'vs' otherwise
+  // Use doc.body to support popout windows (each window has its own document/body)
+  const defaultTheme = doc.body.classList.contains('theme-dark') ? 'vs-dark' : 'vs';
+  const theme =
+    plugin.settings.theme === 'default' ? defaultTheme : plugin.settings.theme;
 
-	const urls = resolveAssetUrls(plugin);
+  const urls = resolveAssetUrls(plugin);
 
-	// find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
-	const extension = codeContext.match(/\.([^.]+)$/)?.[1] ?? '';
+  // find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
+  const extension = codeContext.match(/\.([^.]+)$/)?.[1] ?? '';
 
-	const initParams = await buildInitParams(
-		plugin,
-		codeContext,
-		language,
-		theme,
-		extension
-	);
+  const initParams = await buildInitParams(
+    plugin,
+    codeContext,
+    language,
+    theme,
+    extension
+  );
 
-	// Create the iframe in the correct document (supports popout windows)
-	const iframe = doc.createElement('iframe') as HTMLIFrameElement;
-	iframe.style.width = '100%';
-	iframe.style.height = '100%';
-	iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
+  // Create the iframe in the correct document (supports popout windows)
+  const iframe = doc.createElement('iframe') as HTMLIFrameElement;
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
 
-	const blobUrl = await buildBlobUrl(urls);
-	iframe.src = blobUrl;
+  const blobUrl = await buildBlobUrl(urls);
+  iframe.src = blobUrl;
 
-	/**
-	 * Sends a typed postMessage to the Monaco iframe.
-	 * '*' is intentional: the iframe is a blob: URL with no stable origin to target.
-	 *
-	 * @param type - Message type identifier (e.g. 'init', 'change-value', 'change-theme').
-	 * @param payload - Data to send alongside the message. Spread into the message object,
-	 *                  so the iframe receives { type, ...payload }.
-	 */
-	const send = (type: string, payload: Record<string, unknown>): void => {
-		iframe.contentWindow?.postMessage({ type, ...payload }, '*');
-	};
+  /**
+   * Sends a typed postMessage to the Monaco iframe.
+   * '*' is intentional: the iframe is a blob: URL with no stable origin to target.
+   *
+   * @param type - Message type identifier (e.g. 'init', 'change-value', 'change-theme').
+   * @param payload - Data to send alongside the message. Spread into the message object,
+   *                  so the iframe receives { type, ...payload }.
+   */
+  const send = (type: string, payload: Record<string, unknown>): void => {
+    iframe.contentWindow?.postMessage({ type, ...payload }, '*');
+  };
 
-	const { handler: onMessage, cleanup } = buildMessageHandler({
-		iframe,
-		send,
-		valueRef,
-		codeContext,
-		plugin,
-		initParams,
-		loadProjectFiles: (send) => loadProjectFiles(plugin, send),
-		autoFocus,
-		onChange,
-		onSave,
-		onFormatDiff,
-		onFormatDiffReverted,
-		onOpenEditorConfig,
-		onOpenThemePicker,
-		onOpenRenameExtension
-	});
+  const { handler: onMessage, cleanup } = buildMessageHandler({
+    iframe,
+    send,
+    valueRef,
+    codeContext,
+    plugin,
+    initParams,
+    loadProjectFiles: (send) => loadProjectFiles(plugin, send),
+    autoFocus,
+    onChange,
+    onSave,
+    onFormatDiff,
+    onFormatDiffReverted,
+    onOpenEditorConfig,
+    onOpenThemePicker,
+    onOpenRenameExtension
+  });
 
-	// Register the message listener on the correct window (supports popout windows)
-	win.addEventListener('message', onMessage);
+  // Register the message listener on the correct window (supports popout windows)
+  win.addEventListener('message', onMessage);
 
-	// Clears the editor content and resets the internal value cache.
-	const clear = (): void => {
-		send('change-value', { value: '' });
-		valueRef.current = '';
-	};
+  // Clears the editor content and resets the internal value cache.
+  const clear = (): void => {
+    send('change-value', { value: '' });
+    valueRef.current = '';
+  };
 
-	// Updates the editor content and keeps the internal cache in sync.
-	const setValue = (newValue: string): void => {
-		valueRef.current = newValue;
-		send('change-value', { value: newValue });
-	};
+  // Updates the editor content and keeps the internal cache in sync.
+  const setValue = (newValue: string): void => {
+    valueRef.current = newValue;
+    send('change-value', { value: newValue });
+  };
 
-	// Returns the last known editor content (synced on every 'change' message).
-	const getValue = (): string => valueRef.current;
+  // Returns the last known editor content (synced on every 'change' message).
+  const getValue = (): string => valueRef.current;
 
-	const destroy = (): void => {
-		cleanup(); // Kill any active process for this editor context
-		win.removeEventListener('message', onMessage);
-		// Note: blob URL is now cached globally, revoked only on plugin unload
-		iframe.remove();
-	};
+  const destroy = (): void => {
+    cleanup(); // Kill any active process for this editor context
+    win.removeEventListener('message', onMessage);
+    // Note: blob URL is now cached globally, revoked only on plugin unload
+    iframe.remove();
+  };
 
-	return {
-		iframe,
-		send,
-		clear,
-		getValue,
-		setValue,
-		destroy
-	};
+  return {
+    iframe,
+    send,
+    clear,
+    getValue,
+    setValue,
+    destroy
+  };
 };

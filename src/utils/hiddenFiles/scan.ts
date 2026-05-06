@@ -9,7 +9,7 @@ import { getAdapter } from './state.ts';
  * @returns The max file size in bytes
  */
 export function getMaxFileSize(plugin: CodeFilesPlugin): number {
-	return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
+  return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
 }
 
 /**
@@ -26,60 +26,57 @@ export function getMaxFileSize(plugin: CodeFilesPlugin): number {
  * @returns Array of found dot-entries, sorted: folders first, then files, alphabetically.
  */
 export async function scanDotEntries(
-	plugin: CodeFilesPlugin,
-	folderPath: string
+  plugin: CodeFilesPlugin,
+  folderPath: string
 ): Promise<HiddenItem[]> {
-	if (folderPath === '/') folderPath = '';
+  if (folderPath === '/') folderPath = '';
 
-	const adapter = getAdapter(plugin);
-	const items: HiddenItem[] = [];
+  const adapter = getAdapter(plugin);
+  const items: HiddenItem[] = [];
 
-	try {
-		/**
-		 * Lists direct dot-children (files and folders starting with a dot)
-		 * of the given directory, without recursing into subdirectories.
-		 * Files exceeding the Monaco size limit are excluded.
-		 */
-		const listDotChildren = async (dir: string): Promise<void> => {
-			const listed = await adapter.list(dir || '');
-			for (const filePath of [...listed.files, ...listed.folders]) {
-				const entryPath = normalizePath(filePath);
-				const isFolder = listed.folders.includes(filePath);
-				const basename = entryPath.split('/').pop() || '';
-				if (!basename.startsWith('.')) continue;
-				const parentPath =
-					entryPath.substring(0, entryPath.lastIndexOf('/')) || '';
-				if (parentPath !== folderPath) continue;
-				if (isFolder && plugin.settings.excludedFolders.includes(basename))
-					continue;
-				if (!isFolder) {
-					const ext =
-						basename.substring(1).split('.').pop() || basename.substring(1);
-					if (plugin.settings.excludedExtensions.includes(ext)) continue;
-				}
-				let size = 0;
-				try {
-					const stat = await adapter.stat(entryPath);
-					if (stat) {
-						size = stat.size;
-						if (size > getMaxFileSize(plugin)) continue;
-					}
-				} catch {
-					/* ignore stat errors */
-				}
-				items.push({ name: basename, path: entryPath, isFolder, size });
-			}
-		};
-		await listDotChildren(folderPath);
+  try {
+    /**
+     * Lists direct dot-children (files and folders starting with a dot)
+     * of the given directory, without recursing into subdirectories.
+     * Files exceeding the Monaco size limit are excluded.
+     */
+    const listDotChildren = async (dir: string): Promise<void> => {
+      const listed = await adapter.list(dir || '');
+      for (const filePath of [...listed.files, ...listed.folders]) {
+        const entryPath = normalizePath(filePath);
+        const isFolder = listed.folders.includes(filePath);
+        const basename = entryPath.split('/').pop() || '';
+        if (!basename.startsWith('.')) continue;
+        const parentPath = entryPath.substring(0, entryPath.lastIndexOf('/')) || '';
+        if (parentPath !== folderPath) continue;
+        if (isFolder && plugin.settings.excludedFolders.includes(basename)) continue;
+        if (!isFolder) {
+          const ext = basename.substring(1).split('.').pop() || basename.substring(1);
+          if (plugin.settings.excludedExtensions.includes(ext)) continue;
+        }
+        let size = 0;
+        try {
+          const stat = await adapter.stat(entryPath);
+          if (stat) {
+            size = stat.size;
+            if (size > getMaxFileSize(plugin)) continue;
+          }
+        } catch {
+          /* ignore stat errors */
+        }
+        items.push({ name: basename, path: entryPath, isFolder, size });
+      }
+    };
+    await listDotChildren(folderPath);
 
-		items.sort((a, b) => {
-			if (a.isFolder && !b.isFolder) return -1;
-			if (!a.isFolder && b.isFolder) return 1;
-			return a.name.localeCompare(b.name);
-		});
-	} catch (e) {
-		console.error('Scan error:', e);
-	}
+    items.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  } catch (e) {
+    console.error('Scan error:', e);
+  }
 
-	return items;
+  return items;
 }
