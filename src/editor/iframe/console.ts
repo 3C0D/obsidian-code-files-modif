@@ -128,6 +128,18 @@ export function initConsolePane(
   });
 
   /**
+   * Focus input field when clicking the output area.
+   * This mimics VS Code's terminal behavior.
+   * We skip focusing if the user is currently selecting text for copying.
+   */
+  output.addEventListener('click', () => {
+    const selection = window.getSelection()?.toString();
+    if (!selection || selection.length === 0) {
+      input.focus();
+    }
+  });
+
+  /**
    * Input field specific listeners.
    * Handles Enter to submit and Arrows for history navigation.
    */
