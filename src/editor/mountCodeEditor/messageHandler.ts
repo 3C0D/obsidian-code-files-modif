@@ -8,11 +8,18 @@ import { spawn, type ChildProcess } from 'child_process';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import path from 'path';
 
-// Map to track active processes per context
+/**
+ * Global registry for active console processes.
+ * Keys are the 'codeContext' (file paths), values are the Node.js ChildProcess objects.
+ * We track them globally to ensure we can kill them if the editor is closed.
+ */
 export const activeProcesses = new Map<string, ChildProcess>();
+
 /**
  * Builds the postMessage handler for a Monaco iframe instance.
- * Filtered by source to only process messages from the given iframe.
+ * This is the central bridge between the isolated iframe and the Obsidian/Node.js environment.
+ *
+ * @param ctx - The context containing refs to the iframe, current file, and plugin instance.
  */
 export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
   handler: (event: MessageEvent) => Promise<void>;
@@ -36,11 +43,15 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     onOpenRenameExtension
   } = ctx;
 
+  /**
+   * Main message listener function.
+   * Processes all events sent by the iframe via window.parent.postMessage.
+   */
   const onMessage = async ({ data, source }: MessageEvent): Promise<void> => {
-    // Guard against messages from other iframes or sources
+    // SECURITY: Ensure we only process messages intended for THIS specific iframe instance.
     if (source !== iframe.contentWindow) return;
 
-    // Handle 'ready' first — no context check needed, targets this iframe only
+    // Handle 'ready' signal: Triggered when Monaco is fully loaded in the iframe.
     if (data.type === 'ready') {
       send('init', initParams);
       send('change-value', { value: valueRef.current });
@@ -49,13 +60,11 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       return;
     }
 
-    // All other messages must match this editor's context
-    // Ensures the message comes from this specific iframe:
-    // - data.context: identifier sent by the iframe (e.g., file path)
-    // - codeContext: this editor's identifier (passed to mountCodeEditor)
+    // DISPATCHING: All other messages must provide a 'context' matching this file path.
     if (data.context !== codeContext) return;
 
     switch (data.type) {
+      // ... (existing cases: open-formatter-config, settings, delete, etc.)
       case 'open-formatter-config': {
         const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
         onOpenEditorConfig?.(ext);
@@ -66,9 +75,6 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         break;
       }
       case 'open-settings': {
-        // Patch settings modal onClose to detect hotkey changes safely via monkey-around.
-        // This ensures we always restore the original method and don't overwrite other patches.
-        // Wait 200ms after close to ensure Obsidian has saved the new hotkeys.
         const uninstall = around(plugin.app.setting, {
           onClose(old) {
             return function (this: unknown) {
@@ -98,7 +104,6 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         break;
       }
       case 'open-obsidian-palette': {
-        // Patch onClose to refocus Monaco when command palette closes safely via monkey-around.
         const cmdPalette = plugin.app.internalPlugins.getPluginById('command-palette');
         if (!cmdPalette) break;
         const modal = cmdPalette.instance.modal;
@@ -168,48 +173,64 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         break;
       }
 
+      /**
+       * CONSOLE: Toggle visibility.
+       * Simply reflects the command back to the iframe.
+       * The iframe manages the actual DOM visibility class.
+       */
       case 'toggle-console': {
         if (!Platform.isDesktop) break;
-        // Reflect the toggle to the iframe — the visible/hidden state is managed in the iframe
         send('console-toggle', {});
         break;
       }
 
+      /**
+       * CONSOLE: Run a new system command.
+       * Spawns a child process and pipes its output to the iframe.
+       */
       case 'run-command': {
         if (!Platform.isDesktop) break;
         const cmdLine = data.cmd as string;
         if (!cmdLine?.trim()) break;
 
-        // Kill the previous process for this context
+        // Kill any existing process for this file before starting a new one.
         activeProcesses.get(codeContext)?.kill();
 
         const parts = cmdLine.trim().split(/\s+/);
         const cmd = parts[0];
         const args = parts.slice(1);
 
-        // basePath = absolute path of the vault (FileSystemAdapter, Desktop only)
+        // Determine the absolute directory of the current file.
+        // Commands should run relative to the file, not the vault root.
         const adapter = getDataAdapterEx(plugin.app);
         const basePath = adapter.basePath;
-        const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, '')); // folder of the file, not vault root
+        const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
 
         try {
           const proc = spawn(cmd, args, {
-            cwd: fileDir, // folder of the file, not vault root
-            stdio: ['pipe', 'pipe', 'pipe'],
-            shell: true, // Delegate to the system shell which has the correct PATH
-            detached: process.platform !== 'win32' // Create process group on Unix for robust kill
+            cwd: fileDir,
+            stdio: ['pipe', 'pipe', 'pipe'], // Open pipes for stdin, stdout, and stderr
+            shell: true, // Use system shell (cmd.exe/sh) to inherit the user's PATH
+            // Create a process group on Unix. This allows killing children of the spawned shell.
+            detached: process.platform !== 'win32'
           });
           activeProcesses.set(codeContext, proc);
 
-          // Stream stdout/stderr to the iframe via postMessage
+          // Relay stdout data to the iframe
           proc.stdout?.on('data', (chunk) => {
             send('console-output', { text: chunk.toString() });
           });
+          // Relay stderr data to the iframe
           proc.stderr?.on('data', (chunk) => {
             send('console-output', { text: chunk.toString() });
           });
+
+          /**
+           * Process Exit Handling.
+           * We wait 50ms (setTimeout) to ensure all remaining 'data' events
+           * from stdout/stderr have been processed before signaling the exit.
+           */
           proc.on('close', (code) => {
-            // Allow a tick for the last data chunks to be processed
             setTimeout(() => {
               send('console-output', {
                 text: `\nProcess exited with code ${code}\n`
@@ -217,6 +238,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
               activeProcesses.delete(codeContext);
             }, 50);
           });
+
           proc.on('error', (err) => {
             send('console-output', { text: `Error: ${err.message}\n` });
             activeProcesses.delete(codeContext);
@@ -227,15 +249,24 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         break;
       }
 
+      /**
+       * CONSOLE: Write to the standard input of the active process.
+       * Used for interactive scripts (e.g. answering a prompt).
+       */
       case 'send-stdin': {
         if (!Platform.isDesktop) break;
         const proc = activeProcesses.get(codeContext);
         if (proc?.stdin?.writable) {
+          // We append a newline because stdin usually expects a line-buffered input.
           proc.stdin.write((data.text as string) + '\n');
         }
         break;
       }
 
+      /**
+       * CONSOLE: Force-kill the active process tree.
+       * Triggered by Ctrl+C in the console or the Stop button.
+       */
       case 'stop-command': {
         if (!Platform.isDesktop) break;
         const proc = activeProcesses.get(codeContext);
@@ -243,20 +274,36 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
 
         try {
           if (process.platform === 'win32') {
-            // taskkill /T kills the entire process tree on Windows
+            /**
+             * WINDOWS TREE KILL:
+             * 'taskkill /T' kills the process and all its children.
+             * '/F' forces termination. This is necessary because 'shell: true'
+             * creates a cmd.exe wrapper that doesn't always forward signals.
+             */
             spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], {
               shell: true
             });
           } else {
-            // Negative PID kills the entire process group on Unix
+            /**
+             * UNIX GROUP KILL:
+             * Passing a negative PID to process.kill() signals the entire process group.
+             * Requires 'detached: true' in the spawn options.
+             */
             process.kill(-proc.pid, 'SIGINT');
           }
         } catch {
+          // Fallback to a simple kill if tree-kill fails
           proc.kill('SIGINT');
         }
 
         activeProcesses.delete(codeContext);
-        // Notify iframe so isRunning resets — taskkill /F may prevent the 'close' event
+
+        /**
+         * MANUAL NOTIFICATION:
+         * Force-killing (especially on Windows) might prevent the 'close' event
+         * from firing normally. We send a manual notice to ensure the iframe's
+         * 'isRunning' flag is reset.
+         */
         send('console-output', {
           text: '\nProcess interrupted (SIGINT)\nProcess exited with code null\n'
         });
@@ -270,6 +317,11 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
 
   return {
     handler: onMessage,
+    /**
+     * Cleanup Function.
+     * Called when the editor view is destroyed.
+     * Ensures we don't leave zombie background processes running.
+     */
     cleanup: () => {
       const proc = activeProcesses.get(codeContext);
       if (proc?.pid) {

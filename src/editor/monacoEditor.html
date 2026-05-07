@@ -51,6 +51,7 @@
 		<div id="wrapper">
 			<!-- Monaco's mount target: monaco.editor.create() requires a DOM element with measurable dimensions -->
 			<div id="container"></div>
+			<!-- tabindex="0" makes the div focusable, allowing it to capture keyboard events (e.g. Ctrl+C to stop process) even when the input field isn't focused -->
 			<div id="console-pane" tabindex="0">
 				<div id="console-resize-handle"></div>
 				<div id="console-output"></div>

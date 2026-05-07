@@ -2,17 +2,17 @@
 
 La console est intégrée directement dans l'iframe Monaco. Elle permet d'exécuter des commandes système (Node.js, Python, etc.) sur le fichier actuellement ouvert sans utiliser de vue Obsidian séparée.
 
-## Architecture
+## Architecture Globale
 
 Le panneau de console est un élément du DOM interne à l'iframe Monaco. Le processus (`child_process.spawn`) tourne côté parent (Obsidian) et communique avec l'iframe via postMessage.
 
-- **Cas d'usage principal** : Lancer le fichier courant (`node`, `python`, `npx ts-node`).
-- **Desktop uniquement** : L'exécution de commandes est réservée à la version Desktop d'Obsidian.
-- **Modularité** : La logique est isolée dans `src/editor/iframe/console.ts`.
+- **Isolation** : L'iframe (blob URL) ne peut pas exécuter de code système elle-même. Elle délègue tout au parent.
+- **Modularité** : La logique métier est isolée dans `src/editor/iframe/console.ts`.
+- **Desktop uniquement** : L'exécution est réservée à la version Desktop d'Obsidian.
 
 ## Structure UI (monacoEditor.html)
 
-L'éditeur Monaco et la console sont encapsulés dans un `#wrapper` flex :
+L'éditeur Monaco et la console sont encapsulés dans un `#wrapper` flex (direction colonne) :
 ```html
 <div id="wrapper">
     <div id="container"></div>
@@ -28,64 +28,82 @@ L'éditeur Monaco et la console sont encapsulés dans un `#wrapper` flex :
 </div>
 ```
 
-## Fonctionnalités Implémentées
+## Intégration dans Monaco (actions.ts)
 
-### 1. Exécution et Stdin Interactif
-- **Exécution** : Lance les commandes via le shell système (`shell: true`).
-- **Stdin** : Support complet des entrées interactives (`input()` en Python, `readline` en Node). Le flag `isRunning` dans l'iframe détermine si l'input envoie une commande (`run-command`) ou du texte au processus (`send-stdin`).
-- **Auto-remplissage** : Détection de l'extension pour suggérer la commande appropriée (`.ts` -> `npx ts-node`, etc.).
+La console est enregistrée comme une action et une commande dans Monaco :
 
-### 2. Contrôle et Robustesse
-- **Interruption (Ctrl+C)** : Utilise `taskkill /T /F` sur Windows et les groupes de processus (`-pid`) sur Unix pour tuer proprement l'arbre de processus (shell + enfants).
-- **Reset de l'UI** : Le parent envoie une notification de fin forcée pour garantir que l'interface se débloque même si le processus est tué brutalement.
-- **Historique** : Navigation dans les commandes précédentes avec les flèches **Haut** et **Bas** dans le champ de saisie.
-
-### 3. Rendu et Ergonomie
-- **Couleurs ANSI** : Intégration de `ansi_up` (bundlé dans `monacoBundle.js`) pour un rendu fidèle des sorties colorées.
-- **Redimensionnement** : Un handle de drag en haut du panneau permet d'ajuster la hauteur (entre 80px et 80% de la fenêtre).
-- **Nettoyage** : Les processus sont automatiquement tués lors de la fermeture du fichier ou de la destruction de l'éditeur.
-
-## Flux de Communication
-
-### Séquence de lancement
-```
-Enter dans #console-input-field (iframe)
-  └─ postMessage { type: 'run-command', cmd, context }
-       └─ messageHandler.ts → spawn(cmd, args, { stdio: 'pipe', shell: true })
-            └─ stdout/stderr → send('console-output', { text })
-                 └─ console.ts → rendu ANSI + scroll automatique
-```
-
-### Séquence Stdin
-```
-Enter dans #console-input-field (si isRunning === true)
-  └─ postMessage { type: 'send-stdin', text, context }
-       └─ messageHandler.ts → proc.stdin.write(text + '\n')
-```
-
-## Configuration Technique (messageHandler.ts)
-
-Le processus est lancé avec des options spécifiques pour permettre l'interaction et un arrêt propre :
+### 1. Raccourci Clavier (Ctrl+J)
 ```ts
-const proc = spawn(cmd, args, {
-    cwd: fileDir,
-    stdio: ['pipe', 'pipe', 'pipe'],
-    shell: true,
-    detached: process.platform !== 'win32'
+editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
+    window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
 });
 ```
 
-- **`shell: true`** : Indispensable pour hériter du PATH utilisateur et trouver les binaires comme `node` ou `python`.
-- **`detached: true`** : Permet de créer un groupe de processus sur Unix pour que `process.kill(-pid)` tue aussi les processus enfants.
+### 2. Menu Contextuel
+Une action "🖥️ Open Console" est ajoutée au groupe `code-files` du menu contextuel.
 
-## Raccourcis Clavier
-- **Ctrl + J** : Basculer l'affichage de la console (depuis l'éditeur ou le panneau).
-- **Ctrl + C** : Interrompre le processus en cours (lorsque le panneau a le focus).
+---
+
+## Logique Iframe (console.ts)
+
+### Le mécanisme `isRunning` (Mode Commande vs Mode Stdin)
+C'est le point clé pour l'interactivité. L'iframe maintient un état interne `isRunning` pour savoir comment interpréter la touche **Enter** :
+
+1. **Si `isRunning` est FAUX** :
+   - L'utilisateur tape une commande (ex: `python script.py`).
+   - L'iframe envoie `run-command` au parent.
+   - Le parent lance (`spawn`) le processus.
+   - L'iframe passe `isRunning` à **VRAI**.
+
+2. **Si `isRunning` est VRAI** :
+   - Un programme est déjà en cours d'exécution.
+   - Si l'utilisateur tape du texte, c'est probablement une réponse à une demande du programme (ex: un `input()` en Python).
+   - L'iframe envoie `send-stdin` au parent.
+   - Le parent écrit ce texte dans l'entrée standard (`stdin`) du processus existant.
+
+3. **Retour à l'état initial** :
+   - Dès que le parent détecte que le processus est terminé, il envoie un message contenant "Process exited with code".
+   - L'iframe repasse `isRunning` à **FAUX**, libérant la console pour une nouvelle commande.
+
+### Fonctionnalités annexes
+- **Historique** : Navigation avec les flèches Haut/Bas.
+- **Resize** : Drag handle ajustant la hauteur et forçant `editor.layout()`.
+- **ANSI** : Rendu des couleurs via `ansi_up`.
+
+---
+
+## Gestion des Processus (messageHandler.ts)
+
+Le parent gère l'exécution réelle via Node.js `child_process.spawn`.
+
+### 1. Lancement (`run-command`)
+Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']`. Cela signifie que les trois flux (Entrée, Sortie, Erreur) sont "branchés" et peuvent être lus/écrits par le plugin.
+
+### 2. Interruption et Nettoyage (`stop-command`)
+- **Windows** : `taskkill /pid [pid] /T /F` (tue l'arbre complet).
+- **Unix** : `process.kill(-proc.pid, 'SIGINT')` (tue le groupe de processus).
+- **Reset UI** : Un message de sortie forcé est envoyé à l'iframe pour garantir que `isRunning` repasse à faux.
+
+---
+
+## Problèmes connus & TODO
+
+- [ ] **Ctrl+C Global** : Actuellement, un Ctrl+C n'importe où dans Obsidian peut interférer si le listener n'est pas assez ciblé.
+- [ ] **Prompt visuel** : Ajouter le chemin courant et un symbole `>` (ex: `C:\Users\>`) devant l'input pour imiter un vrai terminal.
+- [ ] **Persistance du Resize** : Sauvegarder la hauteur de la console dans les paramètres.
+
+---
+
+## Notes Techniques
+- **Race Condition** : Délai de 50ms à la fin pour vider les buffers.
+- **Performance** : `editor.layout()` est appelé uniquement lors des changements de taille ou de visibilité.
+- **Dispatching** : Routage automatique des messages `console-*` dans `init.ts`.
 
 ---
 
 ## Fichiers concernés
-- `src/editor/iframe/console.ts` : Logique métier de la console.
-- `src/editor/iframe/init.ts` : Dispatcher des messages.
-- `src/editor/mountCodeEditor/messageHandler.ts` : Gestion des processus côté Obsidian.
-- `src/editor/monacoHtml.css` : Styles et thémage ANSI.
+- [src/editor/iframe/console.ts](../src/editor/iframe/console.ts) : Logique métier de la console.
+- [src/editor/iframe/init.ts](../src/editor/iframe/init.ts) : Dispatcher des messages.
+- [src/editor/mountCodeEditor/messageHandler.ts](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus côté Obsidian.
+- [src/editor/monacoHtml.css](../src/editor/monacoHtml.css) : Styles et thémage ANSI.
+- [src/editor/monacoEditor.html](../src/editor/monacoEditor.html) : Structure DOM de la console.
