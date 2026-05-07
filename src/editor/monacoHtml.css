@@ -120,6 +120,7 @@
 	padding: 6px 8px;
 	white-space: pre-wrap;
 	word-wrap: break-word;
+	user-select: text;
 }
 
 /* ANSI Colors */

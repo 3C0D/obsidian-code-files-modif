@@ -114,3 +114,5 @@ Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']`. Cela signifie qu
 - [src/editor/mountCodeEditor/messageHandler.ts](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus côté Obsidian.
 - [src/editor/monacoHtml.css](../src/editor/monacoHtml.css) : Styles et thémage ANSI.
 - [src/editor/monacoEditor.html](../src/editor/monacoEditor.html) : Structure DOM de la console.
+- [src/editor/iframe/actions.ts](../src/editor/iframe/actions.ts) : Actions et raccourcis clavier.
+- [src/editor/mountCodeEditor/mountCodeEditor.ts](../src/editor/mountCodeEditor/mountCodeEditor.ts) : Orchestration du montage de l'iframe.

@@ -198,7 +198,7 @@ export function initConsolePane(
    */
   const ext = ctx.match(/\.([^./\\]+)$/)?.[1];
   const fileName = ctx.split('/').pop() || '';
-  if (ext === 'ts') input.value = 'npx ts-node ' + fileName;
+  if (ext === 'ts') input.value = 'npx tsx ' + fileName;
   else if (ext === 'py') input.value = 'python ' + fileName;
   else if (ext === 'js') input.value = 'node ' + fileName;
 }
@@ -248,6 +248,16 @@ export function handleConsoleMessage(
         if (text.includes('Process exited with code')) {
           isRunning = false;
         }
+      }
+      return true;
+    }
+
+    case 'console-history': {
+      const incoming = data.history as string[];
+      // Only restore if iframe history is empty (fresh init)
+      if (history.length === 0) {
+        history.push(...incoming);
+        historyIndex = history.length;
       }
       return true;
     }

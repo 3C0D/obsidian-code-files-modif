@@ -15,6 +15,9 @@ import path from 'path';
  */
 export const activeProcesses = new Map<string, ChildProcess>();
 
+/** Session-scoped command history per file. Survives iframe recreation. */
+const consoleHistories = new Map<string, string[]>();
+
 /**
  * Builds the postMessage handler for a Monaco iframe instance.
  * This is the central bridge between the isolated iframe and the Obsidian/Node.js environment.
@@ -57,6 +60,10 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       send('change-value', { value: valueRef.current });
       if (autoFocus) send('focus', {});
       await loadProjectFiles(send);
+
+      // Restore command history for this file context
+      const hist = consoleHistories.get(codeContext);
+      if (hist?.length) send('console-history', { history: hist });
       return;
     }
 
@@ -192,6 +199,11 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         if (!Platform.isDesktop) break;
         const cmdLine = data.cmd as string;
         if (!cmdLine?.trim()) break;
+
+        // Persist command in history
+        const hist = consoleHistories.get(codeContext) ?? [];
+        hist.push(cmdLine.trim());
+        consoleHistories.set(codeContext, hist);
 
         // Kill any existing process for this file before starting a new one.
         activeProcesses.get(codeContext)?.kill();
