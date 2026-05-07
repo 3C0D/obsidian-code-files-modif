@@ -96,13 +96,16 @@ export function initConsolePane(
    * Handles Ctrl+C for interruption and Ctrl+J for visibility toggle.
    */
   pane.addEventListener('keydown', (e) => {
-    // Intercept Ctrl+C to kill the active process
+    // Handle Ctrl+C: Kill process if running, otherwise allow copy
     if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      window.parent.postMessage(
-        { type: 'stop-command', context: ctx },
-        getParentOrigin()
-      );
+      if (isRunning) {
+        e.preventDefault();
+        window.parent.postMessage(
+          { type: 'stop-command', context: ctx },
+          getParentOrigin()
+        );
+      }
+      // Otherwise, let the browser handle the default copy behavior
     }
     // Intercept Ctrl+J to toggle visibility (same shortcut as the main editor)
     if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
