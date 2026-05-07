@@ -4,16 +4,19 @@ La console est intégrée directement dans l'iframe Monaco. Elle permet d'exécu
 
 ## Architecture Globale
 
-Le panneau de console est un élément du DOM interne à l'iframe Monaco. Le processus (`child_process.spawn`) tourne côté parent (Obsidian) et communique avec l'iframe via postMessage.
+Le panneau de console est un élément du DOM interne à l'iframe Monaco. Le processus (`child_process.spawn`) tourne côté parent (Obsidian) et communique avec l'iframe via `postMessage`.
 
 - **Isolation** : L'iframe (blob URL) ne peut pas exécuter de code système elle-même. Elle délègue tout au parent via `postMessage`.
 - **Modularité** : La logique métier est isolée dans `src/editor/iframe/console.ts`.
 - **Typage** : Les communications sont sécurisées par des types définis dans `src/editor/iframe/types/console.ts`.
-- **Desktop uniquement** : L'exécution est réservée à la version Desktop d'Obsidian.
+- **Desktop uniquement** : L'exécution est réservée à la version Desktop d'Obsidian (Electron expose Node.js ; la version mobile ne l'a pas).
+
+---
 
 ## Structure UI (monacoEditor.html)
 
 L'éditeur Monaco et la console sont encapsulés dans un `#wrapper` flex (direction colonne) :
+
 ```html
 <div id="wrapper">
     <div id="container"></div>
@@ -28,6 +31,10 @@ L'éditeur Monaco et la console sont encapsulés dans un `#wrapper` flex (direct
     </div>
 </div>
 ```
+
+`tabindex="0"` rend le `div` focusable, ce qui permet de capturer les raccourcis clavier (Ctrl+C, Ctrl+J) même quand le curseur n'est pas dans le champ de saisie.
+
+---
 
 ## Intégration dans Monaco (actions.ts)
 
@@ -48,40 +55,62 @@ Une action "🖥️ Open Console" est ajoutée au groupe `code-files` du menu co
 ## Logique Iframe (console.ts)
 
 ### Le mécanisme `isRunning` (Mode Commande vs Mode Stdin)
+
 C'est le point clé pour l'interactivité. L'iframe maintient un état interne `isRunning` pour savoir comment interpréter la touche **Enter** :
 
 1. **Si `isRunning` est FAUX** :
-   - L'utilisateur tape une commande (ex: `python script.py`).
+   - L'utilisateur tape une commande (ex : `python script.py`).
    - L'iframe envoie `run-command` au parent.
    - Le parent lance (`spawn`) le processus.
    - L'iframe passe `isRunning` à **VRAI**.
 
 2. **Si `isRunning` est VRAI** :
    - Un programme est déjà en cours d'exécution.
-   - Si l'utilisateur tape du texte, c'est probablement une réponse à une demande du programme (ex: un `input()` en Python).
+   - Le texte saisi est une réponse à une demande du programme (ex : un `input()` Python).
    - L'iframe envoie `send-stdin` au parent.
-   - Le parent écrit ce texte dans l'entrée standard (`stdin`) du processus existant.
+   - Le parent écrit ce texte dans le flux d'entrée standard (`stdin`) du processus existant.
 
 3. **Retour à l'état initial** :
    - Dès que le parent détecte que le processus est terminé, il envoie un message structuré `console-process-exited`.
    - L'iframe repasse `isRunning` à **FAUX**, libérant la console pour une nouvelle commande.
-   - > [!NOTE]
-     > Ce mécanisme est désormais robuste et ne dépend plus d'un scan textuel de la sortie standard.
+
+> [!NOTE]
+> Ce mécanisme est robuste : il repose sur un message dédié (`console-process-exited`) et non sur un scan textuel de la sortie, ce qui élimine tout risque de faux positif si un programme écrivait lui-même du texte contenant "Process exited".
 
 ### Redimensionnement optimisé (Performance)
-Pour éviter que l'interface ne se fige pendant le drag, la logique de redimensionnement est séparée en deux flux :
-1.  **Mise à jour visuelle (Synchrone)** : La hauteur du DOM (`pane.style.height`) change immédiatement.
-2.  **Mise à jour logique (Throttled)** : L'appel coûteux `editor.layout()` est limité à une exécution toutes les 50ms via un utilitaire `throttle` générique intégré.
+
+Pour éviter que l'interface ne se fige pendant le drag de la poignée, la logique est séparée en deux flux :
+
+1. **Mise à jour visuelle (Synchrone)** : La hauteur du DOM (`pane.style.height`) change immédiatement à chaque `mousemove`. La bordure suit le curseur de façon fluide.
+2. **Mise à jour logique (Throttled)** : L'appel coûteux `editor.layout()` est encapsulé dans un utilitaire `throttle` générique, limité à une exécution toutes les 50 ms. Monaco se réajuste régulièrement sans saturer le thread principal.
+
+La hauteur choisie est persistée dans les paramètres du plugin lors du relâchement de la souris.
 
 ### Gestion des entrées et UX
-- **Nettoyage** : Le champ d'entrée est systématiquement vidé après l'envoi.
-- **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier.
-- **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
-- **Prompt visuel** : Affiche le dossier courant (CWD) devant le symbole `$`.
-- **Copie** : Clic droit sur la sortie pour copier la sélection dans le presse-papier.
-- **Drag-and-Drop** : Possibilité de glisser des fichiers depuis l'explorateur vers l'input pour insérer leurs chemins.
-- **ANSI** : Rendu des couleurs via `ansi_up`.
-- **Truncate** : La sortie est limitée aux 5000 dernières lignes pour préserver les performances du DOM.
+
+- **Nettoyage** : Le champ de saisie est systématiquement vidé après l'envoi d'une commande ou d'un stdin.
+- **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier (cap à 50 entrées), et restauré à chaque réouverture de l'éditeur.
+- **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier. Utilise `tsx` pour TypeScript (plus rapide que `ts-node`, support ESM natif).
+
+  | Extension | Commande pré-remplie |
+  |---|---|
+  | `.ts`, `.mts`, `.cts` | `npx tsx <fichier>` |
+  | `.js`, `.mjs`, `.cjs` | `node <fichier>` |
+  | `.py` | `python <fichier>` |
+  | `.sh` | `bash <fichier>` |
+  | `.ps1` | `powershell -File <fichier>` |
+  | `.rb` | `ruby <fichier>` |
+  | `.go` | `go run <fichier>` |
+  | `.rs` | `cargo run` |
+  | `.java` | `java <fichier>` |
+  | `.lua`, `.php`, `.r`, `.pl` | commande spécifique + fichier |
+
+- **Prompt visuel** : Affiche le dossier courant (CWD, chemin relatif au vault) devant le symbole `$` lors de chaque nouvelle commande.
+- **Copie** : Clic droit sur la zone de sortie pour copier la sélection dans le presse-papier via `navigator.clipboard`.
+- **Drag-and-Drop** : Glisser des fichiers depuis l'explorateur vers l'input insère leur chemin (entre guillemets si le chemin contient des espaces).
+- **Paste multi-ligne (mode stdin)** : En mode interactif, coller un texte contenant des sauts de ligne envoie chaque ligne séparément au `stdin` du processus.
+- **ANSI** : Les séquences de couleur produites par les programmes en ligne de commande sont converties en balises HTML via `ansi_up`.
+- **Truncate** : La sortie est limitée aux 5 000 dernières lignes pour préserver les performances du DOM sur des exécutions longues.
 
 ---
 
@@ -90,33 +119,129 @@ Pour éviter que l'interface ne se fige pendant le drag, la logique de redimensi
 Le parent gère l'exécution réelle via Node.js `child_process.spawn`.
 
 ### 1. Lancement (`run-command`)
-Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']` et un environnement enrichi (`PYTHONIOENCODING: 'utf-8'`, `FORCE_COLOR: '1'`).
 
-### 2. Interruption et Nettoyage (`stop-command`)
-- **Arbre de processus** : Utilise une logique de "tree-kill" (via `taskkill` sur Windows et les groupes de processus sur Unix) pour s'assurer que les sous-processus sont également arrêtés.
-- **Persistance** : Sauvegarde la hauteur de la console dans les réglages du plugin lors du redimensionnement.
+Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']` : les trois flux (entrée, sortie standard, erreurs) sont branchés et contrôlés par le plugin.
+
+L'environnement est enrichi pour garantir la compatibilité :
+
+```ts
+env: {
+  ...process.env,        // Hérite du PATH et des variables système
+  PYTHONIOENCODING: 'utf-8', // Force l'encodage UTF-8 pour Python
+  GIT_PAGER: '',         // Désactive le pager de git (évite que git log bloque)
+  FORCE_COLOR: '1',      // Demande aux programmes de produire des couleurs ANSI
+}
+```
+
+Le CWD (répertoire de travail) est calculé depuis le chemin absolu du fichier ouvert, pas depuis la racine du vault.
+
+### 2. Signalement de fin de processus
+
+À la fermeture du processus, le parent envoie deux messages distincts :
+
+- `console-output` avec le texte `"\nProcess exited with code N\n"` (pour l'affichage).
+- `console-process-exited` avec le code de sortie structuré (pour réinitialiser `isRunning`).
+
+Un délai de 50 ms est appliqué avant l'envoi pour s'assurer que tous les événements `data` de `stdout`/`stderr` ont été traités (race condition inévitable avec les streams Node.js).
+
+### 3. Interruption et Nettoyage (`stop-command` et `cleanup`)
+
+La logique de kill est centralisée dans une fonction `killProcessTree` réutilisée par `stop-command` et par le nettoyage à la destruction de la vue :
+
+- **Windows** : `taskkill /pid [pid] /T /F` tue l'arbre de processus complet (le shell `cmd.exe` et tous ses enfants).
+- **Unix** : `process.kill(-proc.pid, 'SIGINT')` envoie le signal au groupe de processus entier (nécessite `detached: true` au spawn).
+- **Fallback** : `proc.kill('SIGINT')` si le tree-kill échoue.
+
+Après un `stop-command`, un message `console-process-exited` est envoyé manuellement pour garantir que `isRunning` repasse à `false`, car le kill forcé peut empêcher l'événement `close` de se déclencher normalement.
 
 ---
 
 ## Problèmes connus & TODO
 
-- [ ] **Ctrl+C Global** : Actuellement, un Ctrl+C n'importe où dans Obsidian peut interférer si le listener n'est pas assez ciblé.
-- [ ] **Interactivité avancée** : Support de l'auto-complétion dans la console.
+- [ ] **Ctrl+C Global** : Un Ctrl+C n'importe où dans Obsidian peut interférer si le listener sur le `pane` n'est pas assez ciblé — à investiguer avec `stopPropagation`.
+- [ ] **Interactivité avancée** : Support de l'auto-complétion (Tab) dans la console.
 
 ---
 
 ## Notes Techniques
-- **Race Condition** : Délai de 50ms à la fin pour vider les buffers.
-- **Performance** : `editor.layout()` est appelé uniquement lors des changements de taille ou de visibilité.
+
+- **Race Condition** : Délai de 50 ms à la fin du processus pour vider les buffers `stdout`/`stderr` avant de signaler l'exit.
+- **Performance** : `editor.layout()` est appelé uniquement lors des changements de taille ou de visibilité, jamais en continu.
 - **Dispatching** : Routage automatique des messages `console-*` dans `init.ts`.
+- **Historique** : Persisté dans `plugin.settings.consoleHistories` (objet indexé par chemin de fichier, cap à 50 entrées par fichier).
 
 ---
 
 ## Fichiers concernés
-- [src/editor/iframe/console.ts](../src/editor/iframe/console.ts) : Logique métier de la console.
-- [src/editor/iframe/init.ts](../src/editor/iframe/init.ts) : Dispatcher des messages.
-- [src/editor/mountCodeEditor/messageHandler.ts](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus côté Obsidian.
-- [src/editor/monacoHtml.css](../src/editor/monacoHtml.css) : Styles et thémage ANSI.
-- [src/editor/monacoEditor.html](../src/editor/monacoEditor.html) : Structure DOM de la console.
-- [src/editor/iframe/actions.ts](../src/editor/iframe/actions.ts) : Actions et raccourcis clavier.
-- [src/editor/mountCodeEditor/mountCodeEditor.ts](../src/editor/mountCodeEditor/mountCodeEditor.ts) : Orchestration du montage de l'iframe.
+
+- [`src/editor/iframe/console.ts`](../src/editor/iframe/console.ts) : Logique métier de la console (UI, états, messages entrants).
+- [`src/editor/iframe/init.ts`](../src/editor/iframe/init.ts) : Dispatcher des messages.
+- [`src/editor/iframe/types/console.ts`](../src/editor/iframe/types/console.ts) : Types des messages `postMessage` (entrée/sortie).
+- [`src/editor/mountCodeEditor/messageHandler.ts`](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus côté Obsidian.
+- [`src/editor/monacoHtml.css`](../src/editor/monacoHtml.css) : Styles et thémage ANSI.
+- [`src/editor/monacoEditor.html`](../src/editor/monacoEditor.html) : Structure DOM de la console.
+- [`src/editor/iframe/actions.ts`](../src/editor/iframe/actions.ts) : Actions et raccourcis clavier Monaco.
+- [`src/editor/mountCodeEditor/mountCodeEditor.ts`](../src/editor/mountCodeEditor/mountCodeEditor.ts) : Orchestration du montage de l'iframe.
+
+---
+
+## Annexe — Théorie : Qu'est-ce qu'une console embarquée ?
+
+### Le modèle standard : stdin / stdout / stderr
+
+Tout programme en ligne de commande communique via trois flux (streams) standard :
+
+- **stdin** (entrée standard) : ce que le programme reçoit comme données. Dans un terminal classique, c'est ce que l'utilisateur tape.
+- **stdout** (sortie standard) : ce que le programme écrit comme résultat normal. Par exemple, `print("bonjour")` en Python écrit sur stdout.
+- **stderr** (sortie d'erreur) : réservé aux messages d'erreur et d'avertissement. Séparé de stdout pour pouvoir rediriger les erreurs indépendamment.
+
+`spawn` avec `stdio: ['pipe', 'pipe', 'pipe']` connecte ces trois flux au plugin, qui peut ainsi les lire et y écrire à la demande.
+
+### Ce que nous avons construit : un "Run Panel"
+
+Notre console est ce qu'on appelle un **run panel** : un panneau d'exécution contextuel. Elle lance un programme, collecte sa sortie et permet d'envoyer des données à son entrée. C'est le modèle utilisé par les IDE intégrés (VSCode "Terminal", PyCharm "Run", etc.) pour les exécutions simples.
+
+Ce modèle convient parfaitement pour :
+- Exécuter des scripts (Python, Node.js, Go, Rust, etc.)
+- Voir la sortie colorée (ANSI)
+- Interagir avec des programmes qui demandent des saisies simples (`input()` Python, `readline` Node.js)
+
+### Ce que nous n'avons pas construit : un émulateur de terminal (PTY)
+
+Un **PTY** (Pseudo-Terminal) est un composant système qui simule un vrai terminal matériel. Il gère des protocoles de bas niveau : positionnement du curseur, effacement de lignes, modes raw/cooked, taille de fenêtre (TIOCGWINSZ), etc.
+
+Les projets comme `obsidian-terminal` implémentent un PTY complet avec `xterm.js` (rendu) et des scripts auxiliaires (Python ou C pour le côté système) pour supporter des programmes qui requièrent un vrai terminal : `vim`, `htop`, `ssh`, `man`, shells interactifs avec complétion, etc.
+
+Ce niveau de complexité n'est pas justifié dans notre cas pour deux raisons :
+
+1. Notre usage cible l'exécution de scripts, pas l'émulation d'un shell généraliste.
+2. Un PTY complet implique des dépendances natives multiplateformes, un rendu par canvas WebGL, et une surface de maintenance significativement plus grande.
+
+### Résumé comparatif
+
+| Capacité | Run Panel (notre approche) | Émulateur PTY complet |
+|---|---|---|
+| Exécuter un script | Oui | Oui |
+| Voir la sortie colorée (ANSI) | Oui (via `ansi_up`) | Oui (natif xterm.js) |
+| Envoyer du texte au programme | Oui (stdin pipe) | Oui (PTY master) |
+| Shell interactif (`bash`, `cmd`) | Partiel | Oui |
+| `vim`, `htop`, `ssh` | Non | Oui |
+| Taille de fenêtre dynamique (resize PTY) | Non nécessaire | Oui |
+| Complexité d'implémentation | Faible | Élevée |
+| Dépendances natives | Aucune | Oui (scripts Python/C) |
+
+### Les signaux Unix
+
+Quand un processus doit être interrompu, le système utilise des **signaux** : des notifications asynchrones envoyées à un processus.
+
+- **SIGINT** : Interruption (équivalent de Ctrl+C). Demande au programme de s'arrêter proprement.
+- **SIGTERM** : Terminaison douce. Le programme peut choisir d'ignorer ce signal.
+- **SIGKILL** : Terminaison forcée. Irrattrapable, le noyau tue le processus immédiatement.
+
+Sur Windows, ce modèle n'existe pas nativement. On utilise `taskkill /T /F` pour tuer un arbre de processus de force.
+
+### Le problème du "process group"
+
+Quand on lance `npx tsx script.ts` avec `shell: true`, le système crée en réalité une chaîne : un shell (cmd.exe ou sh) qui lui-même lance `npx`, qui lui-même lance `node`. Si on envoie SIGINT seulement au shell, les processus enfants peuvent continuer à tourner en arrière-plan.
+
+`detached: true` sur Unix détache le processus dans son propre groupe. `process.kill(-pid, 'SIGINT')` (noter le `-` devant le PID) envoie alors le signal à tout le groupe simultanément, garantissant un arrêt complet de la chaîne.
