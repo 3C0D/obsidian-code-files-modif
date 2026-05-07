@@ -22,6 +22,7 @@ import {
   updateHotkeys
 } from './actions.ts';
 import { setParentOrigin, getParentOrigin } from './utils.ts';
+import { initConsolePane, handleConsoleMessage } from './console.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -139,69 +140,6 @@ export function runFormatWithDiff(): Promise<void> {
  * Initializes the console pane UI and event handlers.
  * @param ctx - The editor context identifier
  */
-function initConsolePane(ctx: string): void {
-  const pane = document.getElementById('console-pane');
-  const output = document.getElementById('console-output');
-  const input = document.getElementById('console-input-field') as HTMLInputElement;
-  const runBtn = document.getElementById('console-run-btn');
-  const stopBtn = document.getElementById('console-stop-btn');
-  if (!pane || !output || !input || !runBtn || !stopBtn) return;
-
-  // Auto-fill based on file extension
-  const ext = ctx.match(/\.([^./\\]+)$/)?.[1];
-  if (ext === 'ts') input.value = 'npx ts-node ' + ctx.split('/').pop();
-  else if (ext === 'py') input.value = 'python ' + ctx.split('/').pop();
-  else if (ext === 'js') input.value = 'node ' + ctx.split('/').pop();
-
-  const sendCommand = (): void => {
-    const cmd = input.value.trim();
-    if (!cmd) return;
-    if (cmd === 'clear' || cmd === 'cls') {
-      output.innerHTML = '';
-      input.value = '';
-      return;
-    }
-    output.innerHTML += `<span>$ ${cmd}\n</span>`;
-    output.scrollTop = output.scrollHeight;
-    window.parent.postMessage(
-      { type: 'run-command', cmd, context: ctx },
-      getParentOrigin()
-    );
-  };
-
-  pane.addEventListener('keydown', (e) => {
-    if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      window.parent.postMessage(
-        { type: 'stop-command', context: ctx },
-        getParentOrigin()
-      );
-    }
-    if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      window.parent.postMessage(
-        { type: 'toggle-console', context: ctx },
-        getParentOrigin()
-      );
-    }
-  });
-
-  runBtn.addEventListener('click', sendCommand);
-  stopBtn.addEventListener('click', () => {
-    window.parent.postMessage({ type: 'stop-command', context: ctx }, getParentOrigin());
-  });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      window.parent.postMessage(
-        { type: 'toggle-console', context: ctx },
-        getParentOrigin()
-      );
-      return;
-    }
-    if (e.key === 'Enter') sendCommand();
-  });
-}
 
 /**
  * Applies initialization parameters to configure the Monaco editor instance.
@@ -352,7 +290,7 @@ function applyParams(params: Prettify<InitParams>): void {
   registerActions(params, openDiffModal);
 
   // Initialize console pane
-  initConsolePane(context!);
+  initConsolePane(context, editor);
 
   // Notify parent when content changes (updates dirty badge)
   editor.onDidChangeModelContent(() => {
@@ -513,27 +451,9 @@ export function initMonacoApp(): void {
           }
         }
         break;
-      case 'console-toggle': {
-        const pane = document.getElementById('console-pane');
-        pane?.classList.toggle('visible');
-        // Force Monaco to recalculate its height after the toggle
-        editor?.layout();
-        // If the console is closing, return focus to Monaco
-        if (!pane?.classList.contains('visible')) {
-          editor?.focus();
-        }
+      default:
+        handleConsoleMessage(data, editor);
         break;
-      }
-      case 'console-output': {
-        const output = document.getElementById('console-output');
-        if (output) {
-          // ansi_up is not available in the iframe — we strip ANSI sequences
-          const clean = (data.text as string).replace(/\x1b\[[0-9;]*m/g, '');
-          output.innerHTML += clean;
-          output.scrollTop = output.scrollHeight;
-        }
-        break;
-      }
     }
   });
 }

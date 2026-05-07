@@ -6,6 +6,7 @@ import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
 import { spawn, type ChildProcess } from 'child_process';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
+import path from 'path';
 
 // Map to track active processes per context
 export const activeProcesses = new Map<string, ChildProcess>();
@@ -189,16 +190,14 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         // basePath = absolute path of the vault (FileSystemAdapter, Desktop only)
         const adapter = getDataAdapterEx(plugin.app);
         const basePath = adapter.basePath;
-        const fileDir = require('path').join(
-          basePath,
-          codeContext.replace(/[^/\\]*$/, '')
-        ); // folder of the file, not vault root
+        const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, '')); // folder of the file, not vault root
 
         try {
           const proc = spawn(cmd, args, {
             cwd: fileDir, // folder of the file, not vault root
-            stdio: ['ignore', 'pipe', 'pipe'],
-            shell: true // Delegate to the system shell which has the correct PATH
+            stdio: ['pipe', 'pipe', 'pipe'],
+            shell: true, // Delegate to the system shell which has the correct PATH
+            detached: process.platform !== 'win32' // Create process group on Unix for robust kill
           });
           activeProcesses.set(codeContext, proc);
 
@@ -228,9 +227,39 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         break;
       }
 
+      case 'send-stdin': {
+        if (!Platform.isDesktop) break;
+        const proc = activeProcesses.get(codeContext);
+        if (proc?.stdin?.writable) {
+          proc.stdin.write((data.text as string) + '\n');
+        }
+        break;
+      }
+
       case 'stop-command': {
-        activeProcesses.get(codeContext)?.kill('SIGINT');
+        if (!Platform.isDesktop) break;
+        const proc = activeProcesses.get(codeContext);
+        if (!proc?.pid) break;
+
+        try {
+          if (process.platform === 'win32') {
+            // taskkill /T kills the entire process tree on Windows
+            spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], {
+              shell: true
+            });
+          } else {
+            // Negative PID kills the entire process group on Unix
+            process.kill(-proc.pid, 'SIGINT');
+          }
+        } catch {
+          proc.kill('SIGINT');
+        }
+
         activeProcesses.delete(codeContext);
+        // Notify iframe so isRunning resets — taskkill /F may prevent the 'close' event
+        send('console-output', {
+          text: '\nProcess interrupted (SIGINT)\nProcess exited with code null\n'
+        });
         break;
       }
 
@@ -242,7 +271,20 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
   return {
     handler: onMessage,
     cleanup: () => {
-      activeProcesses.get(codeContext)?.kill('SIGINT');
+      const proc = activeProcesses.get(codeContext);
+      if (proc?.pid) {
+        try {
+          if (process.platform === 'win32') {
+            spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], {
+              shell: true
+            });
+          } else {
+            process.kill(-proc.pid, 'SIGINT');
+          }
+        } catch {
+          proc.kill('SIGINT');
+        }
+      }
       activeProcesses.delete(codeContext);
     }
   };

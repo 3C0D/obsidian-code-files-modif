@@ -95,6 +95,19 @@
 	color: #ccc;
 	font-family: monospace;
 	font-size: 12px;
+	position: relative;
+}
+
+#console-resize-handle {
+	height: 4px;
+	cursor: ns-resize;
+	background: transparent;
+	flex-shrink: 0;
+	transition: background 0.2s;
+}
+
+#console-resize-handle:hover {
+	background: var(--interactive-accent, #007acc);
 }
 
 #console-pane.visible {
@@ -108,6 +121,27 @@
 	white-space: pre-wrap;
 	word-wrap: break-word;
 }
+
+/* ANSI Colors */
+.ansi-black-fg { color: #000; }
+.ansi-red-fg { color: #cd3131; }
+.ansi-green-fg { color: #0dbc79; }
+.ansi-yellow-fg { color: #e5e510; }
+.ansi-blue-fg { color: #2472c8; }
+.ansi-magenta-fg { color: #bc3fbc; }
+.ansi-cyan-fg { color: #11a8cd; }
+.ansi-white-fg { color: #e5e5e5; }
+.ansi-bright-black-fg { color: #666; }
+.ansi-bright-red-fg { color: #f14c4c; }
+.ansi-bright-green-fg { color: #23d18b; }
+.ansi-bright-yellow-fg { color: #f5f543; }
+.ansi-bright-blue-fg { color: #3b8eea; }
+.ansi-bright-magenta-fg { color: #d670d6; }
+.ansi-bright-cyan-fg { color: #29b8db; }
+.ansi-bright-white-fg { color: #fff; }
+
+.console-command-line { color: #0dbc79; font-weight: bold; }
+.console-stdin-line { color: #3b8eea; font-style: italic; }
 
 #console-input-bar {
 	display: flex;
