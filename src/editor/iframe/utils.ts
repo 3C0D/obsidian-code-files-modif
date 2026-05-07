@@ -21,3 +21,24 @@ export function setParentOrigin(origin: string): void {
 export function getParentOrigin(): string {
   return parentOrigin;
 }
+
+/**
+ * Simple throttle utility to limit execution frequency of expensive operations.
+ */
+export function throttle<T extends (...args: unknown[]) => void>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean;
+  let lastFunc: ReturnType<typeof setTimeout>;
+  return function (...args: Parameters<T>) {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => func(...args), limit);
+    }
+  };
+}

@@ -4,25 +4,7 @@
  */
 import { AnsiUp } from 'ansi_up';
 import type * as monaco from 'monaco-editor';
-import { getParentOrigin } from './utils.ts';
-
-/**
- * Simple throttle utility to limit execution frequency of expensive operations.
- */
-function throttle<T extends (...args: unknown[]) => void>(func: T, limit: number): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
-  let lastFunc: ReturnType<typeof setTimeout>;
-  return function(...args: Parameters<T>) {
-    if (!inThrottle) {
-      func(...args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    } else {
-      clearTimeout(lastFunc);
-      lastFunc = setTimeout(() => func(...args), limit);
-    }
-  };
-}
+import { getParentOrigin, throttle } from './utils.ts';
 
 // Initialize ANSI to HTML converter
 const ansiUp = new AnsiUp();
