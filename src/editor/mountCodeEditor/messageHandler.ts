@@ -244,8 +244,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
            */
           proc.on('close', (code) => {
             setTimeout(() => {
+              const status = code === null ? 'Interrupted' : `code ${code}`;
               send('console-output', {
-                text: `\nProcess exited with code ${code}\n`
+                text: `\n[Process exited: ${status}]\n`
               });
               activeProcesses.delete(codeContext);
             }, 50);
@@ -316,9 +317,11 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
          * from firing normally. We send a manual notice to ensure the iframe's
          * 'isRunning' flag is reset.
          */
+        /*
         send('console-output', {
           text: '\nProcess interrupted (SIGINT)\nProcess exited with code null\n'
         });
+        */
         break;
       }
 

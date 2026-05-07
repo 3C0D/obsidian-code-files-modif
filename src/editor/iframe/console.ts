@@ -248,7 +248,7 @@ export function handleConsoleMessage(
          * We look for the conventional termination string sent by the parent's
          * messageHandler when a process closes (either naturally or via kill).
          */
-        if (text.includes('Process exited with code')) {
+        if (text.includes('[Process exited:')) {
           isRunning = false;
         }
       }

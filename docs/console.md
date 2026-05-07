@@ -62,7 +62,7 @@ C'est le point clé pour l'interactivité. L'iframe maintient un état interne `
    - Le parent écrit ce texte dans l'entrée standard (`stdin`) du processus existant.
 
 3. **Retour à l'état initial** :
-   - Dès que le parent détecte que le processus est terminé, il envoie un message contenant "Process exited with code".
+   - Dès que le parent détecte que le processus est terminé, il envoie un message contenant "[Process exited:".
    - L'iframe repasse `isRunning` à **FAUX**, libérant la console pour une nouvelle commande.
    - > [!CAUTION]
      > Cette détection repose sur une comparaison de sous-chaîne dans le flux de sortie. Si le message de sortie change dans `messageHandler.ts` sans être mis à jour ici, l'état `isRunning` pourrait rester bloqué à vrai.
