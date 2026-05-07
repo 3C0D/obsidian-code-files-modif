@@ -115,6 +115,11 @@ export function initConsolePane(
         getParentOrigin()
       );
     }
+    // Global Enter key for the whole console area
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendCommand();
+    }
   });
 
   runBtn.addEventListener('click', sendCommand);
@@ -127,9 +132,7 @@ export function initConsolePane(
    * Handles Enter to submit and Arrows for history navigation.
    */
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      sendCommand();
-    } else if (e.key === 'ArrowUp') {
+    if (e.key === 'ArrowUp') {
       // Navigate backward in command history
       e.preventDefault();
       if (historyIndex > 0) {

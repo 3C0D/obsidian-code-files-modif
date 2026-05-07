@@ -96,6 +96,7 @@
 	font-family: monospace;
 	font-size: 12px;
 	position: relative;
+	outline: none;
 }
 
 #console-resize-handle {
