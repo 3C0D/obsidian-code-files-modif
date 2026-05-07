@@ -110,7 +110,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   excludedFolders: ['.git', 'node_modules', '.trash'],
   revealedFiles: {},
   autoRevealRegisteredDotfiles: true,
-  temporaryRevealedPaths: []
+  temporaryRevealedPaths: [],
+  consoleHeight: 200,
+  consoleHistories: {}
 };
 
 // ===== Formatter Extensions =====

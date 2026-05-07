@@ -8,15 +8,27 @@ import { spawn, type ChildProcess } from 'child_process';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import path from 'path';
 
-/**
- * Global registry for active console processes.
- * Keys are the 'codeContext' (file paths), values are the Node.js ChildProcess objects.
- * We track them globally to ensure we can kill them if the editor is closed.
- */
+/** Global registry for active console processes. */
 export const activeProcesses = new Map<string, ChildProcess>();
 
-/** Session-scoped command history per file. Survives iframe recreation. */
-const consoleHistories = new Map<string, string[]>();
+/**
+ * Force-kills a process and its entire child tree.
+ * @param proc - The child process to terminate.
+ */
+function killProcessTree(proc: ChildProcess): void {
+  if (!proc.pid) return;
+  try {
+    if (process.platform === 'win32') {
+      // Windows: taskkill /T kills the entire tree, /F forces it.
+      spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { shell: true });
+    } else {
+      // Unix: Passing negative PID signals the process group.
+      process.kill(-proc.pid, 'SIGINT');
+    }
+  } catch {
+    proc.kill('SIGINT');
+  }
+}
 
 /**
  * Builds the postMessage handler for a Monaco iframe instance.
@@ -61,8 +73,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       if (autoFocus) send('focus', {});
       await loadProjectFiles(send);
 
-      // Restore command history for this file context
-      const hist = consoleHistories.get(codeContext);
+      // Restore command history for this file context from persistent settings
+      const hist = plugin.settings.consoleHistories[codeContext];
       if (hist?.length) send('console-history', { history: hist });
       return;
     }
@@ -200,13 +212,19 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         const cmdLine = data.cmd as string;
         if (!cmdLine?.trim()) break;
 
-        // Persist command in history
-        const hist = consoleHistories.get(codeContext) ?? [];
-        hist.push(cmdLine.trim());
-        consoleHistories.set(codeContext, hist);
+        // Persist command in history (cross-session settings)
+        const hist = plugin.settings.consoleHistories[codeContext] ?? [];
+        if (!hist.includes(cmdLine.trim())) {
+          hist.push(cmdLine.trim());
+          // Keep only last 50 entries per file
+          if (hist.length > 50) hist.shift();
+          plugin.settings.consoleHistories[codeContext] = hist;
+          await plugin.saveSettings();
+        }
 
         // Kill any existing process for this file before starting a new one.
-        activeProcesses.get(codeContext)?.kill();
+        const existing = activeProcesses.get(codeContext);
+        if (existing) killProcessTree(existing);
 
         const parts = cmdLine.trim().split(/\s+/);
         const cmd = parts[0];
@@ -221,9 +239,14 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         try {
           const proc = spawn(cmd, args, {
             cwd: fileDir,
-            stdio: ['pipe', 'pipe', 'pipe'], // Open pipes for stdin, stdout, and stderr
-            shell: true, // Use system shell (cmd.exe/sh) to inherit the user's PATH
-            // Create a process group on Unix. This allows killing children of the spawned shell.
+            env: {
+              ...process.env,
+              PYTHONIOENCODING: 'utf-8', // Ensure UTF-8 for Python scripts
+              GIT_PAGER: '',             // Avoid hanging on git log
+              FORCE_COLOR: '1'           // Encourage color output for TTY-aware tools
+            },
+            stdio: ['pipe', 'pipe', 'pipe'],
+            shell: true,
             detached: process.platform !== 'win32'
           });
           activeProcesses.set(codeContext, proc);
@@ -248,17 +271,31 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
               send('console-output', {
                 text: `\n[Process exited: ${status}]\n`
               });
+              // Task 1: Send structured exit message
+              send('console-process-exited', { code: code ?? null });
               activeProcesses.delete(codeContext);
             }, 50);
           });
 
           proc.on('error', (err) => {
             send('console-output', { text: `Error: ${err.message}\n` });
+            // Task 3: Also send exit signal on error
+            send('console-process-exited', { code: null });
             activeProcesses.delete(codeContext);
           });
         } catch (err) {
           send('console-output', { text: `Failed to start: ${err}\n` });
         }
+        break;
+      }
+
+      /**
+       * CONSOLE: Persist height changes.
+       */
+      case 'console-height-changed': {
+        if (!Platform.isDesktop) break;
+        plugin.settings.consoleHeight = data.height as number;
+        await plugin.saveSettings();
         break;
       }
 
@@ -283,32 +320,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       case 'stop-command': {
         if (!Platform.isDesktop) break;
         const proc = activeProcesses.get(codeContext);
-        if (!proc?.pid) break;
-
-        try {
-          if (process.platform === 'win32') {
-            /**
-             * WINDOWS TREE KILL:
-             * 'taskkill /T' kills the process and all its children.
-             * '/F' forces termination. This is necessary because 'shell: true'
-             * creates a cmd.exe wrapper that doesn't always forward signals.
-             */
-            spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], {
-              shell: true
-            });
-          } else {
-            /**
-             * UNIX GROUP KILL:
-             * Passing a negative PID to process.kill() signals the entire process group.
-             * Requires 'detached: true' in the spawn options.
-             */
-            process.kill(-proc.pid, 'SIGINT');
-          }
-        } catch {
-          // Fallback to a simple kill if tree-kill fails
-          proc.kill('SIGINT');
-        }
-
+        if (proc) killProcessTree(proc);
         activeProcesses.delete(codeContext);
 
         /**
@@ -339,19 +351,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
      */
     cleanup: () => {
       const proc = activeProcesses.get(codeContext);
-      if (proc?.pid) {
-        try {
-          if (process.platform === 'win32') {
-            spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], {
-              shell: true
-            });
-          } else {
-            process.kill(-proc.pid, 'SIGINT');
-          }
-        } catch {
-          proc.kill('SIGINT');
-        }
-      }
+      if (proc) killProcessTree(proc);
       activeProcesses.delete(codeContext);
     }
   };

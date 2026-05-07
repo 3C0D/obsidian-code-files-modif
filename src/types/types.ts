@@ -75,6 +75,10 @@ export interface MyPluginSettings {
   autoRevealRegisteredDotfiles: boolean;
   /** Paths of files temporarily revealed for editing, cleaned up on close */
   temporaryRevealedPaths: string[];
+  /** Persistent console height in pixels */
+  consoleHeight: number;
+  /** Command history per file context, saved across sessions */
+  consoleHistories: Record<string, string[]>;
 }
 
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */

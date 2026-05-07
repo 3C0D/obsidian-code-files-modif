@@ -1,3 +1,6 @@
+C:\Users\dd200\Desktop\polyipseity\obsidian-terminal
+C:\Users\dd200\Desktop\polyipseity\obsidian-plugin-library
+
 # Fonctionnement du Plugin Terminal (xterm.js)
 
 Ce document détaille l'architecture et le fonctionnement interne du plugin `obsidian-terminal`. Contrairement à la console intégrée (Monaco), ce plugin fournit un véritable émulateur de terminal complet (PTY) capable de gérer des shells interactifs (bash, zsh, powershell), des outils en ligne de commande et des applications textuelles complexes (ncurses).
@@ -27,7 +30,7 @@ C'est la partie la plus complexe, située dans `src/terminal/pseudoterminal.ts`.
 Node.js ne fournit pas de PTY (Pseudo-Terminal) natif de manière cross-platform sans modules natifs binaires (comme `node-pty`). Pour éviter les dépendances binaires difficiles à distribuer, ce plugin utilise des scripts **Python** auxiliaires.
 
 ### Windows (`WindowsPseudoterminal`)
-Sur Windows, Node.js ne peut pas créer de PTY réel. 
+Sur Windows, Node.js ne peut pas créer de PTY réel.
 1. **Lancement** : Le plugin génère un fichier `.bat` temporaire pour lancer la commande cible. Cela permet de contourner les bugs d'échappement de `conhost.exe` ([pseudoterminal.ts:L907](file:///C:/Users/dd200/Desktop/polyipseity/obsidian-terminal/src/terminal/pseudoterminal.ts#L907)).
 2. **Redimensionnement** : Il lance un script Python `win32_resizer.py` qui utilise les API Win32 natives pour ajuster la taille de la fenêtre de console cachée associée au processus ([pseudoterminal.ts:L848](file:///C:/Users/dd200/Desktop/polyipseity/obsidian-terminal/src/terminal/pseudoterminal.ts#L848)).
 

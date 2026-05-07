@@ -289,8 +289,8 @@ function applyParams(params: Prettify<InitParams>): void {
   // Register all actions and keyboard handlers
   registerActions(params, openDiffModal);
 
-  // Initialize console pane
-  initConsolePane(context, editor);
+  // Initialize console pane with persistent height
+  initConsolePane(context, editor, params.consoleHeight);
 
   // Notify parent when content changes (updates dirty badge)
   editor.onDidChangeModelContent(() => {

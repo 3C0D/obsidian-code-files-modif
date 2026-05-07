@@ -29,7 +29,8 @@ let historyIndex = -1;
  */
 export function initConsolePane(
   ctx: string,
-  editor: monaco.editor.IStandaloneCodeEditor | null
+  editor: monaco.editor.IStandaloneCodeEditor | null,
+  initialHeight?: number
 ): void {
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
@@ -40,6 +41,11 @@ export function initConsolePane(
 
   // Guard against missing DOM elements (e.g. if the HTML template changed)
   if (!pane || !output || !input || !runBtn || !stopBtn) return;
+
+  // Task 5: Restore persistent console height if available
+  if (initialHeight) {
+    pane.style.height = initialHeight + 'px';
+  }
 
   /**
    * Processes the current input value.
@@ -76,7 +82,8 @@ export function initConsolePane(
      * MODE: New Command Execution
      * No process is active, so we treat the input as a new shell command to spawn.
      */
-    output.innerHTML += `<span class="console-command-line">$ ${cmd}\n</span>`;
+    const shortDir = ctx.replace(/[^/\\]*$/, '').replace(/\/$/, '') || '.';
+    output.innerHTML += `<span class="console-cwd">${shortDir}</span><span class="console-command-line"> $ ${cmd}\n</span>`;
     output.scrollTop = output.scrollHeight;
 
     // Command History management
@@ -140,6 +147,17 @@ export function initConsolePane(
   });
 
   /**
+   * Copy selection on right click.
+   */
+  output.addEventListener('contextmenu', (e) => {
+    const selection = window.getSelection()?.toString();
+    if (selection && selection.length > 0) {
+      e.preventDefault();
+      navigator.clipboard.writeText(selection);
+    }
+  });
+
+  /**
    * Input field specific listeners.
    * Handles Enter to submit and Arrows for history navigation.
    */
@@ -162,6 +180,43 @@ export function initConsolePane(
         historyIndex = history.length;
         input.value = '';
       }
+    }
+  });
+
+  /**
+   * Drag-and-drop files into input.
+   */
+  input.addEventListener('dragover', (e) => e.preventDefault());
+  input.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    const paths = files
+      .map((f) => (f as File & { path: string }).path)
+      .filter(Boolean)
+      .map((p) => (p.includes(' ') ? `"${p}"` : p));
+    if (paths.length) {
+      input.value += (input.value ? ' ' : '') + paths.join(' ');
+      input.focus();
+    }
+  });
+
+  /**
+   * Support multi-line paste in stdin mode.
+   */
+  input.addEventListener('paste', (e) => {
+    if (!isRunning) return;
+    const text = e.clipboardData?.getData('text');
+    if (text && text.includes('\n')) {
+      e.preventDefault();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      for (const line of lines) {
+        output.innerHTML += `<span class="console-stdin-line">${line}\n</span>`;
+        window.parent.postMessage(
+          { type: 'send-stdin', text: line, context: ctx },
+          getParentOrigin()
+        );
+      }
+      output.scrollTop = output.scrollHeight;
     }
   });
 
@@ -198,6 +253,12 @@ export function initConsolePane(
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
       document.body.style.userSelect = ''; // Re-enable text selection
+
+      // Task 5: Notify parent about the new height for persistence
+      window.parent.postMessage(
+        { type: 'console-height-changed', height: pane.offsetHeight, context: ctx },
+        getParentOrigin()
+      );
     };
 
     resizeHandle.addEventListener('mousedown', (e) => {
@@ -212,13 +273,36 @@ export function initConsolePane(
 
   /**
    * Automatic command suggestion based on file extension.
-   * Helps users start running scripts quickly (e.g. 'npx ts-node file.ts').
+   * Helps users start running scripts quickly (e.g. 'npx tsx file.ts').
    */
-  const ext = ctx.match(/\.([^./\\]+)$/)?.[1];
+  const ext = ctx.match(/\.([^./\\]+)$/)?.[1]?.toLowerCase();
   const fileName = ctx.split('/').pop() || '';
-  if (ext === 'ts') input.value = 'npx tsx ' + fileName;
-  else if (ext === 'py') input.value = 'python ' + fileName;
-  else if (ext === 'js') input.value = 'node ' + fileName;
+  const PREFILL: Record<string, string> = {
+    ts: 'npx tsx ',
+    mts: 'npx tsx ',
+    cts: 'npx tsx ',
+    js: 'node ',
+    mjs: 'node ',
+    cjs: 'node ',
+    py: 'python ',
+    sh: 'bash ',
+    ps1: 'powershell -File ',
+    rb: 'ruby ',
+    go: 'go run ',
+    rs: 'cargo run', // No filename — cargo uses Cargo.toml
+    java: 'java ',
+    c: 'gcc -o out.exe ' + fileName + ' && .\\out.exe',
+    cpp: 'g++ -o out.exe ' + fileName + ' && .\\out.exe',
+    lua: 'lua ',
+    php: 'php ',
+    r: 'Rscript ',
+    pl: 'perl '
+  };
+  const prefix = ext ? PREFILL[ext] : undefined;
+  if (prefix !== undefined) {
+    // For commands that expect a filename suffix
+    input.value = prefix.endsWith(' ') ? prefix + fileName : prefix;
+  }
 }
 
 /**
@@ -255,18 +339,22 @@ export function handleConsoleMessage(
         // Convert ANSI escape codes (colors) to HTML spans
         output.innerHTML += ansiUp.ansi_to_html(text);
 
+        // Task 10: Auto-truncate output to prevent DOM bloat (keep last 5000 lines)
+        const MAX_OUTPUT_LINES = 5000;
+        const lines = output.innerHTML.split('\n');
+        if (lines.length > MAX_OUTPUT_LINES) {
+          output.innerHTML = lines.slice(-MAX_OUTPUT_LINES).join('\n');
+        }
+
         // Scroll to the bottom to keep the latest output visible
         output.scrollTop = output.scrollHeight;
-
-        /**
-         * State Reset Logic.
-         * We look for the conventional termination string sent by the parent's
-         * messageHandler when a process closes (either naturally or via kill).
-         */
-        if (text.includes('[Process exited:')) {
-          isRunning = false;
-        }
       }
+      return true;
+    }
+
+    case 'console-process-exited': {
+      // Task 1: Structured exit signal resets the lock
+      isRunning = false;
       return true;
     }
 

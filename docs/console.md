@@ -6,8 +6,9 @@ La console est intégrée directement dans l'iframe Monaco. Elle permet d'exécu
 
 Le panneau de console est un élément du DOM interne à l'iframe Monaco. Le processus (`child_process.spawn`) tourne côté parent (Obsidian) et communique avec l'iframe via postMessage.
 
-- **Isolation** : L'iframe (blob URL) ne peut pas exécuter de code système elle-même. Elle délègue tout au parent.
+- **Isolation** : L'iframe (blob URL) ne peut pas exécuter de code système elle-même. Elle délègue tout au parent via `postMessage`.
 - **Modularité** : La logique métier est isolée dans `src/editor/iframe/console.ts`.
+- **Typage** : Les communications sont sécurisées par des types définis dans `src/editor/iframe/types/console.ts`.
 - **Desktop uniquement** : L'exécution est réservée à la version Desktop d'Obsidian.
 
 ## Structure UI (monacoEditor.html)
@@ -62,20 +63,25 @@ C'est le point clé pour l'interactivité. L'iframe maintient un état interne `
    - Le parent écrit ce texte dans l'entrée standard (`stdin`) du processus existant.
 
 3. **Retour à l'état initial** :
-   - Dès que le parent détecte que le processus est terminé, il envoie un message contenant "[Process exited:".
+   - Dès que le parent détecte que le processus est terminé, il envoie un message structuré `console-process-exited`.
    - L'iframe repasse `isRunning` à **FAUX**, libérant la console pour une nouvelle commande.
-   - > [!CAUTION]
-     > Cette détection repose sur une comparaison de sous-chaîne dans le flux de sortie. Si le message de sortie change dans `messageHandler.ts` sans être mis à jour ici, l'état `isRunning` pourrait rester bloqué à vrai.
+   - > [!NOTE]
+     > Ce mécanisme est désormais robuste et ne dépend plus d'un scan textuel de la sortie standard.
 
 ### Redimensionnement optimisé (Performance)
 Pour éviter que l'interface ne se fige pendant le drag, la logique de redimensionnement est séparée en deux flux :
 1.  **Mise à jour visuelle (Synchrone)** : La hauteur du DOM (`pane.style.height`) change immédiatement.
 2.  **Mise à jour logique (Throttled)** : L'appel coûteux `editor.layout()` est limité à une exécution toutes les 50ms via un utilitaire `throttle` générique intégré.
 
-### Gestion des entrées
-- **Nettoyage** : Le champ d'entrée est systématiquement vidé (`input.value = ''`) après l'envoi d'une commande (mode commande ou mode stdin).
-- **Historique** : Navigation avec les flèches Haut/Bas.
+### Gestion des entrées et UX
+- **Nettoyage** : Le champ d'entrée est systématiquement vidé après l'envoi.
+- **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier.
+- **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
+- **Prompt visuel** : Affiche le dossier courant (CWD) devant le symbole `$`.
+- **Copie** : Clic droit sur la sortie pour copier la sélection dans le presse-papier.
+- **Drag-and-Drop** : Possibilité de glisser des fichiers depuis l'explorateur vers l'input pour insérer leurs chemins.
 - **ANSI** : Rendu des couleurs via `ansi_up`.
+- **Truncate** : La sortie est limitée aux 5000 dernières lignes pour préserver les performances du DOM.
 
 ---
 
@@ -84,20 +90,18 @@ Pour éviter que l'interface ne se fige pendant le drag, la logique de redimensi
 Le parent gère l'exécution réelle via Node.js `child_process.spawn`.
 
 ### 1. Lancement (`run-command`)
-Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']`. Cela signifie que les trois flux (Entrée, Sortie, Erreur) sont "branchés" et peuvent être lus/écrits par le plugin.
+Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']` et un environnement enrichi (`PYTHONIOENCODING: 'utf-8'`, `FORCE_COLOR: '1'`).
 
 ### 2. Interruption et Nettoyage (`stop-command`)
-- **Windows** : `taskkill /pid [pid] /T /F` (tue l'arbre complet).
-- **Unix** : `process.kill(-proc.pid, 'SIGINT')` (tue le groupe de processus).
-- **Reset UI** : Un message de sortie forcé est envoyé à l'iframe pour garantir que `isRunning` repasse à faux.
+- **Arbre de processus** : Utilise une logique de "tree-kill" (via `taskkill` sur Windows et les groupes de processus sur Unix) pour s'assurer que les sous-processus sont également arrêtés.
+- **Persistance** : Sauvegarde la hauteur de la console dans les réglages du plugin lors du redimensionnement.
 
 ---
 
 ## Problèmes connus & TODO
 
 - [ ] **Ctrl+C Global** : Actuellement, un Ctrl+C n'importe où dans Obsidian peut interférer si le listener n'est pas assez ciblé.
-- [ ] **Prompt visuel** : Ajouter le chemin courant et un symbole `>` (ex: `C:\Users\>`) devant l'input pour imiter un vrai terminal.
-- [ ] **Persistance du Resize** : Sauvegarder la hauteur de la console dans les paramètres.
+- [ ] **Interactivité avancée** : Support de l'auto-complétion dans la console.
 
 ---
 

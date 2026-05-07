@@ -66,7 +66,8 @@ export async function buildInitParams(
     projectRootFolder: plugin.settings.projectRootFolder,
     commandPaletteHotkey: finalCommandPaletteHotkey,
     settingsHotkey: finalSettingsHotkey,
-    deleteFileHotkey: finalDeleteFileHotkey
+    deleteFileHotkey: finalDeleteFileHotkey,
+    consoleHeight: plugin.settings.consoleHeight
   };
 
   // If the editor is for a file with an extension that doesn't have a registered formatter,

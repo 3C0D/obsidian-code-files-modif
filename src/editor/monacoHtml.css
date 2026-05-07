@@ -141,6 +141,7 @@
 .ansi-bright-cyan-fg { color: #29b8db; }
 .ansi-bright-white-fg { color: #fff; }
 
+.console-cwd { color: #569cd6; font-weight: normal; }
 .console-command-line { color: #0dbc79; font-weight: bold; }
 .console-stdin-line { color: #3b8eea; font-style: italic; }
 
