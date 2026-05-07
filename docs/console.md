@@ -64,10 +64,17 @@ C'est le point clé pour l'interactivité. L'iframe maintient un état interne `
 3. **Retour à l'état initial** :
    - Dès que le parent détecte que le processus est terminé, il envoie un message contenant "Process exited with code".
    - L'iframe repasse `isRunning` à **FAUX**, libérant la console pour une nouvelle commande.
+   - > [!CAUTION]
+     > Cette détection repose sur une comparaison de sous-chaîne dans le flux de sortie. Si le message de sortie change dans `messageHandler.ts` sans être mis à jour ici, l'état `isRunning` pourrait rester bloqué à vrai.
 
-### Fonctionnalités annexes
+### Redimensionnement optimisé (Performance)
+Pour éviter que l'interface ne se fige pendant le drag, la logique de redimensionnement est séparée en deux flux :
+1.  **Mise à jour visuelle (Synchrone)** : La hauteur du DOM (`pane.style.height`) change immédiatement.
+2.  **Mise à jour logique (Throttled)** : L'appel coûteux `editor.layout()` est limité à une exécution toutes les 50ms via un utilitaire `throttle` générique intégré.
+
+### Gestion des entrées
+- **Nettoyage** : Le champ d'entrée est systématiquement vidé (`input.value = ''`) après l'envoi d'une commande (mode commande ou mode stdin).
 - **Historique** : Navigation avec les flèches Haut/Bas.
-- **Resize** : Drag handle ajustant la hauteur et forçant `editor.layout()`.
 - **ANSI** : Rendu des couleurs via `ansi_up`.
 
 ---

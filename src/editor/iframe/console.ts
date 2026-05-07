@@ -9,17 +9,17 @@ import { getParentOrigin } from './utils.ts';
 /**
  * Simple throttle utility to limit execution frequency of expensive operations.
  */
-function throttle(func: Function, limit: number) {
+function throttle<T extends (...args: unknown[]) => void>(func: T, limit: number): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
   let lastFunc: ReturnType<typeof setTimeout>;
-  return function(this: any, ...args: any[]) {
+  return function(...args: Parameters<T>) {
     if (!inThrottle) {
-      func.apply(this, args);
+      func(...args);
       inThrottle = true;
       setTimeout(() => inThrottle = false, limit);
     } else {
       clearTimeout(lastFunc);
-      lastFunc = setTimeout(() => func.apply(this, args), limit);
+      lastFunc = setTimeout(() => func(...args), limit);
     }
   };
 }
@@ -41,7 +41,7 @@ let historyIndex = -1;
 /**
  * Initializes the console pane elements and registers all event listeners.
  * Called once during the main editor initialization.
- * 
+ *
  * @param ctx - The code context (usually the relative file path)
  * @param editor - The Monaco editor instance (used to trigger layout updates)
  */
@@ -106,6 +106,7 @@ export function initConsolePane(
       { type: 'run-command', cmd, context: ctx },
       getParentOrigin()
     );
+    input.value = ''; // Clear input after sending command
   };
 
   /**
@@ -185,10 +186,10 @@ export function initConsolePane(
         80,
         Math.min(window.innerHeight * 0.8, startHeight + delta)
       );
-      
+
       // 1. VISUAL UPDATE (Immediate): Update the DOM height so the handle follows the mouse fluently
       pane.style.height = newHeight + 'px';
-      
+
       // 2. LOGICAL UPDATE (Throttled): Trigger Monaco's expensive layout calculation at a controlled rate
       throttledLayout();
     };
@@ -223,7 +224,7 @@ export function initConsolePane(
 /**
  * Handles incoming console-related messages from the parent window.
  * Part of the central message dispatcher in init.ts.
- * 
+ *
  * @param data - The message payload from the parent
  * @param editor - The Monaco editor instance
  * @returns boolean - true if the message was handled by this module
@@ -250,10 +251,10 @@ export function handleConsoleMessage(
     case 'console-output': {
       if (output) {
         const text = data.text as string;
-        
+
         // Convert ANSI escape codes (colors) to HTML spans
         output.innerHTML += ansiUp.ansi_to_html(text);
-        
+
         // Scroll to the bottom to keep the latest output visible
         output.scrollTop = output.scrollHeight;
 
