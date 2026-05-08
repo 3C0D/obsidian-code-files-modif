@@ -1,3 +1,7 @@
+/**
+ * Message handler for the mounted code editor.
+ * Handles incoming messages from the editor view and processes them.
+ */
 import type { MessageHandlerContext, Prettify } from '../../types/index.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
@@ -291,7 +295,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             // Fall through to spawn if directory doesn't exist
           }
         }
-        
+
         // Kill any existing process for this file before starting a new one.
         const existing = activeProcesses.get(codeContext);
         if (existing) killProcessTree(existing);

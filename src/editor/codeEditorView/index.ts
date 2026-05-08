@@ -289,6 +289,8 @@ export class CodeEditorView extends TextFileView {
       initialConsoleOpen: this.isConsoleOpen,
       onConsoleVisibilityChanged: (visible) => {
         this.isConsoleOpen = visible;
+        // Persist console visibility to the workspace layout (triggers getState → workspace.json),
+        // so setState can restore it on next load (tab reopen or Obsidian restart).
         this.plugin.app.workspace.requestSaveLayout();
       }
     });
@@ -302,6 +304,7 @@ export class CodeEditorView extends TextFileView {
   /** Mounts the editor and sets up the view elements and badges. */
   private async mountAndRender(): Promise<void> {
     await this.mountEditor(this.file!);
+    // No scrollbar in the view content
     this.contentEl.style.overflow = 'hidden';
     if (this.codeEditor) {
       this.contentEl.append(this.codeEditor.iframe);
@@ -313,12 +316,9 @@ export class CodeEditorView extends TextFileView {
   /**
    * Shows the diff action button in the view header for a few seconds after a format.
    *
-   * Uses a snapshot/mutate/sync pattern because {@link showDiffAction} receives a plain
-   * object copy of `this` state, not `this` itself: mutations to `context` do not
-   * propagate back automatically.
-   *
-   * @see {@link buildContext} for snapshot creation
-   * @see {@link updateFromContext} for syncing mutations back to the class instance
+   * Uses a context snapshot to work around the circular dependency between
+   * CodeEditorView and headerActions.ts: mutations to `context` do not propagate
+   * back to `this` automatically, hence the explicit sync via updateFromContext.
    */
   private showDiffAction(): void {
     const context = this.buildContext(); // 1. snapshot

@@ -23,6 +23,8 @@ export function findRootMonacoLeaf(
       leaf.view instanceof CodeEditorView ? leaf.view.file?.path : undefined;
     const stateFilePath = leaf.getViewState().state?.file as string | undefined;
     if (!isRoot) return false;
+    // Prefer the live file path from the view instance (fully loaded),
+    // fall back to the persisted state path (view still loading at startup).
     return (viewFilePath ?? stateFilePath) === filePath;
   });
   return existingLeaf ?? null;
