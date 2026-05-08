@@ -226,9 +226,13 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         const existing = activeProcesses.get(codeContext);
         if (existing) killProcessTree(existing);
 
-        const parts = cmdLine.trim().split(/\s+/);
-        const cmd = parts[0];
-        const args = parts.slice(1);
+        // On Windows, switch the shell session to UTF-8 (code page 65001)
+        // before running the command. This fixes accentuated characters in
+        // programs like 'dir', 'python', etc. without any external dependency.
+        const shellCmd =
+          process.platform === 'win32'
+            ? `chcp 65001 >nul 2>&1 && ${cmdLine.trim()}`
+            : cmdLine.trim();
 
         // Determine the absolute directory of the current file.
         // Commands should run relative to the file, not the vault root.
@@ -237,13 +241,13 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
 
         try {
-          const proc = spawn(cmd, args, {
+          const proc = spawn(shellCmd, [], {
             cwd: fileDir,
             env: {
               ...process.env,
               PYTHONIOENCODING: 'utf-8', // Ensure UTF-8 for Python scripts
-              GIT_PAGER: '',             // Avoid hanging on git log
-              FORCE_COLOR: '1'           // Encourage color output for TTY-aware tools
+              GIT_PAGER: '', // Avoid hanging on git log
+              FORCE_COLOR: '1' // Encourage color output for TTY-aware tools
             },
             stdio: ['pipe', 'pipe', 'pipe'],
             shell: true,
@@ -251,13 +255,16 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
           });
           activeProcesses.set(codeContext, proc);
 
-          // Relay stdout data to the iframe
+          const stdoutDecoder = new TextDecoder();
+          const stderrDecoder = new TextDecoder();
+
+          // Relay stdout data to the iframe using a stream-aware decoder
           proc.stdout?.on('data', (chunk) => {
-            send('console-output', { text: chunk.toString() });
+            send('console-output', { text: stdoutDecoder.decode(chunk, { stream: true }) });
           });
           // Relay stderr data to the iframe
           proc.stderr?.on('data', (chunk) => {
-            send('console-output', { text: chunk.toString() });
+            send('console-output', { text: stderrDecoder.decode(chunk, { stream: true }) });
           });
 
           /**

@@ -154,6 +154,16 @@ La logique de kill est centralisée dans une fonction `killProcessTree` réutili
 
 Après un `stop-command`, un message `console-process-exited` est envoyé manuellement pour garantir que `isRunning` repasse à `false`, car le kill forcé peut empêcher l'événement `close` de se déclencher normalement.
 
+### 4. Gestion de l'encodage et décodage des flux
+
+Pour garantir que les caractères accentués (comme le `é` en français) s'affichent correctement, une double stratégie est employée :
+
+- **Côté Shell (Windows)** : Avant chaque commande, on force la page de code `65001` (UTF-8) via `chcp 65001 >nul 2>&1`. Cela assure que les utilitaires système (`dir`, `python`, etc.) produisent une sortie en UTF-8 au lieu du format OEM local (CP850).
+- **Côté Node.js (Décodage)** : Au lieu d'utiliser `chunk.toString()`, on utilise `TextDecoder` avec l'option `{ stream: true }`. Cela permet de gérer les cas où un caractère UTF-8 multi-octets est coupé entre deux paquets de données (chunks).
+
+> [!IMPORTANT]
+> Deux instances de `TextDecoder` distinctes sont utilisées (une pour `stdout`, une pour `stderr`) afin de maintenir l'état interne de chaque flux indépendamment et éviter toute corruption de texte si les deux flux émettent simultanément.
+
 ---
 
 ## Problèmes connus & TODO
