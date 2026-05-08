@@ -160,11 +160,12 @@ Après un `stop-command`, un message `console-process-exited` est envoyé manuel
 
 Pour garantir que les caractères accentués (comme le `é` en français) s'affichent correctement, une double stratégie est employée :
 
-- **Côté Shell (Windows)** : Avant chaque commande, on force la page de code `65001` (UTF-8) via `chcp 65001 >nul 2>&1`. Cela assure que les utilitaires système (`dir`, `python`, etc.) produisent une sortie en UTF-8 au lieu du format OEM local (CP850).
-- **Côté Node.js (Décodage)** : Au lieu d'utiliser `chunk.toString()`, on utilise `TextDecoder` avec l'option `{ stream: true }`. Cela permet de gérer les cas où un caractère UTF-8 multi-octets est coupé entre deux paquets de données (chunks).
+- **Côté Node.js (Décodage Hybride)** : Sur Windows, une stratégie de détection automatique est employée pour chaque bloc de données reçu :
+    1. Le plugin tente un décodage **UTF-8 strict** (pour les scripts Python, Node.js, etc.).
+    2. Si le décodage échoue (caractères invalides), il bascule sur un décodeur **CP850** (IBM850) manuel via une table de correspondance. Cela garantit que les commandes internes de `cmd.exe` (`dir`, `type`, messages système) s'affichent sans corruption, tout en préservant l'UTF-8 pour les outils modernes.
 
 > [!IMPORTANT]
-> Deux instances de `TextDecoder` distinctes sont utilisées (une pour `stdout`, une pour `stderr`) afin de maintenir l'état interne de chaque flux indépendamment et éviter toute corruption de texte si les deux flux émettent simultanément.
+> Deux instances de décodage distinctes sont utilisées pour `stdout` et `stderr` afin de maintenir l'état interne de chaque flux indépendamment et éviter toute corruption de texte si les deux flux émettent simultanément.
 
 ---
 
