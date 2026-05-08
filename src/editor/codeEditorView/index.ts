@@ -83,6 +83,10 @@ export class CodeEditorView extends TextFileView {
     return this.codeEditor ?? undefined;
   }
 
+  /**
+   * Get the display text for the view header.
+   * This method is used to show the file path or basename in the header.
+   */
   getDisplayText(): string {
     if (!this.file) return 'Code Editor';
     const configDir = this.plugin.app.vault.configDir;
@@ -100,14 +104,6 @@ export class CodeEditorView extends TextFileView {
   /** The icon for the view, shown in the header */
   getIcon(): string {
     return 'file-code-corner';
-  }
-
-  /**
-   * Get the file path for the current view.
-   * This method is used to resolve the file path for actions like saving or revealing the file in the vault.
-   */
-  getFilePath(file: TFile): string {
-    return file.path;
   }
 
   /**
@@ -257,14 +253,14 @@ export class CodeEditorView extends TextFileView {
   }
 
   /** Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled. */
-  private updateExtBadge(file: TFile): void {
-    updateExtBadge(this.containerEl, file, this.plugin);
+  private updateExtBadge(): void {
+    updateExtBadge(this.containerEl, this.file!, this.plugin);
   }
 
   /** Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets). */
-  private injectHeaderActions(file: TFile): void {
+  private injectHeaderActions(): void {
     const context = this.buildContext();
-    injectHeaderActions(context, file);
+    injectHeaderActions(context, this.file!);
     // Update back
     this.updateFromContext(context);
   }
@@ -279,7 +275,7 @@ export class CodeEditorView extends TextFileView {
       plugin: this.plugin,
       language: getLanguage(ext),
       initialValue: this.data,
-      codeContext: this.getFilePath(file),
+      codeContext: file.path,
       containerEl: this.contentEl,
       onChange: () => this.onContentChange(),
       onSave: () => this.onCtrlS(),
@@ -304,14 +300,14 @@ export class CodeEditorView extends TextFileView {
   }
 
   /** Mounts the editor and sets up the view elements and badges. */
-  private async mountAndRender(file: TFile): Promise<void> {
-    await this.mountEditor(file);
+  private async mountAndRender(): Promise<void> {
+    await this.mountEditor(this.file!);
     this.contentEl.style.overflow = 'hidden';
     if (this.codeEditor) {
       this.contentEl.append(this.codeEditor.iframe);
     }
-    this.updateExtBadge(file);
-    this.injectHeaderActions(file);
+    this.updateExtBadge();
+    this.injectHeaderActions();
   }
 
   /**
@@ -376,7 +372,7 @@ export class CodeEditorView extends TextFileView {
     // For external files opened via leaf.open(), content is not loaded automatically —
     // super.onLoadFile handles that case here.
     await super.onLoadFile(file);
-    await this.mountAndRender(file);
+    await this.mountAndRender();
   }
 
   /**
@@ -402,7 +398,7 @@ export class CodeEditorView extends TextFileView {
     this.cleanup();
     // Now we can remove the stale iframe
     this.contentEl.empty();
-    await this.mountAndRender(file);
+    await this.mountAndRender();
   }
 
   getViewData(): string {
