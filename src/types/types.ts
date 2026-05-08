@@ -100,14 +100,75 @@ export interface HotkeyConfig {
 }
 
 /**
+ * Parameters used to initialize the Monaco editor iframe.
+ * Sent via postMessage('init', ...) to the iframe.
+ * @property {string} context - Unique identifier for this editor instance (file path or modal ID)
+ * @property {string} lang - Monaco language ID
+ * @property {string} theme - Resolved Monaco theme ID
+ * @property {string} [themeData] - Theme data JSON string for custom themes
+ * @property {boolean} folding - Enable code block folding
+ * @property {boolean} lineNumbers - Show line numbers
+ * @property {boolean} minimap - Show the minimap
+ * @property {'on' | 'off'} wordWrap - Word wrap mode
+ * @property {string} [editorConfig] - Merged editor configuration as JSON string
+ * @property {HotkeyConfig} commandPaletteHotkey - Hotkey for opening the command palette
+ * @property {HotkeyConfig} settingsHotkey - Hotkey for opening the plugin settings
+ * @property {HotkeyConfig} deleteFileHotkey - Hotkey for deleting the current file
+ * @property {boolean} noSemanticValidation - Advanced type checking for JS/TS
+ * @property {boolean} noSyntaxValidation - Basic syntax error checking for JS/TS
+ * @property {string} projectRootFolder - Vault-relative path for the project root
+ * @property {boolean} [isUnregisteredExtension] - Whether the file extension is unregistered
+ * @property {string} [background] - Background color for the iframe
+ * @property {number} consoleHeight - Height of the integrated console
+ */
+export interface InitParams {
+  /** Unique identifier for this editor instance (file path or modal ID) */
+  context: string;
+  /** Monaco language ID */
+  lang: string;
+  /** Resolved Monaco theme ID */
+  theme: string;
+  /** Theme data JSON string for custom themes */
+  themeData?: string;
+  /** Enable code block folding */
+  folding: boolean;
+  /** Show line numbers */
+  lineNumbers: boolean;
+  /** Show the minimap */
+  minimap: boolean;
+  /** Word wrap mode ('on' or 'off') */
+  wordWrap: 'on' | 'off';
+  /** Merged editor configuration (from .editorconfig or plugin settings) as JSON string */
+  editorConfig?: string;
+  /** Hotkey for opening the command palette */
+  commandPaletteHotkey: HotkeyConfig;
+  /** Hotkey for opening the plugin settings */
+  settingsHotkey: HotkeyConfig;
+  /** Hotkey for deleting the current file */
+  deleteFileHotkey: HotkeyConfig;
+  /** Basic syntax error checking for JS/TS (inverse of plugin settings) */
+  noSyntaxValidation: boolean;
+  /** Advanced type checking and IntelliSense for JS/TS (inverse of plugin settings) */
+  noSemanticValidation: boolean;
+  /** Vault-relative path for the project root */
+  projectRootFolder: string;
+  /** Whether the file extension is not registered as a code file */
+  isUnregisteredExtension?: boolean;
+  /** Background color for the iframe (usually 'transparent') */
+  background?: string;
+  /** Height of the integrated console in pixels */
+  consoleHeight: number;
+}
+
+/**
  * Extended DataAdapter interface including internal Obsidian methods.
- * @property reconcileFileInternal   - Internal method to reconcile a file change
- * @property reconcileDeletion       - Internal method to reconcile a file deletion
- * @property reconcileFolderCreation - Internal method to reconcile a folder creation
- * @property reconcileFileChanged    - Internal method to reconcile a file modification
- * @property listRecursive           - List all files and folders (including dotfiles)
- * @property fs                      - Internal file system access (Mobile/Desktop abstraction)
- * @property getFullRealPath         - Get the full physical path on disk
+ * @property {function} reconcileFileInternal   - Internal method to reconcile a file change
+ * @property {function} reconcileDeletion       - Internal method to reconcile a file deletion
+ * @property {function} reconcileFolderCreation - Internal method to reconcile a folder creation
+ * @property {function} reconcileFileChanged    - Internal method to reconcile a file modification
+ * @property {function} listRecursive           - List all files and folders (including dotfiles)
+ * @property {function} fs                      - Internal file system access (Mobile/Desktop abstraction)
+ * @property {function} getFullRealPath         - Get the full physical path on disk
  */
 export interface DataAdapterWithInternal extends Omit<
   DataAdapterEx,
@@ -138,10 +199,10 @@ export interface DataAdapterWithInternal extends Omit<
 
 /**
  * Represents a hidden item found during a file system scan.
- * @property name     - The file or folder name (including the leading dot)
- * @property path     - The normalized path relative to the vault root
- * @property isFolder - Whether the item is a folder
- * @property size     - File size in bytes
+ * @property {string} name     - The file or folder name (including the leading dot)
+ * @property {string} path     - The normalized path relative to the vault root
+ * @property {boolean} isFolder - Whether the item is a folder
+ * @property {number} size     - File size in bytes
  */
 export interface HiddenItem {
   /** The file or folder name (including the leading dot) */
@@ -162,11 +223,11 @@ export type FileSuggestion = Pick<HiddenItem, 'name' | 'path' | 'size'>;
 /**
  * Encapsulates the state for a folder section in the reveal hidden files modal.
  *
- * @property folderPath - The normalized path of the folder
- * @property items - Array of hidden items in this folder
- * @property initialRevealed - Set of paths that were initially revealed when the modal opened
- * @property selected - Set of paths currently selected by the user
- * @property selectedForRegistration - Set of paths selected for extension registration
+ * @property {string} folderPath - The normalized path of the folder
+ * @property {HiddenItem[]} items - Array of hidden items in this folder
+ * @property {Set<string>} initialRevealed - Set of paths that were initially revealed when the modal opened
+ * @property {Set<string>} selected - Set of paths currently selected by the user
+ * @property {Set<string>} selectedForRegistration - Set of paths selected for extension registration
  */
 export interface FolderSection {
   /** The normalized path of the folder */
@@ -191,6 +252,22 @@ export interface FolderSection {
  * Why a blob URL? getResourcePath() appends a cache-busting timestamp that breaks relative
  * ./vs paths. file:// is blocked by Electron's CSP. The blob URL bypasses the parent CSP
  * for its own inline content and allows path rewriting at fetch time.
+ *
+ * @property {CodeFilesPlugin} plugin - The plugin instance
+ * @property {string} language - Monaco language ID (e.g. 'typescript', 'javascript', 'markdown')
+ * @property {string} initialValue - Initial content to display in the editor
+ * @property {string} codeContext - Unique identifier for this editor instance (file path or modal ID), used to filter postMessage events
+ * @property {HTMLElement} containerEl - The HTMLElement to append the editor iframe to
+ * @property {function(): void} onChange - Optional callback invoked when the editor content changes
+ * @property {function(): void} onSave - Optional callback invoked when the user presses Ctrl+S
+ * @property {function(): void} onFormatDiff - Optional callback invoked when a format diff is available
+ * @property {function(): void} onFormatDiffReverted - Optional callback invoked when all blocks are reverted
+ * @property {function(ext: string): void} onOpenEditorConfig - Optional callback invoked when the user requests editor settings
+ * @property {function(): void} onOpenThemePicker - Optional callback invoked when the user requests theme picker
+ * @property {function(): void} onOpenRenameExtension - Optional callback invoked when the user requests Rename (Name/ext)
+ * @property {boolean} autoFocus - Optional flag to disable automatic focus on editor ready (default: true)
+ * @property {function(isVisible: boolean): void} onConsoleVisibilityChanged - Optional callback invoked when the console visibility changes
+ * @property {boolean} initialConsoleOpen - Optional flag to indicate whether the console should be open on initialization
  */
 export interface MountCodeEditorOptions {
   /** The plugin instance */
@@ -227,12 +304,12 @@ export interface MountCodeEditorOptions {
 
 /**
  * Handle for a mounted editor instance.
- * @property iframe - The iframe element containing the Monaco editor
- * @property send - Sends a typed postMessage to the Monaco iframe
- * @property clear - Clears the editor content
- * @property getValue - Returns the current editor content
- * @property setValue - Sets the editor content
- * @property destroy - Removes the iframe, revokes the blob URL, and cleans up the message listener
+ * @property {HTMLIFrameElement} iframe - The iframe element containing the Monaco editor
+ * @property {function(msg: any): void} send - Sends a typed postMessage to the Monaco iframe
+ * @property {function(): void} clear - Clears the editor content
+ * @property {function(): string} getValue - Returns the current editor content
+ * @property {function(value: string): void} setValue - Sets the editor content
+ * @property {function(): void} destroy - Removes the iframe, revokes the blob URL, and cleans up the message listener
  */
 export interface CodeEditorHandle {
   /** The iframe element containing the Monaco editor */
@@ -258,15 +335,15 @@ export interface CodeEditorHandle {
 
 /**
  * Tool definition for actions that can appear in multiple locations.
- * @property id - Unique identifier for the action
- * @property icon - Icon identifier (for header actions)
- * @property title - Display title
- * @property action - Function to execute
- * @property availableInHeader - Whether this action appears in the view header
- * @property availableInContextMenu - Whether this action appears in Monaco's context menu
- * @property contextMenuGroupId - Group ID for context menu organization (if availableInContextMenu)
- * @property contextMenuOrder - Order within context menu group (if availableInContextMenu)
- * @property keybindings - Keyboard shortcuts (if any)
+ * @property {string} id - Unique identifier for the action
+ * @property {string} icon - Icon identifier (for header actions)
+ * @property {string} title - Display title
+ * @property {function(): void} action - Function to execute
+ * @property {boolean} availableInHeader - Whether this action appears in the view header
+ * @property {boolean} availableInContextMenu - Whether this action appears in Monaco's context menu
+ * @property {string} contextMenuGroupId - Group ID for context menu organization (if availableInContextMenu)
+ * @property {number} contextMenuOrder - Order within context menu group (if availableInContextMenu)
+ * @property {number[]} keybindings - Keyboard shortcuts (if any)
  */
 export interface ToolDefinition {
   /** Unique identifier for the action */
@@ -291,20 +368,19 @@ export interface ToolDefinition {
 
 /**
  * Context for header actions in the code editor view.
- * @property plugin - The plugin instance
- * @property codeEditor - Monaco editor control handle
- * @property addAction - Bound ItemView.addAction, adds a button to the view header
-
- * @property leaf - Workspace leaf containing this view
- * @property noReturnAction - Whether to hide the return arrow (for command palette opens)
- * @property gearAction - Gear button element, null when not mounted
- * @property themeAction - Theme picker button element, null when not mounted
- * @property snippetFolderAction - Snippet folder button element, null when not mounted
- * @property snippetToggleAction - Snippet toggle button element, null when not mounted
- * @property returnAction - Return button element, null when not mounted
- * @property diffAction - Diff button element, null when not mounted
- * @property diffTimer - Controls how long the diff button stays visible
- * @property unregisterSnippetHandler - Cleanup for the active snippet event handler
+ * @property {CodeFilesPlugin} plugin - The plugin instance
+ * @property {CodeEditorHandle | null} codeEditor - Monaco editor control handle
+ * @property {ItemView['addAction']} addAction - Bound ItemView.addAction
+ * @property {WorkspaceLeaf} leaf - Workspace leaf containing this view
+ * @property {boolean} noReturnAction - Whether to hide the return arrow
+ * @property {HTMLElement | null} gearAction - Gear button element
+ * @property {HTMLElement | null} themeAction - Theme picker button element
+ * @property {HTMLElement | null} snippetFolderAction - Snippet folder button element
+ * @property {HTMLElement | null} snippetToggleAction - Snippet toggle button element
+ * @property {HTMLElement | null} returnAction - Return button element
+ * @property {HTMLElement | null} diffAction - Diff button element
+ * @property {NodeJS.Timeout | null} diffTimer - Controls how long the diff button stays visible
+ * @property {(() => void) | null} unregisterSnippetHandler - Cleanup for the snippet event handler
  */
 export interface HeaderActionsContext {
   /** The plugin instance */
@@ -318,7 +394,6 @@ export interface HeaderActionsContext {
   leaf: WorkspaceLeaf;
   /** Whether to hide the return arrow (for command palette opens) */
   noReturnAction: boolean;
-  // Mutable action button elements — null when not mounted
   /** Gear/settings action button element */
   gearAction: HTMLElement | null;
   /** Theme picker action button element */
@@ -343,10 +418,32 @@ export interface HeaderActionsContext {
 
 /**
  * Asset URLs for Monaco editor components and formatters.
+ *
+ * @property {string} vsBase - Base URL for VS Code assets
+ * @property {string} htmlUrl - URL for the HTML file
+ * @property {string} bundleJsUrl - URL for the bundle JavaScript file
+ * @property {string} configCssUrl - URL for the configuration CSS file
+ * @property {string} prettierBase - Base URL for Prettier
+ * @property {string} prettierMarkdownUrl - URL for Prettier Markdown
+ * @property {string} prettierEstreeUrl - URL for Prettier Estree
+ * @property {string} prettierTypescriptUrl - URL for Prettier Typescript
+ * @property {string} prettierBabelUrl - URL for Prettier Babel
+ * @property {string} prettierPostcssUrl - URL for Prettier Postcss
+ * @property {string} prettierHtmlUrl - URL for Prettier Html
+ * @property {string} prettierYamlUrl - URL for Prettier Yaml
+ * @property {string} prettierGraphqlUrl - URL for Prettier Graphql
+ * @property {string} mermaidFormatterUrl - URL for Mermaid Formatter
+ * @property {string} clangFormatterUrl - URL for Clang Formatter
+ * @property {string} clangWasmUrl - URL for Clang WASM
+ * @property {string} ruffFormatterUrl - URL for Ruff Formatter
+ * @property {string} ruffWasmUrl - URL for Ruff WASM
+ * @property {string} gofmtFormatterUrl - URL for Gofmt Formatter
+ * @property {string} gofmtWasmUrl - URL for Gofmt WASM
  */
 export interface AssetUrls {
   /** Base URL for VS Code assets */
   vsBase: string;
+  /** URL for the HTML file */
   htmlUrl: string;
   /** URL for the bundle JavaScript file */
   bundleJsUrl: string;
@@ -371,21 +468,23 @@ export interface AssetUrls {
 
 /**
  * Context object passed to the message handler builder for a Monaco iframe instance.
- * @property iframe - The iframe element containing the Monaco editor
- * @property send - Function to send messages to the iframe
- * @property valueRef - Reference to the current editor value to avoid closure issues
- * @property codeContext - Unique context identifier for this editor instance
- * @property plugin - The plugin instance
- * @property initParams - Initialization parameters sent to the iframe
- * @property loadProjectFiles - Function to load project files for IntelliSense
- * @property autoFocus - Whether to auto-focus the editor after init
- * @property onChange - Callback for content changes
- * @property onSave - Callback for save actions (Ctrl+S)
- * @property onFormatDiff - Callback for format diff available
- * @property onFormatDiffReverted - Callback for format diff reverted
- * @property onOpenEditorConfig - Callback to open editor config modal
- * @property onOpenThemePicker - Callback to open theme picker modal
- * @property onOpenRenameExtension - Callback to open rename extension modal
+ * @property {HTMLIFrameElement} iframe - The iframe element containing the Monaco editor
+ * @property {function(type: string, payload: Record<string, unknown>): void} send - Function to send messages to the iframe
+ * @property {{ current: string }} valueRef - Reference to the current editor value
+ * @property {string} codeContext - Unique context identifier for this editor instance
+ * @property {CodeFilesPlugin} plugin - The plugin instance
+ * @property {InitParams} initParams - Initialization parameters sent to the iframe
+ * @property {(send: (type: string, payload: Record<string, unknown>) => void) => Promise<void>} loadProjectFiles - Function to load project files
+ * @property {boolean} autoFocus - Whether to auto-focus the editor after init
+ * @property {function(): void} [onChange] - Callback for content changes
+ * @property {function(): void} [onSave] - Callback for save actions (Ctrl+S)
+ * @property {function(): void} [onFormatDiff] - Callback for format diff available
+ * @property {function(): void} [onFormatDiffReverted] - Callback for format diff reverted
+ * @property {function(ext: string): void} [onOpenEditorConfig] - Callback to open editor config modal
+ * @property {function(): void} [onOpenThemePicker] - Callback to open theme picker modal
+ * @property {function(): void} [onOpenRenameExtension] - Callback to open rename extension modal
+ * @property {function(visible: boolean): void} [onConsoleVisibilityChanged] - Callback when console visibility changes
+ * @property {boolean} [initialConsoleOpen] - Whether the console should be open
  */
 export interface MessageHandlerContext {
   /** The iframe element containing the Monaco editor */
@@ -399,7 +498,7 @@ export interface MessageHandlerContext {
   /** The plugin instance */
   plugin: CodeFilesPlugin;
   /** Initialization parameters sent to the iframe */
-  initParams: Record<string, unknown>;
+  initParams: InitParams;
   /** Function to load project files for IntelliSense */
   loadProjectFiles: (
     send: (type: string, payload: Record<string, unknown>) => void

@@ -2,9 +2,6 @@
  * Monaco Editor Actions and Keyboard Handlers
  * All custom actions registered in Monaco's context menu and command palette
  */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck - Monaco global types don't match AMD-loaded runtime
-
 import type * as Monaco from 'monaco-editor';
 import type { InitParams, HotkeyConfig, Prettify } from './types/index.ts';
 import { getLastFormat } from './diff.ts';
