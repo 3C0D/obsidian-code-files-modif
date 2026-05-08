@@ -29,6 +29,12 @@ let currentLang = 'plaintext';
 let lastFormatOriginal: string | null = null;
 let lastFormatFormatted: string | null = null;
 
+/**
+ * Sets the shared editor state for the diff module.
+ * @param editorInstance - The Monaco editor instance
+ * @param ctx - The file context/path identifier
+ * @param lang - The current language identifier (e.g. 'typescript')
+ */
 export function setSharedState(
   editorInstance: Monaco.editor.IStandaloneCodeEditor,
   ctx: string,

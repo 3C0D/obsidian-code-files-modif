@@ -31,6 +31,10 @@ export function setActionsState(
   runFormatWithDiff = formatFn;
 }
 
+/**
+ * Enables or disables format-on-save behavior.
+ * @param value - true to format before saving, false to save as-is
+ */
 export function setFormatOnSave(value: boolean): void {
   formatOnSave = value;
 }
@@ -143,7 +147,7 @@ export function registerActions(
     }
   });
 
-  // Add a context menu action in Monaco to open the formatter config for this file
+  // Add a context menu action in Monaco to rename the file extension
   editor.addAction({
     id: 'code-files-rename-extension',
     label: '🍋🟩 Rename Extension',

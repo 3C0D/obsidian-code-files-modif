@@ -137,11 +137,6 @@ export function runFormatWithDiff(): Promise<void> {
 }
 
 /**
- * Initializes the console pane UI and event handlers.
- * @param ctx - The editor context identifier
- */
-
-/**
  * Applies initialization parameters to configure the Monaco editor instance.
  * Sets up language, theme, editor options, and registers formatters/actions.
  * Called once during iframe initialization.

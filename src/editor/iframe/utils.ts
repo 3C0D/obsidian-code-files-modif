@@ -1,6 +1,7 @@
 /**
  * Shared utilities for iframe modules.
- * Handles parent origin capture for secure postMessage communication.
+ * Handles parent origin capture for secure postMessage communication,
+ * and provides a general-purpose throttle helper.
  */
 
 /**
@@ -15,21 +16,21 @@ let parentOrigin = '*';
  * @param origin - `e.origin` from the `init` MessageEvent (`app://obsidian.md` or `http://localhost:port`)
  */
 export function setParentOrigin(origin: string): void {
-  // Store the parent origin as soon as the iframe receives the `init` message.
   parentOrigin = origin;
 }
 
 /**
  * Gets the captured parent origin for postMessage communication.
- * @returns The parent window origin, or '*' if not yet captured
+ * @returns `app://obsidian.md` (desktop), `http://localhost:port` (mobile), or `'*'` before `init`
  */
 export function getParentOrigin(): string {
-  // Reuse the captured origin for all messages sent from the iframe to the parent.
   return parentOrigin;
 }
 
 /**
  * Simple throttle utility to limit execution frequency of expensive operations.
+ * @param func - The function to throttle
+ * @param limit - Minimum time in milliseconds between executions
  */
 export function throttle<T extends (...args: unknown[]) => void>(
   func: T,

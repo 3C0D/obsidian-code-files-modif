@@ -61,7 +61,7 @@ export function initConsolePane(
   // Guard against missing DOM elements (e.g. if the HTML template changed)
   if (!pane || !output || !input) return;
 
-  // Task 5: Restore persistent console height if available
+  // Restore persistent console height if provided
   if (initialHeight) {
     pane.style.height = initialHeight + 'px';
   }
@@ -265,7 +265,7 @@ export function initConsolePane(
       document.removeEventListener('mouseup', onMouseUp);
       document.body.style.userSelect = ''; // Re-enable text selection
 
-      // Task 5: Notify parent about the new height for persistence
+      // Notify parent of new height for persistence across sessions
       window.parent.postMessage(
         { type: 'console-height-changed', height: pane.offsetHeight, context: ctx },
         getParentOrigin()
@@ -365,7 +365,7 @@ export function handleConsoleMessage(
         // Convert ANSI escape codes (colors) to HTML spans
         output.innerHTML += ansiUp.ansi_to_html(text);
 
-        // Task 10: Auto-truncate output to prevent DOM bloat (keep last 5000 lines)
+        // Auto-truncate output to prevent DOM bloat (keep last 5000 lines)
         const MAX_OUTPUT_LINES = 5000;
         const lines = output.innerHTML.split('\n');
         if (lines.length > MAX_OUTPUT_LINES) {
@@ -379,7 +379,7 @@ export function handleConsoleMessage(
     }
 
     case 'console-process-exited': {
-      // Task 1: Structured exit signal resets the lock
+      // Process exited — release the stdin lock
       isRunning = false;
       updatePrompt();
       return true;
