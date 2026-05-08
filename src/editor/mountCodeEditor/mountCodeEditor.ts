@@ -109,7 +109,7 @@ export const mountCodeEditor = async (
    * @param payload - Data to send alongside the message. Spread into the message object,
    *                  so the iframe receives { type, ...payload }.
    */
-  const send = (type: string, payload: Record<string, unknown>): void => {
+  const send = (type: string, payload: Record<string, unknown> | object): void => {
     iframe.contentWindow?.postMessage({ type, ...payload }, '*');
   };
 

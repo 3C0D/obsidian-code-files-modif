@@ -322,7 +322,7 @@ export interface CodeEditorHandle {
    * @param payload - Data to send alongside the message. Spread into the message object,
    *                  so the iframe receives { type, ...payload }.
    */
-  send: (type: string, payload: Record<string, unknown>) => void;
+  send: (type: string, payload: Record<string, unknown> | object) => void;
   /** Clears the editor content */
   clear: () => void;
   /** Returns the current editor content */
@@ -490,7 +490,7 @@ export interface MessageHandlerContext {
   /** The iframe element containing the Monaco editor */
   iframe: HTMLIFrameElement;
   /** Function to send messages to the iframe */
-  send: (type: string, payload: Record<string, unknown>) => void;
+  send: (type: string, payload: Record<string, unknown> | object) => void;
   /** Reference to the current editor value to avoid closure issues */
   valueRef: { current: string };
   /** Unique context identifier for this editor instance */
@@ -501,7 +501,7 @@ export interface MessageHandlerContext {
   initParams: InitParams;
   /** Function to load project files for IntelliSense */
   loadProjectFiles: (
-    send: (type: string, payload: Record<string, unknown>) => void
+    send: (type: string, payload: Record<string, unknown> | object) => void
   ) => Promise<void>;
   /** Whether to auto-focus the editor after init */
   autoFocus: boolean;

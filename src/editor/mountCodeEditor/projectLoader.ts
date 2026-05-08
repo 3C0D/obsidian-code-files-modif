@@ -12,7 +12,7 @@ import { readProjectFiles } from '../../utils/projectUtils.ts';
  */
 export async function loadProjectFiles(
   plugin: CodeFilesPlugin,
-  send: (type: string, payload: Record<string, unknown>) => void
+  send: (type: string, payload: Record<string, unknown> | object) => void
 ): Promise<void> {
   const files = await readProjectFiles(plugin);
   send('load-project-files', { files });
