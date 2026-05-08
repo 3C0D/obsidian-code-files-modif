@@ -306,7 +306,8 @@ function applyParams(params: Prettify<InitParams>): void {
  * Signals readiness to parent and processes initialization messages.
  */
 export function initMonacoApp(): void {
-  // Signal that Monaco is fully loaded and ready to receive 'init'
+  // Signal that Monaco is fully loaded and ready to receive 'init'.
+  // parentOrigin is '*' at this point — not yet captured from the init message.
   window.parent.postMessage({ type: 'ready' }, getParentOrigin());
 
   window.addEventListener('message', (e) => {
@@ -315,6 +316,7 @@ export function initMonacoApp(): void {
 
     switch (data.type) {
       case 'init':
+        // e.origin = 'app://obsidian.md' (desktop) or 'http://localhost:port' (mobile)
         setParentOrigin(e.origin);
         applyParams(data);
         window._initialized = true;

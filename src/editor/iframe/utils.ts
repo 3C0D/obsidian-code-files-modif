@@ -3,14 +3,19 @@
  * Handles parent origin capture for secure postMessage communication.
  */
 
+/**
+ * Parent window origin used as `targetOrigin` for outgoing `postMessage` calls.
+ * `*` is only a temporary fallback before the `init` message is received.
+ */
 let parentOrigin = '*';
 
 /**
- * Captures the parent window origin from the init message event.
- * Must be called once before any postMessage is sent to the parent.
- * @param origin - The origin of the parent window (from event.origin)
+ * Captures the parent window origin from the `init` message event.
+ * Called once on `init` — locks all subsequent postMessage calls to the real origin.
+ * @param origin - `e.origin` from the `init` MessageEvent (`app://obsidian.md` or `http://localhost:port`)
  */
 export function setParentOrigin(origin: string): void {
+  // Store the parent origin as soon as the iframe receives the `init` message.
   parentOrigin = origin;
 }
 
@@ -19,6 +24,7 @@ export function setParentOrigin(origin: string): void {
  * @returns The parent window origin, or '*' if not yet captured
  */
 export function getParentOrigin(): string {
+  // Reuse the captured origin for all messages sent from the iframe to the parent.
   return parentOrigin;
 }
 

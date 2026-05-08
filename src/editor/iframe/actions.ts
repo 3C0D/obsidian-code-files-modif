@@ -70,8 +70,10 @@ export function registerActions(
       contextMenuGroupId: 'code-files',
       contextMenuOrder: 0,
       run: () => {
+        // Only communication channel possible from the iframe: postMessage to Obsidian's parent window
         window.parent.postMessage(
           { type: 'return-to-default-view', context },
+          // '*' until 'init' is received, then locked to 'app://obsidian.md' (desktop) or 'http://localhost:port' (mobile)
           getParentOrigin()
         );
       }
