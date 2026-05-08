@@ -8,7 +8,8 @@
 import type {
   CodeEditorHandle,
   MountCodeEditorOptions,
-  Prettify
+  Prettify,
+  SendFunction
 } from '../../types/index.ts';
 
 import { buildMessageHandler } from './messageHandler.ts';
@@ -109,7 +110,7 @@ export const mountCodeEditor = async (
    * @param payload - Data to send alongside the message. Spread into the message object,
    *                  so the iframe receives { type, ...payload }.
    */
-  const send = (type: string, payload: Record<string, unknown> | object): void => {
+  const send: SendFunction = (type, payload): void => {
     iframe.contentWindow?.postMessage({ type, ...payload }, '*');
   };
 

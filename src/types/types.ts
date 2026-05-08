@@ -302,14 +302,20 @@ export interface MountCodeEditorOptions {
   initialConsoleOpen?: boolean;
 }
 
+/** Function signature for sending messages to the Monaco iframe */
+export type SendFunction = <T extends object>(type: string, payload: T) => void;
+
 /**
- * Handle for a mounted editor instance.
+ * Public handle for a mounted editor instance.
+ * Used by the plugin view (CodeEditorView) to control the editor from the outside
+ * (e.g. changing theme, focusing, or setting value).
+ *
  * @property {HTMLIFrameElement} iframe - The iframe element containing the Monaco editor
- * @property {function(msg: any): void} send - Sends a typed postMessage to the Monaco iframe
+ * @property {SendFunction} send - Public API to send typed messages to the Monaco iframe
  * @property {function(): void} clear - Clears the editor content
  * @property {function(): string} getValue - Returns the current editor content
  * @property {function(value: string): void} setValue - Sets the editor content
- * @property {function(): void} destroy - Removes the iframe, revokes the blob URL, and cleans up the message listener
+ * @property {function(): void} destroy - Removes the iframe and cleans up listeners
  */
 export interface CodeEditorHandle {
   /** The iframe element containing the Monaco editor */
@@ -322,7 +328,7 @@ export interface CodeEditorHandle {
    * @param payload - Data to send alongside the message. Spread into the message object,
    *                  so the iframe receives { type, ...payload }.
    */
-  send: (type: string, payload: Record<string, unknown> | object) => void;
+  send: SendFunction;
   /** Clears the editor content */
   clear: () => void;
   /** Returns the current editor content */
@@ -467,14 +473,16 @@ export interface AssetUrls {
 }
 
 /**
- * Context object passed to the message handler builder for a Monaco iframe instance.
+ * Internal context object passed to the message handler builder for a Monaco iframe instance.
+ * Used by the handler to react to iframe events and send follow-up messages (e.g. 'init' after 'ready').
+ *
  * @property {HTMLIFrameElement} iframe - The iframe element containing the Monaco editor
- * @property {function(type: string, payload: Record<string, unknown>): void} send - Function to send messages to the iframe
+ * @property {SendFunction} send - Internal function to send response messages to the iframe
  * @property {{ current: string }} valueRef - Reference to the current editor value
  * @property {string} codeContext - Unique context identifier for this editor instance
  * @property {CodeFilesPlugin} plugin - The plugin instance
  * @property {InitParams} initParams - Initialization parameters sent to the iframe
- * @property {(send: (type: string, payload: Record<string, unknown>) => void) => Promise<void>} loadProjectFiles - Function to load project files
+ * @property {(send: SendFunction) => Promise<void>} loadProjectFiles - Function to load project files
  * @property {boolean} autoFocus - Whether to auto-focus the editor after init
  * @property {function(): void} [onChange] - Callback for content changes
  * @property {function(): void} [onSave] - Callback for save actions (Ctrl+S)
@@ -489,8 +497,8 @@ export interface AssetUrls {
 export interface MessageHandlerContext {
   /** The iframe element containing the Monaco editor */
   iframe: HTMLIFrameElement;
-  /** Function to send messages to the iframe */
-  send: (type: string, payload: Record<string, unknown> | object) => void;
+  /** Internal function to send response messages to the iframe */
+  send: SendFunction;
   /** Reference to the current editor value to avoid closure issues */
   valueRef: { current: string };
   /** Unique context identifier for this editor instance */
@@ -499,10 +507,7 @@ export interface MessageHandlerContext {
   plugin: CodeFilesPlugin;
   /** Initialization parameters sent to the iframe */
   initParams: InitParams;
-  /** Function to load project files for IntelliSense */
-  loadProjectFiles: (
-    send: (type: string, payload: Record<string, unknown> | object) => void
-  ) => Promise<void>;
+  loadProjectFiles: (send: SendFunction) => Promise<void>;
   /** Whether to auto-focus the editor after init */
   autoFocus: boolean;
   /** Callback for content changes */

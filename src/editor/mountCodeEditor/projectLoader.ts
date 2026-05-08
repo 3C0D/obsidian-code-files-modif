@@ -1,3 +1,4 @@
+import type { SendFunction } from '../../types/index.ts';
 import type CodeFilesPlugin from '../../main.ts';
 import { readProjectFiles } from '../../utils/projectUtils.ts';
 
@@ -12,7 +13,7 @@ import { readProjectFiles } from '../../utils/projectUtils.ts';
  */
 export async function loadProjectFiles(
   plugin: CodeFilesPlugin,
-  send: (type: string, payload: Record<string, unknown> | object) => void
+  send: SendFunction
 ): Promise<void> {
   const files = await readProjectFiles(plugin);
   send('load-project-files', { files });
