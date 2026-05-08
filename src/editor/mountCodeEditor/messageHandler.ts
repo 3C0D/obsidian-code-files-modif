@@ -87,7 +87,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     onFormatDiffReverted,
     onOpenEditorConfig,
     onOpenThemePicker,
-    onOpenRenameExtension
+    onOpenRenameExtension,
+    onConsoleVisibilityChanged,
+    initialConsoleOpen
   } = ctx;
 
   /**
@@ -114,6 +116,10 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       const fileDir = path.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
       const initialCwd = currentCwd.get(codeContext) ?? fileDir;
       send('console-cwd-changed', { cwd: initialCwd });
+
+      if (initialConsoleOpen) {
+        send('console-show', {});
+      }
       return;
     }
 
@@ -366,6 +372,15 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         if (!Platform.isDesktop) break;
         plugin.settings.consoleHeight = data.height as number;
         await plugin.saveSettings();
+        break;
+      }
+
+      /**
+       * CONSOLE: Visibility changed (e.g. via toggle).
+       */
+      case 'console-visibility-changed': {
+        if (!Platform.isDesktop) break;
+        onConsoleVisibilityChanged?.(data.visible as boolean);
         break;
       }
 

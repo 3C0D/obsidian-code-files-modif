@@ -452,7 +452,7 @@ export function initMonacoApp(): void {
         }
         break;
       default:
-        handleConsoleMessage(data, editor);
+        handleConsoleMessage(data, editor, context);
         break;
     }
   });

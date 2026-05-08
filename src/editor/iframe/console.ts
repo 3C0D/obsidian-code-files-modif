@@ -326,7 +326,8 @@ export function initConsolePane(
  */
 export function handleConsoleMessage(
   data: Record<string, unknown>,
-  editor: monaco.editor.IStandaloneCodeEditor | null
+  editor: monaco.editor.IStandaloneCodeEditor | null,
+  ctx: string | null
 ): boolean {
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
@@ -336,9 +337,23 @@ export function handleConsoleMessage(
       if (pane) {
         pane.classList.toggle('visible');
         editor?.layout(); // Recalculate editor size to fill the remaining space
-        if (!pane.classList.contains('visible')) {
+        const isVisible = pane.classList.contains('visible');
+        if (!isVisible) {
           editor?.focus(); // Return focus to code if the console is closed
         }
+        // Notify the parent about the visibility change for state persistence
+        window.parent.postMessage(
+          { type: 'console-visibility-changed', visible: isVisible, context: ctx || '' },
+          getParentOrigin()
+        );
+      }
+      return true;
+    }
+
+    case 'console-show': {
+      if (pane && !pane.classList.contains('visible')) {
+        pane.classList.add('visible');
+        editor?.layout();
       }
       return true;
     }

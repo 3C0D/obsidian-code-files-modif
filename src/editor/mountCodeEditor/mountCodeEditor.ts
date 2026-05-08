@@ -65,6 +65,8 @@ export const mountCodeEditor = async (
     onOpenEditorConfig,
     onOpenThemePicker,
     onOpenRenameExtension,
+    onConsoleVisibilityChanged,
+    initialConsoleOpen,
     autoFocus = true
   } = options;
   // Use the document/window of the container element to support Obsidian popout windows
@@ -126,7 +128,9 @@ export const mountCodeEditor = async (
     onFormatDiffReverted,
     onOpenEditorConfig,
     onOpenThemePicker,
-    onOpenRenameExtension
+    onOpenRenameExtension,
+    onConsoleVisibilityChanged,
+    initialConsoleOpen
   });
 
   // Register the message listener on the correct window (supports popout windows)

@@ -219,6 +219,10 @@ export interface MountCodeEditorOptions {
   onOpenRenameExtension?: () => void;
   /** Optional flag to disable automatic focus on editor ready (default: true) */
   autoFocus?: boolean;
+  /** Optional callback invoked when the console visibility changes */
+  onConsoleVisibilityChanged?: (visible: boolean) => void;
+  /** Whether the console should be open on initialization */
+  initialConsoleOpen?: boolean;
 }
 
 /**
@@ -416,4 +420,8 @@ export interface MessageHandlerContext {
   onOpenThemePicker?: () => void;
   /** Callback to open rename extension modal */
   onOpenRenameExtension?: () => void;
+  /** Callback when console visibility changes */
+  onConsoleVisibilityChanged?: (visible: boolean) => void;
+  /** Whether the console should be open on initialization */
+  initialConsoleOpen?: boolean;
 }

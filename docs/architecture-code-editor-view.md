@@ -140,5 +140,9 @@ C'est ce `file` que `setState` utilise pour retrouver le fichier dans le vault.
 
 Pour les dotfiles et fichiers `.obsidian/`, Obsidian ne les trouve pas dans son index au redémarrage. Sans `reveal`, `setState` appelle `super.setState` qui cherche le fichier dans le vault, le trouve pas, et la vue reste vide. Avec `state.reveal = true`, ton `setState` les révèle d'abord avant de passer la main à `super.setState`.
 
+**Le cas `isConsoleOpen` :**
+
+L'état de la console est également stocké dans ce `state`. Si `isConsoleOpen` est présent, la vue demande à l'iframe d'afficher la console dès qu'elle est prête. La synchronisation se fait via `requestSaveLayout()` dès que l'utilisateur bascule la console, assurant que l'état est toujours à jour en cas de crash ou de fermeture inattendue.
+
 ---
 

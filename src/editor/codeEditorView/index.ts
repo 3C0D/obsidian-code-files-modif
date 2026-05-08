@@ -50,6 +50,8 @@ export class CodeEditorView extends TextFileView {
   private forceSave = false;
   /** Flag to hide the return arrow (set via state.noReturnAction) */
   private noReturnAction = false;
+  /** Tracks whether the integrated console is currently open */
+  private isConsoleOpen = false;
   /** Gear icon action (Editor Settings) in the view header */
   private gearAction: HTMLElement | null = null;
   /** Theme picker icon action in the view header */
@@ -124,6 +126,9 @@ export class CodeEditorView extends TextFileView {
     if (this.noReturnAction) {
       state.noReturnAction = true;
     }
+    if (this.isConsoleOpen) {
+      state.isConsoleOpen = true;
+    }
     return state;
   }
 
@@ -142,6 +147,10 @@ export class CodeEditorView extends TextFileView {
     this.noReturnAction = false;
     if (state.noReturnAction) {
       this.noReturnAction = true;
+    }
+    this.isConsoleOpen = false;
+    if (state.isConsoleOpen) {
+      this.isConsoleOpen = true;
     }
     await super.setState(state, result);
   }
@@ -280,7 +289,12 @@ export class CodeEditorView extends TextFileView {
         openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext),
       onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor ?? undefined),
       onOpenRenameExtension: () =>
-        openRenameExtension(this.plugin, this.codeEditor ?? undefined, file)
+        openRenameExtension(this.plugin, this.codeEditor ?? undefined, file),
+      initialConsoleOpen: this.isConsoleOpen,
+      onConsoleVisibilityChanged: (visible) => {
+        this.isConsoleOpen = visible;
+        this.plugin.app.workspace.requestSaveLayout();
+      }
     });
     // Register theme change handler to follow Obsidian's theme when set to 'default'
     this.unregisterThemeHandler = registerThemeChangeHandler(

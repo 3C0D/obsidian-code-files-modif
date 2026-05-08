@@ -86,6 +86,14 @@ Pour éviter que l'interface ne se fige pendant le drag de la poignée, la logiq
 
 La hauteur choisie est persistée dans les paramètres du plugin lors du relâchement de la souris.
 
+### Persistance de l'état d'ouverture
+
+La visibilité de la console est persistée par fichier. Si la console est ouverte lors de la fermeture d'Obsidian ou lors d'un changement de fichier, elle réapparaîtra ouverte au prochain chargement.
+
+1. **Notification de visibilité** : À chaque ouverture ou fermeture (via Ctrl+J ou bouton), l'iframe envoie un message `console-visibility-changed` contenant l'état `visible`.
+2. **Synchronisation Parent** : La vue `CodeEditorView` intercepte ce message, met à jour sa variable interne `isConsoleOpen` et appelle `this.app.workspace.requestSaveLayout()` pour forcer Obsidian à mémoriser l'état de la vue.
+3. **Restauration** : Lors du `setState` (rechargement d'Obsidian), la vue récupère `isConsoleOpen`. Elle transmet cette valeur au `mountCodeEditor`. Dès que l'iframe est prête (signal `ready`), le parent envoie un message `console-show` pour forcer l'affichage si nécessaire.
+
 ### Gestion des entrées et UX
 
 - **Nettoyage** : Le champ d'entrée est systématiquement vidé après l'envoi.
@@ -188,8 +196,8 @@ Pour garantir que les caractères accentués (comme le `é` en français) s'affi
 ## Fichiers concernés
 
 - [`src/editor/iframe/console.ts`](../src/editor/iframe/console.ts) : Logique métier de la console (UI, états, messages entrants).
-- [`src/editor/iframe/init.ts`](../src/editor/iframe/init.ts) : Dispatcher des messages.
-- [`src/editor/iframe/types/console.ts`](../src/editor/iframe/types/console.ts) : Types des messages `postMessage` (entrée/sortie).
+- [`src/editor/iframe/init.ts`](../src/editor/iframe/init.ts) : Dispatcher des messages (transmet `context` aux handlers).
+- [`src/editor/iframe/types/console.ts`](../src/editor/iframe/types/console.ts) : Types des messages `postMessage` (entrée/sortie), incluant `console-show` et `console-visibility-changed`.
 - [`src/editor/mountCodeEditor/messageHandler.ts`](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus côté Obsidian.
 - [`src/editor/monacoHtml.css`](../src/editor/monacoHtml.css) : Styles et thémage ANSI.
 - [`src/editor/monacoEditor.html`](../src/editor/monacoEditor.html) : Structure DOM de la console.
