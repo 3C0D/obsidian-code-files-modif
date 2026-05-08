@@ -11,6 +11,9 @@ import path from 'path';
 /** Global registry for active console processes. */
 export const activeProcesses = new Map<string, ChildProcess>();
 
+/** Tracks the current working directory for each file's console session. */
+const currentCwd = new Map<string, string>();
+
 /**
  * Force-kills a process and its entire child tree.
  * @param proc - The child process to terminate.
@@ -76,6 +79,12 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       // Restore command history for this file context from persistent settings
       const hist = plugin.settings.consoleHistories[codeContext];
       if (hist?.length) send('console-history', { history: hist });
+
+      // Send initial CWD to the iframe console
+      const adapter = getDataAdapterEx(plugin.app);
+      const fileDir = path.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
+      const initialCwd = currentCwd.get(codeContext) ?? fileDir;
+      send('console-cwd-changed', { cwd: initialCwd });
       return;
     }
 
@@ -222,6 +231,32 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
           await plugin.saveSettings();
         }
 
+        const adapter = getDataAdapterEx(plugin.app);
+        const basePath = adapter.basePath;
+        const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
+        const activeCwd = currentCwd.get(codeContext) ?? fileDir;
+
+        // Task: Intercept 'cd' commands to update the persistent CWD
+        const cdMatch = cmdLine.trim().match(/^cd\s+(.+)/i);
+        if (cdMatch) {
+          const target = cdMatch[1].replace(/^["']|["']$/g, '');
+          const resolved = path.resolve(activeCwd, target);
+          try {
+            const fs = require('fs');
+            const stats = fs.statSync(resolved);
+            if (stats.isDirectory()) {
+              currentCwd.set(codeContext, resolved);
+              send('console-cwd-changed', { cwd: resolved });
+              // Local command: no spawn needed
+              send('console-output', { text: '' });
+              send('console-process-exited', { code: 0 });
+              break;
+            }
+          } catch {
+            // Fall through to spawn if directory doesn't exist
+          }
+        }
+        
         // Kill any existing process for this file before starting a new one.
         const existing = activeProcesses.get(codeContext);
         if (existing) killProcessTree(existing);
@@ -234,15 +269,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             ? `chcp 65001 >nul 2>&1 && ${cmdLine.trim()}`
             : cmdLine.trim();
 
-        // Determine the absolute directory of the current file.
-        // Commands should run relative to the file, not the vault root.
-        const adapter = getDataAdapterEx(plugin.app);
-        const basePath = adapter.basePath;
-        const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
-
         try {
           const proc = spawn(shellCmd, [], {
-            cwd: fileDir,
+            cwd: activeCwd,
             env: {
               ...process.env,
               PYTHONIOENCODING: 'utf-8', // Ensure UTF-8 for Python scripts

@@ -145,36 +145,36 @@
 .console-command-line { color: #0dbc79; font-weight: bold; }
 .console-stdin-line { color: #3b8eea; font-style: italic; }
 
-#console-input-bar {
+#console-prompt-line {
 	display: flex;
-	padding: 4px 8px;
-	gap: 6px;
-	border-top: 1px solid #333;
-	align-items: center;
+	padding: 2px 8px;
+	align-items: baseline;
+	font-family: monospace;
+	font-size: 12px;
+	color: #ccc;
+	gap: 0;
+}
+
+#console-prompt-cwd {
+	color: #569cd6;
+	white-space: nowrap;
+	margin-right: 4px;
+}
+
+#console-prompt-symbol {
+	color: #0dbc79;
+	font-weight: bold;
+	margin-right: 6px;
 }
 
 #console-input-field {
 	flex: 1;
-	background: #2d2d2d;
+	background: transparent;
 	color: #ccc;
-	border: 1px solid #444;
-	padding: 2px 6px;
+	border: none;
+	padding: 0;
 	font-family: monospace;
 	font-size: 12px;
 	outline: none;
 	color-scheme: dark;
 }
-
-#console-run-btn,
-#console-stop-btn {
-	padding: 2px 8px;
-	cursor: pointer;
-	font-size: 11px;
-	background: #2d2d2d;
-	color: #ccc;
-	border: 1px solid #555;
-	border-radius: 3px;
-}
-
-#console-run-btn:hover { background: #3a3a3a; }
-#console-stop-btn:hover { background: #3a3a3a; }

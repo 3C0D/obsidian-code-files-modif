@@ -17,8 +17,29 @@ ansiUp.use_classes = true; // Use CSS classes instead of inline styles for bette
  *   - false: Enter key starts a new shell command.
  */
 let isRunning = false;
+let currentCwd = '';
 const history: string[] = [];
 let historyIndex = -1;
+
+/**
+ * Updates the prompt UI elements based on current state (CWD, isRunning).
+ */
+const updatePrompt = (): void => {
+  const cwdEl = document.getElementById('console-prompt-cwd');
+  const symbolEl = document.getElementById('console-prompt-symbol');
+  const input = document.getElementById('console-input-field') as HTMLInputElement;
+  if (cwdEl) {
+    // Show last two segments of the CWD for brevity
+    cwdEl.textContent = currentCwd.split(/[/\\]/).slice(-2).join('/') || '/';
+    cwdEl.style.display = isRunning ? 'none' : '';
+  }
+  if (symbolEl) {
+    symbolEl.style.display = isRunning ? 'none' : '';
+  }
+  if (input) {
+    input.placeholder = isRunning ? 'stdin...' : '';
+  }
+};
 
 /**
  * Initializes the console pane elements and registers all event listeners.
@@ -35,22 +56,16 @@ export function initConsolePane(
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
   const input = document.getElementById('console-input-field') as HTMLInputElement;
-  const runBtn = document.getElementById('console-run-btn');
-  const stopBtn = document.getElementById('console-stop-btn');
   const resizeHandle = document.getElementById('console-resize-handle');
 
   // Guard against missing DOM elements (e.g. if the HTML template changed)
-  if (!pane || !output || !input || !runBtn || !stopBtn) return;
+  if (!pane || !output || !input) return;
 
   // Task 5: Restore persistent console height if available
   if (initialHeight) {
     pane.style.height = initialHeight + 'px';
   }
 
-  /**
-   * Processes the current input value.
-   * Logic branches based on whether a process is already running.
-   */
   const sendCommand = (): void => {
     const cmd = input.value.trim();
     if (!cmd) return;
@@ -82,7 +97,7 @@ export function initConsolePane(
      * MODE: New Command Execution
      * No process is active, so we treat the input as a new shell command to spawn.
      */
-    const shortDir = ctx.replace(/[^/\\]*$/, '').replace(/\/$/, '') || '.';
+    const shortDir = currentCwd.split(/[/\\]/).slice(-2).join('/') || '/';
     output.innerHTML += `<span class="console-cwd">${shortDir}</span><span class="console-command-line"> $ ${cmd}\n</span>`;
     output.scrollTop = output.scrollHeight;
 
@@ -91,6 +106,7 @@ export function initConsolePane(
     historyIndex = history.length;
 
     isRunning = true; // Lock the console into Stdin mode until the process exits
+    updatePrompt();
     window.parent.postMessage(
       { type: 'run-command', cmd, context: ctx },
       getParentOrigin()
@@ -127,11 +143,6 @@ export function initConsolePane(
       e.preventDefault();
       sendCommand();
     }
-  });
-
-  runBtn.addEventListener('click', sendCommand);
-  stopBtn.addEventListener('click', () => {
-    window.parent.postMessage({ type: 'stop-command', context: ctx }, getParentOrigin());
   });
 
   /**
@@ -355,6 +366,13 @@ export function handleConsoleMessage(
     case 'console-process-exited': {
       // Task 1: Structured exit signal resets the lock
       isRunning = false;
+      updatePrompt();
+      return true;
+    }
+
+    case 'console-cwd-changed': {
+      currentCwd = data.cwd as string;
+      updatePrompt();
       return true;
     }
 

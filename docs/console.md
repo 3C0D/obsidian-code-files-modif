@@ -23,10 +23,10 @@ L'éditeur Monaco et la console sont encapsulés dans un `#wrapper` flex (direct
     <div id="console-pane" tabindex="0">
         <div id="console-resize-handle"></div>
         <div id="console-output"></div>
-        <div id="console-input-bar">
+        <div id="console-prompt-line">
+            <span id="console-prompt-cwd"></span>
+            <span id="console-prompt-symbol">$</span>
             <input id="console-input-field" type="text" spellcheck="false" />
-            <button id="console-run-btn">Run</button>
-            <button id="console-stop-btn">Stop</button>
         </div>
     </div>
 </div>
@@ -88,9 +88,12 @@ La hauteur choisie est persistée dans les paramètres du plugin lors du relâch
 
 ### Gestion des entrées et UX
 
-- **Nettoyage** : Le champ de saisie est systématiquement vidé après l'envoi d'une commande ou d'un stdin.
-- **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier (cap à 50 entrées), et restauré à chaque réouverture de l'éditeur.
-- **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier. Utilise `tsx` pour TypeScript (plus rapide que `ts-node`, support ESM natif).
+- **Nettoyage** : Le champ d'entrée est systématiquement vidé après l'envoi.
+- **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier.
+- **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
+- **Prompt visuel (Inline)** : Affiche le dossier courant (CWD) et un symbole `$` directement dans le flux. L'input est transparent et sans bordure pour une intégration fluide. Le prompt se masque automatiquement (`display: none`) quand un processus est en cours pour indiquer le mode stdin.
+- **Navigation (cd)** : Les commandes `cd` sont interceptées par le parent. Au lieu de lancer un processus, le parent résout le chemin cible, vérifie son existence, et met à jour un état `currentCwd` persistant pour la session. Toutes les commandes suivantes utiliseront ce nouveau répertoire.
+- **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
 
   | Extension | Commande pré-remplie |
   |---|---|
@@ -105,12 +108,11 @@ La hauteur choisie est persistée dans les paramètres du plugin lors du relâch
   | `.java` | `java <fichier>` |
   | `.lua`, `.php`, `.r`, `.pl` | commande spécifique + fichier |
 
-- **Prompt visuel** : Affiche le dossier courant (CWD, chemin relatif au vault) devant le symbole `$` lors de chaque nouvelle commande.
-- **Copie** : Clic droit sur la zone de sortie pour copier la sélection dans le presse-papier via `navigator.clipboard`.
-- **Drag-and-Drop** : Glisser des fichiers depuis l'explorateur vers l'input insère leur chemin (entre guillemets si le chemin contient des espaces).
-- **Paste multi-ligne (mode stdin)** : En mode interactif, coller un texte contenant des sauts de ligne envoie chaque ligne séparément au `stdin` du processus.
-- **ANSI** : Les séquences de couleur produites par les programmes en ligne de commande sont converties en balises HTML via `ansi_up`.
-- **Truncate** : La sortie est limitée aux 5 000 dernières lignes pour préserver les performances du DOM sur des exécutions longues.
+- **Copie** : Clic droit sur la sortie pour copier la sélection dans le presse-papier via `navigator.clipboard`.
+- **Drag-and-Drop** : Glisser des fichiers depuis l'explorateur vers l'input insère leur chemin (entre guillemets si nécessaire).
+- **Paste multi-ligne (mode stdin)** : En mode interactif, coller un texte contenant des sauts de ligne envoie chaque ligne séparément.
+- **ANSI** : Rendu des couleurs via `ansi_up`.
+- **Truncate** : La sortie est limitée aux 5 000 dernières lignes pour préserver les performances du DOM.
 
 ---
 
@@ -133,7 +135,7 @@ env: {
 }
 ```
 
-Le CWD (répertoire de travail) est calculé depuis le chemin absolu du fichier ouvert, pas depuis la racine du vault.
+Le CWD (répertoire de travail) est maintenu par le parent dans une `Map` par contexte. Il est initialisé au répertoire du fichier mais peut être modifié via la commande `cd` interceptée.
 
 ### 2. Signalement de fin de processus
 
