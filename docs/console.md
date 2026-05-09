@@ -97,7 +97,7 @@ La visibilité de la console est persistée par fichier. Si la console est ouver
 ### Gestion des entrées et UX
 
 - **Raccourcis clavier** :
-  - **Ctrl+L** (ou Cmd+L) : Efface la sortie de la console (équivalent de la commande `clear` ou `cls`). Fonctionne même en mode stdin (processus en cours).
+  - **Ctrl+L** (ou Cmd+L) : Efface la sortie de la console (équivalent de la commande `clear` ou `cls`).
   - **Ctrl+J** (ou Cmd+J) : Affiche ou masque le panneau console.
   - **Ctrl+C** (ou Cmd+C) : Interrompt le processus en cours (envoie SIGINT/taskkill).
   - **Ctrl+D/Z** (ou Cmd+D/Z) : Envoie EOF (fin de flux) au processus en cours (ferme le pipe stdin).
@@ -190,6 +190,7 @@ Pour garantir que les caractères accentués (comme le `é` en français) s'affi
 ## Problèmes connus & TODO
 
 - [ ] **Interactivité avancée** : Support de l'auto-complétion (Tab) dans la console.
+- [ ] Amélioration de l'historique
 
 ---
 

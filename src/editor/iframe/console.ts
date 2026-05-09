@@ -221,20 +221,21 @@ export function initConsolePane(
 
   /**
    * Drag-and-drop files into input.
+   * Requires `dragover` prevention to allow the drop event.
    */
-  // input.addEventListener('dragover', (e) => e.preventDefault());
-  // input.addEventListener('drop', (e) => {
-  //   e.preventDefault();
-  //   const files = Array.from(e.dataTransfer?.files ?? []);
-  //   const paths = files
-  //     .map((f) => (f as File & { path: string }).path)
-  //     .filter(Boolean)
-  //     .map((p) => (p.includes(' ') ? `"${p}"` : p));
-  //   if (paths.length) {
-  //     input.value += (input.value ? ' ' : '') + paths.join(' ');
-  //     input.focus();
-  //   }
-  // });
+  input.addEventListener('dragover', (e) => e.preventDefault());
+  input.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    const paths = files
+      .map((f) => (f as File & { path: string }).path)
+      .filter(Boolean)
+      .map((p) => (p.includes(' ') ? `"${p}"` : p));
+    if (paths.length) {
+      input.value += (input.value ? ' ' : '') + paths.join(' ');
+      input.focus();
+    }
+  });
 
   /**
    * Support multi-line paste in stdin mode.
