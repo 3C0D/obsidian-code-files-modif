@@ -6,7 +6,8 @@ import { AnsiUp } from 'ansi_up';
 import type * as monaco from 'monaco-editor';
 import { getParentOrigin, throttle } from './utils.ts';
 
-// Initialize ANSI to HTML converter
+// AnsiUp converts ANSI escape codes (terminal color sequences like \x1b[32m) to HTML <span> tags,
+// so process output with colors (e.g. npm, jest, python) renders correctly in the console pane.
 const ansiUp = new AnsiUp();
 ansiUp.use_classes = true; // Use CSS classes instead of inline styles for better theme integration
 
@@ -18,6 +19,7 @@ ansiUp.use_classes = true; // Use CSS classes instead of inline styles for bette
  */
 let isRunning = false;
 let currentCwd = '';
+let vaultPath = '';
 const history: string[] = [];
 let historyIndex = -1;
 
@@ -29,8 +31,12 @@ const updatePrompt = (): void => {
   const symbolEl = document.getElementById('console-prompt-symbol');
   const input = document.getElementById('console-input-field') as HTMLInputElement;
   if (cwdEl) {
-    // Show last two segments of the CWD for brevity
-    cwdEl.textContent = currentCwd.split(/[/\\]/).slice(-2).join('/') || '/';
+    // Strip everything before the vault root, then show full relative path
+    const relative =
+      vaultPath && currentCwd.startsWith(vaultPath)
+        ? currentCwd.slice(vaultPath.length).replace(/^[/\\]/, '')
+        : currentCwd.split(/[/\\]/).slice(-2).join('/');
+    cwdEl.textContent = relative || '/';
     cwdEl.style.display = isRunning ? 'none' : '';
   }
   if (symbolEl) {
@@ -84,6 +90,7 @@ export function initConsolePane(
        * we send the text to the parent which writes it to the process's stdin pipe.
        */
       output.innerHTML += `<span class="console-stdin-line">${cmd}\n</span>`;
+      // Scroll to the bottom to keep the latest output visible
       output.scrollTop = output.scrollHeight;
       window.parent.postMessage(
         { type: 'send-stdin', text: cmd, context: ctx },
@@ -147,7 +154,6 @@ export function initConsolePane(
 
   /**
    * Focus input field when clicking the output area.
-   * This mimics VS Code's terminal behavior.
    * We skip focusing if the user is currently selecting text for copying.
    */
   output.addEventListener('click', () => {
@@ -160,13 +166,13 @@ export function initConsolePane(
   /**
    * Copy selection on right click.
    */
-  output.addEventListener('contextmenu', (e) => {
-    const selection = window.getSelection()?.toString();
-    if (selection && selection.length > 0) {
-      e.preventDefault();
-      navigator.clipboard.writeText(selection);
-    }
-  });
+  // output.addEventListener('contextmenu', (e) => {
+  //   const selection = window.getSelection()?.toString();
+  //   if (selection && selection.length > 0) {
+  //     e.preventDefault();
+  //     navigator.clipboard.writeText(selection);
+  //   }
+  // });
 
   /**
    * Input field specific listeners.
@@ -197,19 +203,19 @@ export function initConsolePane(
   /**
    * Drag-and-drop files into input.
    */
-  input.addEventListener('dragover', (e) => e.preventDefault());
-  input.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const files = Array.from(e.dataTransfer?.files ?? []);
-    const paths = files
-      .map((f) => (f as File & { path: string }).path)
-      .filter(Boolean)
-      .map((p) => (p.includes(' ') ? `"${p}"` : p));
-    if (paths.length) {
-      input.value += (input.value ? ' ' : '') + paths.join(' ');
-      input.focus();
-    }
-  });
+  // input.addEventListener('dragover', (e) => e.preventDefault());
+  // input.addEventListener('drop', (e) => {
+  //   e.preventDefault();
+  //   const files = Array.from(e.dataTransfer?.files ?? []);
+  //   const paths = files
+  //     .map((f) => (f as File & { path: string }).path)
+  //     .filter(Boolean)
+  //     .map((p) => (p.includes(' ') ? `"${p}"` : p));
+  //   if (paths.length) {
+  //     input.value += (input.value ? ' ' : '') + paths.join(' ');
+  //     input.focus();
+  //   }
+  // });
 
   /**
    * Support multi-line paste in stdin mode.
@@ -227,6 +233,7 @@ export function initConsolePane(
           getParentOrigin()
         );
       }
+      // Scroll to the bottom to keep the latest output visible
       output.scrollTop = output.scrollHeight;
     }
   });
@@ -386,6 +393,7 @@ export function handleConsoleMessage(
 
     case 'console-cwd-changed': {
       currentCwd = data.cwd as string;
+      if (data.vaultPath) vaultPath = data.vaultPath as string;
       updatePrompt();
       return;
     }

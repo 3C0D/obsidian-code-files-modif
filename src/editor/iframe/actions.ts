@@ -238,7 +238,7 @@ export function registerActions(
 
   editor.addAction({
     id: 'code-files-open-console',
-    label: '🖥️ Open Console',
+    label: '🖥️ Open Console (Ctrl+J)',
     contextMenuGroupId: 'code-files',
     contextMenuOrder: 5,
     run: () => {

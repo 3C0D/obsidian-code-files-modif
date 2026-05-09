@@ -119,7 +119,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       const adapter = getDataAdapterEx(plugin.app);
       const fileDir = path.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
       const initialCwd = currentCwd.get(codeContext) ?? fileDir;
-      send('console-cwd-changed', { cwd: initialCwd });
+      send('console-cwd-changed', { cwd: initialCwd, vaultPath: adapter.basePath });
 
       if (initialConsoleOpen) {
         send('console-show', {});
@@ -321,15 +321,16 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
           // On Windows, cmd.exe builtins (dir, type) output in CP850 (OEM code page),
           // while programs like Python/Node output UTF-8. We try UTF-8 first and
           // fall back to CP850 decoding if the bytes aren't valid UTF-8.
-          const decodeChunk = process.platform === 'win32'
-            ? (chunk: Buffer) => {
-                try {
-                  return new TextDecoder('utf-8', { fatal: true }).decode(chunk);
-                } catch {
-                  return decodeCp850(chunk);
+          const decodeChunk =
+            process.platform === 'win32'
+              ? (chunk: Buffer) => {
+                  try {
+                    return new TextDecoder('utf-8', { fatal: true }).decode(chunk);
+                  } catch {
+                    return decodeCp850(chunk);
+                  }
                 }
-              }
-            : (chunk: Buffer) => new TextDecoder().decode(chunk, { stream: true });
+              : (chunk: Buffer) => new TextDecoder().decode(chunk, { stream: true });
 
           // Relay stdout data to the iframe
           proc.stdout?.on('data', (chunk) => {
