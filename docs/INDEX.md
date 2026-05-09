@@ -18,6 +18,16 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Language system and extension mapping
 - **Key for:** Understanding the overall system design and data flow
 
+### [architecture-iframe.md](architecture-iframe.md)
+
+**Role:** Internal architecture of the Monaco iframe application
+
+- File tree of `src/editor/iframe/`
+- Responsibilities of `init.ts`, `actions.ts`, `formatters.ts`, `diff.ts`, `console.ts`, and support modules
+- Parent ↔ iframe communication model
+- Shared state wiring between iframe modules
+- **Key for:** Understanding how the iframe bundle is structured internally
+
 ### [monaco-local-integration.md](monaco-local-integration.md)
 
 **Role:** Migration from external to local Monaco Editor

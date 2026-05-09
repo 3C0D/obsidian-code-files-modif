@@ -1,5 +1,7 @@
 /**
- * Console Message Types for Monaco Iframe Communication
+ * Console message types for Monaco iframe communication.
+ * Documents all postMessage payloads between the iframe and Obsidian.
+ * Reference documentation only — not yet enforced at runtime on postMessage calls.
  */
 
 /** Messages sent FROM iframe TO parent Obsidian process */

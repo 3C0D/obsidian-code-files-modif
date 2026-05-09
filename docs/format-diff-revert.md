@@ -13,15 +13,18 @@ After formatting, view side-by-side diff with selective revert. Users can revert
 ### Key Files
 - `monacoEditor.html` — `openDiffModal()`, `buildRevertWidgets()`, revert logic
 - `monacoHtml.css` — diff overlay, toolbar, widget styles
-- `src/editor/iframe/config.ts` — `DIFF_EDITOR_OPTIONS` config
+- `src/editor/iframe/types/variables.ts` — `DIFF_EDITOR_OPTIONS` runtime config
+- `src/editor/iframe/types/index.ts` — public re-export surface used by `diff.ts`
 
-**Location:** `src/editor/iframe/config.ts`
+**Location:** `src/editor/iframe/types/variables.ts`
 ```js
-var DIFF_EDITOR_OPTIONS = {
-    readOnly: true,              // Prevent direct edits
+export const DIFF_EDITOR_OPTIONS = {
+    readOnly: false,             // Allows pushEditOperations for revertBlock()
+    domReadOnly: true,           // Blocks direct typing while keeping programmatic edits
     renderSideBySide: true,      // Side-by-side view
     automaticLayout: true,
-    ignoreTrimWhitespace: false  // Show whitespace changes
+    ignoreTrimWhitespace: false, // Show whitespace changes
+    enableSplitViewResizing: true
 };
 ```
 

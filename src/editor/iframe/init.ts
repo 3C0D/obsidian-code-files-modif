@@ -12,7 +12,7 @@ import {
   setPrettierPrintWidth,
   setPrettierTabWidth,
   setPrettierUseTabs
-} from './config.ts';
+} from './types/index.ts';
 import { setSharedState, setLastFormat, getLastFormat, openDiffModal } from './diff.ts';
 import { registerFormatters, setFormatterContext } from './formatters.ts';
 import {

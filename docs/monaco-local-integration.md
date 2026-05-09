@@ -120,7 +120,6 @@ plugin-folder/
 ├── monaco-themes/         # 50+ themes (2MB)
 ├── formatters/           # Prettier + Mermaid + clang/ruff/gofmt (2MB)
 ├── monacoEditor.html     # Iframe HTML (minimal, scripts inlined)
-├── iframe/config.ts      # Configuration
 └── monacoHtml.css        # Styles (inlined at runtime)
 ```
 

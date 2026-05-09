@@ -1,5 +1,7 @@
-// Monaco Editor Iframe Variables
-// Centralized variables and configuration constants for the iframe bundle
+/**
+ * Runtime constants and Prettier configuration for the iframe bundle.
+ * Prettier variables are mutable to allow live updates from the parent window via applyEditorConfig().
+ */
 
 // ===== Diff Modal Configuration =====
 
@@ -41,7 +43,7 @@ export let PRETTIER_TAB_WIDTH = 4;
 /** Use tabs instead of spaces (synced with Monaco insertSpaces) */
 export let PRETTIER_USE_TABS = false;
 
-/** Setters for runtime updates */
+/** Runtime setters — called from applyEditorConfig() when the parent sends updated config. */
 export function setPrettierProseWrap(value: string): void {
   PRETTIER_PROSE_WRAP = value;
 }

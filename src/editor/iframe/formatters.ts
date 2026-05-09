@@ -10,7 +10,7 @@ import {
   PRETTIER_PRINT_WIDTH,
   PRETTIER_TAB_WIDTH,
   PRETTIER_USE_TABS
-} from './config.ts';
+} from './types/index.ts';
 import { setLastFormat } from './diff.ts';
 import { getParentOrigin } from './utils.ts';
 

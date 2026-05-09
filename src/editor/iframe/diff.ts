@@ -6,7 +6,7 @@
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 
 import type * as Monaco from 'monaco-editor';
-import { DIFF_EDITOR_OPTIONS } from './config.ts';
+import { DIFF_EDITOR_OPTIONS } from './types/index.ts';
 import { getParentOrigin } from './utils.ts';
 
 // Diff editor singleton - created once, reused
