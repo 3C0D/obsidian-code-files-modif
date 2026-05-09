@@ -322,13 +322,12 @@ export function initConsolePane(
  *
  * @param data - The message payload from the parent
  * @param editor - The Monaco editor instance
- * @returns boolean - true if the message was handled by this module
  */
 export function handleConsoleMessage(
   data: Record<string, unknown>,
   editor: monaco.editor.IStandaloneCodeEditor | null,
   ctx: string | null
-): boolean {
+): void {
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
 
@@ -347,7 +346,7 @@ export function handleConsoleMessage(
           getParentOrigin()
         );
       }
-      return true;
+      return;
     }
 
     case 'console-show': {
@@ -355,7 +354,7 @@ export function handleConsoleMessage(
         pane.classList.add('visible');
         editor?.layout();
       }
-      return true;
+      return;
     }
 
     case 'console-output': {
@@ -375,20 +374,20 @@ export function handleConsoleMessage(
         // Scroll to the bottom to keep the latest output visible
         output.scrollTop = output.scrollHeight;
       }
-      return true;
+      return;
     }
 
     case 'console-process-exited': {
       // Process exited — release the stdin lock
       isRunning = false;
       updatePrompt();
-      return true;
+      return;
     }
 
     case 'console-cwd-changed': {
       currentCwd = data.cwd as string;
       updatePrompt();
-      return true;
+      return;
     }
 
     case 'console-history': {
@@ -398,10 +397,10 @@ export function handleConsoleMessage(
         history.push(...incoming);
         historyIndex = history.length;
       }
-      return true;
+      return;
     }
 
     default:
-      return false;
+      return;
   }
 }
