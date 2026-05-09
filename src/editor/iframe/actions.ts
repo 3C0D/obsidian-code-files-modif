@@ -56,6 +56,27 @@ export function updateHotkeys(
 }
 
 /**
+ * Checks whether a keyboard event matches a hotkey configuration.
+ * Handles all modifier combinations including Mod-less shortcuts.
+ * @param e - The Monaco keyboard event
+ * @param hk - The hotkey configuration to match against
+ */
+function matchesHotkey(e: Monaco.IKeyboardEvent, hk: HotkeyConfig): boolean {
+  if (e.browserEvent.key.toLowerCase() !== hk.key.toLowerCase()) return false;
+
+  const needsMod =
+    hk.modifiers.includes('Mod') ||
+    hk.modifiers.includes('Ctrl') ||
+    hk.modifiers.includes('Meta');
+
+  return (
+    (e.ctrlKey || e.metaKey) === needsMod &&
+    e.shiftKey === hk.modifiers.includes('Shift') &&
+    e.altKey === hk.modifiers.includes('Alt')
+  );
+}
+
+/**
  * Registers all Monaco actions and keyboard handlers.
  * @param params - Initialization parameters
  * @param openDiffModal - Function to open the diff modal with original and formatted content
@@ -104,16 +125,15 @@ export function registerActions(
     id: 'code-files-save',
     label: 'Save',
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-    run: () => {
+    run: async () => {
       if (formatOnSave) {
         const formatAction = editor!.getAction('editor.action.formatDocument');
         if (formatAction && formatAction.isSupported()) {
-          runFormatWithDiff().then(() => {
-            window.parent.postMessage(
-              { type: 'save-document', context },
-              getParentOrigin()
-            );
-          });
+          await runFormatWithDiff();
+          window.parent.postMessage(
+            { type: 'save-document', context },
+            getParentOrigin()
+          );
           return;
         }
       }
@@ -128,8 +148,8 @@ export function registerActions(
     contextMenuGroupId: 'code-files',
     contextMenuOrder: 0.5,
     keybindings: [monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF],
-    run: () => {
-      runFormatWithDiff();
+    run: async () => {
+      await runFormatWithDiff();
     }
   });
 
@@ -230,66 +250,27 @@ export function registerActions(
   // Uses browserEvent.key (actual character produced) instead of scancode KeyCode,
   // so it works regardless of keyboard layout and follows user-configured hotkeys.
   editor.onKeyDown((e: Monaco.IKeyboardEvent) => {
-    const key = e.browserEvent.key;
-
-    // Check command palette hotkey (requires Mod)
-    if (currentCommandPaletteHotkey && (e.ctrlKey || e.metaKey)) {
-      const hk = currentCommandPaletteHotkey;
-      // Extract required modifier states from hotkey config
-      const needsShift = hk.modifiers.includes('Shift');
-      const needsAlt = hk.modifiers.includes('Alt');
-      const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
-      // Match only if all modifiers are exactly as required (no extra modifiers)
-      if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.parent.postMessage(
-          { type: 'open-obsidian-palette', context },
-          getParentOrigin()
-        );
-        return;
-      }
+    if (currentCommandPaletteHotkey && matchesHotkey(e, currentCommandPaletteHotkey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage(
+        { type: 'open-obsidian-palette', context },
+        getParentOrigin()
+      );
+      return;
     }
 
-    // Check settings hotkey (requires Mod)
-    if (currentSettingsHotkey && (e.ctrlKey || e.metaKey)) {
-      const hk = currentSettingsHotkey;
-      // Extract required modifier states from hotkey config
-      const needsShift = hk.modifiers.includes('Shift');
-      const needsAlt = hk.modifiers.includes('Alt');
-      const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
-      // Match only if all modifiers are exactly as required (no extra modifiers)
-      if (keyMatch && e.shiftKey === needsShift && e.altKey === needsAlt) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
-        return;
-      }
+    if (currentSettingsHotkey && matchesHotkey(e, currentSettingsHotkey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
+      return;
     }
 
-    // Check delete file hotkey (may or may not require Mod)
-    if (currentDeleteFileHotkey) {
-      const hk = currentDeleteFileHotkey;
-      // Determine if Mod key is required (Mod, Ctrl, or Meta in config)
-      const needsMod =
-        hk.modifiers.includes('Mod') ||
-        hk.modifiers.includes('Ctrl') ||
-        hk.modifiers.includes('Meta');
-      const needsShift = hk.modifiers.includes('Shift');
-      const needsAlt = hk.modifiers.includes('Alt');
-      const hasMod = e.ctrlKey || e.metaKey;
-      const keyMatch = key.toLowerCase() === hk.key.toLowerCase();
-      // Match only if Mod state matches requirement and other modifiers are exact
-      if (
-        keyMatch &&
-        hasMod === needsMod &&
-        e.shiftKey === needsShift &&
-        e.altKey === needsAlt
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
-      }
+    if (currentDeleteFileHotkey && matchesHotkey(e, currentDeleteFileHotkey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
     }
   });
 }
