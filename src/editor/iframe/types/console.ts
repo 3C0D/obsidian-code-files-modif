@@ -9,9 +9,11 @@ export type ConsoleOutMessage =
   | { type: 'toggle-console'; context: string }
   | { type: 'run-command'; cmd: string; context: string }
   | { type: 'send-stdin'; text: string; context: string }
+  | { type: 'send-stdin-eof'; context: string }
   | { type: 'stop-command'; context: string }
   | { type: 'console-height-changed'; height: number; context: string }
-  | { type: 'console-visibility-changed'; visible: boolean; context: string };
+  | { type: 'console-visibility-changed'; visible: boolean; context: string }
+  | { type: 'console-notify'; text: string; context: string };
 
 /** Messages sent FROM parent Obsidian process TO iframe */
 export type ConsoleInMessage =

@@ -74,7 +74,8 @@ export function initConsolePane(
 
   const sendCommand = (): void => {
     const cmd = input.value.trim();
-    if (!cmd) return;
+    // Allow empty lines in stdin mode (e.g., to signal EOF in Python scripts)
+    if (!cmd && !isRunning) return;
 
     // Handle local 'clear' commands without round-tripping to the parent process
     if (cmd === 'clear' || cmd === 'cls') {
@@ -137,6 +138,14 @@ export function initConsolePane(
       }
       // Otherwise, let the browser handle the default copy behavior
     }
+    // Handle Ctrl+D: Send EOF (close stdin pipe) to the running process
+    if ((e.key === 'd' || e.key === 'z')  && (e.ctrlKey || e.metaKey) && isRunning) {
+      e.preventDefault();
+      window.parent.postMessage(
+        { type: 'send-stdin-eof', context: ctx },
+        getParentOrigin()
+      );
+    }
     // Intercept Ctrl+J to toggle visibility (same shortcut as the main editor)
     if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -166,13 +175,17 @@ export function initConsolePane(
   /**
    * Copy selection on right click.
    */
-  // output.addEventListener('contextmenu', (e) => {
-  //   const selection = window.getSelection()?.toString();
-  //   if (selection && selection.length > 0) {
-  //     e.preventDefault();
-  //     navigator.clipboard.writeText(selection);
-  //   }
-  // });
+  output.addEventListener('contextmenu', (e) => {
+    const selection = window.getSelection()?.toString();
+    if (selection && selection.length > 0) {
+      e.preventDefault();
+      navigator.clipboard.writeText(selection);
+      window.parent.postMessage(
+        { type: 'console-notify', text: 'Selection copied', context: ctx },
+        getParentOrigin()
+      );
+    }
+  });
 
   /**
    * Input field specific listeners.

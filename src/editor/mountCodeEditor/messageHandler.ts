@@ -7,7 +7,7 @@ import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
-import { Platform } from 'obsidian';
+import { Notice, Platform } from 'obsidian';
 import { spawn, type ChildProcess } from 'child_process';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import path from 'path';
@@ -400,6 +400,30 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
           // We append a newline because stdin usually expects a line-buffered input.
           proc.stdin.write((data.text as string) + '\n');
         }
+        break;
+      }
+
+      /**
+       * CONSOLE: Send EOF (close stdin pipe) to the active process.
+       * Triggered by Ctrl+D in the console when a process is running.
+       * Equivalent to pressing Ctrl+D / Ctrl+Z in a terminal.
+       */
+      case 'send-stdin-eof': {
+        if (!Platform.isDesktop) break;
+        const proc = activeProcesses.get(codeContext);
+        if (proc?.stdin?.writable) {
+          proc.stdin.end();
+        }
+        break;
+      }
+
+      /**
+       * CONSOLE: Display a temporary notification to the user.
+       * Used for status feedback (e.g. "Selection copied").
+       */
+      case 'console-notify': {
+        if (!Platform.isDesktop) break;
+        new Notice(data.text as string);
         break;
       }
 
