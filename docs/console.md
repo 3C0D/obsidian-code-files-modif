@@ -96,6 +96,13 @@ La visibilité de la console est persistée par fichier. Si la console est ouver
 
 ### Gestion des entrées et UX
 
+- **Raccourcis clavier** :
+  - **Ctrl+L** (ou Cmd+L) : Efface la sortie de la console (équivalent de la commande `clear` ou `cls`). Fonctionne même en mode stdin (processus en cours).
+  - **Ctrl+J** (ou Cmd+J) : Affiche ou masque le panneau console.
+  - **Ctrl+C** (ou Cmd+C) : Interrompt le processus en cours (envoie SIGINT/taskkill).
+  - **Ctrl+D/Z** (ou Cmd+D/Z) : Envoie EOF (fin de flux) au processus en cours (ferme le pipe stdin).
+  - **Entrée** : Exécute la commande ou envoie la saisie au processus en cours.
+  - **Flèches Haut/Bas** : Navigue dans l'historique des commandes.
 - **Nettoyage** : Le champ d'entrée est systématiquement vidé après l'envoi.
 - **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier.
 - **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
@@ -183,7 +190,6 @@ Pour garantir que les caractères accentués (comme le `é` en français) s'affi
 ## Problèmes connus & TODO
 
 - [ ] **Interactivité avancée** : Support de l'auto-complétion (Tab) dans la console.
-- [ ] **Améliorations UX** : Ajouter des raccourcis pour historique (flèches), effacement (Ctrl+L), etc.
 
 ---
 

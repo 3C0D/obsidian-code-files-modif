@@ -274,8 +274,9 @@ Run terminal commands directly from the Monaco editor with full support for inte
 
 - **Command execution**: Run any shell command in the file's directory context
 - **Persistent working directory**: `cd` commands change the directory for subsequent commands
-- **Interactive support**: Handle prompts, passwords, and stdin input (Ctrl+D for EOF)
+- **Interactive support**: Handle prompts, passwords, and stdin input (Ctrl+D for EOF, blank line support)
 - **Process control**: Start/stop processes (Ctrl+C), proper tree killing for child processes
+- **Clear output**: `Ctrl+L` (or Cmd+L) clears the console — even while a process is running
 - **Command history**: Up/down arrows for history, persistent per file (up to 50 commands)
 - **Encoding support**: Automatic UTF-8/CP850 fallback for Windows compatibility
 - **Visual interface**: CWD display in prompt, ANSI colors, resizable panel
@@ -283,6 +284,7 @@ Run terminal commands directly from the Monaco editor with full support for inte
 ### Usage
 
 - **Toggle console**: Click the console icon in tab header or press `Ctrl+J`
+- **Clear console**: Press `Ctrl+L` (or Cmd+L) to clear the output
 - **Run commands**: Type and press Enter; `cd` changes directory, other commands run there
 - **Interactive input**: Commands that prompt for input work normally
 - **Stop processes**: Ctrl+C interrupts running commands
@@ -392,6 +394,7 @@ Changes save automatically when the panel closes.
 | `Ctrl+/`      | Toggle line comment                                      |
 | `Alt+Z`       | Toggle word wrap                                         |
 | `Ctrl+J`      | Toggle integrated console                                |
+| `Ctrl+L`      | Clear console output                                     |
 | `F1`          | Monaco command palette                                   |
 | `Ctrl+P`      | Obsidian command palette (accessible from inside Monaco) |
 | `Ctrl+,`      | Obsidian settings (accessible from inside Monaco)        |

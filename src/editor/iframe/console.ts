@@ -78,7 +78,7 @@ export function initConsolePane(
     if (!cmd && !isRunning) return;
 
     // Handle local 'clear' commands without round-tripping to the parent process
-    if (cmd === 'clear' || cmd === 'cls') {
+    if (cmd === 'clear' || cmd === 'cls' && !isRunning) {
       output.innerHTML = '';
       input.value = '';
       return;
@@ -127,6 +127,12 @@ export function initConsolePane(
    * Handles Ctrl+C for interruption and Ctrl+J for visibility toggle.
    */
   pane.addEventListener('keydown', (e) => {
+    // Handle Ctrl+L: Clear console output (like 'clear' or 'cls' command)
+    if (e.key === 'l' && (e.ctrlKey || e.metaKey) && !isRunning) {
+      e.preventDefault();
+      output.innerHTML = '';
+      return;
+    }
     // Handle Ctrl+C: Kill process if running, otherwise allow copy
     if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
       if (isRunning) {
