@@ -99,8 +99,8 @@ La visibilité de la console est persistée par fichier. Si la console est ouver
 - **Nettoyage** : Le champ d'entrée est systématiquement vidé après l'envoi.
 - **Historique** : Navigation avec les flèches Haut/Bas. L'historique est persisté dans les réglages du plugin par fichier.
 - **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
-- **Prompt visuel (Inline)** : Affiche le dossier courant (CWD) et un symbole `$` directement dans le flux. L'input est transparent et sans bordure pour une intégration fluide. Le prompt se masque automatiquement (`display: none`) quand un processus est en cours pour indiquer le mode stdin.
-- **Navigation (cd)** : Les commandes `cd` sont interceptées par le parent. Au lieu de lancer un processus, le parent résout le chemin cible, vérifie son existence, et met à jour un état `currentCwd` persistant pour la session. Toutes les commandes suivantes utiliseront ce nouveau répertoire.
+- **Prompt visuel (Inline)** : Affiche le dossier courant (CWD) en couleur et un symbole `$` directement dans la ligne de prompt. L'input est transparent et sans bordure pour une intégration fluide. Le CWD est mis à jour dynamiquement via `cd` et persiste par fichier.
+- **Navigation (cd)** : Les commandes `cd` sont interceptées côté parent. Au lieu de lancer un processus, le chemin est résolu, validé, et le CWD persistant est mis à jour pour le fichier. Le prompt affiche immédiatement le nouveau répertoire.
 - **Auto-fill** : Pré-remplissage intelligent basé sur l'extension du fichier (supporte TS, JS, PY, C++, Rust, Go, etc.). Utilise `tsx` pour le TypeScript.
 
   | Extension | Commande pré-remplie |
@@ -132,7 +132,7 @@ Le parent gère l'exécution réelle via Node.js `child_process.spawn`.
 
 Le processus est lancé avec `stdio: ['pipe', 'pipe', 'pipe']` : les trois flux (entrée, sortie standard, erreurs) sont branchés et contrôlés par le plugin.
 
-L'environnement est enrichi pour garantir la compatibilité :
+L'environnement est enrichi pour garantir la compatibilité et améliorer l'expérience :
 
 ```ts
 env: {
@@ -142,6 +142,8 @@ env: {
   FORCE_COLOR: '1',      // Demande aux programmes de produire des couleurs ANSI
 }
 ```
+
+**Ajouts récents:** Ces variables assurent une meilleure compatibilité avec les outils modernes et évitent les blocages courants.
 
 Le CWD (répertoire de travail) est maintenu par le parent dans une `Map` par contexte. Il est initialisé au répertoire du fichier mais peut être modifié via la commande `cd` interceptée.
 
@@ -156,31 +158,32 @@ Un délai de 50 ms est appliqué avant l'envoi pour s'assurer que tous les évé
 
 ### 3. Interruption et Nettoyage (`stop-command` et `cleanup`)
 
-La logique de kill est centralisée dans une fonction `killProcessTree` réutilisée par `stop-command` et par le nettoyage à la destruction de la vue :
+La logique de kill est centralisée dans une fonction `killProcessTree` réutilisée par `stop-command` et par le nettoyage à la destruction de la vue. Cette fonction gère proprement l'arrêt des arbres de processus complets :
 
-- **Windows** : `taskkill /pid [pid] /T /F` tue l'arbre de processus complet (le shell `cmd.exe` et tous ses enfants).
-- **Unix** : `process.kill(-proc.pid, 'SIGINT')` envoie le signal au groupe de processus entier (nécessite `detached: true` au spawn).
-- **Fallback** : `proc.kill('SIGINT')` si le tree-kill échoue.
+- **Windows** : Utilise `taskkill /pid [pid] /T /F` pour tuer l'arbre de processus complet (le shell `cmd.exe` et tous ses enfants de manière récursive).
+- **Unix** : Envoie `SIGINT` au groupe de processus entier via `process.kill(-proc.pid, 'SIGINT')` (nécessite `detached: true` au spawn pour créer un nouveau groupe).
+- **Fallback** : `proc.kill('SIGINT')` si le tree-kill échoue, suivi d'un délai pour permettre la propagation.
 
-Après un `stop-command`, un message `console-process-exited` est envoyé manuellement pour garantir que `isRunning` repasse à `false`, car le kill forcé peut empêcher l'événement `close` de se déclencher normalement.
+Après un `stop-command`, un message `console-process-exited` est envoyé manuellement pour garantir que `isRunning` repasse à `false`, car le kill forcé peut empêcher l'événement `close` naturel de se déclencher.
 
 ### 4. Gestion de l'encodage et décodage des flux
 
-Pour garantir que les caractères accentués (comme le `é` en français) s'affichent correctement, une double stratégie est employée :
+Pour garantir que les caractères accentués (comme le `é` en français) s'affichent correctement, une stratégie de décodage hybride est employée, particulièrement optimisée pour Windows :
 
-- **Côté Node.js (Décodage Hybride)** : Sur Windows, une stratégie de détection automatique est employée pour chaque bloc de données reçu :
-    1. Le plugin tente un décodage **UTF-8 strict** (pour les scripts Python, Node.js, etc.).
-    2. Si le décodage échoue (caractères invalides), il bascule sur un décodeur **CP850** (IBM850) manuel via une table de correspondance. Cela garantit que les commandes internes de `cmd.exe` (`dir`, `type`, messages système) s'affichent sans corruption, tout en préservant l'UTF-8 pour les outils modernes.
+- **Côté Node.js (Décodage Automatique)** : Pour chaque bloc de données reçu :
+    1. Le plugin tente un décodage **UTF-8 strict** en utilisant `TextDecoder` avec `fatal: true`.
+    2. Si le décodage UTF-8 échoue (caractères invalides), il bascule automatiquement sur un décodeur **CP850** (IBM850/OEM Latin 1) manuel via une table de correspondance complète (0x80–0xFF).
+    3. Cela garantit que les commandes internes de `cmd.exe` (`dir`, `type`, messages système) s'affichent sans corruption, tout en préservant l'UTF-8 pour les outils modernes comme Python, Node.js, etc.
 
 > [!IMPORTANT]
-> Deux instances de décodage distinctes sont utilisées pour `stdout` et `stderr` afin de maintenir l'état interne de chaque flux indépendamment et éviter toute corruption de texte si les deux flux émettent simultanément.
+> Deux instances de décodage distinctes sont maintenues pour `stdout` et `stderr` afin de préserver l'état interne de chaque flux indépendamment. Sur les systèmes Unix, seul UTF-8 est utilisé (pas de fallback CP850).
 
 ---
 
 ## Problèmes connus & TODO
 
-- [ ] **Ctrl+C Global** : Un Ctrl+C n'importe où dans Obsidian peut interférer si le listener sur le `pane` n'est pas assez ciblé — à investiguer avec `stopPropagation`.
 - [ ] **Interactivité avancée** : Support de l'auto-complétion (Tab) dans la console.
+- [ ] **Améliorations UX** : Ajouter des raccourcis pour historique (flèches), effacement (Ctrl+L), etc.
 
 ---
 
@@ -189,18 +192,21 @@ Pour garantir que les caractères accentués (comme le `é` en français) s'affi
 - **Race Condition** : Délai de 50 ms à la fin du processus pour vider les buffers `stdout`/`stderr` avant de signaler l'exit.
 - **Performance** : `editor.layout()` est appelé uniquement lors des changements de taille ou de visibilité, jamais en continu.
 - **Dispatching** : Routage automatique des messages `console-*` dans `init.ts`.
-- **Historique** : Persisté dans `plugin.settings.consoleHistories` (objet indexé par chemin de fichier, cap à 50 entrées par fichier).
+- **Historique** : Persisté dans `plugin.settings.consoleHistories` (objet indexé par chemin de fichier, cap à 50 entrées par fichier, déduplication automatique).
+- **Hauteur** : Persistée dans `plugin.settings.consoleHeight` (valeur par défaut : 200px).
 
 ---
 
 ## Fichiers concernés
 
+- [`src/editor/iframe/index.ts`](../src/editor/iframe/index.ts) : API publique de l'iframe bundle (ré-exports types et variables).
 - [`src/editor/iframe/console.ts`](../src/editor/iframe/console.ts) : Logique métier de la console (UI, états, messages entrants).
 - [`src/editor/iframe/init.ts`](../src/editor/iframe/init.ts) : Dispatcher des messages (transmet `context` aux handlers).
-- [`src/editor/iframe/types/console.ts`](../src/editor/iframe/types/console.ts) : Types des messages `postMessage` (entrée/sortie), incluant `console-show` et `console-visibility-changed`.
-- [`src/editor/mountCodeEditor/messageHandler.ts`](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus côté Obsidian.
-- [`src/editor/monacoHtml.css`](../src/editor/monacoHtml.css) : Styles et thémage ANSI.
-- [`src/editor/monacoEditor.html`](../src/editor/monacoEditor.html) : Structure DOM de la console.
+- [`src/editor/iframe/types/console.ts`](../src/editor/iframe/types/console.ts) : Types des messages `postMessage` (entrée/sortie).
+- [`src/editor/iframe/types/types.ts`](../src/editor/iframe/types/types.ts) : Types partagés (InitParams, etc.).
+- [`src/editor/mountCodeEditor/messageHandler.ts`](../src/editor/mountCodeEditor/messageHandler.ts) : Gestion des processus et encodage côté Obsidian.
+- [`src/editor/monacoHtml.css`](../src/editor/monacoHtml.css) : Styles et thémage ANSI pour la console.
+- [`src/editor/monacoEditor.html`](../src/editor/monacoEditor.html) : Structure DOM de la console (prompt line design).
 - [`src/editor/iframe/actions.ts`](../src/editor/iframe/actions.ts) : Actions et raccourcis clavier Monaco.
 - [`src/editor/mountCodeEditor/mountCodeEditor.ts`](../src/editor/mountCodeEditor/mountCodeEditor.ts) : Orchestration du montage de l'iframe.
 

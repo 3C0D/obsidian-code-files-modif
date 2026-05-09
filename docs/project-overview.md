@@ -130,6 +130,17 @@
 - **Auto-registration**: Unknown extensions prompt for registration
 - **Immediate opening**: New files open automatically in Monaco
 
+### 16. **Integrated Console for Terminal Commands**
+
+- **Command execution**: Run terminal commands directly from the editor
+- **Working directory**: Commands execute in the file's directory with persistent CWD changes via `cd`
+- **Interactive support**: Handle prompts and stdin input (Ctrl+D for EOF, Ctrl+C for interrupt)
+- **Process management**: Start/stop/kill entire process trees (proper cleanup)
+- **Command history**: Persistent history per file (up to 50 commands, deduplicated)
+- **Encoding handling**: Automatic UTF-8/CP850 fallback for Windows cmd.exe compatibility
+- **Visual interface**: CWD display in prompt line, ANSI colors, resizable height (persisted)
+- **Platform support**: Desktop only (Windows, macOS, Linux)
+
 ## Technical Architecture
 
 ### Local Integration Achievement

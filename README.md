@@ -20,6 +20,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Editor Settings Modal** — inline Monaco JSON editor with live preview, accessible via ⚙️ gear icon in tab header
 - **AutoSave (OFF by default)** — visual dirty indicator (circle in tab header); prevents accidental saves. Format on save optional
 - **Code Block Editing** — open any code fence in full Monaco modal from editor context menu
+- **Integrated Console** — run terminal commands directly from Monaco (Ctrl+J to toggle); execute scripts, build tools, and dev workflows without leaving the editor
 - **Open Any File in Monaco** — command palette or right-click → "Open in Monaco Editor"
 - **Popout Windows** — secondary windows support (Ctrl+Shift+Alt+Click)
 - **Dynamic Hotkey Sync** — Monaco hotkeys automatically update when Obsidian hotkey settings change (no reload needed) and overridable in plugin settings
@@ -265,6 +266,34 @@ The block opens in a full-screen Monaco modal. Changes are written back when you
 
 ---
 
+## Integrated Console
+
+Run terminal commands directly from the Monaco editor with full support for interactive programs and process management.
+
+### Features
+
+- **Command execution**: Run any shell command in the file's directory context
+- **Persistent working directory**: `cd` commands change the directory for subsequent commands
+- **Interactive support**: Handle prompts, passwords, and stdin input (Ctrl+D for EOF)
+- **Process control**: Start/stop processes (Ctrl+C), proper tree killing for child processes
+- **Command history**: Up/down arrows for history, persistent per file (up to 50 commands)
+- **Encoding support**: Automatic UTF-8/CP850 fallback for Windows compatibility
+- **Visual interface**: CWD display in prompt, ANSI colors, resizable panel
+
+### Usage
+
+- **Toggle console**: Click the console icon in tab header or press `Ctrl+J`
+- **Run commands**: Type and press Enter; `cd` changes directory, other commands run there
+- **Interactive input**: Commands that prompt for input work normally
+- **Stop processes**: Ctrl+C interrupts running commands
+- **History**: Up/down arrows to recall previous commands
+
+### Platform Support
+
+Desktop only (Windows, macOS, Linux). Commands run through the system shell with environment variables optimized for development.
+
+---
+
 ## The Tab Header Bar
 
 When a code file is open, icons appear in the tab header:
@@ -273,6 +302,7 @@ When a code file is open, icons appear in the tab header:
 | -------------- | ------------------------------------------------------------------------------------------- |
 | ✏️ **Pencil**  | Rename the file (name + extension). Unknown extensions will prompt for registration.        |
 | 🎨 **Palette** | Pick a theme with live preview. Hover to preview, adjust brightness with left/right arrows. |
+| 🖥️ **Console** | Toggle the integrated terminal console (Ctrl+J)                                           |
 | ↩ **Arrow**    | Return to default view (only for files with unregistered extensions opened in Monaco).      |
 | ⚙️ **Gear**    | Open the Editor Settings panel                                                              |
 
@@ -361,6 +391,7 @@ Changes save automatically when the panel closes.
 | `Shift+Alt+F` | Format document                                          |
 | `Ctrl+/`      | Toggle line comment                                      |
 | `Alt+Z`       | Toggle word wrap                                         |
+| `Ctrl+J`      | Toggle integrated console                                |
 | `F1`          | Monaco command palette                                   |
 | `Ctrl+P`      | Obsidian command palette (accessible from inside Monaco) |
 | `Ctrl+,`      | Obsidian settings (accessible from inside Monaco)        |
