@@ -10,6 +10,7 @@ import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Notice, Platform } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { ChildProcess } from 'child_process';
+import type CodeFilesPlugin from '../../main.ts';
 
 // Desktop-only imports for console functionality
 let spawn:
@@ -27,7 +28,7 @@ if (Platform.isDesktop) {
   path = require('path');
   fs = require('fs');
   try {
-    webUtils = require('electron').webUtils;
+    webUtils = require('electron').webUtils; // intentionally crashes on Electron < 28
   } catch {
     /* Electron < 28 */
   }
@@ -69,6 +70,21 @@ function decodeCp850(buf: Buffer): string {
     result += b < 0x80 ? String.fromCharCode(b) : CP850_HIGH[b - 0x80];
   }
   return result;
+}
+
+/**
+ * Resolves the base vault path and the current working directory for a file's console session.
+ * Uses the plugin's data adapter to get the vault root and falls back to the file's directory.
+ */
+function resolveConsoleCwd(
+  plugin: CodeFilesPlugin,
+  codeContext: string
+): { basePath: string; cwd: string } {
+  const adapter = getDataAdapterEx(plugin.app);
+  const basePath = adapter.basePath;
+  const fileDir = path!.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
+  const cwd = currentCwd.get(codeContext) ?? fileDir;
+  return { basePath, cwd };
 }
 
 /**
@@ -139,10 +155,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       // The integrated console relies on Node.js APIs (child_process, path, fs),
       // which are only available in the desktop Electron environment.
       if (Platform.isDesktop) {
-        const adapter = getDataAdapterEx(plugin.app);
-        const fileDir = path!.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
-        const initialCwd = currentCwd.get(codeContext) ?? fileDir;
-        send('console-cwd-changed', { cwd: initialCwd, vaultPath: adapter.basePath });
+        const { basePath, cwd } = resolveConsoleCwd(plugin, codeContext);
+        send('console-cwd-changed', { cwd, vaultPath: basePath });
         const hist = plugin.settings.consoleHistories[codeContext];
         if (hist?.length) send('console-history', { history: hist });
         if (initialConsoleOpen) send('console-show', {});
@@ -159,10 +173,12 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         onOpenEditorConfig?.(ext);
         break;
       }
+
       case 'open-theme-picker': {
         onOpenThemePicker?.();
         break;
       }
+
       case 'open-settings': {
         const uninstall = around(plugin.app.setting, {
           onClose(old) {
@@ -182,6 +198,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         plugin.app.setting.open();
         break;
       }
+
       case 'delete-file': {
         const file = plugin.app.vault.getFileByPath(codeContext);
         if (!file) break;
@@ -194,6 +211,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         await plugin.app.vault.trash(file, true);
         break;
       }
+
       case 'open-obsidian-palette': {
         const cmdPalette = plugin.app.internalPlugins.getPluginById('command-palette');
         if (!cmdPalette) break;
@@ -211,11 +229,15 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         modal.open();
         break;
       }
+
       case 'open-rename-extension': {
         onOpenRenameExtension?.();
         break;
       }
-      // Re-opens the current file with Obsidian's default viewer (i.e. exits the Monaco leaf).
+
+      /**
+       * Re-opens the current file with Obsidian's default viewer (i.e. exits the Monaco leaf).
+       */
       case 'return-to-default-view': {
         const file = plugin.app.vault.getFileByPath(codeContext);
         if (!file) break;
@@ -229,17 +251,26 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         }
         break;
       }
-      // Prettier found a diff: notify the parent to show the diff action in the toolbar.
+
+      /**
+       * Prettier found a diff: notify the parent to show the diff action in the toolbar.
+       */
       case 'format-diff-available': {
         onFormatDiff?.();
         break;
       }
-      // User reverted the format diff: hide the toolbar action.
+
+      /**
+       * User reverted the format diff: hide the toolbar action.
+       */
       case 'format-diff-reverted': {
         onFormatDiffReverted?.();
         break;
       }
-      // Editor content changed: sync the internal value ref and notify the parent view.
+
+      /**
+       * Editor content changed: sync the internal value ref and notify the parent view.
+       */
       case 'change': {
         if (valueRef.current !== data.value) {
           valueRef.current = data.value as string;
@@ -247,19 +278,28 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         }
         break;
       }
-      // User triggered a save (Ctrl+S): delegate to the onSave callback (writes to vault).
+
+      /**
+       * User triggered a save (Ctrl+S): delegate to the onSave callback (writes to vault).
+       */
       case 'save-document': {
         onSave?.();
         break;
       }
-      // Word-wrap toggle: persist the new state immediately so it survives a reload.
+
+      /**
+       * Word-wrap toggle: persist the new state immediately so it survives a reload.
+       */
       case 'word-wrap-toggled': {
         plugin.settings.wordWrap = data.wordWrap as 'on' | 'off';
         await plugin.saveSettings();
         break;
       }
-      // Cross-file navigation request from Monaco (e.g. Cmd+Click on an import).
-      // Opens the target vault file in a Monaco leaf, restoring cursor position if provided.
+
+      /**
+       * Cross-file navigation request from Monaco (e.g. Cmd+Click on an import).
+       * Opens the target vault file in a Monaco leaf, restoring cursor position if provided.
+       */
       case 'open-file': {
         const vaultPath = data.path as string;
         const position = data.position as {
@@ -302,17 +342,15 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
           await plugin.saveSettings();
         }
 
-        const adapter = getDataAdapterEx(plugin.app);
-        const basePath = adapter.basePath;
-        const fileDir = path!.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
-        const activeCwd = currentCwd.get(codeContext) ?? fileDir;
+        const { basePath, cwd: activeCwd } = resolveConsoleCwd(plugin, codeContext);
 
         // Intercept 'cd' commands to update the persistent CWD without spawning a subprocess.
         // Regex allows: 'cd', 'cd ..', 'cd..', 'cd~', 'cd /abs', 'cd "path with spaces"'
         const cdMatch = cmdLine.trim().match(/^cd(\s.*|\.\.?|~.*)?$/i);
         if (cdMatch !== null) {
           const target = (cdMatch[1] ?? '').trim().replace(/^["']|["']$/g, '');
-          // bare 'cd' or 'cd ~' → go to vault root (mirrors shell behavior)
+          // path.resolve() mimics `cd <target>`: combines activeCwd + target into a new absolute path.
+          // If target is empty/'' (bare 'cd') or '~' → go to vault root (mirrors shell behavior).
           const resolved =
             target && target !== '~' ? path!.resolve(activeCwd, target) : basePath;
           try {
@@ -340,18 +378,20 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
 
         const shellCmd = cmdLine.trim();
 
+        // Spawn the actual system process and pipe its stdout/stderr to the iframe.
+        // If spawn itself fails (e.g. command not found), the catch sends an error to the console.
         try {
           const proc = spawn!(shellCmd, [], {
             cwd: activeCwd,
             env: {
-              ...process.env,
+              ...process.env, // Inherit PATH, HOME, etc. from the parent process
               PYTHONIOENCODING: 'utf-8', // Ensure UTF-8 for Python scripts
               GIT_PAGER: '', // Avoid hanging on git log
               FORCE_COLOR: '1' // Encourage color output for TTY-aware tools
             },
-            stdio: ['pipe', 'pipe', 'pipe'],
-            shell: true,
-            detached: process.platform !== 'win32'
+            stdio: ['pipe', 'pipe', 'pipe'], // Pipe stdin, stdout, stderr for communication
+            shell: true, // Use the system shell to allow built-in commands and complex expressions
+            detached: process.platform !== 'win32' // Detach on Unix to allow independent process groups, but not on Windows where it's unreliable
           });
           activeProcesses.set(codeContext, proc);
 
@@ -363,7 +403,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             process.platform === 'win32'
               ? (chunk: Buffer) => {
                   try {
-                    return new TextDecoder('utf-8', { fatal: true }).decode(chunk);
+                    return new TextDecoder('utf-8', { fatal: true }).decode(chunk); // intentionally fails on non-UTF-8 bytes to fall back to CP850
                   } catch {
                     return decodeCp850(chunk);
                   }
@@ -434,6 +474,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       case 'send-stdin': {
         if (!Platform.isDesktop) break;
         const proc = activeProcesses.get(codeContext);
+        // stdin usually expects a line-buffered input
         if (proc?.stdin?.writable) {
           // We append a newline because stdin usually expects a line-buffered input.
           proc.stdin.write((data.text as string) + '\n');
@@ -474,18 +515,6 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         const proc = activeProcesses.get(codeContext);
         if (proc) killProcessTree(proc);
         activeProcesses.delete(codeContext);
-
-        /**
-         * MANUAL NOTIFICATION:
-         * Force-killing (especially on Windows) might prevent the 'close' event
-         * from firing normally. We send a manual notice to ensure the iframe's
-         * 'isRunning' flag is reset.
-         */
-        /*
-        send('console-output', {
-          text: '\nProcess interrupted (SIGINT)\nProcess exited with code null\n'
-        });
-        */
         break;
       }
 
