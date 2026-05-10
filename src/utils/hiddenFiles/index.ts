@@ -13,5 +13,6 @@ export {
   autoRevealRegisteredDotfiles,
   restoreRevealedFiles,
   cleanStaleRevealedFiles,
-  hideAutoRevealedDotfiles
+  hideAutoRevealedDotfiles,
+  unrevealExcludedFolders
 } from './sync.ts';

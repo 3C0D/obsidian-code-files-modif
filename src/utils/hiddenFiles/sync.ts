@@ -206,3 +206,34 @@ export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise
     await unrevealFiles(plugin, folderPath, paths);
   }
 }
+
+/**
+ * Unreveals all items that were previously revealed but are now excluded
+ * via the excludedFolders setting. Called when the user adds entries to excludedFolders.
+ *
+ * @param plugin - The plugin instance.
+ * @param newlyExcluded - Folder basenames just added to excludedFolders (e.g. ['.obsidian']).
+ */
+export async function unrevealExcludedFolders(
+  plugin: CodeFilesPlugin,
+  newlyExcluded: string[]
+): Promise<void> {
+  const excludedSet = new Set(newlyExcluded);
+  // Snapshot to avoid mutation during iteration
+  const snapshot = { ...plugin.settings.revealedFiles };
+
+  for (const [folderPath, itemPaths] of Object.entries(snapshot)) {
+    // Case 1: folderPath is rooted inside a newly excluded folder
+    // e.g. '.obsidian' or '.obsidian/plugins' when '.obsidian' is excluded
+    const firstSegment = folderPath.split('/')[0];
+    if (firstSegment && excludedSet.has(firstSegment)) {
+      await unrevealFiles(plugin, folderPath, [...itemPaths]);
+      continue;
+    }
+    // Case 2: some revealed items in this folder are now-excluded dot-folders
+    const toUnreveal = itemPaths.filter((p) => excludedSet.has(p.split('/').pop() || ''));
+    if (toUnreveal.length > 0) {
+      await unrevealFiles(plugin, folderPath, toUnreveal);
+    }
+  }
+}

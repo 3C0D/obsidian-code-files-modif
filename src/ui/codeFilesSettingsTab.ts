@@ -31,7 +31,8 @@ import {
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import {
   syncAutoRevealedDotfiles,
-  hideAutoRevealedDotfiles
+  hideAutoRevealedDotfiles,
+  unrevealExcludedFolders
 } from '../utils/hiddenFiles/sync.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
@@ -339,11 +340,15 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
           .setPlaceholder('.git, node_modules, .trash')
           .setValue(this.plugin.settings.excludedFolders.join(', '))
           .onChange(async (value) => {
-            this.plugin.settings.excludedFolders = value
+            const prev = new Set(this.plugin.settings.excludedFolders);
+            const next = value
               .split(',')
               .map((s) => s.trim())
               .filter((s) => s.length > 0);
+            const added = next.filter((f) => !prev.has(f));
+            this.plugin.settings.excludedFolders = next;
             await this.plugin.saveSettings();
+            if (added.length > 0) await unrevealExcludedFolders(this.plugin, added);
           })
       );
 

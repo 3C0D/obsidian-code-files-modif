@@ -51,6 +51,7 @@
 - **Smart cleanup**: Auto-managed files hidden automatically when auto-reveal is disabled or extension unregistered
 - **Safe filtering**: Excludes executables, archives, databases, binary office formats, fonts (configurable max size)
 - **Configurable exclusions**: Exclude specific folders (`.git`, `node_modules`) and extensions (`tmp`, `log`, `cache`) in settings
+- **Automatic unreveal on exclusion**: Adding folders to exclusions automatically hides any previously revealed files in those folders
 - **Drag and drop support**: Dotfiles can be moved between folders normally; adapter patch fixes destination path calculation
 
 ### 6. **File Explorer Visual Indicators**
