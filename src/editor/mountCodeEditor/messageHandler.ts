@@ -20,18 +20,13 @@ let path:
   | { join: (...paths: string[]) => string; resolve: (...paths: string[]) => string }
   | undefined;
 let fs: { statSync(p: string): { isDirectory(): boolean } } | undefined;
-// Electron 28+: replaces file.path for sandboxed renderer contexts
 let webUtils: { getPathForFile(file: File): string } | undefined;
 
 if (Platform.isDesktop) {
   spawn = require('child_process').spawn;
   path = require('path');
+  webUtils = require('electron').webUtils;
   fs = require('fs');
-  try {
-    webUtils = require('electron').webUtils; // intentionally crashes on Electron < 28
-  } catch {
-    /* Electron < 28 */
-  }
 }
 
 /** Global registry for active console processes. */
@@ -424,21 +419,19 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
            * We wait 50ms (setTimeout) to ensure all remaining 'data' events
            * from stdout/stderr have been processed before signaling the exit.
            */
-          proc.on('close', (code) => {
-            setTimeout(() => {
-              const status = code === null ? 'Interrupted' : `code ${code}`;
-              send('console-output', {
-                text: `\n[Process exited: ${status}]\n`
-              });
-              // Task 1: Send structured exit message
-              send('console-process-exited', { code: code ?? null });
-              activeProcesses.delete(codeContext);
-            }, 50);
-          });
+            proc.on('close', (code) => {
+              setTimeout(() => {
+                const status = code === null ? 'Interrupted' : `code ${code}`;
+                send('console-output', {
+                  text: `\n[Process exited: ${status}]\n`
+                });
+                send('console-process-exited', { code: code ?? null });
+                activeProcesses.delete(codeContext);
+              }, 50);
+            });
 
           proc.on('error', (err) => {
             send('console-output', { text: `Error: ${err.message}\n` });
-            // Task 3: Also send exit signal on error
             send('console-process-exited', { code: null });
             activeProcesses.delete(codeContext);
           });
@@ -474,7 +467,6 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       case 'send-stdin': {
         if (!Platform.isDesktop) break;
         const proc = activeProcesses.get(codeContext);
-        // stdin usually expects a line-buffered input
         if (proc?.stdin?.writable) {
           // We append a newline because stdin usually expects a line-buffered input.
           proc.stdin.write((data.text as string) + '\n');
@@ -530,25 +522,18 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     /**
      * Drag-and-drop relay for the sandboxed iframe.
      * file.path and text/uri-list are both blocked inside the iframe.
-     * We intercept the drop at the parent level via a transparent overlay
-     * positioned over the iframe, resolve file.path here (Electron context),
-     * then forward resolved paths to the iframe via postMessage.
+     * A transparent overlay is placed over the iframe on dragenter to intercept
+     * the drop at the parent (Electron) level, where file.path is accessible.
+     * The overlay is single-use: it removes itself after the first drop or leave.
      */
     let dragOverlay: HTMLDivElement | null = null;
-    let dragEnterCount = 0; // Counter to avoid flickering on child element transitions
+    let dropping = false; // Guard against immediate re-trigger after drop
 
     const hideOverlay = (): void => {
       dragOverlay?.remove();
       dragOverlay = null;
-      dragEnterCount = 0;
     };
 
-    /**
-     * Creates and appends a transparent overlay div positioned exactly over the iframe.
-     * Intercepts drag-and-drop events that the sandboxed iframe cannot access,
-     * then resolves dropped file paths and forwards them via postMessage.
-     * No-ops if the overlay is already visible.
-     */
     const showOverlay = (): void => {
       if (dragOverlay) return;
       const rect = iframe.getBoundingClientRect();
@@ -560,86 +545,42 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         z-index: 9999;
         background: transparent;
       `;
-      dragOverlay.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        dragEnterCount++;
-      });
-      dragOverlay.addEventListener('dragleave', () => {
-        dragEnterCount--;
-        if (dragEnterCount <= 0) hideOverlay();
-      });
+
       dragOverlay.addEventListener('dragover', (e) => e.preventDefault());
+
       dragOverlay.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation(); // Prevent event from reaching the iframe
+        if (dropping) return;
+        dropping = true;
+        setTimeout(() => { dropping = false; }, 300);
+
+        hideOverlay();
+
         const files = Array.from(e.dataTransfer?.files ?? []);
         const basePath = getDataAdapterEx(plugin.app).basePath;
-        const droppedFilePaths: string[] = [];
+        const paths: string[] = [];
 
-        files.forEach((f, i) => {
-          // Attempt 1: Electron 28+ sandboxed-safe API (replaces file.path)
-          let absPath: string = webUtils?.getPathForFile(f) ?? '';
-
-          // Attempt 2: Legacy file.path (Electron < 28, non-sandboxed)
-          if (!absPath) absPath = (f as File & { path?: string }).path ?? '';
-
-          // Attempt 3: Fallback — parse URI list from dataTransfer
-          // On Windows, file:///C:/Users/... may be exposed even when the above fail
-          if (!absPath) {
-            const uriList = e.dataTransfer?.getData('text/uri-list') ?? '';
-            const uris = uriList.split(/\r?\n/).filter((u) => u.startsWith('file://'));
-            const uri = uris[i];
-            if (uri) {
-              absPath = decodeURIComponent(
-                uri.replace(/^file:\/\/\/?/, '').replace(/\//g, '\\')
-              );
-            }
-          }
-
-          if (!absPath) {
-            console.warn('[drop-relay] file.path empty even in parent context:', f.name);
-            return;
-          }
-
-          // If the dropped item is a directory, auto-cd into it
-          try {
-            if (fs!.statSync(absPath).isDirectory()) {
-              currentCwd.set(codeContext, absPath);
-              send('console-cwd-changed', { cwd: absPath });
-              return;
-            }
-          } catch {
-            /* not a directory or path doesn't exist */
-          }
-
-          // It's a file: resolve relative to vault root if inside vault
+        for (const f of files) {
+          const absPath: string = webUtils?.getPathForFile(f) ?? '';
+          if (!absPath) continue;
           const resolved = absPath.startsWith(basePath)
             ? absPath.slice(basePath.length).replace(/^[/\\]/, '')
             : absPath;
-          droppedFilePaths.push(resolved.includes(' ') ? `"${resolved}"` : resolved);
-        });
+          paths.push(resolved.includes(' ') ? `"${resolved}"` : resolved);
+        }
+        if (paths.length) send('console-drop-paths', { paths });
+      }, { once: true });
 
-        hideOverlay();
-        if (droppedFilePaths.length)
-          send('console-drop-paths', { paths: droppedFilePaths });
-      });
       document.body.appendChild(dragOverlay);
     };
 
-    /**
-     * Global dragenter listener. Shows the overlay only when the dragged payload
-     * contains at least one file, ignoring pure-text or link drags.
-     */
     const onDragEnter = (e: DragEvent): void => {
-      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some(
-        (i) => i.kind === 'file'
-      );
+      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some((i) => i.kind === 'file');
       if (hasFiles) showOverlay();
     };
 
-    /**
-     * Global dragend listener. Cleans up the overlay if the drag was cancelled
-     * (e.g. the user pressed Escape or dropped outside any valid target).
-     */
+    // Fallback: drag cancelled (Escape) or dropped outside any valid target
     const onDragEnd = (): void => hideOverlay();
 
     document.addEventListener('dragenter', onDragEnter);

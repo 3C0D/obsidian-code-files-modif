@@ -229,51 +229,15 @@ export function initConsolePane(
   });
 
   /**
-   * Drag-and-drop files into input.
-   * Accepts drops on both the output area and the input field.
-   * - Vault files (app:// protocol): use relative path from vault root
-   * - External files: use the full absolute path
+   * Drag-and-drop handler (no-op in the iframe).
+   * file.path is inaccessible in sandboxed iframes — path resolution is delegated
+   * to the parent Obsidian context via the drop-relay overlay in messageHandler.ts,
+   * which forwards resolved paths back via the 'console-drop-paths' message.
    */
   const handleDrop = (e: DragEvent): void => {
+    // File path resolution is handled by the parent via the drop-relay overlay.
+    // Direct file.path access is blocked by iframe sandboxing.
     e.preventDefault();
-    const files = Array.from(e.dataTransfer?.files ?? []);
-
-    const paths = files
-      .map((f, i) => {
-        // Attempt 1: Electron exposes file.path in non-sandboxed contexts
-        const electronPath: string = (f as File & { path?: string }).path ?? '';
-        if (electronPath) {
-          const resolved =
-            vaultPath && electronPath.startsWith(vaultPath)
-              ? electronPath.slice(vaultPath.length).replace(/^[/\\]/, '')
-              : electronPath;
-          return resolved.includes(' ') ? `"${resolved}"` : resolved;
-        }
-
-        // Attempt 2: Fallback for sandboxed iframes — parse URI list from dataTransfer
-        // On Windows, file:///C:/Users/... is exposed even in sandboxed contexts
-        const uriList = e.dataTransfer?.getData('text/uri-list') ?? '';
-        const uris = uriList.split(/\r?\n/).filter((u) => u.startsWith('file://'));
-        const uri = uris[i];
-        if (uri) {
-          // Decode URI to absolute path: file:///C:/Users/... → C:/Users/...
-          const decoded = decodeURIComponent(uri.replace(/^file:\/\/\/?/, '').replace(/\//g, '\\'));
-          const resolved =
-            vaultPath && decoded.startsWith(vaultPath)
-              ? decoded.slice(vaultPath.length).replace(/^[/\\]/, '')
-              : decoded;
-          return resolved.includes(' ') ? `"${resolved}"` : resolved;
-        }
-
-        console.warn('[console] handleDrop: could not resolve path for:', f.name);
-        return null;
-      })
-      .filter(Boolean) as string[];
-
-    if (paths.length) {
-      input.value += (input.value ? ' ' : '') + paths.join(' ');
-      input.focus();
-    }
   };
 
   input.addEventListener('dragover', (e) => e.preventDefault());
@@ -472,6 +436,11 @@ export function handleConsoleMessage(
       return;
     }
 
+    /**
+     * CONSOLE: Receive file paths resolved by the parent drop-relay overlay.
+     * Appends them to the console input field, space-separated.
+     * Paths containing spaces are automatically quoted.
+     */
     case 'console-drop-paths': {
       const inputEl = document.getElementById('console-input-field') as HTMLInputElement;
       const paths = data.paths as string[];
