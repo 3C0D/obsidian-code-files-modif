@@ -14,10 +14,15 @@ import type { ChildProcess } from 'child_process';
 // Desktop-only imports for console functionality
 let spawn: ((command: string, args: string[], options: unknown) => ChildProcess) | undefined;
 let path: { join: (...paths: string[]) => string; resolve: (...paths: string[]) => string } | undefined;
+let fs: { statSync(p: string): { isDirectory(): boolean } } | undefined;
+// Electron 28+: replaces file.path for sandboxed renderer contexts
+let webUtils: { getPathForFile(file: File): string } | undefined;
 
 if (Platform.isDesktop) {
   spawn = require('child_process').spawn;
   path = require('path');
+  fs = require('fs');
+  try { webUtils = require('electron').webUtils; } catch { /* Electron < 28 */ }
 }
 
 /** Global registry for active console processes. */
@@ -285,14 +290,11 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         if (cdMatch !== null) {
           const target = (cdMatch[1] ?? '').trim().replace(/^["']|["']$/g, '');
           // bare 'cd' or 'cd ~' → go to vault root (mirrors shell behavior)
-          const resolved = target && target !== '~'
-            ? path!.resolve(activeCwd, target)
-            : basePath;
-          type FsStatResult = { isDirectory(): boolean };
-          type FsModule = { statSync(p: string): FsStatResult };
-          const nodeFs = require('fs') as FsModule;
-          try {
-            if (nodeFs.statSync(resolved).isDirectory()) {
+           const resolved = target && target !== '~'
+             ? path!.resolve(activeCwd, target)
+             : basePath;
+           try {
+             if (fs!.statSync(resolved).isDirectory()) {
               currentCwd.set(codeContext, resolved);
               send('console-cwd-changed', { cwd: resolved });
               send('console-output', { text: '' });
@@ -468,6 +470,114 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     }
   };
 
+  // Store relay cleanup refs in closure for the returned cleanup fn
+  let _removeDragRelay: (() => void) | undefined;
+
+  if (Platform.isDesktop) {
+    /**
+     * Drag-and-drop relay for the sandboxed iframe.
+     * file.path and text/uri-list are both blocked inside the iframe.
+     * We intercept the drop at the parent level via a transparent overlay
+     * positioned over the iframe, resolve file.path here (Electron context),
+     * then forward resolved paths to the iframe via postMessage.
+     */
+    let dragOverlay: HTMLDivElement | null = null;
+    let dragEnterCount = 0; // Counter to avoid flickering on child element transitions
+
+    const hideOverlay = (): void => {
+      dragOverlay?.remove();
+      dragOverlay = null;
+      dragEnterCount = 0;
+    };
+
+    const showOverlay = (): void => {
+      if (dragOverlay) return;
+      const rect = iframe.getBoundingClientRect();
+      dragOverlay = document.createElement('div');
+      dragOverlay.style.cssText = `
+        position: fixed;
+        left: ${rect.left}px; top: ${rect.top}px;
+        width: ${rect.width}px; height: ${rect.height}px;
+        z-index: 9999;
+        background: transparent;
+      `;
+      dragOverlay.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        dragEnterCount++;
+      });
+      dragOverlay.addEventListener('dragleave', () => {
+        dragEnterCount--;
+        if (dragEnterCount <= 0) hideOverlay();
+      });
+      dragOverlay.addEventListener('dragover', (e) => e.preventDefault());
+      dragOverlay.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer?.files ?? []);
+        const basePath = getDataAdapterEx(plugin.app).basePath;
+        const droppedFilePaths: string[] = [];
+
+        files.forEach((f, i) => {
+          // Attempt 1: Electron 28+ sandboxed-safe API (replaces file.path)
+          let absPath: string = webUtils?.getPathForFile(f) ?? '';
+
+          // Attempt 2: Legacy file.path (Electron < 28, non-sandboxed)
+          if (!absPath) absPath = (f as File & { path?: string }).path ?? '';
+
+          // Attempt 3: Fallback — parse URI list from dataTransfer
+          // On Windows, file:///C:/Users/... may be exposed even when the above fail
+          if (!absPath) {
+            const uriList = e.dataTransfer?.getData('text/uri-list') ?? '';
+            const uris = uriList.split(/\r?\n/).filter((u) => u.startsWith('file://'));
+            const uri = uris[i];
+            if (uri) {
+              absPath = decodeURIComponent(uri.replace(/^file:\/\/\/?/, '').replace(/\//g, '\\'));
+            }
+          }
+
+          if (!absPath) {
+            console.warn('[drop-relay] file.path empty even in parent context:', f.name);
+            return;
+          }
+
+          // If the dropped item is a directory, auto-cd into it
+          try {
+            if (fs!.statSync(absPath).isDirectory()) {
+              currentCwd.set(codeContext, absPath);
+              send('console-cwd-changed', { cwd: absPath });
+              return;
+            }
+          } catch { /* not a directory or path doesn't exist */ }
+
+          // It's a file: resolve relative to vault root if inside vault
+          const resolved = absPath.startsWith(basePath)
+            ? absPath.slice(basePath.length).replace(/^[/\\]/, '')
+            : absPath;
+          droppedFilePaths.push(resolved.includes(' ') ? `"${resolved}"` : resolved);
+        });
+
+        hideOverlay();
+        if (droppedFilePaths.length) send('console-drop-paths', { paths: droppedFilePaths });
+      });
+      document.body.appendChild(dragOverlay);
+    };
+
+    const onDragEnter = (e: DragEvent): void => {
+      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some((i) => i.kind === 'file');
+      if (hasFiles) showOverlay();
+    };
+
+    const onDragEnd = (): void => hideOverlay();
+
+    document.addEventListener('dragenter', onDragEnter);
+    document.addEventListener('dragend', onDragEnd);
+
+    _removeDragRelay = (): void => {
+      document.removeEventListener('dragenter', onDragEnter);
+      document.removeEventListener('dragend', onDragEnd);
+      hideOverlay();
+    };
+  }
+
   return {
     handler: onMessage,
     /**
@@ -479,6 +589,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       const proc = activeProcesses.get(codeContext);
       if (proc) killProcessTree(proc);
       activeProcesses.delete(codeContext);
+      _removeDragRelay?.();
     }
   };
 }

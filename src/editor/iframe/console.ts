@@ -472,6 +472,16 @@ export function handleConsoleMessage(
       return;
     }
 
+    case 'console-drop-paths': {
+      const inputEl = document.getElementById('console-input-field') as HTMLInputElement;
+      const paths = data.paths as string[];
+      if (inputEl && paths?.length) {
+        inputEl.value += (inputEl.value ? ' ' : '') + paths.join(' ');
+        inputEl.focus();
+      }
+      return;
+    }
+
     default:
       return;
   }
