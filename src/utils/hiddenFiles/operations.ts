@@ -2,9 +2,61 @@ import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, setBypassPatch } from './state.ts';
 import { decorateFolders } from './badge.ts';
-import { viewType } from '../../types/index.ts';
+import { viewType, type DataAdapterWithInternal } from '../../types/index.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
+
+/**
+ * Reveals all non-hidden (non-dot) children of a folder, recursively.
+ * Called automatically when a dot-folder is revealed to make its contents visible in the vault.
+ * Does not persist to settings — folder persistence is handled by the parent call.
+ *
+ * @param plugin - The plugin instance.
+ * @param adapter - The data adapter.
+ * @param folderPath - The normalized path of the folder whose contents to reveal.
+ */
+export async function revealFolderContents(
+  plugin: CodeFilesPlugin,
+  adapter: DataAdapterWithInternal,
+  folderPath: string
+): Promise<void> {
+  let listed: { files: string[]; folders: string[] };
+  try {
+    listed = await adapter.list(folderPath);
+  } catch (e) {
+    console.error(`revealFolderContents: error listing ${folderPath}:`, e);
+    return;
+  }
+
+  for (const rawPath of [...listed.files, ...listed.folders]) {
+    const childPath = normalizePath(rawPath);
+    const basename = childPath.split('/').pop() || '';
+    if (basename.startsWith('.')) continue; // skip hidden children
+    const isFolder = listed.folders.some((f) => normalizePath(f) === childPath);
+    const realPath = getRealPathSafe(adapter, childPath);
+    try {
+      if (isFolder) {
+        await adapter.reconcileFolderCreation(realPath, childPath);
+        await revealFolderContents(plugin, adapter, childPath); // recurse
+      } else {
+        if (adapter.reconcileFileInternal) {
+          await adapter.reconcileFileInternal(realPath, childPath);
+        } else if (
+          adapter.fs?.stat &&
+          adapter.reconcileFileChanged &&
+          adapter.getFullRealPath
+        ) {
+          const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
+          if (fsStat.type === 'file') {
+            await adapter.reconcileFileChanged(realPath, childPath, fsStat);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`revealFolderContents: error revealing ${childPath}:`, e);
+    }
+  }
+}
 
 /**
  * Reveals specified hidden files in the Obsidian UI.
@@ -40,6 +92,7 @@ export async function revealFiles(
       // otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
       if (stat.type === 'folder') {
         await adapter.reconcileFolderCreation(realPath, itemPath);
+        await revealFolderContents(plugin, adapter, itemPath);
       } else {
         if (adapter.reconcileFileInternal) {
           await adapter.reconcileFileInternal(realPath, itemPath);

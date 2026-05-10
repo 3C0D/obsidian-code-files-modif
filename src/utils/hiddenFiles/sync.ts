@@ -5,7 +5,7 @@ import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
-import { revealFiles, unrevealFiles } from './operations.ts';
+import { revealFiles, unrevealFiles, revealFolderContents } from './operations.ts';
 
 /**
  * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
@@ -116,6 +116,7 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
         // otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
         if (stat.type === 'folder') {
           await adapter.reconcileFolderCreation(realPath, itemPath);
+          await revealFolderContents(plugin, adapter, itemPath);
         } else {
           if (adapter.reconcileFileInternal) {
             await adapter.reconcileFileInternal(realPath, itemPath);
