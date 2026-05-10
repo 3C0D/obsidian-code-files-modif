@@ -450,7 +450,11 @@ export function handleConsoleMessage(
         inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
         // execCommand integrates the insertion into the native undo stack,
         // unlike direct .value assignment which bypasses undo history entirely.
-        document.execCommand('insertText', false, (inputEl.value ? ' ' : '') + paths.join(' '));
+        document.execCommand(
+          'insertText',
+          false,
+          (inputEl.value ? ' ' : '') + paths.join(' ')
+        );
       }
       return;
     }

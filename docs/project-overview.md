@@ -40,6 +40,7 @@
     - **Right column**: Checkboxes to register file extensions for Monaco auto-open
 - **Master checkboxes**: "All" in each column to select/deselect all items in that column
 - **Auto-reveal**: Dotfiles with registered extensions are automatically revealed (configurable, on by default)
+- **Recursive folder reveal**: When revealing a dot-folder, all its non-hidden contents are automatically revealed recursively
 - **Extension registration**: Register new extensions directly from the hidden files modal
 - **Visual indicator**: Eye icon (👁️) badge on folders with manually revealed files
 - **Persistent state**: Revealed files persist across sessions

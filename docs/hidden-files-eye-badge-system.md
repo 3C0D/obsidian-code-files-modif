@@ -47,15 +47,42 @@ if (hasRevealed && !existing) {
 
 **Behavior:**
 1. Uses `adapter.reconcileFileInternal()` or `adapter.reconcileFileChanged()` to force Obsidian to display the file
-2. If `persist=true`, adds paths to `plugin.settings.revealedFiles[folderPath]`
-3. Calls `decorateFolders()` to update eye badges
-4. No longer shows notices (silent by default)
+2. For folders: calls `revealFolderContents()` to recursively reveal non-hidden children
+3. If `persist=true`, adds paths to `plugin.settings.revealedFiles[folderPath]`
+4. Calls `decorateFolders()` to update eye badges
+5. No longer shows notices (silent by default)
 
 **Used by:**
 - `RevealHiddenFilesModal` — manual reveal (persist=true, scans recursively through subfolders)
 - `syncAutoRevealedDotfiles()` — auto-reveal (persist=false)
 - `restoreRevealedFiles()` — on plugin startup
 - `handleTemporaryReveal()` — temporary reveal (persist=false)
+
+---
+
+### 2.5. `revealFolderContents()` — Recursive Folder Contents Reveal
+
+**Location:** `hiddenFiles/operations.ts`
+
+**Purpose:** Automatically reveals all non-hidden (non-dot) children of a revealed dot-folder, recursively.
+
+**Parameters:**
+- `plugin` — The plugin instance
+- `adapter` — The data adapter
+- `folderPath` — The normalized path of the folder whose contents to reveal
+
+**Behavior:**
+1. Lists all files and folders in the given `folderPath`
+2. Filters out hidden children (files/folders starting with `.`)
+3. For folders: calls `adapter.reconcileFolderCreation()` and recurses with `revealFolderContents()`
+4. For files: uses `adapter.reconcileFileInternal()` or `adapter.reconcileFileChanged()` to reveal the file
+5. Does not persist to settings — folder persistence is handled by the parent `revealFiles()` call
+
+**Used by:**
+- `revealFiles()` — when revealing a folder item
+- `restoreRevealedFiles()` — when restoring a folder item on startup
+
+**Key Point:** This ensures that when a dot-folder (e.g., `.obsidian`) is revealed, its visible contents (e.g., `plugins`, `themes`) are automatically made visible in the vault without manual intervention.
 
 ---
 
