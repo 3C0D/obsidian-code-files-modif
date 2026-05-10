@@ -8,9 +8,17 @@ import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Notice, Platform } from 'obsidian';
-import { spawn, type ChildProcess } from 'child_process';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
-import path from 'path';
+import type { ChildProcess } from 'child_process';
+
+// Desktop-only imports for console functionality
+let spawn: ((command: string, args: string[], options: unknown) => ChildProcess) | undefined;
+let path: { join: (...paths: string[]) => string; resolve: (...paths: string[]) => string } | undefined;
+
+if (Platform.isDesktop) {
+  spawn = require('child_process').spawn;
+  path = require('path');
+}
 
 /** Global registry for active console processes. */
 export const activeProcesses = new Map<string, ChildProcess>();
@@ -56,7 +64,7 @@ function killProcessTree(proc: ChildProcess): void {
   try {
     if (process.platform === 'win32') {
       // Windows: taskkill /T kills the entire tree, /F forces it.
-      spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { shell: true });
+      spawn!('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { shell: true });
     } else {
       // Unix: Passing negative PID signals the process group.
       process.kill(-proc.pid, 'SIGINT');
@@ -111,18 +119,14 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       if (autoFocus) send('focus', {});
       await loadProjectFiles(send);
 
-      // Restore command history for this file context from persistent settings
-      const hist = plugin.settings.consoleHistories[codeContext];
-      if (hist?.length) send('console-history', { history: hist });
-
-      // Send initial CWD to the iframe console
-      const adapter = getDataAdapterEx(plugin.app);
-      const fileDir = path.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
-      const initialCwd = currentCwd.get(codeContext) ?? fileDir;
-      send('console-cwd-changed', { cwd: initialCwd, vaultPath: adapter.basePath });
-
-      if (initialConsoleOpen) {
-        send('console-show', {});
+      if (Platform.isDesktop) {
+        const adapter = getDataAdapterEx(plugin.app);
+        const fileDir = path!.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
+        const initialCwd = currentCwd.get(codeContext) ?? fileDir;
+        send('console-cwd-changed', { cwd: initialCwd, vaultPath: adapter.basePath });
+        const hist = plugin.settings.consoleHistories[codeContext];
+        if (hist?.length) send('console-history', { history: hist });
+        if (initialConsoleOpen) send('console-show', {});
       }
       return;
     }
@@ -256,7 +260,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        * Spawns a child process and pipes its output to the iframe.
        */
       case 'run-command': {
-        if (!Platform.isDesktop) break;
+        if (!Platform.isDesktop || !spawn || !path) break;
         const cmdLine = data.cmd as string;
         if (!cmdLine?.trim()) break;
 
@@ -272,28 +276,36 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
 
         const adapter = getDataAdapterEx(plugin.app);
         const basePath = adapter.basePath;
-        const fileDir = path.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
+        const fileDir = path!.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
         const activeCwd = currentCwd.get(codeContext) ?? fileDir;
 
-        // Task: Intercept 'cd' commands to update the persistent CWD
-        const cdMatch = cmdLine.trim().match(/^cd\s+(.+)/i);
-        if (cdMatch) {
-          const target = cdMatch[1].replace(/^["']|["']$/g, '');
-          const resolved = path.resolve(activeCwd, target);
+        // Intercept 'cd' commands to update the persistent CWD without spawning a subprocess.
+        // Regex allows: 'cd', 'cd ..', 'cd..', 'cd~', 'cd /abs', 'cd "path with spaces"'
+        const cdMatch = cmdLine.trim().match(/^cd(\s.*|\.\.?|~.*)?$/i);
+        if (cdMatch !== null) {
+          const target = (cdMatch[1] ?? '').trim().replace(/^["']|["']$/g, '');
+          // bare 'cd' or 'cd ~' → go to vault root (mirrors shell behavior)
+          const resolved = target && target !== '~'
+            ? path!.resolve(activeCwd, target)
+            : basePath;
+          type FsStatResult = { isDirectory(): boolean };
+          type FsModule = { statSync(p: string): FsStatResult };
+          const nodeFs = require('fs') as FsModule;
           try {
-            const fs = require('fs');
-            const stats = fs.statSync(resolved);
-            if (stats.isDirectory()) {
+            if (nodeFs.statSync(resolved).isDirectory()) {
               currentCwd.set(codeContext, resolved);
               send('console-cwd-changed', { cwd: resolved });
-              // Local command: no spawn needed
               send('console-output', { text: '' });
               send('console-process-exited', { code: 0 });
-              break;
+            } else {
+              send('console-output', { text: `cd: not a directory: ${target || '~'}\n` });
+              send('console-process-exited', { code: 1 });
             }
           } catch {
-            // Fall through to spawn if directory doesn't exist
+            send('console-output', { text: `cd: no such file or directory: ${target || '~'}\n` });
+            send('console-process-exited', { code: 1 });
           }
+          break;
         }
 
         // Kill any existing process for this file before starting a new one.
@@ -303,7 +315,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         const shellCmd = cmdLine.trim();
 
         try {
-          const proc = spawn(shellCmd, [], {
+          const proc = spawn!(shellCmd, [], {
             cwd: activeCwd,
             env: {
               ...process.env,

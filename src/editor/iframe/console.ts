@@ -78,8 +78,17 @@ export function initConsolePane(
     if (!cmd && !isRunning) return;
 
     // Handle local 'clear' commands without round-tripping to the parent process
-    if (cmd === 'clear' || cmd === 'cls' && !isRunning) {
+    if ((cmd === 'clear' || cmd === 'cls') && !isRunning) {
       output.innerHTML = '';
+      input.value = '';
+      return;
+    }
+
+    // Handle 'pwd' locally to diagnose currentCwd state without round-tripping
+    if (cmd === 'pwd') {
+      const shortDir = currentCwd.split(/[/\\]/).slice(-2).join('/') || '/';
+      output.innerHTML += `<span class="console-cwd">${shortDir}</span><span class="console-command-line"> $ pwd\n${currentCwd || '/'}\n</span>`;
+      output.scrollTop = output.scrollHeight;
       input.value = '';
       return;
     }
@@ -221,21 +230,56 @@ export function initConsolePane(
 
   /**
    * Drag-and-drop files into input.
-   * Requires `dragover` prevention to allow the drop event.
+   * Accepts drops on both the output area and the input field.
+   * - Vault files (app:// protocol): use relative path from vault root
+   * - External files: use the full absolute path
    */
-  input.addEventListener('dragover', (e) => e.preventDefault());
-  input.addEventListener('drop', (e) => {
+  const handleDrop = (e: DragEvent): void => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer?.files ?? []);
+
     const paths = files
-      .map((f) => (f as File & { path: string }).path)
-      .filter(Boolean)
-      .map((p) => (p.includes(' ') ? `"${p}"` : p));
+      .map((f, i) => {
+        // Attempt 1: Electron exposes file.path in non-sandboxed contexts
+        const electronPath: string = (f as File & { path?: string }).path ?? '';
+        if (electronPath) {
+          const resolved =
+            vaultPath && electronPath.startsWith(vaultPath)
+              ? electronPath.slice(vaultPath.length).replace(/^[/\\]/, '')
+              : electronPath;
+          return resolved.includes(' ') ? `"${resolved}"` : resolved;
+        }
+
+        // Attempt 2: Fallback for sandboxed iframes — parse URI list from dataTransfer
+        // On Windows, file:///C:/Users/... is exposed even in sandboxed contexts
+        const uriList = e.dataTransfer?.getData('text/uri-list') ?? '';
+        const uris = uriList.split(/\r?\n/).filter((u) => u.startsWith('file://'));
+        const uri = uris[i];
+        if (uri) {
+          // Decode URI to absolute path: file:///C:/Users/... → C:/Users/...
+          const decoded = decodeURIComponent(uri.replace(/^file:\/\/\/?/, '').replace(/\//g, '\\'));
+          const resolved =
+            vaultPath && decoded.startsWith(vaultPath)
+              ? decoded.slice(vaultPath.length).replace(/^[/\\]/, '')
+              : decoded;
+          return resolved.includes(' ') ? `"${resolved}"` : resolved;
+        }
+
+        console.warn('[console] handleDrop: could not resolve path for:', f.name);
+        return null;
+      })
+      .filter(Boolean) as string[];
+
     if (paths.length) {
       input.value += (input.value ? ' ' : '') + paths.join(' ');
       input.focus();
     }
-  });
+  };
+
+  input.addEventListener('dragover', (e) => e.preventDefault());
+  input.addEventListener('drop', handleDrop);
+  output.addEventListener('dragover', (e) => e.preventDefault());
+  output.addEventListener('drop', handleDrop);
 
   /**
    * Support multi-line paste in stdin mode.
