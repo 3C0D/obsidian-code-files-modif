@@ -445,8 +445,12 @@ export function handleConsoleMessage(
       const inputEl = document.getElementById('console-input-field') as HTMLInputElement;
       const paths = data.paths as string[];
       if (inputEl && paths?.length) {
-        inputEl.value += (inputEl.value ? ' ' : '') + paths.join(' ');
         inputEl.focus();
+        // Place cursor at end before inserting
+        inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+        // execCommand integrates the insertion into the native undo stack,
+        // unlike direct .value assignment which bypasses undo history entirely.
+        document.execCommand('insertText', false, (inputEl.value ? ' ' : '') + paths.join(' '));
       }
       return;
     }
