@@ -507,6 +507,7 @@ export interface MessageHandlerContext {
   plugin: CodeFilesPlugin;
   /** Initialization parameters sent to the iframe */
   initParams: InitParams;
+  /** Function to load project files for intellisense and cross-file navigation */
   loadProjectFiles: (send: SendFunction) => Promise<void>;
   /** Whether to auto-focus the editor after init */
   autoFocus: boolean;

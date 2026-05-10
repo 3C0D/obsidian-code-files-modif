@@ -12,8 +12,12 @@ import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { ChildProcess } from 'child_process';
 
 // Desktop-only imports for console functionality
-let spawn: ((command: string, args: string[], options: unknown) => ChildProcess) | undefined;
-let path: { join: (...paths: string[]) => string; resolve: (...paths: string[]) => string } | undefined;
+let spawn:
+  | ((command: string, args: string[], options: unknown) => ChildProcess)
+  | undefined;
+let path:
+  | { join: (...paths: string[]) => string; resolve: (...paths: string[]) => string }
+  | undefined;
 let fs: { statSync(p: string): { isDirectory(): boolean } } | undefined;
 // Electron 28+: replaces file.path for sandboxed renderer contexts
 let webUtils: { getPathForFile(file: File): string } | undefined;
@@ -22,7 +26,11 @@ if (Platform.isDesktop) {
   spawn = require('child_process').spawn;
   path = require('path');
   fs = require('fs');
-  try { webUtils = require('electron').webUtils; } catch { /* Electron < 28 */ }
+  try {
+    webUtils = require('electron').webUtils;
+  } catch {
+    /* Electron < 28 */
+  }
 }
 
 /** Global registry for active console processes. */
@@ -35,6 +43,7 @@ const currentCwd = new Map<string, string>();
  * CP850 (DOS Latin 1) high-byte lookup table (0x80–0xFF → Unicode).
  * Used to decode output from cmd.exe builtins (dir, type, etc.) on Windows,
  * which use the OEM code page regardless of chcp settings when piped.
+ * ÇüéâäàåçêëèïîìÄÅÉ...
  */
 // prettier-ignore
 const CP850_HIGH =
@@ -55,6 +64,8 @@ function decodeCp850(buf: Buffer): string {
   let result = '';
   for (let i = 0; i < buf.length; i++) {
     const b = buf[i];
+    // Bytes < 0x80 (ASCII) are kept as-is; bytes ≥ 0x80 are CP850 chars mapped via CP850_HIGH.
+    // e.g. byte 0x82 (130)→ CP850_HIGH[0x82 - 0x80] = CP850_HIGH[2] → 'é'
     result += b < 0x80 ? String.fromCharCode(b) : CP850_HIGH[b - 0x80];
   }
   return result;
@@ -124,6 +135,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       if (autoFocus) send('focus', {});
       await loadProjectFiles(send);
 
+      // Desktop-only: initialise console state (CWD, history, visibility)
+      // The integrated console relies on Node.js APIs (child_process, path, fs),
+      // which are only available in the desktop Electron environment.
       if (Platform.isDesktop) {
         const adapter = getDataAdapterEx(plugin.app);
         const fileDir = path!.join(adapter.basePath, codeContext.replace(/[^/\\]*$/, ''));
@@ -140,9 +154,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     if (data.context !== codeContext) return;
 
     switch (data.type) {
-      // ... (existing cases: open-formatter-config, settings, delete, etc.)
       case 'open-formatter-config': {
-        const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? '';
+        const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? ''; // Extract the file extension from the path (empty string for extensionless files).
         onOpenEditorConfig?.(ext);
         break;
       }
@@ -156,6 +169,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             return function (this: unknown) {
               const result = old.apply(this);
               uninstall();
+              // Defer hotkey broadcast: settings modal teardown is asynchronous in Obsidian,
+              // so we wait 200 ms to ensure the panel is fully closed before re-syncing.
               setTimeout(() => {
                 broadcastHotkeys(plugin);
               }, 200);
@@ -200,6 +215,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         onOpenRenameExtension?.();
         break;
       }
+      // Re-opens the current file with Obsidian's default viewer (i.e. exits the Monaco leaf).
       case 'return-to-default-view': {
         const file = plugin.app.vault.getFileByPath(codeContext);
         if (!file) break;
@@ -213,14 +229,17 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         }
         break;
       }
+      // Prettier found a diff: notify the parent to show the diff action in the toolbar.
       case 'format-diff-available': {
         onFormatDiff?.();
         break;
       }
+      // User reverted the format diff: hide the toolbar action.
       case 'format-diff-reverted': {
         onFormatDiffReverted?.();
         break;
       }
+      // Editor content changed: sync the internal value ref and notify the parent view.
       case 'change': {
         if (valueRef.current !== data.value) {
           valueRef.current = data.value as string;
@@ -228,15 +247,19 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         }
         break;
       }
+      // User triggered a save (Ctrl+S): delegate to the onSave callback (writes to vault).
       case 'save-document': {
         onSave?.();
         break;
       }
+      // Word-wrap toggle: persist the new state immediately so it survives a reload.
       case 'word-wrap-toggled': {
         plugin.settings.wordWrap = data.wordWrap as 'on' | 'off';
         await plugin.saveSettings();
         break;
       }
+      // Cross-file navigation request from Monaco (e.g. Cmd+Click on an import).
+      // Opens the target vault file in a Monaco leaf, restoring cursor position if provided.
       case 'open-file': {
         const vaultPath = data.path as string;
         const position = data.position as {
@@ -290,11 +313,10 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         if (cdMatch !== null) {
           const target = (cdMatch[1] ?? '').trim().replace(/^["']|["']$/g, '');
           // bare 'cd' or 'cd ~' → go to vault root (mirrors shell behavior)
-           const resolved = target && target !== '~'
-             ? path!.resolve(activeCwd, target)
-             : basePath;
-           try {
-             if (fs!.statSync(resolved).isDirectory()) {
+          const resolved =
+            target && target !== '~' ? path!.resolve(activeCwd, target) : basePath;
+          try {
+            if (fs!.statSync(resolved).isDirectory()) {
               currentCwd.set(codeContext, resolved);
               send('console-cwd-changed', { cwd: resolved });
               send('console-output', { text: '' });
@@ -304,7 +326,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
               send('console-process-exited', { code: 1 });
             }
           } catch {
-            send('console-output', { text: `cd: no such file or directory: ${target || '~'}\n` });
+            send('console-output', {
+              text: `cd: no such file or directory: ${target || '~'}\n`
+            });
             send('console-process-exited', { code: 1 });
           }
           break;
@@ -490,6 +514,12 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       dragEnterCount = 0;
     };
 
+    /**
+     * Creates and appends a transparent overlay div positioned exactly over the iframe.
+     * Intercepts drag-and-drop events that the sandboxed iframe cannot access,
+     * then resolves dropped file paths and forwards them via postMessage.
+     * No-ops if the overlay is already visible.
+     */
     const showOverlay = (): void => {
       if (dragOverlay) return;
       const rect = iframe.getBoundingClientRect();
@@ -530,7 +560,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             const uris = uriList.split(/\r?\n/).filter((u) => u.startsWith('file://'));
             const uri = uris[i];
             if (uri) {
-              absPath = decodeURIComponent(uri.replace(/^file:\/\/\/?/, '').replace(/\//g, '\\'));
+              absPath = decodeURIComponent(
+                uri.replace(/^file:\/\/\/?/, '').replace(/\//g, '\\')
+              );
             }
           }
 
@@ -546,7 +578,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
               send('console-cwd-changed', { cwd: absPath });
               return;
             }
-          } catch { /* not a directory or path doesn't exist */ }
+          } catch {
+            /* not a directory or path doesn't exist */
+          }
 
           // It's a file: resolve relative to vault root if inside vault
           const resolved = absPath.startsWith(basePath)
@@ -556,16 +590,27 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         });
 
         hideOverlay();
-        if (droppedFilePaths.length) send('console-drop-paths', { paths: droppedFilePaths });
+        if (droppedFilePaths.length)
+          send('console-drop-paths', { paths: droppedFilePaths });
       });
       document.body.appendChild(dragOverlay);
     };
 
+    /**
+     * Global dragenter listener. Shows the overlay only when the dragged payload
+     * contains at least one file, ignoring pure-text or link drags.
+     */
     const onDragEnter = (e: DragEvent): void => {
-      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some((i) => i.kind === 'file');
+      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some(
+        (i) => i.kind === 'file'
+      );
       if (hasFiles) showOverlay();
     };
 
+    /**
+     * Global dragend listener. Cleans up the overlay if the drag was cancelled
+     * (e.g. the user pressed Escape or dropped outside any valid target).
+     */
     const onDragEnd = (): void => hideOverlay();
 
     document.addEventListener('dragenter', onDragEnter);
