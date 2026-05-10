@@ -280,15 +280,18 @@ Run terminal commands directly from the Monaco editor with full support for inte
 - **Command history**: Up/down arrows for history, persistent per file (up to 50 commands)
 - **Encoding support**: Automatic UTF-8/CP850 fallback for Windows compatibility
 - **Visual interface**: CWD display in prompt, ANSI colors, resizable panel
+- **Local commands**: `pwd` to display current working directory
+- **Drag-and-drop files**: Drag files from file explorer into console to add their paths to input
 
 ### Usage
 
 - **Toggle console**: Click the console icon in tab header or press `Ctrl+J`
 - **Clear console**: Press `Ctrl+L` (or Cmd+L) to clear the output
-- **Run commands**: Type and press Enter; `cd` changes directory, other commands run there
+- **Run commands**: Type and press Enter; `cd` changes directory, `pwd` shows current directory, other commands run there
 - **Interactive input**: Commands that prompt for input work normally
 - **Stop processes**: Ctrl+C interrupts running commands
 - **History**: Up/down arrows to recall previous commands
+- **Drag files**: Drag files from the file explorer into the console input area to add their paths
 
 ### Platform Support
 

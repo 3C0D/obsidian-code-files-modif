@@ -139,6 +139,8 @@
 - **Command history**: Persistent history per file (up to 50 commands, deduplicated)
 - **Encoding handling**: Automatic UTF-8/CP850 fallback for Windows cmd.exe compatibility
 - **Visual interface**: CWD display in prompt line, ANSI colors, resizable height (persisted)
+- **Local commands**: `pwd` to display current working directory
+- **Drag-and-drop files**: Drag files from file explorer into console to add their paths to input
 - **Platform support**: Desktop only (Windows, macOS, Linux)
 
 ## Technical Architecture
