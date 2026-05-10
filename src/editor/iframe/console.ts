@@ -154,7 +154,7 @@ export function initConsolePane(
       // Otherwise, let the browser handle the default copy behavior
     }
     // Handle Ctrl+D: Send EOF (close stdin pipe) to the running process
-    if ((e.key === 'd' || e.key === 'z')  && (e.ctrlKey || e.metaKey) && isRunning) {
+    if ((e.key === 'd' || e.key === 'z') && (e.ctrlKey || e.metaKey) && isRunning) {
       e.preventDefault();
       window.parent.postMessage(
         { type: 'send-stdin-eof', context: ctx },

@@ -419,16 +419,16 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
            * We wait 50ms (setTimeout) to ensure all remaining 'data' events
            * from stdout/stderr have been processed before signaling the exit.
            */
-            proc.on('close', (code) => {
-              setTimeout(() => {
-                const status = code === null ? 'Interrupted' : `code ${code}`;
-                send('console-output', {
-                  text: `\n[Process exited: ${status}]\n`
-                });
-                send('console-process-exited', { code: code ?? null });
-                activeProcesses.delete(codeContext);
-              }, 50);
-            });
+          proc.on('close', (code) => {
+            setTimeout(() => {
+              const status = code === null ? 'Interrupted' : `code ${code}`;
+              send('console-output', {
+                text: `\n[Process exited: ${status}]\n`
+              });
+              send('console-process-exited', { code: code ?? null });
+              activeProcesses.delete(codeContext);
+            }, 50);
+          });
 
           proc.on('error', (err) => {
             send('console-output', { text: `Error: ${err.message}\n` });
@@ -548,35 +548,43 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
 
       dragOverlay.addEventListener('dragover', (e) => e.preventDefault());
 
-      dragOverlay.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Prevent event from reaching the iframe
-        if (dropping) return;
-        dropping = true;
-        setTimeout(() => { dropping = false; }, 300);
+      dragOverlay.addEventListener(
+        'drop',
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation(); // Prevent event from reaching the iframe
+          if (dropping) return;
+          dropping = true;
+          setTimeout(() => {
+            dropping = false;
+          }, 300);
 
-        hideOverlay();
+          hideOverlay();
 
-        const files = Array.from(e.dataTransfer?.files ?? []);
-        const basePath = getDataAdapterEx(plugin.app).basePath;
-        const paths: string[] = [];
+          const files = Array.from(e.dataTransfer?.files ?? []);
+          const basePath = getDataAdapterEx(plugin.app).basePath;
+          const paths: string[] = [];
 
-        for (const f of files) {
-          const absPath: string = webUtils?.getPathForFile(f) ?? '';
-          if (!absPath) continue;
-          const resolved = absPath.startsWith(basePath)
-            ? absPath.slice(basePath.length).replace(/^[/\\]/, '')
-            : absPath;
-          paths.push(resolved.includes(' ') ? `"${resolved}"` : resolved);
-        }
-        if (paths.length) send('console-drop-paths', { paths });
-      }, { once: true });
+          for (const f of files) {
+            const absPath: string = webUtils?.getPathForFile(f) ?? '';
+            if (!absPath) continue;
+            const resolved = absPath.startsWith(basePath)
+              ? absPath.slice(basePath.length).replace(/^[/\\]/, '')
+              : absPath;
+            paths.push(resolved.includes(' ') ? `"${resolved}"` : resolved);
+          }
+          if (paths.length) send('console-drop-paths', { paths });
+        },
+        { once: true }
+      );
 
       document.body.appendChild(dragOverlay);
     };
 
     const onDragEnter = (e: DragEvent): void => {
-      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some((i) => i.kind === 'file');
+      const hasFiles = Array.from(e.dataTransfer?.items ?? []).some(
+        (i) => i.kind === 'file'
+      );
       if (hasFiles) showOverlay();
     };
 
