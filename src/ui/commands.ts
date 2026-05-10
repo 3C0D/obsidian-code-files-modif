@@ -42,7 +42,7 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
     name: 'Open current file in Monaco Editor',
     editorCheckCallback: (checking, _editor, ctx) => {
       if (!ctx.file) return false;
-      if (!checking) void openInMonacoLeaf(ctx.file, plugin, false);
+      if (!checking) void openInMonacoLeaf(ctx.file, plugin, false, null, false, false);
       return true;
     }
   });
