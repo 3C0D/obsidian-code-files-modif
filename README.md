@@ -282,6 +282,8 @@ Run terminal commands directly from the Monaco editor with full support for inte
 - **Visual interface**: CWD display in prompt, ANSI colors, resizable panel
 - **Local commands**: `pwd` to display current working directory
 - **Drag-and-drop files**: Drag files from file explorer into console to add their paths to input
+- **Send EOF**: `Ctrl+D` sends end-of-file signal to running processes (equivalent to Ctrl+Z on Windows)
+- **Notifications**: Temporary notices appear for actions like copying selection
 
 ### Usage
 
@@ -290,8 +292,10 @@ Run terminal commands directly from the Monaco editor with full support for inte
 - **Run commands**: Type and press Enter; `cd` changes directory, `pwd` shows current directory, other commands run there
 - **Interactive input**: Commands that prompt for input work normally
 - **Stop processes**: Ctrl+C interrupts running commands
+- **Send EOF**: Press `Ctrl+D` to send end-of-file signal to running processes
 - **History**: Up/down arrows to recall previous commands
 - **Drag files**: Drag files from the file explorer into the console input area to add their paths
+- **Copy selection**: Right-click selected text in the console to copy to clipboard
 
 ### Platform Support
 
@@ -398,6 +402,7 @@ Changes save automatically when the panel closes.
 | `Alt+Z`       | Toggle word wrap                                         |
 | `Ctrl+J`      | Toggle integrated console                                |
 | `Ctrl+L`      | Clear console output                                     |
+| `Ctrl+D`      | Send EOF to running process                              |
 | `F1`          | Monaco command palette                                   |
 | `Ctrl+P`      | Obsidian command palette (accessible from inside Monaco) |
 | `Ctrl+,`      | Obsidian settings (accessible from inside Monaco)        |
@@ -468,12 +473,13 @@ modify the `.env` file:
 ```env
 TEST_VAULT=C:\path\to\test\vault
 REAL_VAULT=C:\path\to\real\vault
+OBSIDIAN_REST_API_KEY=your-api-key-here
 ```
 
+For automatic reload after `yarn real`, install and enable the "Local REST API" plugin in Obsidian, enable "Enable Non-encrypted (HTTP) Server" in plugin settings, and copy the API Key to `OBSIDIAN_REST_API_KEY`.
+
 ```bash
-yarn start    # Development with hot reload → TEST_VAULT
-yarn build    # Production build (current folder)
-yarn real     # Build + install to REAL_VAULT
+yarn real     # Build + install to REAL_VAULT and reload Obsidian (requires "Local REST API" plugin installed and enabled)
 ```
 
 See `docs/monaco-local-integration.md` for Monaco local loading details.
