@@ -78,9 +78,16 @@ function matchesHotkey(e: Monaco.IKeyboardEvent, hk: HotkeyConfig): boolean {
 
 /**
  * Registers all Monaco actions and keyboard handlers.
+ *
+ * Three registration mechanisms are used:
+ * - `addAction` with `contextMenuGroupId` → appears in context menu, command palette, and supports `keybindings` for automatic shortcut display
+ * - `addAction` without `contextMenuGroupId` → command palette only
+ * - `addCommand` → keybinding only (no menu, no palette)
+ *
  * @param params - Initialization parameters
  * @param openDiffModal - Function to open the diff modal with original and formatted content
  */
+
 export function registerActions(
   params: Prettify<InitParams>,
   openDiffModal: (orig: string, fmt: string) => void
@@ -106,20 +113,24 @@ export function registerActions(
   }
 
   // Alt+Z toggles word wrap and persists the setting
-  editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.KeyZ, () => {
-    const current = editor!.getRawOptions().wordWrap;
-    const next = current === 'on' ? 'off' : 'on';
-    editor!.updateOptions({ wordWrap: next });
-    window.parent.postMessage(
-      { type: 'word-wrap-toggled', wordWrap: next, context },
-      getParentOrigin()
-    );
+  editor.addAction({
+    id: 'code-files-toggle-word-wrap',
+    label: '↔ Toggle Word Wrap',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 0.4,
+    keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.KeyZ],
+    run: () => {
+      const current = editor!.getRawOptions().wordWrap;
+      const next = current === 'on' ? 'off' : 'on';
+      editor!.updateOptions({ wordWrap: next });
+      window.parent.postMessage(
+        { type: 'word-wrap-toggled', wordWrap: next, context },
+        getParentOrigin()
+      );
+    }
   });
 
-  // Ctrl+J toggles the integrated console
-  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ, () => {
-    window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
-  });
+
 
   editor.addAction({
     id: 'code-files-save',
@@ -238,9 +249,10 @@ export function registerActions(
 
   editor.addAction({
     id: 'code-files-open-console',
-    label: '🖥️ Open Console (Ctrl+J)',
+    label: '🖥️ Open Console',
     contextMenuGroupId: 'code-files',
     contextMenuOrder: 5,
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ],
     run: () => {
       window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
     }
