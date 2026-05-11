@@ -1,11 +1,12 @@
 import { writeFile, stat } from 'fs/promises';
 import { execSync } from 'child_process';
 import dedent from 'dedent';
+import { join } from 'path';
 import { askConfirmation, createReadlineInterface, ensureGitSync } from './utils.js';
 
 const rl = createReadlineInterface();
 
-const body = '.github/workflows/release-body.md';
+const body = join('.github', 'workflows', 'release-body.md');
 
 async function checkOrCreateFile(filename: string): Promise<void> {
   try {
