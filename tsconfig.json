@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["obsidian-typings"],
+    "types": ["obsidian-typings", "node"],
     "paths": {
       "obsidian-typings/implementations": [
         "./node_modules/obsidian-typings/dist/cjs/implementations.d.cts",
@@ -27,6 +27,6 @@
     "skipLibCheck": true,
     "lib": ["DOM", "ES2024"]
   },
-  "include": ["./src/**/*.ts"],
+  "include": ["./src/**/*.ts", "./scripts/**/*.ts"],
   "exclude": ["node_modules", "eslint.config.ts", "templates"]
 }

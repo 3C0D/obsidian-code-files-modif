@@ -15,6 +15,7 @@ import {
   getBuildPath
 } from './build/env.js';
 import { copyFilesToTargetDir, createReadlineInterface, isValidPath } from './utils.js';
+import { reloadObsidian } from './build/reload.js';
 
 // Determine the plugin directory (where the script is called from)
 const pluginDir = process.cwd();
@@ -46,6 +47,7 @@ async function createBuildContext(
             if (process.argv.includes('-r') || process.argv.includes('real')) {
               await copyFilesToTargetDir(buildPath);
               console.log(`Successfully installed in ${buildPath}`);
+              await reloadObsidian();
             } else {
               const folderToRemove = path.join(buildPath, '_.._');
               if (await isValidPath(folderToRemove)) {

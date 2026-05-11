@@ -236,17 +236,25 @@ export async function promptForVaultPath(
   return vaultPath;
 }
 
-/** Creates a .env file with placeholder paths if it doesn't exist */
+/** Creates a .env file with placeholder paths and API config if it doesn't exist */
 export async function ensureEnvFile(envPath: string): Promise<void> {
   if (await isValidPath(envPath)) return;
   const template =
     [
-      '# Obsidian vault paths for plugin development',
+      '# Environment variables for plugin development',
+      '#',
+      '# Vault paths',
       '# TEST_VAULT: path to your test/development vault (used with yarn dev)',
       '# REAL_VAULT: path to your production vault (used with yarn real)',
       'TEST_VAULT=/path/to/your/test/vault',
-      'REAL_VAULT=/path/to/your/real/vault'
+      'REAL_VAULT=/path/to/your/real/vault',
+      '#',
+      '# Obsidian Local REST API (for automatic reload after yarn real)',
+      '# 1. Install the "Local REST API" plugin in Obsidian',
+      '# 2. Enable "Enable Non-encrypted (HTTP) Server" in plugin settings',
+      '# 3. Copy the API Key from plugin settings and paste it below',
+      'OBSIDIAN_REST_API_KEY=your_api_key_here'
     ].join('\n') + '\n';
   await writeFile(envPath, template);
-  console.log('📄 Created .env with placeholder paths');
+  console.log('📄 Created .env with placeholder paths and API configuration');
 }

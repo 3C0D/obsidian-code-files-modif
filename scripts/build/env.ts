@@ -16,7 +16,7 @@ interface Manifest {
   id: string;
 }
 
-export { Manifest };
+export type { Manifest };
 
 export function checkManifest(pluginDir: string): Manifest {
   const manifestPath = path.join(pluginDir, 'manifest.json');

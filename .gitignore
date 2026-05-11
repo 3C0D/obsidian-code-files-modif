@@ -45,6 +45,9 @@ vs/
 # Keep injection info for traceability
 # .injection-info.json should be committed to track injection version
 
+# Environment variables (contains API keys and secrets)
+.env
+
 #LLM
 .amazonq/*
 tsconfig.tsbuildinfo
