@@ -141,11 +141,16 @@ export function registerExtension(plugin: CodeFilesPlugin, ext: string): void {
  */
 export function unregisterExtension(plugin: CodeFilesPlugin, ext: string): void {
   try {
-    plugin.app.viewRegistry.unregisterExtensions([ext]);
+    // Close matching leaves BEFORE unregistering to prevent
+    // reconcileDeletion (fired async by the patched unregisterExtensions)
+    // from accessing a workspace tree we've already torn down.
     plugin.app.workspace.getLeavesOfType(viewType).forEach((leaf) => {
       const view = leaf.view as CodeEditorView;
-      if (view.file && getExtension(view.file.name) === ext) leaf.detach();
+      if (view.file && getExtension(view.file.name) === ext && leaf.parent) {
+        leaf.detach();
+      }
     });
+    plugin.app.viewRegistry.unregisterExtensions([ext]);
   } catch (e) {
     console.warn(`code-files: could not unregister extension "${ext}":`, e);
   }
