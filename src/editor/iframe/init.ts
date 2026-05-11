@@ -282,7 +282,11 @@ function applyParams(params: Prettify<InitParams>): void {
   }
 
   // Register all actions and keyboard handlers
-  registerActions(params, openDiffModal);
+  registerActions(params, openDiffModal, {
+    commandPalette: params.commandPaletteHotkey || null,
+    settings: params.settingsHotkey || null,
+    deleteFile: params.deleteFileHotkey || null,
+  });
 
   // Initialize console pane with persistent height
   initConsolePane(context, editor, params.consoleHeight);

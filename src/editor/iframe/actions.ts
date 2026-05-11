@@ -6,6 +6,7 @@ import type * as Monaco from 'monaco-editor';
 import type { InitParams, HotkeyConfig, Prettify } from './types/index.ts';
 import { getLastFormat } from './diff.ts';
 import { getParentOrigin } from './utils.ts';
+import { hotkeyToMonacoKeybinding } from './keybindingUtils.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -90,9 +91,18 @@ function matchesHotkey(e: Monaco.IKeyboardEvent, hk: HotkeyConfig): boolean {
 
 export function registerActions(
   params: Prettify<InitParams>,
-  openDiffModal: (orig: string, fmt: string) => void
+  openDiffModal: (orig: string, fmt: string) => void,
+  initialHotkeys?: {
+    commandPalette: HotkeyConfig | null;
+    settings: HotkeyConfig | null;
+    deleteFile: HotkeyConfig | null;
+  }
 ): void {
   if (!editor) return;
+
+  const paletteBinding = hotkeyToMonacoKeybinding(initialHotkeys?.commandPalette ?? null);
+  const settingsBinding = hotkeyToMonacoKeybinding(initialHotkeys?.settings ?? null);
+  const deleteBinding   = hotkeyToMonacoKeybinding(initialHotkeys?.deleteFile ?? null);
 
   // Add "Return to Default View" action if this is an unregistered extension
   if (params.isUnregisteredExtension) {
@@ -220,7 +230,8 @@ export function registerActions(
 
   editor.addAction({
     id: 'code-files-obsidian-settings',
-    label: '🔧 Obsidian Settings (Ctrl+,)',
+    label: '🔧 Obsidian Settings',
+    ...(settingsBinding ? { keybindings: [settingsBinding] } : {}),
     run: () => {
       window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
     }
@@ -228,7 +239,8 @@ export function registerActions(
 
   editor.addAction({
     id: 'code-files-obsidian-palette',
-    label: '🎹 Obsidian Command Palette (Ctrl+P)',
+    label: '🎹 Obsidian Command Palette',
+    ...(paletteBinding ? { keybindings: [paletteBinding] } : {}),
     run: () => {
       window.parent.postMessage(
         { type: 'open-obsidian-palette', context },
@@ -242,6 +254,7 @@ export function registerActions(
     label: '🗑️ Delete File',
     contextMenuGroupId: 'code-files',
     contextMenuOrder: 4,
+    ...(deleteBinding ? { keybindings: [deleteBinding] } : {}),
     run: () => {
       window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
     }
