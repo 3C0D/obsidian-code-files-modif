@@ -4,12 +4,11 @@
  * If the new extension is unknown to both Code Files and Obsidian, offers to register it.
  * After renaming, reloads the leaf to open the file with the correct view for the new extension.
  */
-import { ButtonComponent, FileView, Modal, Notice, TextComponent } from 'obsidian';
-import type { TFile } from 'obsidian';
+import { ButtonComponent, Modal, Notice, TextComponent, View } from 'obsidian';
+import type { TFile, WorkspaceLeaf } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { confirmation } from './confirmationModal.ts';
 import {
-  getCodeEditorViews,
   addExtension,
   registerExtension,
   syncRegisteredExts
@@ -17,6 +16,8 @@ import {
 import { getExtension } from '../utils/fileUtils.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
+import { revealFiles } from '../utils/hiddenFiles/operations.ts';
+import { viewType } from '../types/variables.ts';
 
 /** Prompts the user to rename a file (name + extension), updating the file and reloading the view. */
 export class RenameExtensionModal extends Modal {
@@ -154,6 +155,26 @@ export class RenameExtensionModal extends Modal {
       }
     }
 
+    // Check if any ancestor of this file is a revealed hidden folder
+    // e.g. { "": [".obsidian"] } covers .obsidian/anything
+    const allRevealedPaths = Object.values(this.plugin.settings.revealedFiles).flat();
+    const folderPath = this.file.parent?.path ?? '';
+    const isInRevealedFolder = allRevealedPaths.some((p) =>
+      this.file.path.startsWith(p + '/')
+    );
+
+    // View works even from the explorer
+    const activeLeaf = this.plugin.app.workspace.getActiveViewOfType(View)?.leaf ?? null;
+
+    // Snapshot only CodeFiles leaves for this file — Obsidian handles its own views natively
+    const codeFilesLeaves: WorkspaceLeaf[] = [];
+    this.plugin.app.workspace.iterateAllLeaves((leaf) => {
+      const stateFile = leaf.getViewState().state?.file as string | undefined;
+      if (leaf.getViewState().type === viewType && stateFile === this.file.path) {
+        codeFilesLeaves.push(leaf);
+      }
+    });
+
     this.close();
 
     try {
@@ -167,17 +188,27 @@ export class RenameExtensionModal extends Modal {
     const renamedFile = this.plugin.app.vault.getFileByPath(newPath);
     if (!renamedFile) return;
 
-    const leaves = this.plugin.app.workspace
-      .getLeavesOfType('markdown')
-      .concat(this.plugin.app.workspace.getLeavesOfType('empty'))
-      .concat(getCodeEditorViews(this.app).map((v) => v.leaf));
-    const leaf =
-      leaves.find((l) => {
-        const view = l.view;
-        if (view instanceof FileView && view.file) return view.file === this.file;
-        return false;
-      }) ?? this.plugin.app.workspace.getMostRecentLeaf();
+    if (isInRevealedFolder) {
+      await revealFiles(this.plugin, folderPath, [newPath], false);
+    }
 
-    if (leaf) await leaf.openFile(renamedFile);
+    // Reopen CodeFiles leaves with the new path.
+    // Obsidian handles its own view types (markdown, PDF, etc.) natively on rename.
+    const isCodeFilesExt =
+      !ext || getActiveExtensions(this.plugin.settings).includes(ext);
+
+    for (const leaf of codeFilesLeaves) {
+      const isActive = leaf === activeLeaf;
+      if (isCodeFilesExt) {
+        await leaf.setViewState({
+          type: viewType,
+          active: isActive,
+          state: { file: renamedFile.path }
+        });
+      } else {
+        // Extension changed to something Obsidian handles: reopen natively
+        await leaf.openFile(renamedFile);
+      }
+    }
   }
 }

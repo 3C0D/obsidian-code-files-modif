@@ -46,7 +46,7 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 
           // Avoid openining tabs for unknown extensions
           if (!isKnownToObsidian && !isKnownToMonaco) {
-            return; // Unknown everywhere — do nothing
+            return;
           }
 
           if (isKnownToMonaco) {

@@ -52,8 +52,13 @@ export async function openInMonacoLeaf(
   const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
   const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
   const existingLeaf = reuseExisting ? findRootMonacoLeaf(plugin, filePath) : null;
-  const leaf = existingLeaf ?? plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
-
+  const leaf =
+    existingLeaf ??
+    (newTab
+      ? plugin.app.workspace.getLeaf('tab')
+      : (plugin.app.workspace.getMostRecentLeaf() ??
+        // if empty workspace, getMostRecentLeaf return null
+        plugin.app.workspace.getLeaf(false)));
   if (!existingLeaf) {
     await leaf.setViewState({
       type: viewType,

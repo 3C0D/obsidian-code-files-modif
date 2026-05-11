@@ -29,7 +29,7 @@ export function getAllMonacoExtensions(): string[] {
  * @param settings - The plugin settings object
  * @returns An array of active extensions.
  */
-export function getActiveExtensions(settings: Prettify<MyPluginSettings>): string[] {
+export function getActiveExtensions(settings: MyPluginSettings): string[] {
   const base = new Set([...settings.extensions, ...settings.extraExtensions]);
   const excluded = new Set(settings.excludedExtensions);
   return [...base].filter((ext) => !excluded.has(ext));
