@@ -1,9 +1,6 @@
-import { Modal, normalizePath, TFolder } from 'obsidian';
+import { Modal, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { scanDotEntries } from '../utils/hiddenFiles/index.ts';
-import { cleanStaleRevealedFiles } from '../utils/hiddenFiles/index.ts';
-import { revealFiles, unrevealFiles } from '../utils/hiddenFiles/index.ts';
-import { decorateFolders } from '../utils/hiddenFiles/index.ts';
+import { scanDotEntries, cleanStaleRevealedFiles, revealFiles, unrevealFiles, decorateFolders, getAdapter } from '../utils/hiddenFiles/index.ts';
 import {
   addExtension,
   getActiveExtensions,
@@ -19,6 +16,7 @@ export class RevealHiddenFilesModal extends Modal {
   plugin: CodeFilesPlugin;
   folderPath: string;
   private sections: Prettify<FolderSection>[] = [];
+  private hasSubfolders = false;
 
   constructor(plugin: CodeFilesPlugin, folderPath: string) {
     super(plugin.app);
@@ -31,7 +29,9 @@ export class RevealHiddenFilesModal extends Modal {
     this.renderLoading();
     await cleanStaleRevealedFiles(this.plugin);
 
-    const allFolderPaths = [this.folderPath, ...this.getSubfolderPaths(this.folderPath)];
+    const allFolderPaths = [this.folderPath, ...await this.getSubfolderPathsFromDisk(this.folderPath)];
+
+    this.hasSubfolders = allFolderPaths.length > 1;
 
     const activeExts = this.plugin.settings.autoRevealRegisteredDotfiles
       ? getActiveExtensions(this.plugin.settings)
@@ -83,23 +83,27 @@ export class RevealHiddenFilesModal extends Modal {
     this.render();
   }
 
-  private getSubfolderPaths(folderPath: string): string[] {
-    const root = folderPath
-      ? this.plugin.app.vault.getAbstractFileByPath(folderPath)
-      : this.plugin.app.vault.getRoot();
-    if (!(root instanceof TFolder)) return [];
+  /** Collects all non-hidden subfolders recursively via adapter.list(), independent of vault index state. */
+  private async getSubfolderPathsFromDisk(folderPath: string): Promise<string[]> {
+    const adapter = getAdapter(this.plugin);
     const results: string[] = [];
-    this.collectSubfolders(root, results);
-    return results;
-  }
 
-  private collectSubfolders(folder: TFolder, results: string[]): void {
-    for (const child of folder.children) {
-      if (child instanceof TFolder) {
-        results.push(child.path);
-        this.collectSubfolders(child, results);
-      }
-    }
+    const collect = async (dir: string): Promise<void> => {
+      try {
+        const listed = await adapter.list(dir || '');
+        for (const rawFolder of listed.folders) {
+          const childPath = normalizePath(rawFolder);
+          const basename = childPath.split('/').pop() || '';
+          if (basename.startsWith('.')) continue; // dot-subfolders are items to reveal, not containers to scan
+          if (this.plugin.settings.excludedFolders.includes(basename)) continue;
+          results.push(childPath);
+          await collect(childPath);
+        }
+      } catch { /* ignore listing errors */ }
+    };
+
+    await collect(folderPath);
+    return results;
   }
 
   private renderLoading(): void {
@@ -131,7 +135,7 @@ export class RevealHiddenFilesModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    const hasSubfolderSections = this.sections.length > 1;
+    const hasSubfolderSections = this.hasSubfolders || this.sections.length > 1;
     this.renderTitle(contentEl, hasSubfolderSections);
 
     if (this.sections.length === 0) {
