@@ -191,6 +191,13 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
           }
         });
         plugin.app.setting.open();
+        plugin.app.setting.openTabById(plugin.manifest.id);
+        // Scroll the left sidebar to show the active plugin tab
+        setTimeout(() => {
+          plugin.app.setting.containerEl
+            .querySelector('.vertical-tab-nav-item.is-active')
+            ?.scrollIntoView({ block: 'center' });
+        }, 50);
         break;
       }
 
