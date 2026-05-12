@@ -42,6 +42,11 @@ export async function buildInitParams(
     settingsHotkey ?? { modifiers: ['Mod'], key: ',' };
   const finalDeleteFileHotkey =
     parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
+  // Console hotkey is direct (no Obsidian fallback)
+  const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkeyOverride) ?? {
+    modifiers: ['Mod'],
+    key: 'j'
+  };
 
   // Disable minimap and line numbers for config editors (modal + settings tab)
   // - editor-settings-config: config editor in the gear icon modal
@@ -67,6 +72,7 @@ export async function buildInitParams(
     commandPaletteHotkey: finalCommandPaletteHotkey,
     settingsHotkey: finalSettingsHotkey,
     deleteFileHotkey: finalDeleteFileHotkey,
+    consoleHotkey: finalConsoleHotkey,
     consoleHeight: plugin.settings.consoleHeight
   };
 

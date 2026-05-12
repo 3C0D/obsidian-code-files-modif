@@ -17,6 +17,7 @@ let formatOnSave = false;
 let currentCommandPaletteHotkey: HotkeyConfig | null = null;
 let currentSettingsHotkey: HotkeyConfig | null = null;
 let currentDeleteFileHotkey: HotkeyConfig | null = null;
+let currentConsoleHotkey: HotkeyConfig | null = null;
 let runFormatWithDiff: () => Promise<void>;
 
 /**
@@ -52,11 +53,13 @@ export function setFormatOnSave(value: boolean): void {
 export function updateHotkeys(
   commandPalette: HotkeyConfig | null,
   settings: HotkeyConfig | null,
-  deleteFile: HotkeyConfig | null
+  deleteFile: HotkeyConfig | null,
+  console: HotkeyConfig | null
 ): void {
   currentCommandPaletteHotkey = commandPalette;
   currentSettingsHotkey = settings;
   currentDeleteFileHotkey = deleteFile;
+  currentConsoleHotkey = console;
 }
 
 /**
@@ -69,6 +72,7 @@ export function registerHotkeyActions(hk: {
   commandPalette: HotkeyConfig | null;
   settings: HotkeyConfig | null;
   deleteFile: HotkeyConfig | null;
+  console: HotkeyConfig | null;
 }): void {
   if (!editor) return;
 
@@ -79,6 +83,8 @@ export function registerHotkeyActions(hk: {
   const paletteBinding = hotkeyToMonacoKeybinding(hk.commandPalette);
   const settingsBinding = hotkeyToMonacoKeybinding(hk.settings);
   const deleteBinding = hotkeyToMonacoKeybinding(hk.deleteFile);
+
+  const consoleBinding = hotkeyToMonacoKeybinding(hk.console);
 
   hotkeyActionDisposables.push(
     editor.addAction({
@@ -106,6 +112,16 @@ export function registerHotkeyActions(hk: {
       ...(deleteBinding ? { keybindings: [deleteBinding] } : {}),
       run: () =>
         window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin())
+    }),
+    editor.addAction({
+      id: 'code-files-open-console',
+      label: '🖥️ Open Console',
+      contextMenuGroupId: 'code-files',
+      contextMenuOrder: 5,
+      ...(consoleBinding ? { keybindings: [consoleBinding] } : {}),
+      run: () => {
+        window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
+      }
     })
   );
 }
@@ -150,12 +166,13 @@ export function registerActions(
     commandPalette: HotkeyConfig | null;
     settings: HotkeyConfig | null;
     deleteFile: HotkeyConfig | null;
+    console: HotkeyConfig | null;
   }
 ): void {
   if (!editor) return;
 
   registerHotkeyActions(
-    initialHotkeys ?? { commandPalette: null, settings: null, deleteFile: null }
+    initialHotkeys ?? { commandPalette: null, settings: null, deleteFile: null, console: null }
   );
 
   // Add "Return to Default View" action if this is an unregistered extension
@@ -260,16 +277,7 @@ export function registerActions(
     }
   });
 
-  editor.addAction({
-    id: 'code-files-open-console',
-    label: '🖥️ Open Console',
-    contextMenuGroupId: 'code-files',
-    contextMenuOrder: 5,
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ],
-    run: () => {
-      window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
-    }
-  });
+
 
   editor.addAction({
     id: 'code-files-save',
@@ -318,6 +326,12 @@ export function registerActions(
       e.preventDefault();
       e.stopPropagation();
       window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
+    }
+
+    if (currentConsoleHotkey && matchesHotkey(e, currentConsoleHotkey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
     }
   });
 }

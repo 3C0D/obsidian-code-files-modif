@@ -300,6 +300,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       'app:delete-file',
       'deleteFileHotkeyOverride'
     );
+    this.createConsoleHotkeySetting(containerEl);
   }
 
   private renderHiddenFilesSection(containerEl: HTMLElement): void {
@@ -368,6 +369,52 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       );
   }
 
+  private createConsoleHotkeySetting(containerEl: HTMLElement): void {
+    const currentOverride = this.plugin.settings.consoleHotkeyOverride;
+    const defaultHotkey = { modifiers: ['Mod'], key: 'j' };
+
+    new Setting(containerEl)
+      .setName('Open Console')
+      .setDesc('Direct Monaco hotkey for opening the console (not linked to Obsidian hotkeys)')
+      .addText((text) => {
+        const displayOverride = currentOverride
+          ? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
+          : '';
+        text.setValue(displayOverride || formatHotkey(defaultHotkey, true));
+        text.setPlaceholder('Ctrl+J, Ctrl + J, or Ctrl J');
+        text.inputEl.style.width = '200px';
+
+        text.inputEl.addEventListener('blur', async () => {
+          const value = text.getValue().trim();
+
+          // If empty, reset to default
+          if (!value) {
+            this.plugin.settings.consoleHotkeyOverride = '';
+            text.setValue(formatHotkey(defaultHotkey, true));
+            await this.plugin.saveSettings();
+            return;
+          }
+
+          // Validate and normalize format
+          const parsed = parseHotkeyOverride(value);
+          if (!parsed) {
+            // Invalid format, reset to default
+            this.plugin.settings.consoleHotkeyOverride = '';
+            text.setValue(formatHotkey(defaultHotkey, true));
+            await this.plugin.saveSettings();
+            return;
+          }
+
+          // Format with + and no spaces
+          const formatted = formatHotkey(parsed);
+          this.plugin.settings.consoleHotkeyOverride = formatted;
+          // Display with platform-specific modifier
+          text.setValue(formatHotkey(parsed, true));
+          await this.plugin.saveSettings();
+        });
+      });
+  }
+
   private createHotkeyOverrideSetting(
     containerEl: HTMLElement,
     name: string,
@@ -389,22 +436,22 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         const displayOverride = currentOverride
           ? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
           : '';
-        text.setValue(displayOverride || `${defaultStr} (default)`);
+        text.setValue(displayOverride || `${defaultStr} (Obsidian default)`);
         text.setPlaceholder('Ctrl+P, Ctrl + P, or Ctrl P');
         text.inputEl.style.width = '200px';
 
         text.inputEl.addEventListener('blur', async () => {
           let value = text.getValue().trim();
 
-          // Remove " (default)" suffix if present
-          if (value.endsWith(' (default)')) {
-            value = value.replace(/ \(default\)$/, '').trim();
+          // Remove " (Obsidian default)" suffix if present
+          if (value.endsWith(' (Obsidian default)')) {
+            value = value.replace(/ \(Obsidian default\)$/, '').trim();
           }
 
           // If empty, reset to default
           if (!value) {
             this.plugin.settings[overrideKey] = '';
-            text.setValue(`${defaultStr} (default)`);
+            text.setValue(`${defaultStr} (Obsidian default)`);
             await this.plugin.saveSettings();
             return;
           }
@@ -414,7 +461,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
           if (!parsed) {
             // Invalid format, reset to default
             this.plugin.settings[overrideKey] = '';
-            text.setValue(`${defaultStr} (default)`);
+            text.setValue(`${defaultStr} (Obsidian default)`);
             await this.plugin.saveSettings();
             return;
           }

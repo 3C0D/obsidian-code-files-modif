@@ -268,7 +268,8 @@ function applyParams(params: Prettify<InitParams>): void {
   updateHotkeys(
     params.commandPaletteHotkey || null,
     params.settingsHotkey || null,
-    params.deleteFileHotkey || null
+    params.deleteFileHotkey || null,
+    params.consoleHotkey || null
   );
 
   // Register all document formatters
@@ -287,6 +288,7 @@ function applyParams(params: Prettify<InitParams>): void {
     commandPalette: params.commandPaletteHotkey || null,
     settings: params.settingsHotkey || null,
     deleteFile: params.deleteFileHotkey || null,
+    console: params.consoleHotkey || null,
   });
 
   // Initialize console pane with persistent height
@@ -409,12 +411,14 @@ export function initMonacoApp(): void {
         updateHotkeys(
           data.commandPaletteHotkey || null,
           data.settingsHotkey || null,
-          data.deleteFileHotkey || null
+          data.deleteFileHotkey || null,
+          data.consoleHotkey || null
         );
         registerHotkeyActions({
           commandPalette: data.commandPaletteHotkey,
           settings: data.settingsHotkey,
           deleteFile: data.deleteFileHotkey,
+          console: data.consoleHotkey,
         });
         break;
       case 'load-project-files':

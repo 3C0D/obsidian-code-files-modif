@@ -16,6 +16,16 @@ For understanding how features work:
 
 ## Writing Rules
 
+### Terminology — Settings Disambiguation
+
+The word "settings" is ambiguous in this codebase. Always use the precise term:
+
+- **Obsidian settings panel** : the native Obsidian settings UI (opened via Ctrl+,)
+- **Plugin settings tab** : the plugin's configuration tab displayed inside the Obsidian settings panel (hotkey overrides, toggles, etc.)
+- **Monaco editor config** : the editor configuration object (`tabSize`, `formatOnSave`, etc.) sent to the iframe via `change-editor-config`
+
+Never write just "settings" when one of these three terms applies.
+
 ### Code Examples
 - **General reference docs**: Replace full code blocks with concise references to locations and key options, followed by a brief explanation of what the feature does. E.g., under each section title, add 1-2 sentences explaining the purpose, then the code reference.
 - **Repetitive concepts**: Show first example, reference others with similar code
@@ -36,6 +46,7 @@ For understanding how features work:
 - [x] prettier-markdown-formatting.md ✓
 - [x] adding-features.md ✓
 - [x] monaco-commands.md ✓
+- [x] editor-actions.md ✓
 - [x] config-migration-strategy.md ✓
 - [x] diff-editor-singleton-fix.md ✓
 - [x] settings-refactor.md ✓

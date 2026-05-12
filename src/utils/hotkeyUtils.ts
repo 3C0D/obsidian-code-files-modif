@@ -134,5 +134,7 @@ export function serializeMonacoHotkeys(app: App): string {
     modifiers: ['Mod'],
     key: 'Delete'
   };
-  return JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey });
+  // Console hotkey is direct, not from Obsidian
+  const consoleHotkey = { modifiers: ['Mod'], key: 'j' };
+  return JSON.stringify({ settingsHotkey, paletteHotkey, deleteFileHotkey, consoleHotkey });
 }

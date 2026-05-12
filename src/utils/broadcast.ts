@@ -155,11 +155,17 @@ export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
     { modifiers: ['Mod'], key: 'Delete' },
     plugin.settings.deleteFileHotkeyOverride
   );
+  // Console hotkey is direct (no Obsidian fallback)
+  const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkeyOverride) ?? {
+    modifiers: ['Mod'],
+    key: 'j'
+  };
 
   const currentHotkeys = JSON.stringify({
     settingsHotkey: finalSettingsHotkey,
     paletteHotkey: finalPaletteHotkey,
-    deleteFileHotkey: finalDeleteFileHotkey
+    deleteFileHotkey: finalDeleteFileHotkey,
+    consoleHotkey: finalConsoleHotkey
   });
 
   if (currentHotkeys === plugin._lastHotkeys) return;
@@ -170,7 +176,8 @@ export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
     view.editor?.send('update-hotkeys', {
       commandPaletteHotkey: finalPaletteHotkey,
       settingsHotkey: finalSettingsHotkey,
-      deleteFileHotkey: finalDeleteFileHotkey
+      deleteFileHotkey: finalDeleteFileHotkey,
+      consoleHotkey: finalConsoleHotkey
     });
   }
 

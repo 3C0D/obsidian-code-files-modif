@@ -62,6 +62,8 @@ export interface MyPluginSettings {
   settingsHotkeyOverride: string;
   /** Override for delete file hotkey (empty string = use Obsidian default) */
   deleteFileHotkeyOverride: string;
+  /** Override for console hotkey (empty string = use default Ctrl+J) */
+  consoleHotkeyOverride: string;
   /** Hidden folders to never show */
   excludedFolders: string[];
 
@@ -146,6 +148,8 @@ export interface InitParams {
   settingsHotkey: HotkeyConfig;
   /** Hotkey for deleting the current file */
   deleteFileHotkey: HotkeyConfig;
+  /** Hotkey for opening the console */
+  consoleHotkey: HotkeyConfig;
   /** Basic syntax error checking for JS/TS (inverse of plugin settings) */
   noSyntaxValidation: boolean;
   /** Advanced type checking and IntelliSense for JS/TS (inverse of plugin settings) */

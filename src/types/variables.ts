@@ -107,6 +107,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   commandPaletteHotkeyOverride: '',
   settingsHotkeyOverride: '',
   deleteFileHotkeyOverride: '',
+  consoleHotkeyOverride: '',
   excludedFolders: ['.git', 'node_modules', '.trash'],
   revealedFiles: {},
   autoRevealRegisteredDotfiles: true,
