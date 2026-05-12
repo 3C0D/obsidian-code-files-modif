@@ -279,11 +279,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     containerEl.createEl('h3', { text: 'Monaco Hotkey Overrides' });
     containerEl.createEl('p', {
       text: 'Override Obsidian shortcuts for Monaco editor. Leave empty to use Obsidian defaults (will autofill). Format: Ctrl+P, Ctrl + P, or Ctrl P.',
-      attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 4px;' }
-    });
-    containerEl.createEl('p', {
-      text: 'Note: the shortcut displayed in Monaco\'s command palette reflects the hotkey at startup. Changes take effect after restarting Obsidian.',
-      attr: { style: 'color: var(--text-muted); font-size: 0.85em; margin-bottom: 8px;' }
+      attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
     });
 
     this.createHotkeyOverrideSetting(

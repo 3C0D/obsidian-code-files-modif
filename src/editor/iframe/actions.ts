@@ -78,20 +78,25 @@ export function registerHotkeyActions(hk: {
 
   const paletteBinding = hotkeyToMonacoKeybinding(hk.commandPalette);
   const settingsBinding = hotkeyToMonacoKeybinding(hk.settings);
-  const deleteBinding   = hotkeyToMonacoKeybinding(hk.deleteFile);
+  const deleteBinding = hotkeyToMonacoKeybinding(hk.deleteFile);
 
   hotkeyActionDisposables.push(
     editor.addAction({
       id: 'code-files-obsidian-palette',
       label: '🎹 Obsidian Command Palette',
       ...(paletteBinding ? { keybindings: [paletteBinding] } : {}),
-      run: () => window.parent.postMessage({ type: 'open-obsidian-palette', context }, getParentOrigin())
+      run: () =>
+        window.parent.postMessage(
+          { type: 'open-obsidian-palette', context },
+          getParentOrigin()
+        )
     }),
     editor.addAction({
       id: 'code-files-obsidian-settings',
       label: '🔧 Obsidian Settings',
       ...(settingsBinding ? { keybindings: [settingsBinding] } : {}),
-      run: () => window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin())
+      run: () =>
+        window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin())
     }),
     editor.addAction({
       id: 'code-files-delete-file',
@@ -99,7 +104,8 @@ export function registerHotkeyActions(hk: {
       contextMenuGroupId: 'code-files',
       contextMenuOrder: 4,
       ...(deleteBinding ? { keybindings: [deleteBinding] } : {}),
-      run: () => window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin())
+      run: () =>
+        window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin())
     })
   );
 }
@@ -148,7 +154,9 @@ export function registerActions(
 ): void {
   if (!editor) return;
 
-  registerHotkeyActions(initialHotkeys ?? { commandPalette: null, settings: null, deleteFile: null });
+  registerHotkeyActions(
+    initialHotkeys ?? { commandPalette: null, settings: null, deleteFile: null }
+  );
 
   // Add "Return to Default View" action if this is an unregistered extension
   if (params.isUnregisteredExtension) {
@@ -183,28 +191,6 @@ export function registerActions(
         { type: 'word-wrap-toggled', wordWrap: next, context },
         getParentOrigin()
       );
-    }
-  });
-
-
-
-  editor.addAction({
-    id: 'code-files-save',
-    label: 'Save',
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-    run: async () => {
-      if (formatOnSave) {
-        const formatAction = editor!.getAction('editor.action.formatDocument');
-        if (formatAction && formatAction.isSupported()) {
-          await runFormatWithDiff();
-          window.parent.postMessage(
-            { type: 'save-document', context },
-            getParentOrigin()
-          );
-          return;
-        }
-      }
-      window.parent.postMessage({ type: 'save-document', context }, getParentOrigin());
     }
   });
 
@@ -274,8 +260,6 @@ export function registerActions(
     }
   });
 
-
-
   editor.addAction({
     id: 'code-files-open-console',
     label: '🖥️ Open Console',
@@ -284,6 +268,28 @@ export function registerActions(
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyJ],
     run: () => {
       window.parent.postMessage({ type: 'toggle-console', context }, getParentOrigin());
+    }
+  });
+
+  editor.addAction({
+    id: 'code-files-save',
+    label: '💾 Save',
+    contextMenuGroupId: 'code-files',
+    contextMenuOrder: 6,
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+    run: async () => {
+      if (formatOnSave) {
+        const formatAction = editor!.getAction('editor.action.formatDocument');
+        if (formatAction && formatAction.isSupported()) {
+          await runFormatWithDiff();
+          window.parent.postMessage(
+            { type: 'save-document', context },
+            getParentOrigin()
+          );
+          return;
+        }
+      }
+      window.parent.postMessage({ type: 'save-document', context }, getParentOrigin());
     }
   });
 
