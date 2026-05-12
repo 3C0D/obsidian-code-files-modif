@@ -47,6 +47,9 @@ export class RevealHiddenFilesModal extends Modal {
       ? getActiveExtensions(this.plugin.settings)
       : null;
 
+    // Always fetch registered extensions to pre-check the registration column on re-open
+    const registeredExts = getActiveExtensions(this.plugin.settings);
+
     this.sections = [];
 
     for (const folderPath of allFolderPaths) {
@@ -86,7 +89,15 @@ export class RevealHiddenFilesModal extends Modal {
         items,
         initialRevealed: new Set([...initialRevealed].filter((p) => itemPaths.has(p))),
         selected: new Set([...selected].filter((p) => itemPaths.has(p))),
-        selectedForRegistration: new Set()
+        selectedForRegistration: new Set(
+          items
+            .filter((item) => {
+              if (item.isFolder) return false;
+              const ext = getExtension(item.name);
+              return ext !== null && registeredExts.includes(ext);
+            })
+            .map((item) => item.path)
+        )
       });
     }
 
