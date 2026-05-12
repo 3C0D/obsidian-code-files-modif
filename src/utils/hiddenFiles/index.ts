@@ -10,7 +10,7 @@ export { scanDotEntries, getMaxFileSize } from './scan.ts';
 export { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 export {
   syncAutoRevealedDotfiles,
-  autoRevealRegisteredDotfiles,
+  isAutoRevealRegisteredDotfile,
   restoreRevealedFiles,
   cleanStaleRevealedFiles,
   hideAutoRevealedDotfiles,

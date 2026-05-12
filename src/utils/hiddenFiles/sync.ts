@@ -19,7 +19,7 @@ export async function syncAutoRevealedDotfiles(
   plugin: CodeFilesPlugin,
   extensions: string[]
 ): Promise<void> {
-  if (!plugin.settings.autoRevealRegisteredDotfiles) return;
+  if (!plugin.settings.isAutoRevealRegisteredDotfile) return;
 
   const extSet = new Set(extensions);
 
@@ -67,10 +67,8 @@ export async function syncAutoRevealedDotfiles(
  * @param plugin - The plugin instance.
  * @returns A Promise that resolves when the operation is complete.
  */
-export async function autoRevealRegisteredDotfiles(
-  plugin: CodeFilesPlugin
-): Promise<void> {
-  if (!plugin.settings.autoRevealRegisteredDotfiles) return;
+export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise<void> {
+  if (!plugin.settings.isAutoRevealRegisteredDotfile) return;
 
   const activeExts = getActiveExtensions(plugin.settings);
 

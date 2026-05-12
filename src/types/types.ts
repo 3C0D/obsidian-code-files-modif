@@ -74,7 +74,7 @@ export interface MyPluginSettings {
    */
   revealedFiles: Record<string, string[]>;
   /** Automatically reveal dotfiles when their extension is registered with Code Files */
-  autoRevealRegisteredDotfiles: boolean;
+  isAutoRevealRegisteredDotfile: boolean;
   /** Paths of files temporarily revealed for editing, cleaned up on close */
   temporaryRevealedPaths: string[];
   /** Persistent console height in pixels */

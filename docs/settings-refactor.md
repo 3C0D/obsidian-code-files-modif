@@ -37,18 +37,18 @@ Flat structure stored via Obsidian's `loadData()`/`saveData()` API, with setting
 	"deleteFileHotkeyOverride": "",
 	"excludedFolders": ["node_modules", ".git"],
 	"revealedFiles": {},
-	"autoRevealRegisteredDotfiles": true,
+	"isAutoRevealRegisteredDotfile": true,
 	"temporaryRevealedPaths": []
 }
 ```
 
 ## Settings Distribution
 
-| Location                     | Settings                                                                                                                                                       |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Obsidian Settings Tab**    | Extensions (manual/extended mode), Extra/Exclusions, Max File Size, Project Root Folder, Hotkey Overrides, Excluded Folders, Auto-Reveal Dotfiles |
-| **⚙️ Editor Settings Modal** | AutoSave, WordWrap, Folding, LineNumbers, Minimap, Semantic/Syntax Validation, Editor Brightness, Editor Config (JSON)                                         |
-| **Monaco F1 Palette**        | All editor actions + Save                                                                                                                                      |
+| Location                    | Settings                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Obsidian Settings Tab**   | Extensions (manual/extended mode), Extra/Exclusions, Max File Size, Project Root Folder, Hotkey Overrides, Excluded Folders, Auto-Reveal Dotfiles |
+| **⚙️ Editor Settings Modal** | AutoSave, WordWrap, Folding, LineNumbers, Minimap, Semantic/Syntax Validation, Editor Brightness, Editor Config (JSON)                            |
+| **Monaco F1 Palette**       | All editor actions + Save                                                                                                                         |
 
 ## EditorSettingsModal Structure
 
@@ -75,7 +75,7 @@ Global settings: AutoSave, WordWrap, Folding, Line Numbers, Minimap, Semantic Va
 **Location:** `CodeEditorView`
 
 **Architecture: Callbacks vs Gatekeeper**
-The integration relies on a clear separation of concerns between the editor's event callbacks and the central save mechanism. 
+The integration relies on a clear separation of concerns between the editor's event callbacks and the central save mechanism.
 
 When mounting the editor (`mountCodeEditor`), we inject callbacks that act simply as "intent signals", without needing to know the current state of settings like `autoSave`:
 

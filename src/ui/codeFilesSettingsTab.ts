@@ -316,9 +316,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       )
       .addToggle((toggle) =>
         toggle
-          .setValue(this.plugin.settings.autoRevealRegisteredDotfiles)
+          .setValue(this.plugin.settings.isAutoRevealRegisteredDotfile)
           .onChange(async (value) => {
-            this.plugin.settings.autoRevealRegisteredDotfiles = value;
+            this.plugin.settings.isAutoRevealRegisteredDotfile = value;
             await this.plugin.saveSettings();
             if (value) {
               await syncAutoRevealedDotfiles(
@@ -375,7 +375,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Open Console')
-      .setDesc('Direct Monaco hotkey for opening the console (not linked to Obsidian hotkeys)')
+      .setDesc(
+        'Direct Monaco hotkey for opening the console (not linked to Obsidian hotkeys)'
+      )
       .addText((text) => {
         const displayOverride = currentOverride
           ? formatHotkey(parseHotkeyOverride(currentOverride)!, true)

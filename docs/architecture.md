@@ -116,9 +116,9 @@ staticMap > 'plaintext'
 
 **Auto-Reveal System:**
 
-- `autoRevealRegisteredDotfiles` setting (default: true)
+- `isAutoRevealRegisteredDotfile` setting (default: true)
 - `syncAutoRevealedDotfiles()` — cleans revealedFiles and auto-reveals dotfiles when extensions are registered
-- `autoRevealRegisteredDotfiles()` — scans entire vault on startup to reveal dotfiles with active extensions
+- `revealRegisteredDotfiles()` — scans entire vault on startup to reveal dotfiles with active extensions
 - `hideAutoRevealedDotfiles()` — hides all auto-managed files when the feature is disabled
 - Auto-managed files are filtered from the hidden files modal UI
 

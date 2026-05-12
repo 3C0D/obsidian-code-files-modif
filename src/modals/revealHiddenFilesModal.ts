@@ -1,6 +1,13 @@
 import { Modal, normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { scanDotEntries, cleanStaleRevealedFiles, revealFiles, unrevealFiles, decorateFolders, getAdapter } from '../utils/hiddenFiles/index.ts';
+import {
+  scanDotEntries,
+  cleanStaleRevealedFiles,
+  revealFiles,
+  unrevealFiles,
+  decorateFolders,
+  getAdapter
+} from '../utils/hiddenFiles/index.ts';
 import {
   addExtension,
   getActiveExtensions,
@@ -29,11 +36,14 @@ export class RevealHiddenFilesModal extends Modal {
     this.renderLoading();
     await cleanStaleRevealedFiles(this.plugin);
 
-    const allFolderPaths = [this.folderPath, ...await this.getSubfolderPathsFromDisk(this.folderPath)];
+    const allFolderPaths = [
+      this.folderPath,
+      ...(await this.getSubfolderPathsFromDisk(this.folderPath))
+    ];
 
     this.hasSubfolders = allFolderPaths.length > 1;
 
-    const activeExts = this.plugin.settings.autoRevealRegisteredDotfiles
+    const activeExts = this.plugin.settings.isAutoRevealRegisteredDotfile
       ? getActiveExtensions(this.plugin.settings)
       : null;
 
@@ -99,7 +109,9 @@ export class RevealHiddenFilesModal extends Modal {
           results.push(childPath);
           await collect(childPath);
         }
-      } catch { /* ignore listing errors */ }
+      } catch {
+        /* ignore listing errors */
+      }
     };
 
     await collect(folderPath);
@@ -160,7 +172,7 @@ export class RevealHiddenFilesModal extends Modal {
     const rightDesc = descEl.createDiv({ cls: 'hidden-files-desc-col' });
     rightDesc.createEl('p', { text: '• Register as code editor view' });
     const noteEl = rightDesc.createEl('p');
-    noteEl.createSpan({ text: '• This file will become always visible' });
+    noteEl.createSpan({ text: '• This file will become always visible (unless isAutoRevealRegisteredDotfile is unchecked in plugin settings)' });
 
     contentEl.createEl('hr', { cls: 'hidden-files-separator' });
 

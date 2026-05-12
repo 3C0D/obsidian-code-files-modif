@@ -68,7 +68,7 @@ export default class CodeFilesPlugin extends Plugin {
       await restoreRevealedFiles(this);
       // Re-trigger auto-reveal for all currently registered extensions.
       // registerExtensions is called before layoutReady, so the around patch skips it.
-      if (this.settings.autoRevealRegisteredDotfiles) {
+      if (this.settings.isAutoRevealRegisteredDotfile) {
         await syncAutoRevealedDotfiles(this, getActiveExtensions(this.settings));
       }
       await decorateFolders(this);

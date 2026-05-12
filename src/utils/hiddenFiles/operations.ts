@@ -184,25 +184,25 @@ export async function handleTemporaryReveal(
   plugin: CodeFilesPlugin,
   filePath: string
 ): Promise<void> {
-  if (!plugin.app.vault.getAbstractFileByPath(filePath)) {
-    const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-    await revealFiles(plugin, folderPath, [filePath], false); // silent, no persist
+  const normalizedPath = normalizePath(filePath);
+  if (!plugin.app.vault.getAbstractFileByPath(normalizedPath)) {
+    const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
+    await revealFiles(plugin, folderPath, [normalizedPath], false); // silent, no persist
 
-    // Track as temporary unless managed by autoRevealRegisteredDotfiles.
+    // Track as temporary unless managed by isAutoRevealRegisteredDotfile.
     // External files (configDir) are always tracked because they're never
-    // managed by autoRevealRegisteredDotfiles (which only scans dotfiles).
-    // vault.configDir is always defined in the Obsidian API — fallback is purely defensive
-    const configDir = plugin.app.vault.configDir || '.obsidian';
-    const isExternalFile = filePath.startsWith(configDir + '/');
-    const ext = getExtension(filePath.split('/').pop() || '');
+    // managed by isAutoRevealRegisteredDotfile (which only scans dotfiles).
+    const configDir = plugin.app.vault.configDir;
+    const isExternalFile = normalizedPath.startsWith(configDir + '/');
+    const ext = getExtension(normalizedPath.split('/').pop() || '');
     const isManagedByAutoReveal =
       !isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
 
     if (
       !isManagedByAutoReveal &&
-      !plugin.settings.temporaryRevealedPaths.includes(filePath)
+      !plugin.settings.temporaryRevealedPaths.includes(normalizedPath)
     ) {
-      plugin.settings.temporaryRevealedPaths.push(filePath);
+      plugin.settings.temporaryRevealedPaths.push(normalizedPath);
       await plugin.saveSettings();
     }
   }
