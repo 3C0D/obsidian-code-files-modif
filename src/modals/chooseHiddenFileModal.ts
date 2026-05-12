@@ -6,13 +6,15 @@
  * and excluding binary formats (executables, archives, databases, fonts).
  */
 import type { TFolder } from 'obsidian';
-import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
+import { FuzzySuggestModal,normalizePath,Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getDataAdapterEx } from 'obsidian-typings/implementations';
-import type { FileSuggestion } from '../types/index.ts';
-import { getMaxFileSize, handleTemporaryReveal } from '../utils/hiddenFiles/index.ts';
-import { EXCLUDED_EXTENSIONS } from '../types/index.ts';
+import {
+  getMaxFileSize,
+  handleTemporaryReveal,
+  isSymlink
+} from '../utils/hiddenFiles/index.ts';
+import { EXCLUDED_EXTENSIONS, type FileSuggestion } from '../types/index.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
 /** Modal for choosing hidden files in a folder to open in Monaco.
@@ -86,23 +88,7 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
 
       const stat = await this.plugin.app.vault.adapter.stat(subFolder);
       if (!stat) continue;
-      // Check for symlinks on desktop only (fs.lstatSync not available on mobile)
-      // Symlinks can create infinite recursion if they point to parent directories, so skip them for safety
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fs = (window as any).require?.('fs');
-      const maybeLstat = fs?.lstatSync;
-      if (maybeLstat) {
-        const adapter = getDataAdapterEx(this.app);
-        const basePath = adapter.basePath;
-        if (basePath) {
-          try {
-            const abs = normalizePath(`${basePath}/${subFolder}`);
-            if (maybeLstat(abs).isSymbolicLink()) continue;
-          } catch {
-            continue;
-          }
-        }
-      }
+      if (isSymlink(this.plugin, subFolder)) continue;
       await this.scanFolder(subFolder, explorerPaths);
     }
   }

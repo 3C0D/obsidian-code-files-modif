@@ -3,11 +3,10 @@
  * Recursively scans the config folder, filters by size and extension,
  * and opens selected files in Monaco Editor.
  */
-import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
+import { FuzzySuggestModal,Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getMaxFileSize } from '../utils/hiddenFiles/index.ts';
-import { getDataAdapterEx } from 'obsidian-typings/implementations';
+import { getMaxFileSize, isSymlink } from '../utils/hiddenFiles/index.ts';
 import type { FileSuggestion } from '../types/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/index.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
@@ -78,23 +77,7 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
         continue;
       }
 
-      // Check for symlinks on desktop only (fs.lstatSync not available on mobile)
-      // Symlinks can create infinite recursion if they point to parent directories, so skip them for safety
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fs = (window as any).require?.('fs');
-      const maybeLstat = fs?.lstatSync;
-      if (maybeLstat) {
-        const adapter = getDataAdapterEx(this.app);
-        const basePath = adapter.basePath;
-        if (basePath) {
-          try {
-            const abs = normalizePath(`${basePath}/${subFolder}`);
-            if (maybeLstat(abs).isSymbolicLink()) continue;
-          } catch {
-            continue;
-          }
-        }
-      }
+      if (isSymlink(this.plugin, subFolder)) continue;
 
       await this.scanFolder(subFolder);
     }

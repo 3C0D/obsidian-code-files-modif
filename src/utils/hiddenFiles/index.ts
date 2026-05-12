@@ -10,9 +10,10 @@ export { scanDotEntries, getMaxFileSize } from './scan.ts';
 export { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 export {
   syncAutoRevealedDotfiles,
-  isAutoRevealRegisteredDotfile,
+  revealRegisteredDotfiles,
   restoreRevealedFiles,
   cleanStaleRevealedFiles,
   hideAutoRevealedDotfiles,
   unrevealExcludedFolders
 } from './sync.ts';
+export { isSymlink } from './symlink.ts';
