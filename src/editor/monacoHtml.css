@@ -87,24 +87,55 @@
 }
 
 #console-pane {
-	display: none; /* Hidden by default, toggled via Ctrl+J */
-	height: 200px;
-	flex-direction: column;
-	border-top: 1px solid #444;
-	background: #1e1e1e;
-	color: #ccc;
-	font-family: monospace;
-	font-size: 12px;
-	position: relative;
-	outline: none;
+ 	display: none; /* Hidden by default, toggled via Ctrl+J */
+ 	height: 200px;
+ 	flex-direction: column;
+ 	border-top: 1px solid #444;
+ 	background: #1e1e1e;
+ 	color: #ccc;
+ 	font-family: monospace;
+ 	font-size: 12px;
+ 	position: relative;
+ 	outline: none;
+}
+
+#console-header {
+ 	display: flex;
+ 	align-items: center;
+ 	justify-content: space-between;
+ 	padding: 0 8px;
+ 	height: 20px;
+ 	flex-shrink: 0;
+ 	background: #2d2d2d;
+ 	border-bottom: 1px solid #444;
+ 	font-size: 11px;
+ 	color: #999;
+ 	text-transform: uppercase;
+ 	letter-spacing: 0.05em;
+ 	user-select: none;
+}
+
+#console-close-btn {
+ 	background: none;
+ 	border: none;
+ 	color: #999;
+ 	font-size: 14px;
+ 	cursor: pointer;
+ 	padding: 2px 6px;
+ 	border-radius: 3px;
+ 	transition: background 0.2s;
+}
+
+#console-close-btn:hover {
+ 	background: rgba(255, 255, 255, 0.1);
 }
 
 #console-resize-handle {
-	height: 4px;
-	cursor: ns-resize;
-	background: transparent;
-	flex-shrink: 0;
-	transition: background 0.2s;
+ 	height: 4px;
+ 	cursor: ns-resize;
+ 	background: #333;
+ 	flex-shrink: 0;
+ 	transition: background 0.2s;
 }
 
 #console-resize-handle:hover {

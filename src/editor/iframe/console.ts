@@ -67,6 +67,17 @@ export function initConsolePane(
   // Guard against missing DOM elements (e.g. if the HTML template changed)
   if (!pane || !output || !input) return;
 
+  // Add close button event listener
+  const closeButton = document.getElementById('console-close-btn') as HTMLButtonElement;
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      window.parent.postMessage(
+        { type: 'toggle-console', context: ctx },
+        getParentOrigin()
+      );
+    });
+  }
+
   // Restore persistent console height if provided
   if (initialHeight) {
     pane.style.height = initialHeight + 'px';
