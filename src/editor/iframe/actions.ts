@@ -10,6 +10,9 @@ import { hotkeyToMonacoKeybinding } from './keybindingUtils.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
+
+/** Stores disposables for hotkey-bound actions so they can be re-registered on update. */
+let hotkeyActionDisposables: Monaco.IDisposable[] = [];
 let formatOnSave = false;
 let currentCommandPaletteHotkey: HotkeyConfig | null = null;
 let currentSettingsHotkey: HotkeyConfig | null = null;
@@ -57,6 +60,51 @@ export function updateHotkeys(
 }
 
 /**
+ * Registers (or re-registers) the three actions whose keybinding mirrors an Obsidian hotkey.
+ * Called at init and on each `update-hotkeys` message.
+ * Disposes previous registrations before adding new ones.
+ * @param hk - Current hotkey config for the three actions.
+ */
+export function registerHotkeyActions(hk: {
+  commandPalette: HotkeyConfig | null;
+  settings: HotkeyConfig | null;
+  deleteFile: HotkeyConfig | null;
+}): void {
+  if (!editor) return;
+
+  // Dispose previous registrations
+  for (const d of hotkeyActionDisposables) d.dispose();
+  hotkeyActionDisposables = [];
+
+  const paletteBinding = hotkeyToMonacoKeybinding(hk.commandPalette);
+  const settingsBinding = hotkeyToMonacoKeybinding(hk.settings);
+  const deleteBinding   = hotkeyToMonacoKeybinding(hk.deleteFile);
+
+  hotkeyActionDisposables.push(
+    editor.addAction({
+      id: 'code-files-obsidian-palette',
+      label: '🎹 Obsidian Command Palette',
+      ...(paletteBinding ? { keybindings: [paletteBinding] } : {}),
+      run: () => window.parent.postMessage({ type: 'open-obsidian-palette', context }, getParentOrigin())
+    }),
+    editor.addAction({
+      id: 'code-files-obsidian-settings',
+      label: '🔧 Obsidian Settings',
+      ...(settingsBinding ? { keybindings: [settingsBinding] } : {}),
+      run: () => window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin())
+    }),
+    editor.addAction({
+      id: 'code-files-delete-file',
+      label: '🗑️ Delete File',
+      contextMenuGroupId: 'code-files',
+      contextMenuOrder: 4,
+      ...(deleteBinding ? { keybindings: [deleteBinding] } : {}),
+      run: () => window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin())
+    })
+  );
+}
+
+/**
  * Checks whether a keyboard event matches a hotkey configuration.
  * Handles all modifier combinations including Mod-less shortcuts.
  * @param e - The Monaco keyboard event
@@ -100,9 +148,7 @@ export function registerActions(
 ): void {
   if (!editor) return;
 
-  const paletteBinding = hotkeyToMonacoKeybinding(initialHotkeys?.commandPalette ?? null);
-  const settingsBinding = hotkeyToMonacoKeybinding(initialHotkeys?.settings ?? null);
-  const deleteBinding   = hotkeyToMonacoKeybinding(initialHotkeys?.deleteFile ?? null);
+  registerHotkeyActions(initialHotkeys ?? { commandPalette: null, settings: null, deleteFile: null });
 
   // Add "Return to Default View" action if this is an unregistered extension
   if (params.isUnregisteredExtension) {
@@ -228,37 +274,7 @@ export function registerActions(
     }
   });
 
-  editor.addAction({
-    id: 'code-files-obsidian-settings',
-    label: '🔧 Obsidian Settings',
-    ...(settingsBinding ? { keybindings: [settingsBinding] } : {}),
-    run: () => {
-      window.parent.postMessage({ type: 'open-settings', context }, getParentOrigin());
-    }
-  });
 
-  editor.addAction({
-    id: 'code-files-obsidian-palette',
-    label: '🎹 Obsidian Command Palette',
-    ...(paletteBinding ? { keybindings: [paletteBinding] } : {}),
-    run: () => {
-      window.parent.postMessage(
-        { type: 'open-obsidian-palette', context },
-        getParentOrigin()
-      );
-    }
-  });
-
-  editor.addAction({
-    id: 'code-files-delete-file',
-    label: '🗑️ Delete File',
-    contextMenuGroupId: 'code-files',
-    contextMenuOrder: 4,
-    ...(deleteBinding ? { keybindings: [deleteBinding] } : {}),
-    run: () => {
-      window.parent.postMessage({ type: 'delete-file', context }, getParentOrigin());
-    }
-  });
 
   editor.addAction({
     id: 'code-files-open-console',

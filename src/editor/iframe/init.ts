@@ -19,7 +19,8 @@ import {
   registerActions,
   setActionsState,
   setFormatOnSave,
-  updateHotkeys
+  updateHotkeys,
+  registerHotkeyActions
 } from './actions.ts';
 import { setParentOrigin, getParentOrigin } from './utils.ts';
 import { initConsolePane, handleConsoleMessage } from './console.ts';
@@ -410,6 +411,11 @@ export function initMonacoApp(): void {
           data.settingsHotkey || null,
           data.deleteFileHotkey || null
         );
+        registerHotkeyActions({
+          commandPalette: data.commandPaletteHotkey,
+          settings: data.settingsHotkey,
+          deleteFile: data.deleteFileHotkey,
+        });
         break;
       case 'load-project-files':
         // Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
