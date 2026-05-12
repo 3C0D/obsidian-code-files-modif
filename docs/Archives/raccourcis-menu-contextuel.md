@@ -19,7 +19,7 @@ Les actions sont enregistrées dans la fonction `registerActions()` du fichier `
 
 ### Actions dynamiques (Hotkeys)
 
-Certaines actions utilisent des raccourcis configurables via les hotkeys d'Obsidian (et overridables via les settingsTab) :
+Certaines actions utilisent des raccourcis configurables via les hotkeys d'Obsidian (et overridables via le plugin settings tab) :
 
 - **Command Palette** : Ouvre la palette de commandes d'Obsidian
 - **Settings** : Ouvre les paramètres d'Obsidian

@@ -28,6 +28,23 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Shared state wiring between iframe modules
 - **Key for:** Understanding how the iframe bundle is structured internally
 
+### [architecture-code-editor-view.md](architecture-code-editor-view.md)
+
+**Role:** CodeEditorView component architecture
+
+- File opening flow and editor mounting
+- Content change handling and save operations
+- Header actions and extension badges
+- **Key for:** Understanding the view component lifecycle
+
+### [Voici les grands chemins logiques de `Co.md](Voici les grands chemins logiques de `Co.md)
+
+**Role:** Logical paths and workflows in CodeEditorView
+
+- File opening, content modification, and settings changes
+- Detailed flow descriptions for key operations
+- **Key for:** Understanding CodeEditorView logical workflows
+
 ### [monaco-local-integration.md](monaco-local-integration.md)
 
 **Role:** Migration from external to local Monaco Editor
@@ -61,12 +78,8 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 ### [settings-refactor.md](settings-refactor.md)
 
-**Role:** Settings storage structure and distribution
-
-- Flat JSON structure via Obsidian's loadData()/saveData()
-- Settings distributed across: Obsidian Settings Tab, Editor Settings Modal, Monaco F1 Palette
-- Complete settings schema with all fields
-- **Key for:** Understanding where settings live and how they're organized
+- Complete plugin settings schema with all fields
+- **Key for:** Understanding where plugin settings live and how they're organized
 
 ---
 
@@ -131,6 +144,15 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Common pitfalls and focus handling
 - **Key for:** Adding editor commands with proper UI integration
 
+### [editor-actions.md](editor-actions.md)
+
+**Role:** Detailed guide to editor actions and keybindings system
+
+- Dynamic hotkey overrides for Obsidian commands (palette, settings, delete)
+- Direct plugin hotkeys (console)
+- Keybinding registration and update flow
+- **Key for:** Understanding the complete actions and shortcuts system
+
 ---
 
 ## 🌐 Cross-File Navigation
@@ -143,6 +165,26 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Loading TS/JS files into Monaco's TypeScript service
 - Navigation flow: Ctrl+Click → open-file message → Obsidian opens file
 - **Key for:** Understanding how code navigation works across files
+
+---
+
+## 📁 External Files & Browser
+
+### [external-files-persistence.md](external-files-persistence.md)
+
+**Role:** External files persistence system
+
+- Managing files outside the vault
+- Persistence strategies and integration
+- **Key for:** Understanding external file handling
+
+### [external-file-browser-modal.md](external-file-browser-modal.md)
+
+**Role:** External file browser modal
+
+- File browsing interface for external files
+- Modal implementation and user interaction
+- **Key for:** Understanding external file selection UI
 
 ---
 
@@ -182,6 +224,51 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 ---
 
+## 🖥️ Console System
+
+### [console.md](console.md)
+
+**Role:** Console pane implementation and management
+
+- Console UI architecture and message handling
+- History persistence and command execution
+- Integration with Monaco editor pane system
+- **Key for:** Understanding console functionality and persistence
+
+### [console_ui_redesign.md](console_ui_redesign.md)
+
+**Role:** Console UI redesign and improvements
+
+- UI/UX enhancements for console interface
+- Layout and interaction improvements
+- **Key for:** Console UI evolution and design decisions
+
+### [console_evolution_plan.md](console_evolution_plan.md)
+
+**Role:** Planned evolution of console features
+
+- Future enhancements and roadmap
+- Technical considerations for expansion
+- **Key for:** Understanding console development direction
+
+### [console_upgrade_spec.md](console_upgrade_spec.md)
+
+**Role:** Console upgrade specifications
+
+- Technical specifications for console improvements
+- Implementation details and requirements
+- **Key for:** Console upgrade planning
+
+### [terminal.md](terminal.md)
+
+**Role:** Terminal integration and functionality
+
+- Terminal features and integration points
+- Command execution and output handling
+- **Key for:** Understanding terminal capabilities
+
+---
+
 ## 🐛 Bug Fixes & Technical Solutions
 
 ### [diff-editor-singleton-fix.md](diff-editor-singleton-fix.md)
@@ -192,6 +279,14 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Solution: Singleton pattern — create once, reuse, never dispose
 - Implementation in monacoEditor.html
 - **Key for:** Understanding Monaco service lifecycle and singleton patterns
+
+### [automatic-obsidian-reload.md](automatic-obsidian-reload.md)
+
+**Role:** Automatic Obsidian reload mechanism
+
+- Triggering reloads after hotkey changes
+- Integration with settings changes
+- **Key for:** Understanding automatic update flows
 
 ---
 
@@ -239,6 +334,30 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - List of revised/updated documents
 - **Key for:** Following documentation standards
 
+### [monaco_iframe_ts_migration_plan.md](monaco_iframe_ts_migration_plan.md)
+
+**Role:** Monaco iframe TypeScript migration planning
+
+- Migration strategy from JavaScript to TypeScript
+- Implementation steps and challenges
+- **Key for:** Understanding iframe migration process
+
+### [monaco-iframe-typescript-migration.md](monaco-iframe-typescript-migration.md)
+
+**Role:** Detailed TypeScript migration for Monaco iframe
+
+- Technical details of TypeScript adoption
+- Code changes and type definitions
+- **Key for:** Migration implementation details
+
+### [raccourcis-menu-contextuel.md](Archives/raccourcis-menu-contextuel.md)
+
+**Role:** Context menu shortcuts guide (French)
+
+- Raccourcis dans le menu contextuel de Monaco
+- Système de raccourcis dynamiques et directs
+- **Key for:** Understanding menu shortcuts system
+
 ---
 
 ## 🔗 Quick Reference by Category
@@ -247,7 +366,8 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 1. [adding-features.md](adding-features.md) — Complete workflow
 2. [monaco-commands.md](monaco-commands.md) — Editor commands
-3. [configuration-cascade.md](configuration-cascade.md) — Config system
+3. [editor-actions.md](editor-actions.md) — Actions and keybindings
+4. [configuration-cascade.md](configuration-cascade.md) — Config system
 
 ### For Understanding Architecture:
 
@@ -277,9 +397,9 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 ## 📝 Maintenance Notes
 
-- **Last Updated:** 2026-05-09
-- **Total Documents:** 19
-- **Categories:** 7
+- **Last Updated:** 2026-05-12
+- **Total Documents:** 33
+- **Categories:** 11
 - **Status:** All documents reviewed and indexed
 
 ### Document Status Legend:

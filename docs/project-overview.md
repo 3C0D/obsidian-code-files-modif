@@ -50,7 +50,7 @@
 - **Temporary reveal for editing**: Hidden files opened directly are temporarily revealed in the vault index for editing, then hidden again when the tab is closed
 - **Smart cleanup**: Auto-managed files hidden automatically when auto-reveal is disabled or extension unregistered
 - **Safe filtering**: Excludes executables, archives, databases, binary office formats, fonts (configurable max size)
-- **Configurable exclusions**: Exclude specific folders (`.git`, `node_modules`) and extensions (`tmp`, `log`, `cache`) in settings
+- **Configurable exclusions**: Exclude specific folders (`.git`, `node_modules`) and extensions (`tmp`, `log`, `cache`) in the plugin settings tab
 - **Automatic unreveal on exclusion**: Adding folders to exclusions automatically hides any previously revealed files in those folders
 - **Drag and drop support**: Dotfiles can be moved between folders normally; adapter patch fixes destination path calculation
 
@@ -71,7 +71,7 @@
 - **Persistent customizations**: Added/excluded extensions survive mode switches
 - **Runtime changes**: Add/remove extensions without restart
 - **On-the-fly registration**: Add extensions during file creation
-- **Flexible switching**: Toggle between manual/extended modes anytime in settings
+- **Flexible switching**: Toggle between manual/extended modes anytime in the plugin settings tab
 
 ### 8. **50+ Themes with Live Preview**
 
@@ -90,8 +90,8 @@
 ### 10. **Comprehensive Settings System**
 
 - **Gear icon access**: Settings directly from editor view
-- **Global settings**: Apply to all file types (\*)
-- **Per-extension settings**: Override for specific file types (.ts, .js, etc.)
+- **Global Monaco editor config**: Apply to all file types (\*)
+- **Per-extension Monaco editor config**: Override for specific file types (.ts, .js, etc.)
 - **Obsidian Settings tab**: Plugin-wide configuration
 - **JSON editor**: JSONC support with comments
 
