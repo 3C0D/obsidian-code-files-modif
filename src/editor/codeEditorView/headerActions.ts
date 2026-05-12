@@ -36,8 +36,9 @@ export function removeHeaderActions(context: Prettify<HeaderActionsContext>): vo
  * Shows the diff action in the header for x seconds after a format.
  *
  * @param context The header actions context providing access to the editor and action management methods.
- * Writes diffAction and diffTimer back onto context. The caller must sync these to the
- * class instance via updateFromContext() — context is a plain object copy, not a live reference.
+ * Mutates context directly (diffAction, diffTimer).
+ * Since context is a persistent shared reference, changes are immediately
+ * visible in CodeEditorView without any manual sync.
  */
 export function showDiffAction(context: Prettify<HeaderActionsContext>): void {
   hideDiffAction(context);

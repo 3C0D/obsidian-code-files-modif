@@ -52,22 +52,8 @@ export class CodeEditorView extends TextFileView {
   private noReturnAction = false;
   /** Tracks whether the integrated console is currently open */
   private isConsoleOpen = false;
-  /** Gear icon action (Editor Settings) in the view header */
-  private gearAction: HTMLElement | null = null;
-  /** Theme picker icon action in the view header */
-  private themeAction: HTMLElement | null = null;
-  /** Snippet folder opener icon action in the view header (CSS snippets only) */
-  private snippetFolderAction: HTMLElement | null = null;
-  /** Snippet enable/disable toggle action in the view header (CSS snippets only) */
-  private snippetToggleAction: HTMLElement | null = null;
-  /** Return to default view icon action in the view header (unregistered extensions only) */
-  private returnAction: HTMLElement | null = null;
-  /** Show format diff icon action in the view header (appears after formatting) */
-  private diffAction: HTMLElement | null = null;
-  /** Timer to automatically hide the diff action after 10 seconds */
-  private diffTimer: NodeJS.Timeout | null = null;
-  /** Cleanup function for snippet change handler */
-  private unregisterSnippetHandler: (() => void) | null = null;
+  /** Shared context for header actions, mutated directly by headerActions.ts to avoid snapshot/sync overhead. */
+  private headerContext: HeaderActionsContext;
   /** Cleanup function for theme change handler */
   private unregisterThemeHandler: (() => void) | null = null;
 
@@ -76,6 +62,25 @@ export class CodeEditorView extends TextFileView {
     private plugin: CodeFilesPlugin
   ) {
     super(leaf);
+    this.headerContext = {
+      plugin: this.plugin,
+      codeEditor: null,
+      addAction: this.addAction.bind(this),
+      leaf: this.leaf,
+      noReturnAction: false,
+      gearAction: null,
+      themeAction: null,
+      snippetFolderAction: null,
+      snippetToggleAction: null,
+      returnAction: null,
+      diffAction: null,
+      diffTimer: null,
+      unregisterSnippetHandler: null,
+      onOpenEditorConfig: (ext: string) =>
+        openEditorConfig(this.plugin, this.headerContext.codeEditor ?? undefined, ext),
+      onOpenThemePicker: () =>
+        openThemePicker(this.plugin, this.headerContext.codeEditor ?? undefined)
+    };
   }
 
   /** Expose the code editor control handle (CodeEditorHandle) to allow sending messages directly to the iframe (e.g., for theme changes, formatting, etc.) */
@@ -148,6 +153,8 @@ export class CodeEditorView extends TextFileView {
     if (state.isConsoleOpen) {
       this.isConsoleOpen = true;
     }
+    // Sync noReturnAction to headerContext for immediate use by headerActions.ts
+    this.headerContext.noReturnAction = this.noReturnAction;
     await super.setState(state, result);
   }
 
@@ -182,53 +189,12 @@ export class CodeEditorView extends TextFileView {
     this.unregisterThemeHandler?.();
     this.unregisterThemeHandler = null;
     this.codeEditor = null;
-  }
-
-  /**
-   * Snapshots the current header state into a {@link HeaderActionsContext}.
-   * After any helper call that mutates the context, sync back with {@link updateFromContext}.
-   *
-   * @returns The header actions context
-   */
-  private buildContext(): HeaderActionsContext {
-    return {
-      plugin: this.plugin,
-      codeEditor: this.codeEditor,
-      addAction: this.addAction.bind(this),
-      leaf: this.leaf,
-      noReturnAction: this.noReturnAction,
-      gearAction: this.gearAction,
-      themeAction: this.themeAction,
-      snippetFolderAction: this.snippetFolderAction,
-      snippetToggleAction: this.snippetToggleAction,
-      returnAction: this.returnAction,
-      diffAction: this.diffAction,
-      diffTimer: this.diffTimer,
-      unregisterSnippetHandler: this.unregisterSnippetHandler,
-      onOpenEditorConfig: (ext: string) =>
-        openEditorConfig(this.plugin, this.codeEditor ?? undefined, ext),
-      onOpenThemePicker: () => openThemePicker(this.plugin, this.codeEditor ?? undefined)
-    };
-  }
-
-  /** Updates class properties from the HeaderActionsContext. */
-  private updateFromContext(context: Prettify<HeaderActionsContext>): void {
-    this.gearAction = context.gearAction;
-    this.themeAction = context.themeAction;
-    this.snippetFolderAction = context.snippetFolderAction;
-    this.snippetToggleAction = context.snippetToggleAction;
-    this.returnAction = context.returnAction;
-    this.diffAction = context.diffAction;
-    this.diffTimer = context.diffTimer;
-    this.unregisterSnippetHandler = context.unregisterSnippetHandler;
+    this.headerContext.codeEditor = null;
   }
 
   /** Removes all header actions from the view. */
   private removeHeaderActions(): void {
-    const context = this.buildContext();
-    removeHeaderActions(context);
-    // Sync action class properties back from context
-    this.updateFromContext(context);
+    removeHeaderActions(this.headerContext);
   }
 
   /** Cleans up the view when it's closed. */
@@ -259,10 +225,7 @@ export class CodeEditorView extends TextFileView {
 
   /** Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets). */
   private injectHeaderActions(): void {
-    const context = this.buildContext();
-    injectHeaderActions(context, this.file!);
-    // Update back
-    this.updateFromContext(context);
+    injectHeaderActions(this.headerContext, this.file!);
   }
 
   /** Orchestrates the mounting of a Monaco Editor by creating an isolated iframe
@@ -294,6 +257,7 @@ export class CodeEditorView extends TextFileView {
         this.plugin.app.workspace.requestSaveLayout();
       }
     });
+    this.headerContext.codeEditor = this.codeEditor;
     // Register theme change handler to follow Obsidian's theme when set to 'default'
     this.unregisterThemeHandler = registerThemeChangeHandler(
       this.plugin,
@@ -315,22 +279,14 @@ export class CodeEditorView extends TextFileView {
 
   /**
    * Shows the diff action button in the view header for a few seconds after a format.
-   *
-   * Uses a context snapshot to work around the circular dependency between
-   * CodeEditorView and headerActions.ts: mutations to `context` do not propagate
-   * back to `this` automatically, hence the explicit sync via updateFromContext.
    */
   private showDiffAction(): void {
-    const context = this.buildContext(); // 1. snapshot
-    showDiffAction(context); // 2. mutates context.diffAction + context.diffTimer
-    this.updateFromContext(context); // 3. sync back to class instance
+    showDiffAction(this.headerContext);
   }
 
   /** Hides the diff action immediately (called when all blocks are reverted) */
   private hideDiffAction(): void {
-    const context = this.buildContext();
-    hideDiffAction(context);
-    this.updateFromContext(context);
+    hideDiffAction(this.headerContext);
   }
 
   /** Handles content changes in the editor. */

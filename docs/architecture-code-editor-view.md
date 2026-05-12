@@ -59,14 +59,14 @@ Le fil conducteur : `mountAndRender` est le point d'entrée de tout état "vivan
 Exactement. Le cycle complet :
 
 ```
-this.diffAction          → buildContext()  → context.diffAction
-                                                    ↓
-                                            showDiffAction() modifie context.diffAction
-                                                    ↓
-context.diffAction       → read back      → this.diffAction
+this.headerContext (référence stable)
+         ↓
+showDiffAction(this.headerContext) modifie context.diffAction
+         ↓
+La modification est immédiatement visible dans CodeEditorView
 ```
 
-`this.diffAction` n'est jamais utilisé directement pour appeler `.remove()` ou quoi que ce soit dans la classe. Son seul rôle c'est d'être injecté dans le prochain `buildContext()`, pour que la standalone ait la valeur à jour. C'est un aller-retour permanent entre la classe et les helpers via le context.
+`this.headerContext` est un objet persistant partagé entre la classe et les helpers de `headerActions.ts`. Les helpers mutent directement les propriétés (ex: `context.diffAction = ...`), ce qui élimine le besoin de snapshot/sync manuel (`buildContext()` / `updateFromContext()`) et garantit que l'état est toujours à jour.
 
 ---
 

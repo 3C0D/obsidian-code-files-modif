@@ -131,6 +131,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     initialConsoleOpen
   } = ctx;
 
+  let _closeTimer: ReturnType<typeof setTimeout> | null = null;
+
   /**
    * Main message listener function.
    * Processes all events sent by the iframe via window.parent.postMessage.
@@ -427,7 +429,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
            * from stdout/stderr have been processed before signaling the exit.
            */
           proc.on('close', (code) => {
-            setTimeout(() => {
+            _closeTimer = setTimeout(() => {
+              _closeTimer = null;
               const status = code === null ? 'Interrupted' : `code ${code}`;
               send('console-output', {
                 text: `\n[Process exited: ${status}]\n`
@@ -616,6 +619,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
      * Ensures we don't leave zombie background processes running.
      */
     cleanup: () => {
+      if (_closeTimer) clearTimeout(_closeTimer);
       const proc = activeProcesses.get(codeContext);
       if (proc) killProcessTree(proc);
       activeProcesses.delete(codeContext);
