@@ -53,13 +53,11 @@ export function addExtension(settings: Prettify<MyPluginSettings>, ext: string):
   }
   // Block native extensions
   if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
-    // console.warn(`code-files: cannot add "${ext}" - native Obsidian extension`);
     return false;
   }
 
   // Block already registered extensions
   if (getActiveExtensions(settings).includes(ext)) {
-    // console.warn(`code-files: cannot add "${ext}" - already registered`);
     return false;
   }
 

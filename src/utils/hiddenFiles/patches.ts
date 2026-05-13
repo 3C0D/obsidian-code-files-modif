@@ -30,7 +30,6 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 
   // Save originals before patching
   plugin._origReconcileDeletion = adapter.reconcileDeletion.bind(adapter);
-  plugin._origRename = adapter.rename.bind(adapter);
 
   // Patch reconcileDeletion with monkey-around
   const unpatchReconcile = around(adapter, {
@@ -166,7 +165,6 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
     unpatchRename();
     unpatchTrash();
     plugin._origReconcileDeletion = null;
-    plugin._origRename = null;
   };
 }
 

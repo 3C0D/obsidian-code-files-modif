@@ -170,7 +170,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] 
     items.push({
       title: 'Open in Monaco Editor',
       icon: 'file-code-corner',
-      action: async () => await openInMonacoLeaf(file, plugin, true, null, false, false)
+      action: () => openInMonacoLeaf(file, plugin, true, null, false, false)
     });
   }
 
@@ -237,8 +237,7 @@ function getFileItems(plugin: CodeFilesPlugin): MenuItem[] {
     items.push({
       title: 'Open in Monaco Editor',
       icon: 'file-code-corner',
-      action: async () =>
-        await openInMonacoLeaf(activeFile, plugin, false, null, false, false)
+      action: () => openInMonacoLeaf(activeFile, plugin, false, null, false, false)
     });
   }
 

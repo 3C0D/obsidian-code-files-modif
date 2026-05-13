@@ -21,13 +21,16 @@ import {
   setupExplorerBadges,
   cleanupExplorerBadges
 } from './utils/explorerUtils.ts';
-import { patchAdapter, patchRegisterExtensions } from './utils/hiddenFiles/index.ts';
+import {
+  patchAdapter,
+  patchRegisterExtensions,
+  decorateFolders
+} from './utils/hiddenFiles/index.ts';
 import {
   cleanStaleRevealedFiles,
   restoreRevealedFiles,
   syncAutoRevealedDotfiles
 } from './utils/hiddenFiles/sync.ts';
-import { decorateFolders } from './utils/hiddenFiles/index.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 import { revokeBlobUrlCache } from './editor/mountCodeEditor/buildBlobUrl.ts';
 
@@ -40,7 +43,6 @@ export default class CodeFilesPlugin extends Plugin {
   _lastHotkeys?: string;
   _origReconcileDeletion: ((realPath: string, path: string) => Promise<void>) | null =
     null;
-  _origRename: ((src: string, dest: string) => Promise<void>) | null = null;
 
   async onload(): Promise<void> {
     await loadSettings(this);

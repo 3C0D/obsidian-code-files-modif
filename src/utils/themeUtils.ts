@@ -6,6 +6,7 @@ import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 import { BUILTIN_THEMES } from '../types/index.ts';
+import { onCssChange } from './explorerUtils.ts';
 
 let _themes: string[] = [];
 
@@ -93,6 +94,5 @@ export function registerThemeChangeHandler(
       codeEditor?.send('change-theme', params);
     }
   };
-  plugin.app.workspace.on('css-change', handler);
-  return () => plugin.app.workspace.off('css-change', handler);
+  return onCssChange(plugin.app, handler);
 }
