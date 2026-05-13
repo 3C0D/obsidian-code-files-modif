@@ -7,14 +7,15 @@ import { AbstractInputSuggest } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
 
-/** Reusable autocomplete suggester for registered extensions, attached to a text input. */
+/**
+ * Reusable autocomplete suggester for registered extensions, attached to a text input.
+ *
+ * @param plugin - The plugin instance
+ * @param inputEl - The text input element to attach the suggester to
+ * @param onChoose - Callback invoked when a suggestion is selected. Receives the chosen extension (without leading dot).
+ * @param getExtensions - Optional function to provide the list of extensions. Defaults to getActiveExtensions().
+ */
 export class ExtensionSuggest extends AbstractInputSuggest<string> {
-  /**
-   * @param plugin - The plugin instance
-   * @param inputEl - The text input element to attach the suggester to
-   * @param onChoose - Callback invoked when a suggestion is selected. Receives the chosen extension (without leading dot).
-   * @param getExtensions - Optional function to provide the list of extensions. Defaults to getActiveExtensions().
-   */
   constructor(
     plugin: CodeFilesPlugin,
     inputEl: HTMLInputElement,
@@ -44,8 +45,8 @@ export class ExtensionSuggest extends AbstractInputSuggest<string> {
   }
 
   selectSuggestion(ext: string): void {
+    this.setValue(`.${ext}`);
     this.onChoose(ext);
-    this.setValue(ext);
     this.close();
   }
 }

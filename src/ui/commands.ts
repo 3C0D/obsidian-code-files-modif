@@ -1,7 +1,8 @@
 /**
  * Registers all plugin commands with Obsidian.
  * Commands include: create code file, open code block in Monaco, open current file in Monaco,
- * edit CSS snippet, rename file (name.ext), open editor settings, and open hidden files.
+ * edit CSS snippet, rename file (name.ext), open editor settings, open hidden files,
+ * and browse external config files (.obsidian/).
  */
 import type CodeFilesPlugin from '../main.ts';
 import { CodeEditorView } from '../editor/codeEditorView/index.ts';
@@ -16,6 +17,11 @@ import { ExternalFileBrowserModal } from '../modals/chooseExternalFileModal.ts';
 import { broadcastOptions, broadcastEditorConfig } from '../utils/broadcast.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 
+/**
+ * Registers all plugin commands with Obsidian.
+ *
+ * @param plugin - The plugin instance used to register commands and access app APIs
+ */
 export function registerCommands(plugin: CodeFilesPlugin): void {
   plugin.addCommand({
     id: 'create',
@@ -71,9 +77,8 @@ export function registerCommands(plugin: CodeFilesPlugin): void {
       const view = plugin.app.workspace.getActiveViewOfType(CodeEditorView);
       if (!view?.file) return false;
       if (!checking) {
-        // onConfigApplied broadcasts to
-        // all matching iframes because
-        // the palette isn't tied to one.
+        // Callbacks broadcast to all open Monaco views,
+        // since this command isn't scoped to a single editor instance.
         new EditorSettingsModal(
           plugin,
           view.file.extension,

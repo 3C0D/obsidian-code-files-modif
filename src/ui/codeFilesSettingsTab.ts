@@ -68,8 +68,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
   }
 
   /**
-   * Creates the file extensions section in the settings tab.
-   * 
+   * Renders the file extensions section in the settings tab.
+   *
    * @param containerEl HTMLElement where the section will be rendered
    */
   private renderExtensionsSection(containerEl: HTMLElement): void {
@@ -125,23 +125,25 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         text
           .setPlaceholder('10')
           .setValue(String(this.plugin.settings.maxFileSize))
-          .onChange(async (value) => {
-            const num = parseFloat(value);
-            if (!isNaN(num) && num > 0 && num <= 100) {
-              this.plugin.settings.maxFileSize = num;
+          .onChange(async (v) => {
+            const value = parseInt(v);
+            if (!isNaN(value) && value >= 1 && value <= 100) {
+              this.plugin.settings.maxFileSize = value;
               await this.plugin.saveSettings();
+            } else {
+              text.setValue(String(this.plugin.settings.maxFileSize));
             }
           })
       );
   }
 
   /**
-   * Creates the editor config section in the settings tab.
+   * Renders the editor config section in the settings tab.
    *
    * @param containerEl HTMLElement where the section will be rendered
    */
   private renderEditorConfigSection(containerEl: HTMLElement): void {
-    // -- Formatter Config -------------------------------------------------
+    // -- Editor Config ----------------------------------------------------
     containerEl.createEl('h3', { text: 'Editor Config' });
     containerEl.createEl('p', {
       text: 'Per-extension editor options (tabSize, insertSpaces, formatOnSave, formatOnType, and any Monaco IEditorOptions).',
@@ -223,6 +225,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
      * @param ext - The extension to switch to
      */
     const switchScope = async (global: boolean, ext?: string): Promise<void> => {
+      if (!global && !ext) return;
       isGlobal = global;
       if (!global && ext) {
         selectedExt = ext;
@@ -294,7 +297,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
   }
 
   /**
-   * Creates the Monaco hotkey override section in the settings tab.
+   * Renders the Monaco hotkey override section in the settings tab.
    *
    * @param containerEl HTMLElement where the section will be rendered
    */

@@ -5,14 +5,13 @@
  * - Open in Monaco, rename file (name.ext) (files)
  * - Edit code block in Monaco (editor, when cursor is inside a code fence)
  */
-import { TFile, TFolder } from 'obsidian';
+import { TFile, TFolder, Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { CreateCodeFileModal } from '../modals/createCodeFileModal.ts';
 import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { RevealHiddenFilesModal } from '../modals/revealHiddenFilesModal.ts';
-import { Notice } from 'obsidian';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
 import type { MenuItem } from '../types/index.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
@@ -55,7 +54,7 @@ export function registerContextMenus(plugin: CodeFilesPlugin): void {
         return;
       }
 
-      // File: show Code Files submenu in explorer, Code Files submenu elsewhere, nothing on tab header
+      // File: full submenu (register/unregister) in explorer, generic submenu elsewhere, nothing on tab header
       if (abstractFile instanceof TFile) {
         if (source === 'file-explorer-context-menu') {
           const items = getFileExplorerItems(plugin, abstractFile);
@@ -166,9 +165,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] 
   const isRegistered = activeExts.includes(ext);
   const isNative = OBSIDIAN_NATIVE_EXTENSIONS.includes(ext);
 
-  // Show "Open in Monaco Editor" if:
-  // - File has no extension (LICENSE, README, etc.), OR
-  // - Extension is not registered AND not native
+  // Show "Open in Monaco Editor" only if extension is not registered
   if (ext && !isRegistered) {
     items.push({
       title: 'Open in Monaco Editor',
@@ -221,8 +218,7 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] 
   return items;
 }
 
-/** Builds the submenu items shown in the markdown editor-menu.
- */
+/** Builds the submenu items shown in the markdown editor and non-explorer file menus. */
 function getFileItems(plugin: CodeFilesPlugin): MenuItem[] {
   const activeFile = plugin.app.workspace.getActiveFile();
   const isCodeEditor = !!plugin.app.workspace.getActiveViewOfType(CodeEditorView);
