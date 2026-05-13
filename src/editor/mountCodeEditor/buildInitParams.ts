@@ -43,7 +43,7 @@ export async function buildInitParams(
   const finalDeleteFileHotkey =
     parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
   // Console hotkey is direct (no Obsidian fallback)
-  const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkeyOverride) ?? {
+  const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkey) ?? {
     modifiers: ['Mod'],
     key: 'j'
   };

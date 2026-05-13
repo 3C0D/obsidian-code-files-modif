@@ -156,7 +156,7 @@ export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
     plugin.settings.deleteFileHotkeyOverride
   );
   // Console hotkey is direct (no Obsidian fallback)
-  const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkeyOverride) ?? {
+  const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkey) ?? {
     modifiers: ['Mod'],
     key: 'j'
   };

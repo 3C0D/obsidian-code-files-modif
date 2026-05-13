@@ -151,7 +151,7 @@ const finalCommandPaletteHotkey = parseHotkeyOverride(
 ) ?? commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' };
 
 // consoleHotkey: no Obsidian fallback
-const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkeyOverride)
+const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkey)
     ?? { modifiers: ['Mod'], key: 'j' };
 ```
 

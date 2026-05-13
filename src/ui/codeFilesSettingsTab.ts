@@ -48,7 +48,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
 
-    // Clean up previous Monaco editor if it exists
+    // Clean up previous Monaco editor (integrated in this settings panel) if it exists
     if (this.codeEditor) {
       this.codeEditor.destroy();
       this.codeEditor = null;
@@ -67,6 +67,11 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     this.renderHiddenFilesSection(containerEl);
   }
 
+  /**
+   * Creates the file extensions section in the settings tab.
+   * 
+   * @param containerEl HTMLElement where the section will be rendered
+   */
   private renderExtensionsSection(containerEl: HTMLElement): void {
     // -- File Extensions --------------------------------------------------
     containerEl.createEl('h3', { text: 'File Extensions' });
@@ -130,6 +135,11 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       );
   }
 
+  /**
+   * Creates the editor config section in the settings tab.
+   *
+   * @param containerEl HTMLElement where the section will be rendered
+   */
   private renderEditorConfigSection(containerEl: HTMLElement): void {
     // -- Formatter Config -------------------------------------------------
     containerEl.createEl('h3', { text: 'Editor Config' });
@@ -188,6 +198,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       }
     });
 
+    /**
+     * Debounced function to save editor configuration.
+     */
     const debouncedSave = debounce(
       async () => {
         if (!this.codeEditor) return;
@@ -203,6 +216,12 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       true
     );
 
+    /**
+     * Switches the editor scope between global and specific extension.
+     *
+     * @param global - Whether to switch to global scope
+     * @param ext - The extension to switch to
+     */
     const switchScope = async (global: boolean, ext?: string): Promise<void> => {
       isGlobal = global;
       if (!global && ext) {
@@ -250,7 +269,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       extInput.inputEl.blur();
     };
 
-    // Only suggest formattable extensions
+    // On extInput. Only suggest formattable extensions
     new ExtensionSuggest(this.plugin, extInput.inputEl, showExt, () => formattableExts);
 
     // Initialize Monaco editor
@@ -274,11 +293,16 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     })();
   }
 
+  /**
+   * Creates the Monaco hotkey override section in the settings tab.
+   *
+   * @param containerEl HTMLElement where the section will be rendered
+   */
   private renderHotkeySection(containerEl: HTMLElement): void {
     // -- Monaco Hotkey Overrides -----------------------------------------
     containerEl.createEl('h3', { text: 'Monaco Hotkey Overrides' });
     containerEl.createEl('p', {
-      text: 'Override Obsidian shortcuts for Monaco editor. Leave empty to use Obsidian defaults (will autofill). Format: Ctrl+P, Ctrl + P, or Ctrl P.',
+      text: 'Override Obsidian shortcuts for Monaco editor. Leave empty to use Obsidian defaults (will autofill). Format: Ctrl+P (Ctrl on Windows/Linux, Cmd on Mac). Spaces around + are optional.',
       attr: { style: 'color: var(--text-muted); font-size: 0.9em; margin-bottom: 8px;' }
     });
 
@@ -303,6 +327,12 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     this.createConsoleHotkeySetting(containerEl);
   }
 
+  /**
+   * Renders the Hidden Files settings section: auto-reveal toggle,
+   * excluded folders, and excluded extensions.
+   *
+   * @param containerEl HTMLElement where the section will be rendered
+   */
   private renderHiddenFilesSection(containerEl: HTMLElement): void {
     // -- Hidden Files -----------------------------------------------------
     containerEl.createEl('h3', { text: 'Hidden Files' });
@@ -333,7 +363,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Excluded folders')
-      .setDesc('Hidden folders to never show (comma-separated)')
+      .setDesc('Folders to always keep hidden, even when auto-reveal is active (comma-separated)')
       .addText((text) =>
         text
           .setPlaceholder('.git, node_modules, .trash')
@@ -344,6 +374,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
               .split(',')
               .map((s) => s.trim())
               .filter((s) => s.length > 0);
+
+            // Note: removed folders are not re-revealed automatically; user manages visibility manually
             const added = next.filter((f) => !prev.has(f));
             this.plugin.settings.excludedFolders = next;
             await this.plugin.saveSettings();
@@ -353,7 +385,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Excluded extensions')
-      .setDesc('Hidden file extensions to exclude (without dot, comma-separated)')
+      .setDesc('File extensions to always keep hidden, even when registered (without dot, comma-separated)')
       .addText((text) =>
         text
           .setPlaceholder('tmp, log, cache')
@@ -369,8 +401,15 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       );
   }
 
+  /**
+   * Creates a hotkey setting for opening the Monaco console.
+   * This hotkey is assigned directly to Monaco (no underlying Obsidian command),
+   * with Mod+J as default.
+   *
+   * @param containerEl HTMLElement where the setting will be rendered
+   */
   private createConsoleHotkeySetting(containerEl: HTMLElement): void {
-    const currentOverride = this.plugin.settings.consoleHotkeyOverride;
+    const currentOverride = this.plugin.settings.consoleHotkey;
     const defaultHotkey = { modifiers: ['Mod'], key: 'j' };
 
     new Setting(containerEl)
@@ -379,11 +418,12 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         'Direct Monaco hotkey for opening the console (not linked to Obsidian hotkeys)'
       )
       .addText((text) => {
+        // Convert stored internal format (Mod+J) to platform-specific display (Ctrl+J / Cmd+J)
         const displayOverride = currentOverride
           ? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
           : '';
         text.setValue(displayOverride || formatHotkey(defaultHotkey, true));
-        text.setPlaceholder('Ctrl+J, Ctrl + J, or Ctrl J');
+        text.setPlaceholder('Ctrl+J or Cmd+J (Mac)');
         text.inputEl.style.width = '200px';
 
         text.inputEl.addEventListener('blur', async () => {
@@ -391,7 +431,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
           // If empty, reset to default
           if (!value) {
-            this.plugin.settings.consoleHotkeyOverride = '';
+            this.plugin.settings.consoleHotkey = '';
             text.setValue(formatHotkey(defaultHotkey, true));
             await this.plugin.saveSettings();
             return;
@@ -401,7 +441,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
           const parsed = parseHotkeyOverride(value);
           if (!parsed) {
             // Invalid format, reset to default
-            this.plugin.settings.consoleHotkeyOverride = '';
+            this.plugin.settings.consoleHotkey = '';
             text.setValue(formatHotkey(defaultHotkey, true));
             await this.plugin.saveSettings();
             return;
@@ -409,7 +449,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
           // Format with + and no spaces
           const formatted = formatHotkey(parsed);
-          this.plugin.settings.consoleHotkeyOverride = formatted;
+          this.plugin.settings.consoleHotkey = formatted;
           // Display with platform-specific modifier
           text.setValue(formatHotkey(parsed, true));
           await this.plugin.saveSettings();
@@ -417,6 +457,14 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       });
   }
 
+  /**
+   * Creates a hotkey override setting for a given command ID
+   *
+   * @param containerEl HTMLElement where the hotkey override setting will be rendered
+   * @param name Name of the hotkey override setting
+   * @param commandId Command ID to override
+   * @param overrideKey Settings key identifying which command's override to update
+   */
   private createHotkeyOverrideSetting(
     containerEl: HTMLElement,
     name: string,
@@ -426,6 +474,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       | 'settingsHotkeyOverride'
       | 'deleteFileHotkeyOverride'
   ): void {
+    // Get the default Obsidian hotkey for the given command
     const obsidianHotkey = getObsidianHotkey(this.plugin.app, commandId);
     // Display Obsidian hotkey with platform-specific modifier names (Ctrl on Windows, Cmd on Mac)
     const defaultStr = obsidianHotkey ? formatHotkey(obsidianHotkey, true) : '';
@@ -435,11 +484,12 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       .setName(name)
       .setDesc(`Current Obsidian: ${defaultStr || 'none'}`)
       .addText((text) => {
+        // Convert stored internal format (Mod+P) to platform-specific display (Ctrl+P / Cmd+P)
         const displayOverride = currentOverride
           ? formatHotkey(parseHotkeyOverride(currentOverride)!, true)
           : '';
         text.setValue(displayOverride || `${defaultStr} (Obsidian default)`);
-        text.setPlaceholder('Ctrl+P, Ctrl + P, or Ctrl P');
+        text.setPlaceholder('Ctrl+P or Cmd+P (Mac)');
         text.inputEl.style.width = '200px';
 
         text.inputEl.addEventListener('blur', async () => {

@@ -63,7 +63,7 @@ export interface MyPluginSettings {
   /** Override for delete file hotkey (empty string = use Obsidian default) */
   deleteFileHotkeyOverride: string;
   /** Override for console hotkey (empty string = use default Ctrl+J) */
-  consoleHotkeyOverride: string;
+  consoleHotkey: string;
   /** Hidden folders to never show */
   excludedFolders: string[];
 
