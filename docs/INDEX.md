@@ -222,6 +222,16 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 - **Key for:** Understanding badge behavior, hidden file management, and system patches
 
+### [explorer-badges-system.md](explorer-badges-system.md)
+
+**Role:** Extension badges system (dotfiles and unregistered files) in the file explorer
+
+- Automatic uppercase extension badges for dotfiles (.ENV, .GITIGNORE)
+- "Unregistered" visual indicators for file types not natively supported by Obsidian
+- O(1) performance via targeted MutationObserver updates
+- Architecture layers: `applyBadge`, `scanAll`, and `reattachObservers`
+- **Key for:** Understanding explorer visual indicators and performance-optimized DOM monitoring
+
 ---
 
 ## 🖥️ Console System

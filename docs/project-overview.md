@@ -62,7 +62,7 @@
     - Regular files with unregistered extensions (excluding native Obsidian extensions like `.md`, `.canvas`) show a muted yellow "unregistered" badge
     - Native Obsidian files (`.md`, `.canvas`) show no badge
 
-- Badges update automatically when extensions are registered or unregistered
+- Badges update automatically when extensions are registered or unregistered. See [explorer-badges-system.md](explorer-badges-system.md) for details.
 
 ### 7. **Dynamic Extension Management**
 
