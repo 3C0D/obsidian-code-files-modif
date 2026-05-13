@@ -212,6 +212,7 @@ For safety, the following are excluded from scanning:
 - Databases: `db`, `sqlite`, `mdb`
 - Binary Office formats: `doc`, `xls`, `ppt`
 - Fonts: `ttf`, `otf`, `woff`, `woff2`, `eot`
+- **Symbolic Links (Symlinks)**: all symlinks (files and folders) are excluded to prevent excessive disk I/O and potential recursive loops.
 
 ---
 

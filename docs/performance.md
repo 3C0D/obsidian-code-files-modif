@@ -26,3 +26,10 @@ The plugin adds a visual "eye" badge to folders containing revealed hidden files
 The file explorer badges need to stay up to date when files are created, deleted, or renamed.
 
 *   **Debounced Execution**: Attaching synchronous DOM updates to every `vault.on('create/delete/rename')` event can cause severe UI lag during bulk operations (e.g., a Git pull or large file duplication). The `decorateFolders` function is now wrapped in a `400ms` debounce in `main.ts`. If 100 files are created at once, the DOM is only updated once after the operation settles.
+
+## 5. Symbolic Link Filtering (Safety)
+
+To prevent performance degradation and potential recursive loops:
+
+*   **Global Exclusion**: All symbolic links (both files and folders) are filtered out during filesystem scans in `ChooseHiddenFileModal`, `ExternalFileBrowserModal`, and the hidden files discovery logic (`scanDotEntries`). 
+*   **Rationale**: Symlinks can point to large external directories or create circular references that would otherwise saturate the event loop and crash the plugin or Obsidian during vault-wide scans.
