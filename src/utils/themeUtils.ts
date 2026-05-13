@@ -24,9 +24,9 @@ export const getThemes = (): string[] => _themes;
  *
  * @param plugin
  * @param theme  - Theme identifier as configured in plugin settings.
- * @returns Object with:
- *          - `theme`: sanitized theme name ready for Monaco.
- *          - `themeData?`: JSON-stringified theme (only for custom themes)
+ * @returns A Promise resolving to an object with:
+ *          - `theme`: The resolved and sanitized Monaco theme ID.
+ *          - `themeData`: The optional JSON definition string (only for custom themes).
  */
 export const resolveThemeParams = async (
   plugin: CodeFilesPlugin,

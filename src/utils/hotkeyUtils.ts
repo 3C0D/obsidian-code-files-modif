@@ -89,8 +89,11 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
     } else if (lower === 'alt') {
       modifiers.push('Alt');
     } else {
-      // Last non-modifier part is assumed to be the key
-      key = part.length === 1 ? part.toUpperCase() : part;
+      // Single char → uppercase; else named key → capitalize first letter ("enter" → "Enter")
+      key =
+        part.length === 1
+          ? part.toUpperCase()
+          : part.charAt(0).toUpperCase() + part.slice(1);
     }
   }
 

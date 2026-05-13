@@ -9,27 +9,24 @@ import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { resolveThemeParams } from '../utils/themeUtils.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
-import type { CodeEditorHandle, Prettify } from '../types/index.ts';
+import type { CodeEditorHandle, Prettify, FenceData } from '../types/index.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
 
-/** Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed. */
+/**
+ * Modal that provides a full-featured code editor for editing the content of a code fence. It is opened via the "Edit code block content" action in the editor context menu when right-clicking inside a code fence. The modal initializes a Monaco Editor instance with the content of the code fence and saves changes back to the note when closed.
+ *
+ * @param plugin - The plugin instance
+ * @param fenceData - The data of the code fence to edit
+ * @param onSave - Callback invoked on modal close with the edited content. Use this to write changes back to the note.
+ */
 export class FenceEditModal extends Modal {
   private codeEditor!: Prettify<CodeEditorHandle>;
 
-  /**
-   * @param plugin - The plugin instance
-   * @param code - The initial code fence content to edit
-   * @param language - Monaco language ID (e.g., 'javascript', 'python')
-   * @param langKey - Raw language key from the fence (e.g., 'js', 'py')
-   * @param onSave - Callback invoked on modal close with the edited content. Use this to write changes back to the note.
-   */
   private constructor(
     private plugin: CodeFilesPlugin,
-    private code: string,
-    private language: string,
-    private langKey: string,
+    private fenceData: FenceData,
     private onSave: (changedCode: string) => void
   ) {
     super(plugin.app);
@@ -38,7 +35,7 @@ export class FenceEditModal extends Modal {
   async onOpen(): Promise<void> {
     super.onOpen();
 
-    // ── Extension badge + gear in the title bar ────────────
+    // Extension badge + gear in the title bar
     this.titleEl.addClass('code-files-fence-header');
 
     // the original style of the badge need a modification there to align on the right side
@@ -46,7 +43,7 @@ export class FenceEditModal extends Modal {
       cls: 'code-files-fence-badge-container'
     });
     const badgeEl = createEl('span', {
-      text: `.${this.langKey}`,
+      text: `.${this.fenceData.langKey}`,
       cls: 'code-files-ext-badge code-files-fence-badge'
     });
     badgeContainer.appendChild(badgeEl);
@@ -67,7 +64,7 @@ export class FenceEditModal extends Modal {
     gearEl.addEventListener('click', () => {
       new EditorSettingsModal(
         this.plugin,
-        this.langKey,
+        this.fenceData.langKey,
         () => broadcastOptions(this.plugin),
         (config) => this.codeEditor?.send('change-editor-config', { config })
       ).open();
@@ -90,9 +87,9 @@ export class FenceEditModal extends Modal {
 
     this.codeEditor = await mountCodeEditor({
       plugin: this.plugin,
-      language: this.language,
-      initialValue: this.code,
-      codeContext: `modal-editor.${this.langKey}`,
+      language: this.fenceData.language,
+      initialValue: this.fenceData.content,
+      codeContext: `modal-editor.${this.fenceData.langKey}`,
       containerEl: this.contentEl,
       // onOpenEditorConfig
       onOpenEditorConfig: (ext) => {
@@ -137,7 +134,7 @@ export class FenceEditModal extends Modal {
     super.onClose();
     if (this.codeEditor) {
       const current = this.codeEditor.getValue();
-      if (current !== this.code) this.onSave(current);
+      if (current !== this.fenceData.content) this.onSave(current);
       this.codeEditor.destroy();
     }
   }
@@ -154,14 +151,8 @@ export class FenceEditModal extends Modal {
       return;
     }
 
-    const fenceData = context.getFenceData();
-
-    new FenceEditModal(
-      plugin,
-      fenceData.content,
-      fenceData.language,
-      fenceData.langKey,
-      (value) => context.replaceFenceContent(value)
+    new FenceEditModal(plugin, context.getFenceData(), (value) =>
+      context!.replaceFenceContent(value)
     ).open();
   }
 }

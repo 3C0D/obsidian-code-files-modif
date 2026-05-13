@@ -102,6 +102,18 @@ export interface HotkeyConfig {
 }
 
 /**
+ * Data extracted from a code fence in the editor.
+ */
+export interface FenceData {
+  /** The content of the code block */
+  content: string;
+  /** Resolved Monaco language ID */
+  language: string;
+  /** Raw language key from the fence (e.g. 'js', 'ts') */
+  langKey: string;
+}
+
+/**
  * Parameters used to initialize the Monaco editor iframe.
  * Sent via postMessage('init', ...) to the iframe.
  * @property {string} context - Unique identifier for this editor instance (file path or modal ID)

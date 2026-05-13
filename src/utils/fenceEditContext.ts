@@ -6,6 +6,7 @@
 import type { Editor } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getLanguage } from './getLanguage.ts';
+import type { FenceData } from '../types/index.ts';
 
 /**
  * Encapsulates the position and content of a code
@@ -66,7 +67,7 @@ export class FenceEditContext {
    *
    * @returns An object containing the fence body content, language ID, and raw language key.
    **/
-  getFenceData(): { content: string; language: string; langKey: string } {
+  getFenceData(): FenceData {
     let editorContent = '';
     for (let i = this.start + 1; i < this.end; i++) {
       editorContent += `${this.editor.getLine(i)}\n`;
@@ -76,10 +77,8 @@ export class FenceEditContext {
     const content = editorContent.slice(0, editorContent.length - 1);
     // Extract language name: remove ```, trim, take first word before space (ignores metadata like ```js title="file")
     const langKey = this.editor.getLine(this.start).slice(3).trim().split(' ')[0];
-    // Convert to Monaco language ID
-    const language = getLanguage(langKey);
-
-    return { content, language, langKey };
+    const language = langKey ? getLanguage(langKey) : 'plaintext';
+    return { content, language, langKey: langKey || 'plaintext' };
   }
 
   /**

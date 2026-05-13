@@ -23,6 +23,7 @@ export function patchMenuOverlay(plugin: CodeFilesPlugin): void {
         if (view.querySelector(`.${OVERLAY_CLASS}`)) return;
         const overlay = document.createElement('div');
         overlay.className = OVERLAY_CLASS;
+        // inset:0 is used to make the overlay cover the entire view
         overlay.style.cssText = 'position:absolute;inset:0;z-index:9999;';
         view.style.position = 'relative';
         view.appendChild(overlay);
