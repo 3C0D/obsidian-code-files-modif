@@ -1,3 +1,7 @@
+/**
+ * Synchronization utilities for hidden files.
+ * Manages auto-reveal of dotfiles, cleaning stale entries, and batch operations.
+ */
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter } from './state.ts';
@@ -6,6 +10,10 @@ import { getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
 import { revealFiles, unrevealFiles, revealFolderContents } from './operations.ts';
+import { reconcileItem } from './reconcile.ts';
+
+/** Yields control to the event loop to prevent UI blocking during long operations. */
+const yieldToEventLoop = (): Promise<void> => new Promise<void>((r) => setTimeout(r, 0));
 
 /**
  * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
@@ -45,7 +53,7 @@ export async function syncAutoRevealedDotfiles(
   const allFolders = plugin.app.vault.getAllFolders();
   for (let i = 0; i < allFolders.length; i++) {
     // Yield every 30 folders to avoid saturating the event loop on startup
-    if (i > 0 && i % 30 === 0) await new Promise<void>((r) => setTimeout(r, 0));
+    if (i > 0 && i % 30 === 0) await yieldToEventLoop();
     
     const folder = allFolders[i];
     const items = await scanDotEntries(plugin, folder.path);
@@ -79,7 +87,7 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
   const allFolders = plugin.app.vault.getAllFolders();
   for (let i = 0; i < allFolders.length; i++) {
     // Yield every 30 folders to avoid saturating the event loop on startup
-    if (i > 0 && i % 30 === 0) await new Promise<void>((r) => setTimeout(r, 0));
+    if (i > 0 && i % 30 === 0) await yieldToEventLoop();
     
     const folder = allFolders[i];
     const items = await scanDotEntries(plugin, folder.path);
@@ -117,25 +125,10 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
         const stat = await adapter.stat(itemPath);
         if (!stat) continue;
 
-        // Manually trigger Obsidian's internal reconciliation to add the item back to the UI.
-        // Pattern: use reconcileFileInternal if available (Desktop),
-        // otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
+        await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
+        
         if (stat.type === 'folder') {
-          await adapter.reconcileFolderCreation(realPath, itemPath);
           await revealFolderContents(plugin, adapter, itemPath);
-        } else {
-          if (adapter.reconcileFileInternal) {
-            await adapter.reconcileFileInternal(realPath, itemPath);
-          } else if (
-            adapter.fs?.stat &&
-            adapter.reconcileFileChanged &&
-            adapter.getFullRealPath
-          ) {
-            const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
-            if (fsStat.type === 'file') {
-              await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
-            }
-          }
         }
       } catch {
         // File or folder no longer exists or access denied

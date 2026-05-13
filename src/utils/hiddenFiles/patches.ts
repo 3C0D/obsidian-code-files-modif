@@ -1,3 +1,7 @@
+/**
+ * Monkey patches for Obsidian's file system adapter.
+ * Intercepts file operations to control visibility of hidden files and folders.
+ */
 import { type DataAdapterEx } from 'obsidian-typings';
 import { around } from 'monkey-around';
 import { type Plugin, type TAbstractFile } from 'obsidian';
@@ -110,7 +114,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 
         if (changed) {
           void plugin.saveSettings();
-          void decorateFolders(plugin);
+          decorateFolders(plugin);
         }
 
         return result;
@@ -146,7 +150,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
               }
             }
             void plugin.saveSettings();
-            void decorateFolders(plugin);
+            decorateFolders(plugin);
           }
 
           return result;
@@ -187,7 +191,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
         );
         const adapter = getAdapter(plugin);
         for (const file of plugin.app.vault.getFiles()) {
-          if (!extensions.includes(getExtension(file.name) ?? '')) continue;
+          if (!extensions.includes(getExtension(file.name))) continue;
           if (file.extension) continue; // Only dotfiles
           if (revealedPaths.has(file.path)) continue;
           const orig =

@@ -1,3 +1,7 @@
+/**
+ * File system scanning utilities for hidden files.
+ * Detects dotfiles and dotfolders, applies exclusions and size limits.
+ */
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import type { HiddenItem } from '../../types/index.ts';

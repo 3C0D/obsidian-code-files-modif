@@ -71,15 +71,15 @@ export default class CodeFilesPlugin extends Plugin {
       if (this.settings.isAutoRevealRegisteredDotfile) {
         await syncAutoRevealedDotfiles(this, getActiveExtensions(this.settings));
       }
-      await decorateFolders(this);
+      decorateFolders(this);
     });
 
     setupExplorerBadges(this);
 
     this.register(patchAdapter(this));
     this.register(patchRegisterExtensions(this));
-    
-    const debouncedDecorateFolders = debounce(() => void decorateFolders(this), 400);
+
+    const debouncedDecorateFolders = debounce(() => decorateFolders(this), 400);
     this.registerEvent(this.app.vault.on('create', debouncedDecorateFolders));
     this.registerEvent(this.app.vault.on('delete', debouncedDecorateFolders));
     this.registerEvent(this.app.vault.on('rename', debouncedDecorateFolders));

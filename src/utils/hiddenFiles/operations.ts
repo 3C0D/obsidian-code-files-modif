@@ -1,3 +1,7 @@
+/**
+ * Operations for revealing and unrevealing hidden files and folders.
+ * Handles persistence, adapter patching, and cross-platform path resolution.
+ */
 import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, setBypassPatch } from './state.ts';
@@ -5,12 +9,14 @@ import { decorateFolders } from './badge.ts';
 import { viewType, type DataAdapterWithInternal } from '../../types/index.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
+import { reconcileItem } from './reconcile.ts';
 
 /**
  * Reveals all non-hidden (non-dot) children of a folder, recursively.
  * Called automatically when a dot-folder is revealed to make its contents visible in the vault.
  * Does not persist to settings — folder persistence is handled by the parent call.
  *
+ * @internal
  * @param plugin - The plugin instance.
  * @param adapter - The data adapter.
  * @param folderPath - The normalized path of the folder whose contents to reveal.
@@ -35,22 +41,9 @@ export async function revealFolderContents(
     const isFolder = listed.folders.some((f) => normalizePath(f) === childPath);
     const realPath = getRealPathSafe(adapter, childPath);
     try {
+      await reconcileItem(adapter, childPath, realPath, isFolder);
       if (isFolder) {
-        await adapter.reconcileFolderCreation(realPath, childPath);
-        await revealFolderContents(plugin, adapter, childPath); // recurse
-      } else {
-        if (adapter.reconcileFileInternal) {
-          await adapter.reconcileFileInternal(realPath, childPath);
-        } else if (
-          adapter.fs?.stat &&
-          adapter.reconcileFileChanged &&
-          adapter.getFullRealPath
-        ) {
-          const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
-          if (fsStat.type === 'file') {
-            await adapter.reconcileFileChanged(realPath, childPath, fsStat);
-          }
-        }
+        await revealFolderContents(plugin, adapter, childPath);
       }
     } catch (e) {
       console.error(`revealFolderContents: error revealing ${childPath}:`, e);
@@ -86,26 +79,10 @@ export async function revealFiles(
       if (!stat) continue;
 
       const realPath = getRealPathSafe(adapter, itemPath);
+      await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
 
-      // Force Obsidian to "see" and display the item.
-      // Pattern: use reconcileFileInternal if available (Desktop),
-      // otherwise fallback to reconcileFileChanged via adapter.fs (Mobile).
       if (stat.type === 'folder') {
-        await adapter.reconcileFolderCreation(realPath, itemPath);
         await revealFolderContents(plugin, adapter, itemPath);
-      } else {
-        if (adapter.reconcileFileInternal) {
-          await adapter.reconcileFileInternal(realPath, itemPath);
-        } else if (
-          adapter.fs?.stat &&
-          adapter.reconcileFileChanged &&
-          adapter.getFullRealPath
-        ) {
-          const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
-          if (fsStat.type === 'file') {
-            await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
-          }
-        }
       }
     } catch (e) {
       console.error(`Reveal error ${itemPath}:`, e);
@@ -124,8 +101,7 @@ export async function revealFiles(
 
 /**
  * Hides previously revealed hidden files from the Obsidian UI.
- * getRealPath() is a FileSystemAdapter method (Desktop). On Mobile,
- * this function may have limited behavior depending on the adapter implementation.
+ * Uses getRealPathSafe which falls back to the original path on Mobile, making this function fully cross-platform.
  * If temporary is true, only removes the file from the vault index without
  * persisting any changes to settings, decorating folders, or showing a notice.
  * Use this for files revealed transiently (e.g. opened via ChooseHiddenFileModal).
@@ -229,8 +205,7 @@ export async function cleanupTemporaryReveal(
     if (stillOpen) return;
 
     // External files (configDir) should never be unrevealed, only removed from tracking
-    // vault.configDir is always defined in the Obsidian API — fallback is purely defensive
-    const configDir = plugin.app.vault.configDir || '.obsidian';
+    const configDir = plugin.app.vault.configDir;
     const isExternalFile = filePath.startsWith(configDir + '/');
 
     if (!isExternalFile) {

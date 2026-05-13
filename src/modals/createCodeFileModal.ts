@@ -25,6 +25,7 @@ import {
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/index.ts';
 import { confirmation } from './confirmationModal.ts';
+import { reconcileItem } from '../utils/hiddenFiles/reconcile.ts';
 
 /** Modal for creating a new code file */
 export class CreateCodeFileModal extends Modal {
@@ -176,7 +177,7 @@ export class CreateCodeFileModal extends Modal {
 
     if (await adapter.exists(newPath)) {
       if (basename.startsWith('.') && !this.app.vault.getAbstractFileByPath(newPath)) {
-        await adapter.reconcileFileInternal?.(getRealPathSafe(adapter, newPath), newPath);
+        await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath), false);
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
       const existingFile = this.app.vault.getAbstractFileByPath(newPath);
@@ -193,7 +194,7 @@ export class CreateCodeFileModal extends Modal {
     try {
       if (basename.startsWith('.')) {
         await adapter.write(newPath, '');
-        await adapter.reconcileFileInternal?.(getRealPathSafe(adapter, newPath), newPath);
+        await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath), false);
         await new Promise((resolve) => setTimeout(resolve, 50));
         newFile = this.app.vault.getFileByPath(newPath);
       } else {

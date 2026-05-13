@@ -1,3 +1,7 @@
+/**
+ * Visual indicators for hidden files functionality.
+ * Adds eye badges to folders containing manually revealed dotfiles in the file explorer.
+ */
 import { setIcon } from 'obsidian';
 import { type FileExplorerView, type FolderTreeItem } from 'obsidian-typings';
 import type CodeFilesPlugin from '../../main.ts';
@@ -5,9 +9,8 @@ import type CodeFilesPlugin from '../../main.ts';
 /**
  * Adds visual badges (eye icon) to folders in the file explorer that contain revealed hidden files.
  * @param plugin - The plugin instance.
- * @returns A Promise that resolves when the operation is complete.
  */
-export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
+export function decorateFolders(plugin: CodeFilesPlugin): void {
   const explorer = plugin.app.workspace.getLeavesOfType('file-explorer')[0];
   if (!explorer) return;
 

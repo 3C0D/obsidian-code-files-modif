@@ -1,3 +1,7 @@
+/**
+ * Global state management for hidden files functionality.
+ * Manages adapter access and patch bypass flags.
+ */
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
 import type { DataAdapterWithInternal } from '../../types/index.ts';
@@ -7,7 +11,6 @@ import type { DataAdapterWithInternal } from '../../types/index.ts';
  * Set to true when the user explicitly chooses
  * to hide a previously revealed file.
  */
-
 export let _bypassPatch = false;
 
 /**

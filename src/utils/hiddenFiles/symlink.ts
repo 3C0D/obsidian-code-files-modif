@@ -1,3 +1,7 @@
+/**
+ * Symlink detection utilities.
+ * Checks if files are symbolic links, with platform-specific handling.
+ */
 import { Platform, normalizePath } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
