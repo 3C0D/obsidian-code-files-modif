@@ -67,6 +67,11 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
       return async function (this: DataAdapterEx, src: string, dest: string) {
         // Block renames that would move external files (snippets, etc.) out of configDir
         const configDir = plugin.app.vault.configDir;
+        // Block moving the configDir itself (e.g. accidental drag-and-drop of .obsidian)
+        if (src === configDir) {
+          return;
+        }
+        // Block renames that would move external files (snippets, etc.) out of configDir
         if (src.startsWith(configDir + '/') && !dest.startsWith(configDir + '/')) {
           return;
         }
