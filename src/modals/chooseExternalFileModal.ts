@@ -3,7 +3,7 @@
  * Recursively scans the config folder, filters by size and extension,
  * and opens selected files in Monaco Editor.
  */
-import { FuzzySuggestModal,Notice } from 'obsidian';
+import { FuzzySuggestModal, Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getMaxFileSize, isSymlink } from '../utils/hiddenFiles/index.ts';

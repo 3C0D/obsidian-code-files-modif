@@ -54,7 +54,7 @@ export async function syncAutoRevealedDotfiles(
   for (let i = 0; i < allFolders.length; i++) {
     // Yield every 30 folders to avoid saturating the event loop on startup
     if (i > 0 && i % 30 === 0) await yieldToEventLoop();
-    
+
     const folder = allFolders[i];
     const items = await scanDotEntries(plugin, folder.path);
     const toReveal = items
@@ -88,7 +88,7 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
   for (let i = 0; i < allFolders.length; i++) {
     // Yield every 30 folders to avoid saturating the event loop on startup
     if (i > 0 && i % 30 === 0) await yieldToEventLoop();
-    
+
     const folder = allFolders[i];
     const items = await scanDotEntries(plugin, folder.path);
     const toReveal = items
@@ -126,7 +126,7 @@ export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<voi
         if (!stat) continue;
 
         await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
-        
+
         if (stat.type === 'folder') {
           await revealFolderContents(plugin, adapter, itemPath);
         }

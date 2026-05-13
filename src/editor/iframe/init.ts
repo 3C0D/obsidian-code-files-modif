@@ -288,7 +288,7 @@ function applyParams(params: Prettify<InitParams>): void {
     commandPalette: params.commandPaletteHotkey || null,
     settings: params.settingsHotkey || null,
     deleteFile: params.deleteFileHotkey || null,
-    console: params.consoleHotkey || null,
+    console: params.consoleHotkey || null
   });
 
   // Initialize console pane with persistent height
@@ -418,7 +418,7 @@ export function initMonacoApp(): void {
           commandPalette: data.commandPaletteHotkey,
           settings: data.settingsHotkey,
           deleteFile: data.deleteFileHotkey,
-          console: data.consoleHotkey,
+          console: data.consoleHotkey
         });
         break;
       case 'load-project-files':

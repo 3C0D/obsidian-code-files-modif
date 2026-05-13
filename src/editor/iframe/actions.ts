@@ -172,7 +172,12 @@ export function registerActions(
   if (!editor) return;
 
   registerHotkeyActions(
-    initialHotkeys ?? { commandPalette: null, settings: null, deleteFile: null, console: null }
+    initialHotkeys ?? {
+      commandPalette: null,
+      settings: null,
+      deleteFile: null,
+      console: null
+    }
   );
 
   // Add "Return to Default View" action if this is an unregistered extension
@@ -276,8 +281,6 @@ export function registerActions(
       );
     }
   });
-
-
 
   editor.addAction({
     id: 'code-files-save',

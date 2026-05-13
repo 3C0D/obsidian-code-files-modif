@@ -366,7 +366,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Excluded folders')
-      .setDesc('Folders to always keep hidden, even when auto-reveal is active (comma-separated)')
+      .setDesc(
+        'Folders to always keep hidden, even when auto-reveal is active (comma-separated)'
+      )
       .addText((text) =>
         text
           .setPlaceholder('.git, node_modules, .trash')
@@ -388,7 +390,9 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Excluded extensions')
-      .setDesc('File extensions to always keep hidden, even when registered (without dot, comma-separated)')
+      .setDesc(
+        'File extensions to always keep hidden, even when registered (without dot, comma-separated)'
+      )
       .addText((text) =>
         text
           .setPlaceholder('tmp, log, cache')

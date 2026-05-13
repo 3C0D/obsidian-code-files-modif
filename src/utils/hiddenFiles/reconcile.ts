@@ -7,7 +7,7 @@ import type { DataAdapterWithInternal } from '../../types/index.ts';
 /**
  * Reconciles a single file or folder with Obsidian's vault index.
  * Handles both Desktop (reconcileFileInternal) and Mobile (reconcileFileChanged) APIs.
- * 
+ *
  * @param adapter - The data adapter.
  * @param itemPath - The normalized vault path.
  * @param realPath - The real filesystem path.

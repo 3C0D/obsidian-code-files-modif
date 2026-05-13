@@ -183,7 +183,9 @@ export class RevealHiddenFilesModal extends Modal {
     const rightDesc = descEl.createDiv({ cls: 'hidden-files-desc-col' });
     rightDesc.createEl('p', { text: '• Register as code editor view' });
     const noteEl = rightDesc.createEl('p');
-    noteEl.createSpan({ text: '• This file will become always visible (unless isAutoRevealRegisteredDotfile is unchecked in plugin settings)' });
+    noteEl.createSpan({
+      text: '• This file will become always visible (unless isAutoRevealRegisteredDotfile is unchecked in plugin settings)'
+    });
 
     contentEl.createEl('hr', { cls: 'hidden-files-separator' });
 

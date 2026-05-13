@@ -27,7 +27,9 @@ export async function reloadObsidian(): Promise<void> {
     if (res.ok) {
       console.log('Obsidian reloaded via Local REST API.');
     } else {
-      console.warn(`⚠ Obsidian REST API responded with status ${res.status} for command app:reload`);
+      console.warn(
+        `⚠ Obsidian REST API responded with status ${res.status} for command app:reload`
+      );
     }
   } catch (e) {
     console.warn('Obsidian REST API unreachable:', e);
