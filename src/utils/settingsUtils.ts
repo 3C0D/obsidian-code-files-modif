@@ -69,14 +69,14 @@ export async function saveSettings(plugin: CodeFilesPlugin): Promise<void> {
   await plugin.saveData(plugin.settings);
 }
 
-/**
- * Saves a raw editor config string for the given key.
- *
- * @param plugin - The plugin instance.
- * @param key - File extension WITHOUT the leading dot (e.g. 'ts', 'md'), or '*' for global config
- * @param value - The raw JSONC string from the editor (may contain comments and trailing commas)
- * @returns `true` if the JSON is valid and was saved, `false` if the JSON is invalid
- */
+  /**
+   * Saves a raw editor config string for the given key.
+   *
+   * @param plugin - The plugin instance.
+   * @param key - File extension WITHOUT the leading dot (e.g. 'ts', 'md'), or '*' for global config
+   * @param value - The raw JSONC string from the editor (may contain comments and trailing commas)
+   * @returns `true` if saved, `false` if the JSON is invalid or the value is unchanged
+   */
 export function saveEditorConfig(
   plugin: CodeFilesPlugin,
   key: string,

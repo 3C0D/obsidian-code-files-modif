@@ -1,3 +1,7 @@
+/**
+ * Theme utilities for Monaco editor integration.
+ * Handles theme resolution (built-in vs custom), caching, fetching, and synchronization with Obsidian's theme changes.
+ */
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
@@ -5,6 +9,11 @@ import { BUILTIN_THEMES } from '../types/index.ts';
 
 let _themes: string[] = [];
 
+/**
+ * Returns the list of available Monaco themes.
+ *
+ * @returns Array of theme names
+ */
 export const getThemes = (): string[] => _themes;
 
 /**

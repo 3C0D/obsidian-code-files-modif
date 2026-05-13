@@ -64,8 +64,6 @@ export class FenceEditContext {
    *  (e.g. "js" in ````js), while `language` is
    *  the Monaco language id resolved from it.
    *
-   * @param plugin - The plugin instance
-   * @param editor - The editor instance
    * @returns An object containing the fence body content, language ID, and raw language key.
    **/
   getFenceData(): { content: string; language: string; langKey: string } {

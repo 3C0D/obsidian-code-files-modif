@@ -1,3 +1,7 @@
+/**
+ * Utilities for managing CSS snippets in Obsidian.
+ * Provides functions to check snippet existence, enabled state, and register change listeners.
+ */
 import type { App } from 'obsidian';
 
 /** Checks if a snippet exists in the vault

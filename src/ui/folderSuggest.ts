@@ -7,13 +7,14 @@ import type { TFolder } from 'obsidian';
 import { AbstractInputSuggest } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 
-/** Autocomplete suggester for vault folders, attached to a text input. */
+/**
+ * Autocomplete suggester for vault folders, attached to a text input.
+ *
+ * @param plugin - The plugin instance
+ * @param inputEl - The text input element to attach the suggester to
+ * @param onChoose - Callback invoked when a folder is selected. Receives the chosen TFolder object.
+ */
 export class FolderSuggest extends AbstractInputSuggest<TFolder> {
-  /**
-   * @param plugin - The plugin instance
-   * @param inputEl - The text input element to attach the suggester to
-   * @param onChoose - Callback invoked when a folder is selected. Receives the chosen TFolder object.
-   */
   constructor(
     private plugin: CodeFilesPlugin,
     inputEl: HTMLInputElement,
@@ -45,8 +46,8 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
   }
 
   selectSuggestion(folder: TFolder): void {
-    this.onChoose(folder);
     this.setValue(folder.path);
+    this.onChoose(folder);
     this.close();
   }
 }

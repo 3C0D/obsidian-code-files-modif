@@ -131,6 +131,10 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
   }
 }
 
+/**
+ * Disconnects the MutationObserver and clears any pending debounce timer.
+ * Called on plugin unload to prevent memory leaks.
+ */
 export function cleanupExplorerBadges(): void {
   if (debounceTimeout) {
     clearTimeout(debounceTimeout);

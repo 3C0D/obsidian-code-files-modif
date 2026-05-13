@@ -93,18 +93,6 @@ export function removeExtension(settings: Prettify<MyPluginSettings>, ext: strin
   settings.excludedExtensions = [...settings.excludedExtensions, ext];
 }
 
-// Not used
-/**
- * Checks if an extension is handled by CodeFilesPlugin.
- *
- * @param app - The Obsidian app instance
- * @param ext - The extension to check (e.g. "js", "ts")
- * @returns true if the extension is handled by CodeFilesPlugin, false otherwise
- * */
-export function isCodeFilesExtension(app: App, ext: string): boolean {
-  return app.viewRegistry.typeByExtension[ext] === viewType;
-}
-
 /**
  * Gets all currently open CodeEditorView instances.
  *

@@ -5,7 +5,7 @@
  * 1. Obsidian -> Logic: getObsidianHotkey() reads shortcuts from Obsidian and returns a HotkeyConfig.
  * 2. UI -> Logic: parseHotkeyOverride() converts user-typed strings (Settings Tab) into a HotkeyConfig.
  * 3. Logic -> UI: formatHotkey() converts a HotkeyConfig back to readable strings for display.
- * 4. Logic -> Comparison: serializeMonacoHotkeys() groups essential shortcuts (Palette, Settings, Delete) into a JSON string to detect configuration changes and trigger editor reloads.
+ * 4. Logic -> Comparison: serializeMonacoHotkeys() groups essential shortcuts (Palette, Settings, Delete, Console) into a JSON string to detect configuration changes and trigger editor reloads.
  * 5. Parent -> Monaco: Hotkeys are sent to the Monaco iframe via postMessage (init/update).
  * 6. Monaco -> Parent: When a hotkey is pressed, Monaco sends a message back to trigger the Obsidian action.
  */
@@ -115,11 +115,11 @@ export function formatHotkey(config: HotkeyConfig, resolveMod: boolean = false):
 }
 
 /**
- * Retrieves all Monaco-relevant hotkeys (settings, palette, delete file)
+ * Retrieves all Monaco-relevant hotkeys (settings, palette, delete file, console)
  * and returns them as a serialized JSON string for change detection.
  *
  * @param app - The Obsidian app instance
- * @returns JSON string of all hotkey configs
+ * @returns JSON string of all hotkey configs (settings, palette, delete file, console)
  */
 export function serializeMonacoHotkeys(app: App): string {
   const settingsHotkey = getObsidianHotkey(app, 'app:open-settings') ?? {

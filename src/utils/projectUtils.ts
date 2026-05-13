@@ -1,5 +1,6 @@
 /**
- * Defines a project folder used to establish communication between files in this folder.
+ * Reads TypeScript/JavaScript source files from the configured project root
+ * to feed Monaco's IntelliSense (autocomplete, type checking, cross-file navigation).
  */
 import type CodeFilesPlugin from '../main.ts';
 
