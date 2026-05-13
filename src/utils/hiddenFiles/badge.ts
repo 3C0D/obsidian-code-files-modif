@@ -15,20 +15,26 @@ export async function decorateFolders(plugin: CodeFilesPlugin): Promise<void> {
   const fileItems = view.fileItems;
   if (!fileItems) return;
 
-  for (const [filePath, item] of Object.entries(fileItems)) {
-    const file = plugin.app.vault.getFolderByPath(filePath);
-    if (!file) continue;
+  // Build set of folders that currently have revealed files
+  const withRevealed = new Set(
+    Object.entries(plugin.settings.revealedFiles)
+      .filter(([, paths]) => paths.length > 0)
+      .map(([fp]) => fp)
+  );
 
-    const hasRevealed = plugin.settings.revealedFiles[file.path]?.length > 0;
+  // Remove stale badges via DOM query — avoids iterating all fileItems
+  document.querySelectorAll<HTMLElement>('.hidden-files-badge').forEach((badge) => {
+    const folderPath = badge.closest('[data-path]')?.getAttribute('data-path') ?? '';
+    if (!withRevealed.has(folderPath)) badge.remove();
+  });
+
+  // Add missing badges — only iterates revealedFiles keys
+  for (const folderPath of withRevealed) {
+    const item = fileItems[folderPath];
+    if (!item) continue;
     const selfEl = (item as FolderTreeItem).selfEl;
-    const existing = selfEl.querySelector('.hidden-files-badge');
-
-    // Add or remove the eye icon badge based on whether the folder has revealed files
-    if (hasRevealed && !existing) {
-      const badge = selfEl.createSpan({ cls: 'hidden-files-badge' });
-      setIcon(badge, 'eye');
-    } else if (!hasRevealed && existing) {
-      existing.remove();
-    }
+    if (!selfEl || selfEl.querySelector('.hidden-files-badge')) continue;
+    const badge = selfEl.createSpan({ cls: 'hidden-files-badge' });
+    setIcon(badge, 'eye');
   }
 }

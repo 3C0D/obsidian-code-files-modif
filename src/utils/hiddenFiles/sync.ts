@@ -43,7 +43,11 @@ export async function syncAutoRevealedDotfiles(
 
   // Auto-reveal dotfiles matching the new extensions
   const allFolders = plugin.app.vault.getAllFolders();
-  for (const folder of allFolders) {
+  for (let i = 0; i < allFolders.length; i++) {
+    // Yield every 30 folders to avoid saturating the event loop on startup
+    if (i > 0 && i % 30 === 0) await new Promise<void>((r) => setTimeout(r, 0));
+    
+    const folder = allFolders[i];
     const items = await scanDotEntries(plugin, folder.path);
     const toReveal = items
       .filter((item) => {
@@ -73,7 +77,11 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
   const activeExts = getActiveExtensions(plugin.settings);
 
   const allFolders = plugin.app.vault.getAllFolders();
-  for (const folder of allFolders) {
+  for (let i = 0; i < allFolders.length; i++) {
+    // Yield every 30 folders to avoid saturating the event loop on startup
+    if (i > 0 && i % 30 === 0) await new Promise<void>((r) => setTimeout(r, 0));
+    
+    const folder = allFolders[i];
     const items = await scanDotEntries(plugin, folder.path);
     const toReveal = items
       .filter((item) => {

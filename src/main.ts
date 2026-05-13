@@ -1,4 +1,4 @@
-import { Plugin } from 'obsidian';
+import { Plugin, debounce } from 'obsidian';
 import { CodeEditorView } from './editor/codeEditorView/index.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/index.ts';
@@ -78,9 +78,11 @@ export default class CodeFilesPlugin extends Plugin {
 
     this.register(patchAdapter(this));
     this.register(patchRegisterExtensions(this));
-    this.registerEvent(this.app.vault.on('create', () => decorateFolders(this)));
-    this.registerEvent(this.app.vault.on('delete', () => decorateFolders(this)));
-    this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));
+    
+    const debouncedDecorateFolders = debounce(() => void decorateFolders(this), 400);
+    this.registerEvent(this.app.vault.on('create', debouncedDecorateFolders));
+    this.registerEvent(this.app.vault.on('delete', debouncedDecorateFolders));
+    this.registerEvent(this.app.vault.on('rename', debouncedDecorateFolders));
   }
 
   onunload(): void {
