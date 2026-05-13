@@ -6,7 +6,7 @@
  * and excluding binary formats (executables, archives, databases, fonts).
  */
 import type { TFolder } from 'obsidian';
-import { FuzzySuggestModal,normalizePath,Notice } from 'obsidian';
+import { FuzzySuggestModal, normalizePath, Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {
@@ -29,6 +29,13 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
   ) {
     super(plugin.app);
     this.setPlaceholder('Search hidden files...');
+    this.setInstructions([
+      {
+        command: '💡',
+        purpose:
+          'Files inside revealed hidden folders are also included. For .obsidian, use "Open config files".'
+      }
+    ]);
   }
 
   async onOpen(): Promise<void> {
@@ -53,6 +60,7 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
     explorerPaths: Set<string>
   ): Promise<void> {
     const listed = await this.plugin.app.vault.adapter.list(folderPath);
+    const configDir = this.plugin.app.vault.configDir;
 
     for (const rawPath of listed.files) {
       const filePath = normalizePath(rawPath);
@@ -65,6 +73,8 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
 
       // Skip binary formats that can't be opened as text in Monaco editor
       if (EXCLUDED_EXTENSIONS.includes(ext)) continue;
+
+      if (isSymlink(this.plugin, filePath)) continue;
 
       try {
         const stat = await this.plugin.app.vault.adapter.stat(filePath);
@@ -83,11 +93,18 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
     for (const rawSubFolder of listed.folders) {
       const subFolder = normalizePath(rawSubFolder);
       const folderName = subFolder.split('/').pop() ?? '';
-      // Skip dot-folders (e.g., .git, .obsidian) as they contain system/VCS data not meant for editing
-      if (folderName.startsWith('.')) continue;
 
-      const stat = await this.plugin.app.vault.adapter.stat(subFolder);
-      if (!stat) continue;
+      // configDir (.obsidian) is handled by ExternalFileBrowserModal — never recurse into it
+      if (subFolder === configDir || subFolder.startsWith(`${configDir}/`)) continue;
+
+      if (folderName.startsWith('.')) {
+        // Only recurse into dot-folders explicitly revealed by the user via RevealHiddenFilesModal.
+        // getAbstractFileByPath() is wrong here: .obsidian is indexed by Obsidian itself and would pass that check.
+        const isRevealedFolder = Object.values(this.plugin.settings.revealedFiles)
+          .flat()
+          .includes(subFolder);
+        if (!isRevealedFolder) continue;
+      }
       if (isSymlink(this.plugin, subFolder)) continue;
       await this.scanFolder(subFolder, explorerPaths);
     }

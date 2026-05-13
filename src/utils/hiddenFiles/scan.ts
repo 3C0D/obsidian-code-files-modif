@@ -2,6 +2,7 @@ import { normalizePath } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import type { HiddenItem } from '../../types/index.ts';
 import { getAdapter } from './state.ts';
+import { isSymlink } from './symlink.ts';
 
 /**
  * Max file size in MB for Monaco (configurable in settings)
@@ -54,6 +55,9 @@ export async function scanDotEntries(
           const ext = basename.substring(1).split('.').pop() || basename.substring(1);
           if (plugin.settings.excludedExtensions.includes(ext)) continue;
         }
+
+        if (isSymlink(plugin, entryPath)) continue;
+
         let size = 0;
         try {
           const stat = await adapter.stat(entryPath);

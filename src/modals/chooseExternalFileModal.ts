@@ -54,6 +54,8 @@ export class ExternalFileBrowserModal extends FuzzySuggestModal<FileSuggestion> 
       // Skip excluded extensions
       if (EXCLUDED_EXTENSIONS.includes(ext)) continue;
 
+      if (isSymlink(this.plugin, filePath)) continue;
+
       try {
         const stat = await this.plugin.app.vault.adapter.stat(filePath);
         if (!stat || stat.size > getMaxFileSize(this.plugin)) continue;
