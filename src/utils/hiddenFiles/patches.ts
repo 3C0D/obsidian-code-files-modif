@@ -8,7 +8,6 @@ import { type Plugin, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
-// import { reconcileItem } from './reconcile.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
 
@@ -46,6 +45,16 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           const basename = normalizedPath.split('/').pop() || '';
           // Always protect dot-items (files or folders, e.g. .env, .git)
           if (basename.startsWith('.')) return;
+          
+          // Protect files inside revealed hidden folders
+          const allRevealedItems = Object.values(plugin.settings.revealedItems).flat();
+          for (const revealedPath of allRevealedItems) {
+            // Check if normalizedPath is inside a revealed hidden folder
+            if (normalizedPath.startsWith(revealedPath + '/')) {
+              return;
+            }
+          }
+          
           // Protect files inside configDir
           // (e.g. .obsidian/snippets/my.css)
           // that are currently tracked by
@@ -84,7 +93,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         }
         const result = await next.call(this, src, dest);
 
-        // Update revealedFiles after rename
+        // Update revealedItems after rename
         const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
         const destFolder = dest.substring(0, dest.lastIndexOf('/')) || '';
         let changed = false;
