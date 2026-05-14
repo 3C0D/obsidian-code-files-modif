@@ -29,7 +29,7 @@
 1- **Project Root setup**: Right-click folder → "Define as Project Root Folder"
 2- **Ctrl+Click** to jump to definitions
 
-- **Smart tab reuse**: Opens in existing tab if file already open
+- **Smart tab reuse**: For files within the project root folder, opens in existing Monaco tab if file already open, preventing duplicate tabs for both navigation and direct file openings
 - **IntelliSense**: Full project context for code completion
 
 ### 5. **Hidden Files Access & Management**

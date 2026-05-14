@@ -22,6 +22,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Code Block Editing** — open any code fence in full Monaco modal from editor context menu
 - **Integrated Console** — run terminal commands directly from Monaco (Ctrl+J to toggle); execute scripts, build tools, and dev workflows without leaving the editor
 - **Open Any File in Monaco** — command palette or right-click → "Open in Monaco Editor"
+- **Smart Tab Reuse for Project Files** — Files within the project root folder that are already open in Monaco are reopened in the same tab instead of creating duplicates. Click multiple times on the same file without worrying about multiple tabs.
 - **Popout Windows** — secondary windows support (Ctrl+Shift+Alt+Click)
 - **Dynamic Hotkey Sync** — Monaco hotkeys automatically update when Obsidian hotkey settings change (no reload needed) and overridable in plugin settings
 
@@ -100,7 +101,7 @@ Navigate between TypeScript and JavaScript files in your project:
 - **Ctrl+Click** on imports, function calls, or class names to jump to their definitions
 - **Go to Definition** (F12) shows a peek window with the definition location
 - Works with relative imports (`./utils`, `../service`) and supports `.ts`, `.tsx`, `.js`, `.jsx` files
-- **Smart tab reuse** — if the target file is already open, it reuses that tab instead of creating a new one
+- **Smart tab reuse** — for files within the project root folder, if the file is already open in Monaco, it reuses that tab instead of creating a new one, applying to both navigation jumps (Ctrl+Click on imports, functions, or classes) and direct file openings
 
 ### Setup
 
