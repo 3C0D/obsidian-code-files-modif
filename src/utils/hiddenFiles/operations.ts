@@ -74,7 +74,7 @@ export async function revealItems(
 
   for (const itemPath of itemPaths) {
     try {
-      // to check if the file exists
+      // check if the item exists (file or folder)
       const stat = await adapter.stat(itemPath);
       if (!stat) continue;
 
@@ -100,15 +100,15 @@ export async function revealItems(
 }
 
 /**
- * Hides previously revealed hidden files from the Obsidian UI.
+ * Hides previously revealed hidden files or folders from the Obsidian UI.
  * Uses getRealPathSafe which falls back to the original path on Mobile, making this function fully cross-platform.
  * If temporary is true, only removes the file from the vault index without
  * persisting any changes to settings, decorating folders, or showing a notice.
  * Use this for files revealed transiently (e.g. opened via ChooseHiddenFileModal).
  *
  * @param plugin - The plugin instance.
- * @param folderPath - The parent folder path.
- * @param itemPaths - Array of relative paths to hide.
+  * @param folderPath - The parent folder path (normalized vault-relative).
+  * @param itemPaths - Array of vault-relative paths (files or folders) to hide.
  * @param temporary - Defaults to false. If true, skip settings, notice, badges, and persist.
  * @returns A Promise that resolves when the operation is complete.
  */
@@ -126,10 +126,10 @@ export async function unrevealItems(
   // Temporarily allow reconcileDeletion to work for dotfiles
   setBypassPatch(true);
   try {
-    for (const filePath of itemPaths) {
-      const realPath = getRealPathSafe(adapter, filePath);
-      // Remove the file from Obsidian's vault index
-      await adapter.reconcileDeletion(realPath, filePath);
+    for (const itemPath of itemPaths) {
+      const realPath = getRealPathSafe(adapter, itemPath);
+      // Remove the item from Obsidian's vault index
+      await adapter.reconcileDeletion(realPath, itemPath);
     }
   } finally {
     setBypassPatch(false);
@@ -161,6 +161,8 @@ export async function handleTemporaryReveal(
   filePath: string
 ): Promise<void> {
   const normalizedPath = normalizePath(filePath);
+  const stat = await plugin.app.vault.adapter.stat(normalizedPath);
+  if (!stat || stat.type === 'folder') return;
   if (!plugin.app.vault.getAbstractFileByPath(normalizedPath)) {
     const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
     await revealItems(plugin, folderPath, [normalizedPath], false); // silent, no persist
@@ -193,29 +195,32 @@ export async function cleanupTemporaryReveal(
   plugin: CodeFilesPlugin,
   filePath: string
 ): Promise<void> {
+  const normalizedPath = normalizePath(filePath);
+  const stat = await plugin.app.vault.adapter.stat(normalizedPath);
+  if (!stat || stat.type === 'folder') return;
   const tmp = plugin.settings.temporaryRevealedPaths;
-  if (tmp.includes(filePath)) {
+  if (tmp.includes(normalizedPath)) {
     // Don't unreveal if the file is still open in another leaf —
     // Obsidian may have reused this leaf to open another file, closing
     // the dotfile view without the user explicitly closing it.
     // Check via getViewState() to catch uninitialized leaves too.
     const stillOpen = plugin.app.workspace
       .getLeavesOfType(viewType)
-      .some((l) => l.getViewState().state?.file === filePath);
+      .some((l) => l.getViewState().state?.file === normalizedPath);
     if (stillOpen) return;
 
     // External files (configDir) should never be unrevealed, only removed from tracking
     const configDir = plugin.app.vault.configDir;
-    const isExternalFile = filePath.startsWith(configDir + '/');
+    const isExternalFile = normalizedPath.startsWith(configDir + '/');
 
     if (!isExternalFile) {
       const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
       const manuallyRevealed = allRevealedItems.some(
-        (p) => filePath === p || filePath.startsWith(p + '/')
+        (p) => normalizedPath === p || normalizedPath.startsWith(p + '/')
       );
       if (!manuallyRevealed) {
-        const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-        await unrevealItems(plugin, folderPath, [filePath], true);
+        const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
+        await unrevealItems(plugin, folderPath, [normalizedPath], true);
       }
     }
 

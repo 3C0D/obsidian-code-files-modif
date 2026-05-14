@@ -28,21 +28,21 @@ if (hasRevealed && !existing) {
 ```
 
 **Triggered by:**
-- `revealItems()` — after revealing files
-- `unrevealItems()` — after hiding files
+- `revealItems()` — after revealing files or folders
+- `unrevealItems()` — after hiding files or folders
 - Vault events: `create`, `delete`, `rename` (registered in `main.ts`)
 - `syncAutoRevealedDotfiles()` — after auto-reveal operations
 - `cleanStaleRevealedFiles()` — after cleaning settings
 
 ---
 
-### 2. `revealItems()` — Reveal Hidden Files
+### 2. `revealItems()` — Reveal Hidden Files or Folders
 
 **Location:** `hiddenFiles/operations.ts`
 
 **Parameters:**
 - `folderPath` — parent folder
-- `itemPaths` — files to reveal
+- `itemPaths` — files or folders to reveal
 - `persist` — if true, save to `revealedFiles` settings (manual reveal only)
 
 **Behavior:**
@@ -86,13 +86,13 @@ if (hasRevealed && !existing) {
 
 ---
 
-### 3. `unrevealItems()` — Hide Revealed Files
+### 3. `unrevealItems()` — Hide Revealed Files or Folders
 
 **Location:** `hiddenFiles/operations.ts`
 
 **Parameters:**
 - `folderPath` — parent folder
-- `itemPaths` — files to hide
+- `itemPaths` — files or folders to hide
 - `temporary` — if true, skip settings/badges (for transient files)
 
 **Behavior:**
