@@ -12,6 +12,60 @@ import { getExtension } from './fileUtils.ts';
 
 const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
 
+/**
+ * Core badge logic: applies extension badge and unregistered styling to a file.
+ * Extracted to avoid duplication between FileTreeItem and DOM-based approaches.
+ */
+const applyBadgeLogic = (
+  file: TFile,
+  tagEl: HTMLElement | null,
+  plugin: CodeFilesPlugin
+): void => {
+  if (!tagEl) return;
+
+  tagEl.classList.remove('code-files-unregistered-badge');
+
+  if (!file.extension) {
+    const ext = getExtension(file.name);
+    const activeExts = getActiveExtensions(plugin.settings);
+    if (ext && activeExts.includes(ext) && !tagEl.textContent) {
+      tagEl.textContent = ext.toUpperCase();
+    }
+    return;
+  }
+
+  if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
+    tagEl.classList.add('code-files-unregistered-badge');
+  }
+};
+
+/**
+ * Applies badge styling to a FileTreeItem (relies on fileItems being populated).
+ */
+const applyBadge = (item: FileTreeItem, plugin: CodeFilesPlugin): void => {
+  const file = item.file;
+  if (!(file instanceof TFile)) return;
+
+  const tagEl = item.selfEl?.querySelector<HTMLElement>('.nav-file-tag');
+  applyBadgeLogic(file, tagEl, plugin);
+};
+
+/**
+ * Applies badge styling directly to a file explorer DOM element.
+ * Unlike applyBadge(), does not depend on fileItems being populated,
+ * making it safe to call synchronously inside MutationObserver callbacks.
+ */
+const applyBadgeToEl = (el: HTMLElement, plugin: CodeFilesPlugin): void => {
+  const path = el.dataset.path;
+  if (!path) return;
+
+  const file = plugin.app.vault.getAbstractFileByPath(path);
+  if (!(file instanceof TFile)) return;
+
+  const tagEl = el.querySelector<HTMLElement>('.nav-file-tag');
+  applyBadgeLogic(file, tagEl, plugin);
+};
+
 /** Helper to get the active file explorer view and its items */
 export const getFileExplorerView = (
   plugin: CodeFilesPlugin
@@ -75,41 +129,15 @@ let explorerObserver: MutationObserver | null = null;
  *  @param plugin - The plugin instance.
  */
 export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
-  const applyBadge = (item: FileTreeItem): void => {
-    const file = item.file;
-    if (!(file instanceof TFile)) return;
-
-    const selfEl = item.selfEl;
-    const tagEl = selfEl?.querySelector('.nav-file-tag');
-
-    // Unregistered badge cleanup
-    if (tagEl) tagEl.classList.remove('code-files-unregistered-badge');
-
-    // Dotfile badge
-    if (!file.extension) {
-      const ext = getExtension(file.name);
-      const activeExts = getActiveExtensions(plugin.settings);
-      if (ext && activeExts.includes(ext) && tagEl && !tagEl.textContent) {
-        tagEl.textContent = ext.toUpperCase();
-      }
-      return; // dotfiles are not "unregistered"
-    }
-
-    // Unregistered badge
-    if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
-      tagEl?.classList.add('code-files-unregistered-badge');
-    }
-  };
-
   const applyBadgeForPath = (view: FileExplorerView, path: string): void => {
     const item = view.fileItems[path] as FileTreeItem | undefined;
-    if (item) applyBadge(item);
+    if (item) applyBadge(item, plugin);
   };
 
   /** Full scan — only on initial attach and layout-change. */
   const scanAll = (view: FileExplorerView): void => {
     for (const item of Object.values(view.fileItems)) {
-      applyBadge(item as FileTreeItem);
+      applyBadge(item as FileTreeItem, plugin);
     }
   };
 
@@ -119,17 +147,25 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
 
     if (!explorerObserver) {
       explorerObserver = new MutationObserver((mutations) => {
-        const v = getFileExplorerView(plugin);
-        if (!v) return;
         for (const mut of mutations) {
           for (const node of Array.from(mut.addedNodes)) {
             if (!(node instanceof HTMLElement)) continue;
-            // node itself may carry data-path, or its descendants do (e.g. folder children wrapper)
-            const targets: HTMLElement[] = node.dataset.path
-              ? [node]
-              : Array.from(node.querySelectorAll<HTMLElement>('[data-path]'));
+            
+            const targets = new Set<HTMLElement>();
+            
+            if (node.dataset.path) {
+              targets.add(node);
+            } else {
+              // The node might be a child added later (e.g., span.nav-file-tag)
+              const parent = node.closest<HTMLElement>('[data-path]');
+              if (parent) targets.add(parent);
+              
+              // Or it might be a container of files
+              node.querySelectorAll<HTMLElement>('[data-path]').forEach(el => targets.add(el));
+            }
+
             for (const el of targets) {
-              if (el.dataset.path) applyBadgeForPath(v, el.dataset.path);
+              applyBadgeToEl(el, plugin); // DOM-based: no fileItems lookup, no defer needed
             }
           }
         }
@@ -173,6 +209,22 @@ export function cleanupExplorerBadges(): void {
   if (explorerObserver) {
     explorerObserver.disconnect();
     explorerObserver = null;
+  }
+}
+
+/**
+ * Re-scans all currently visible file explorer items to apply badges.
+ * Call this after async operations that reveal new files (e.g. restoreRevealedFiles),
+ * since the initial scanAll in setupExplorerBadges may have run before those files
+ * were added to fileItems.
+ *
+ * @param plugin - The plugin instance.
+ */
+export function rescanExplorerBadges(plugin: CodeFilesPlugin): void {
+  const view = getFileExplorerView(plugin);
+  if (!view) return;
+  for (const item of Object.values(view.fileItems)) {
+    applyBadge(item as FileTreeItem, plugin);
   }
 }
 
