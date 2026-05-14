@@ -68,11 +68,21 @@ export default class CodeFilesPlugin extends Plugin {
       }
       updateProjectFolderHighlight(this);
       await cleanStaleRevealedFiles(this);
+      // Verify projectRootFolder still exists on disk
+      if (this.settings.projectRootFolder) {
+        const exists = await this.app.vault.adapter.exists(this.settings.projectRootFolder);
+        if (!exists) {
+          this.settings.projectRootFolder = '';
+          await this.saveSettings();
+        }
+      }
       await restoreRevealedFiles(this);
       // Re-scan badges only if hidden folders were revealed (key "" in revealedItems)
       if (this.settings.revealedItems[""]?.length) {
         rescanExplorerBadges(this);
+        updateProjectFolderHighlight(this);
       }
+
       // Re-trigger auto-reveal for all currently registered extensions.
       // registerExtensions is called before layoutReady, so the around patch skips it.
       if (this.settings.isAutoRevealRegisteredDotfile) {

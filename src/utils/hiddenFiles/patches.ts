@@ -46,7 +46,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           const basename = normalizedPath.split('/').pop() || '';
           // Always protect dot-items (files or folders, e.g. .env, .git)
           if (basename.startsWith('.')) return;
-          
+
           // Protect files inside revealed hidden folders
           const allRevealedItems = Object.values(plugin.settings.revealedItems).flat();
           for (const revealedPath of allRevealedItems) {
@@ -55,7 +55,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
               return;
             }
           }
-          
+
           // Protect files inside configDir
           // (e.g. .obsidian/snippets/my.css)
           // that are currently tracked by
@@ -93,6 +93,12 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           dest = dest + '/' + filename;
         }
         const result = await next.call(this, src, dest);
+
+        // Update projectRootFolder if it was renamed
+        if (plugin.settings.projectRootFolder === src) {
+          plugin.settings.projectRootFolder = dest;
+          void plugin.saveSettings();
+        }
 
         // Update revealedItems after rename
         const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
