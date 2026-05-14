@@ -1,5 +1,5 @@
 /**
- * Low-level reconciliation utilities for syncing files with Obsidian's vault index.
+ * Low-level reconciliation utilities for syncing files or folders with Obsidian's vault index.
  * Handles cross-platform differences between Desktop and Mobile APIs.
  */
 import type { DataAdapterWithInternal } from '../../types/index.ts';
@@ -30,6 +30,7 @@ export async function reconcileItem(
       adapter.getFullRealPath
     ) {
       const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
+      // Mobile: reconcileFileChanged expects a file, not a folder
       if (fsStat.type === 'file') {
         await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
       }

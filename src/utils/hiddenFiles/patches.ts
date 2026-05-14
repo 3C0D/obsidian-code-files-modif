@@ -12,8 +12,10 @@ import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
 
 /**
- * Patches Obsidian's DataAdapter to prevent the automatic
- * removal of dotfiles from the UI.
+ * Patches Obsidian's DataAdapter to intercept file operations:
+ * reconcileDeletion (blocks removal of revealed dotfiles), rename
+ * (fixes drag-and-drop destination and blocks moves out of configDir),
+ * and vault.trash (allows dotfile deletion and cleans up revealedFiles).
  *
  * Strategy for reconcileDeletion:
  * - If the file no longer exists on disk → real deletion
@@ -41,7 +43,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
       ) {
         if (!_bypassPatch) {
           const basename = normalizedPath.split('/').pop() || '';
-          // Always protect dotfiles (e.g. .env)
+          // Always protect dot-items (files or folders, e.g. .env, .git)
           if (basename.startsWith('.')) return;
           // Protect files inside configDir
           // (e.g. .obsidian/snippets/my.css)
@@ -68,7 +70,6 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
   const unpatchRename = around(adapter, {
     rename(next) {
       return async function (this: DataAdapterEx, src: string, dest: string) {
-        // Block renames that would move external files (snippets, etc.) out of configDir
         const configDir = plugin.app.vault.configDir;
         // Block moving the configDir itself (e.g. accidental drag-and-drop of .obsidian)
         if (src === configDir) {
@@ -129,17 +130,19 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         file: TAbstractFile,
         system: boolean
       ) {
-        const filePath = file?.path;
-        if (filePath) setBypassPatch(true);
+        const itemPath = file?.path;
+        if (itemPath) setBypassPatch(true);
         try {
           const result = await next.call(this, file, system);
 
           // Clean up revealedFiles after deletion
-          if (filePath) {
+          if (itemPath) {
             for (const [folderPath, paths] of Object.entries(
               plugin.settings.revealedFiles
             )) {
-              const filtered = paths.filter((p) => p !== filePath);
+              const filtered = paths.filter(
+                (p) => p !== itemPath && !p.startsWith(itemPath + '/')
+              );
               if (filtered.length !== paths.length) {
                 if (filtered.length > 0) {
                   plugin.settings.revealedFiles[folderPath] = filtered;
@@ -190,7 +193,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
         const adapter = getAdapter(plugin);
         for (const file of plugin.app.vault.getFiles()) {
           if (!extensions.includes(getExtension(file.name))) continue;
-          if (file.extension) continue; // Only dotfiles
+          if (file.extension) continue; // skip files with a regular extension, dotfiles have none
           if (revealedPaths.has(file.path)) continue;
           const orig =
             plugin._origReconcileDeletion ?? adapter.reconcileDeletion.bind(adapter);

@@ -47,9 +47,9 @@ export async function scanDotEntries(
      */
     const listDotChildren = async (dir: string): Promise<void> => {
       const listed = await adapter.list(dir || '');
-      for (const filePath of [...listed.files, ...listed.folders]) {
-        const entryPath = normalizePath(filePath);
-        const isFolder = listed.folders.includes(filePath);
+      for (const rawPath of [...listed.files, ...listed.folders]) {
+        const entryPath = normalizePath(rawPath);
+        const isFolder = listed.folders.includes(rawPath);
         const basename = entryPath.split('/').pop() || '';
         if (!basename.startsWith('.')) continue;
         const parentPath = entryPath.substring(0, entryPath.lastIndexOf('/')) || '';
@@ -83,7 +83,7 @@ export async function scanDotEntries(
       return a.name.localeCompare(b.name);
     });
   } catch (e) {
-    console.error('Scan error:', e);
+    console.error('scanDotEntries error:', e);
   }
 
   return items;

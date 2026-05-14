@@ -107,8 +107,8 @@ export async function revealItems(
  * Use this for files revealed transiently (e.g. opened via ChooseHiddenFileModal).
  *
  * @param plugin - The plugin instance.
-  * @param folderPath - The parent folder path (normalized vault-relative).
-  * @param itemPaths - Array of vault-relative paths (files or folders) to hide.
+ * @param folderPath - The parent folder path (normalized vault-relative).
+ * @param itemPaths - Array of vault-relative paths (files or folders) to hide.
  * @param temporary - Defaults to false. If true, skip settings, notice, badges, and persist.
  * @returns A Promise that resolves when the operation is complete.
  */
@@ -219,7 +219,8 @@ export async function cleanupTemporaryReveal(
         (p) => normalizedPath === p || normalizedPath.startsWith(p + '/')
       );
       if (!manuallyRevealed) {
-        const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
+        const folderPath =
+          normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
         await unrevealItems(plugin, folderPath, [normalizedPath], true);
       }
     }
