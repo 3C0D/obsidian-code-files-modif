@@ -8,6 +8,7 @@ import { type Plugin, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
+// import { reconcileItem } from './reconcile.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
 
@@ -15,7 +16,7 @@ import { syncAutoRevealedDotfiles } from './sync.ts';
  * Patches Obsidian's DataAdapter to intercept file operations:
  * reconcileDeletion (blocks removal of revealed dotfiles), rename
  * (fixes drag-and-drop destination and blocks moves out of configDir),
- * and vault.trash (allows dotfile deletion and cleans up revealedFiles).
+ * and vault.trash (allows dotfile deletion and cleans up revealedItems).
  *
  * Strategy for reconcileDeletion:
  * - If the file no longer exists on disk → real deletion
@@ -54,7 +55,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           const cfgDir = plugin.app.vault.configDir;
           if (normalizedPath.startsWith(cfgDir + '/')) {
             const tmp = plugin.settings.temporaryRevealedPaths;
-            const rev = Object.values(plugin.settings.revealedFiles).flat();
+            const rev = Object.values(plugin.settings.revealedItems).flat();
             if (tmp.includes(normalizedPath) || rev.includes(normalizedPath)) {
               return;
             }
@@ -76,9 +77,6 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           return;
         }
         // Block renames that would move external files (snippets, etc.) out of configDir
-        if (src.startsWith(configDir + '/') && !dest.startsWith(configDir + '/')) {
-          return;
-        }
         // Fix drag-and-drop destination for dotfiles
         if (adapter.files?.[dest]?.type === 'folder') {
           const filename = src.split('/').pop() || '';
@@ -92,15 +90,15 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         let changed = false;
 
         // Remove from source folder
-        if (plugin.settings.revealedFiles[srcFolder]) {
-          const original = plugin.settings.revealedFiles[srcFolder];
+        if (plugin.settings.revealedItems[srcFolder]) {
+          const original = plugin.settings.revealedItems[srcFolder];
           const filtered = original.filter((p) => p !== src);
           if (filtered.length !== original.length) {
-            // src was actually in revealedFiles
+            // src was actually in revealedItems
             if (filtered.length > 0) {
-              plugin.settings.revealedFiles[srcFolder] = filtered;
+              plugin.settings.revealedItems[srcFolder] = filtered;
             } else {
-              delete plugin.settings.revealedFiles[srcFolder];
+              delete plugin.settings.revealedItems[srcFolder];
             }
             changed = true;
           }
@@ -108,8 +106,8 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
 
         // Add to destination folder
         if (changed) {
-          const existing = plugin.settings.revealedFiles[destFolder] ?? [];
-          plugin.settings.revealedFiles[destFolder] = [...existing, dest];
+          const existing = plugin.settings.revealedItems[destFolder] ?? [];
+          plugin.settings.revealedItems[destFolder] = [...existing, dest];
         }
 
         if (changed) {
@@ -135,19 +133,19 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         try {
           const result = await next.call(this, file, system);
 
-          // Clean up revealedFiles after deletion
+          // Clean up revealedItemsafter deletion
           if (itemPath) {
             for (const [folderPath, paths] of Object.entries(
-              plugin.settings.revealedFiles
+              plugin.settings.revealedItems
             )) {
               const filtered = paths.filter(
                 (p) => p !== itemPath && !p.startsWith(itemPath + '/')
               );
               if (filtered.length !== paths.length) {
                 if (filtered.length > 0) {
-                  plugin.settings.revealedFiles[folderPath] = filtered;
+                  plugin.settings.revealedItems[folderPath] = filtered;
                 } else {
-                  delete plugin.settings.revealedFiles[folderPath];
+                  delete plugin.settings.revealedItems[folderPath];
                 }
               }
             }
@@ -175,8 +173,8 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
  * Patches Plugin.registerExtensions (via monkey-around) and viewRegistry.unregisterExtensions
  * (via direct patch) to keep dotfile visibility in sync with extension registration state.
  *
- * - On register: cleans revealedFiles and auto-reveals dotfiles for the new extensions.
- * - On unregister: hides dotfiles for removed extensions, unless explicitly in revealedFiles.
+ * - On register: cleans revealedItemsand auto-reveals dotfiles for the new extensions.
+ * - On unregister: hides dotfiles for removed extensions, unless explicitly in revealedItems.
  *
  * @param plugin - The plugin instance.
  * @returns A function to unpatch both patches.
@@ -188,7 +186,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
       return function (this: typeof viewRegistry, extensions: string[]) {
         next.call(this, extensions);
         const revealedPaths = new Set(
-          Object.values(plugin.settings.revealedFiles).flat()
+          Object.values(plugin.settings.revealedItems).flat()
         );
         const adapter = getAdapter(plugin);
         for (const file of plugin.app.vault.getFiles()) {
