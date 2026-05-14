@@ -225,7 +225,7 @@ export async function cleanupTemporaryReveal(
       }
     }
 
-    plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== filePath);
+    plugin.settings.temporaryRevealedPaths = tmp.filter((p) => p !== normalizedPath);
     await plugin.saveSettings();
   }
 }
