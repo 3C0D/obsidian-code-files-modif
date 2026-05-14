@@ -10,6 +10,7 @@ import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
+import { rescanExplorerBadges } from '../explorerUtils.ts';
 
 /**
  * Patches Obsidian's DataAdapter to intercept file operations:
@@ -206,6 +207,8 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
             plugin._origReconcileDeletion ?? adapter.reconcileDeletion.bind(adapter);
           orig(getRealPathSafe(adapter, file.path), file.path).catch(console.error);
         }
+        // Update badges after unregistering extensions
+        rescanExplorerBadges(plugin);
       };
     }
   });
@@ -217,6 +220,8 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
         if (plugin.app.workspace.layoutReady) {
           void syncAutoRevealedDotfiles(plugin, exts);
         }
+        // Update badges after registering extensions
+        rescanExplorerBadges(plugin);
         return result;
       };
     }
