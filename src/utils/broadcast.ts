@@ -55,36 +55,28 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
  * Sends the merged editor config (global `'*'`
  * + language fallback + per-extension override) to open iframes.
  *
- * When `ext` is `'*'`, all open views are updated
- * because a global change affects every extension.
- *
- * Otherwise, targets views whose file extension matches `ext`
- * OR whose file extension maps to `ext` as a language.
- * Example: changing 'yaml' config broadcasts to both:
- * - Files with extension 'yaml'
- * - Files with extension 'clangformat' (which maps to yaml language)
+ * When `ext` is `'*'`, the config is sent to all open views.
+ * Otherwise, only views whose file extension matches `ext` directly,
+ * or whose mapped language matches `ext`, are updated.
  *
  * @param plugin - The plugin instance.
  * @param ext - The file extension to target.
+
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
   const views = getCodeEditorViews(plugin.app);
-  const targets =
-    ext === '*'
-      ? views
-      : views.filter((v) => {
-          if (!v.file) return false;
-          const fileExt = getExtension(v.file.name);
-          // Match if extension is exactly ext
-          if (fileExt === ext) return true;
-          // Match if extension maps to ext as a language
-          const language = staticMap[fileExt] ?? 'plaintext';
-          return language === ext;
-        });
-  for (const view of targets) {
-    const fileExt = view.file ? getExtension(view.file.name) : '';
-    const config = buildMergedConfig(plugin, fileExt);
-    view.editor?.send('change-editor-config', { config });
+
+  for (const view of views) {
+    if (!view.file) continue;
+
+    const fileExt = getExtension(view.file.name);
+    const language = staticMap[fileExt] ?? 'plaintext';
+
+    // Update if global change (*), direct extension match, or inherited language match (e.g. json -> jsonc)
+    if (ext === '*' || fileExt === ext || language === ext) {
+      const config = buildMergedConfig(plugin, fileExt);
+      view.editor?.send('change-editor-config', { config });
+    }
   }
 }
 
@@ -186,6 +178,7 @@ export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
   const paletteStr = formatHotkey(finalPaletteHotkey, true);
   const deleteStr = formatHotkey(finalDeleteFileHotkey, true);
 
+  // consoleHotkey intentionally omitted from notice — not an Obsidian command override
   new Notice(
     `Editor hotkeys reloaded (Settings: ${settingsStr}, Palette: ${paletteStr}, Delete: ${deleteStr})`
   );

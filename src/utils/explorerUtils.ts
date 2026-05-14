@@ -13,7 +13,9 @@ import { getExtension } from './fileUtils.ts';
 const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
 
 /** Helper to get the active file explorer view and its items */
-export const getFileExplorerView = (plugin: CodeFilesPlugin): FileExplorerView | undefined => {
+export const getFileExplorerView = (
+  plugin: CodeFilesPlugin
+): FileExplorerView | undefined => {
   const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
     | FileExplorerView
     | undefined;
@@ -38,7 +40,9 @@ export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
 
   // Remove class from the previous root folder
   if (previousProjectRootPath) {
-    const prevItem = view.fileItems[previousProjectRootPath] as FolderTreeItem | undefined;
+    const prevItem = view.fileItems[previousProjectRootPath] as
+      | FolderTreeItem
+      | undefined;
     if (prevItem?.file instanceof TFolder) {
       prevItem.el
         ?.querySelector<HTMLElement>('.nav-folder-title-content')
@@ -131,6 +135,7 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
         }
       });
     } else {
+      // update explorer observer :
       explorerObserver.disconnect();
     }
 
@@ -138,10 +143,13 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
       childList: true,
       subtree: true
     });
-    scanAll(view);
+    scanAll(view); // Apply badges to all currently visible items in the explorer
   };
 
+  // Reattach observer whenever the layout changes (explorer closed/reopened, pane moved)
   plugin.registerEvent(plugin.app.workspace.on('layout-change', reattachObservers));
+
+  // MutationObserver only catches added nodes, not attribute changes — handle rename explicitly
   plugin.registerEvent(
     plugin.app.vault.on('rename', (file) => {
       const view = getFileExplorerView(plugin);
