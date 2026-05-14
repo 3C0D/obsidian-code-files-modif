@@ -1,7 +1,7 @@
 /**
  * File utilities for handling extensions and file names.
  */
-import type { DataAdapterWithInternal, Prettify } from '../types/index.ts';
+import type { DataAdapterWithInternal } from '../types/index.ts';
 
 /**
  * Extracts the extension from a filename.
@@ -24,12 +24,12 @@ export function getExtension(filename: string): string {
  * getRealPath is Desktop-only; on Mobile, it returns the path unchanged.
  *
  * @param adapter - The file system adapter
- * @param filePath - The file path
- * @returns The real path if available, otherwise the original filePath
+ * @param itemPath - The vault-relative path (file or folder)
+ * @returns The real path if available, otherwise the original itemPath
  */
 export function getRealPathSafe(
-  adapter: Prettify<DataAdapterWithInternal>,
-  filePath: string
+  adapter: DataAdapterWithInternal,
+  itemPath: string
 ): string {
-  return adapter.getRealPath?.(filePath) ?? filePath;
+  return adapter.getRealPath?.(itemPath) ?? itemPath;
 }

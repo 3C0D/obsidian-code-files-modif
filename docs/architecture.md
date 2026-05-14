@@ -105,10 +105,10 @@ staticMap > 'plaintext'
 - `revealedFiles` — map of folder paths to arrays of revealed file paths
 - `temporaryRevealedPaths` — array of file paths temporarily revealed (e.g., workspace restore)
 - `scanDotEntries()` — scans folder for dotfiles, respects exclusion settings, filters by max file size
-- `revealFiles()` — makes dotfiles visible in Obsidian's file explorer
+- `revealItems()` — makes dotfiles visible in Obsidian's file explorer
     - `persist` parameter (default: true) — saves to settings for manual reveals only
     - No longer shows notices (silent by default)
-- `unrevealFiles()` — removes dotfiles from explorer
+- `unrevealItems()` — removes dotfiles from explorer
     - `temporary` parameter (default: false) — skips settings/badges for transient reveals
 - `handleTemporaryReveal()` — reveals a file temporarily and tracks it in `temporaryRevealedPaths`
 - `cleanupTemporaryReveal()` — unreveals a temporarily revealed file when closed (unless manually revealed)

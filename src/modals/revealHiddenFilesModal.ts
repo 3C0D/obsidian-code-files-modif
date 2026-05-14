@@ -3,8 +3,8 @@ import type CodeFilesPlugin from '../main.ts';
 import {
   scanDotEntries,
   cleanStaleRevealedFiles,
-  revealFiles,
-  unrevealFiles,
+  revealItems,
+  unrevealItems,
   decorateFolders,
   getAdapter
 } from '../utils/hiddenFiles/index.ts';
@@ -218,9 +218,9 @@ export class RevealHiddenFilesModal extends Modal {
             .map((item) => item.path);
 
           if (toHide.length > 0)
-            await unrevealFiles(this.plugin, section.folderPath, toHide);
+            await unrevealItems(this.plugin, section.folderPath, toHide);
           if (toReveal.length > 0)
-            await revealFiles(this.plugin, section.folderPath, toReveal);
+            await revealItems(this.plugin, section.folderPath, toReveal);
 
           if (
             section.selected.size === 0 &&

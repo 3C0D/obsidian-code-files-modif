@@ -28,15 +28,15 @@ if (hasRevealed && !existing) {
 ```
 
 **Triggered by:**
-- `revealFiles()` — after revealing files
-- `unrevealFiles()` — after hiding files
+- `revealItems()` — after revealing files
+- `unrevealItems()` — after hiding files
 - Vault events: `create`, `delete`, `rename` (registered in `main.ts`)
 - `syncAutoRevealedDotfiles()` — after auto-reveal operations
 - `cleanStaleRevealedFiles()` — after cleaning settings
 
 ---
 
-### 2. `revealFiles()` — Reveal Hidden Files
+### 2. `revealItems()` — Reveal Hidden Files
 
 **Location:** `hiddenFiles/operations.ts`
 
@@ -76,17 +76,17 @@ if (hasRevealed && !existing) {
 2. Filters out hidden children (files/folders starting with `.`)
 3. For folders: calls `adapter.reconcileFolderCreation()` and recurses with `revealFolderContents()`
 4. For files: uses `adapter.reconcileFileInternal()` or `adapter.reconcileFileChanged()` to reveal the file
-5. Does not persist to settings — folder persistence is handled by the parent `revealFiles()` call
+5. Does not persist to settings — folder persistence is handled by the parent `revealItems()` call
 
 **Used by:**
-- `revealFiles()` — when revealing a folder item
+- `revealItems()` — when revealing a folder item
 - `restoreRevealedFiles()` — when restoring a folder item on startup
 
 **Key Point:** This ensures that when a dot-folder (e.g., `.obsidian`) is revealed, its visible contents (e.g., `plugins`, `themes`) are automatically made visible in the vault without manual intervention.
 
 ---
 
-### 3. `unrevealFiles()` — Hide Revealed Files
+### 3. `unrevealItems()` — Hide Revealed Files
 
 **Location:** `hiddenFiles/operations.ts`
 
@@ -119,7 +119,7 @@ if (hasRevealed && !existing) {
 
 **Behavior:**
 1. Checks if file is already visible in vault
-2. If not, calls `revealFiles()` with `persist=false` (silent, no persist)
+2. If not, calls `revealItems()` with `persist=false` (silent, no persist)
 3. Tracks file in `plugin.settings.temporaryRevealedPaths` unless:
    - Extension is registered (managed by auto-reveal)
    - File is already tracked
@@ -141,7 +141,7 @@ if (hasRevealed && !existing) {
 1. Checks if file is in `temporaryRevealedPaths`
 2. Verifies file is not still open in another leaf (prevents premature cleanup)
 3. Checks if file is manually revealed (via `revealedFiles` or ancestor folder)
-4. If not manually revealed, calls `unrevealFiles()` with `temporary=true`
+4. If not manually revealed, calls `unrevealItems()` with `temporary=true`
 5. Removes from `temporaryRevealedPaths` and saves settings
 
 **Used by:**
@@ -158,7 +158,7 @@ if (hasRevealed && !existing) {
 **Behavior:**
 1. Cleans `revealedFiles` by removing entries now managed by auto-reveal
 2. Scans all folders for dotfiles matching newly registered extensions
-3. Calls `revealFiles()` with `persist=false` (auto-managed, not persisted)
+3. Calls `revealItems()` with `persist=false` (auto-managed, not persisted)
 4. Calls `decorateFolders()` to update eye badges
 
 **Key Point:** Auto-revealed files are NOT stored in `revealedFiles` settings.

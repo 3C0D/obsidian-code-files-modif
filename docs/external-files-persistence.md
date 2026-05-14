@@ -140,7 +140,7 @@ async setState(
 		!this.plugin.app.vault.getAbstractFileByPath(filePath)
 	) {
 		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-		await revealFiles(this.plugin, folderPath, [filePath], true, false); // silent, no persist
+		await revealItems(this.plugin, folderPath, [filePath], true, false); // silent, no persist
 	}
 	await super.setState(state, result);
 }
@@ -160,7 +160,7 @@ async setState(
 		!this.plugin.app.vault.getAbstractFileByPath(filePath)
 	) {
 		const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-		await revealFiles(this.plugin, folderPath, [filePath], true, false); // silent, no persist
+		await revealItems(this.plugin, folderPath, [filePath], true, false); // silent, no persist
 	}
 
 	try {
@@ -198,7 +198,7 @@ Obsidian's workspace layout persistence relies on `setViewState()` to properly s
 
 ### Why reveal files in `setState()`?
 
-External files (like CSS snippets) are not indexed in Obsidian's vault cache. When `super.setState()` is called, it tries to load the file through Obsidian's normal file loading mechanism, which would normally fail for external files. By calling `revealFiles()` to temporarily inject the file into Obsidian's index before calling `super.setState()`, we allow Obsidian's standard file loading system to work normally.
+External files (like CSS snippets) are not indexed in Obsidian's vault cache. When `super.setState()` is called, it tries to load the file through Obsidian's normal file loading mechanism, which would normally fail for external files. By calling `revealItems()` to temporarily inject the file into Obsidian's index before calling `super.setState()`, we allow Obsidian's standard file loading system to work normally.
 
 ### Why check `state.reveal`?
 

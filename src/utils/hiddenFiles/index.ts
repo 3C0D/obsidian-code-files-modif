@@ -1,7 +1,7 @@
 export { decorateFolders } from './badge.ts';
 export {
-  revealFiles,
-  unrevealFiles,
+  revealItems,
+  unrevealItems,
   handleTemporaryReveal,
   cleanupTemporaryReveal
 } from './operations.ts';

@@ -9,7 +9,7 @@ import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
-import { revealFiles, unrevealFiles, revealFolderContents } from './operations.ts';
+import { revealItems, unrevealItems, revealFolderContents } from './operations.ts';
 import { reconcileItem } from './reconcile.ts';
 
 /** Yields control to the event loop to prevent UI blocking during long operations. */
@@ -65,7 +65,7 @@ export async function syncAutoRevealedDotfiles(
       })
       .map((item) => item.path);
     if (toReveal.length > 0) {
-      await revealFiles(plugin, folder.path, toReveal, false);
+      await revealItems(plugin, folder.path, toReveal, false);
     }
   }
 
@@ -102,7 +102,7 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
       .map((item) => item.path);
 
     if (toReveal.length > 0) {
-      await revealFiles(plugin, folder.path, toReveal, false);
+      await revealItems(plugin, folder.path, toReveal, false);
     }
   }
 }
@@ -202,7 +202,7 @@ export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise
   }
 
   for (const [folderPath, paths] of toHide) {
-    await unrevealFiles(plugin, folderPath, paths);
+    await unrevealItems(plugin, folderPath, paths);
   }
 }
 
@@ -226,13 +226,13 @@ export async function unrevealExcludedFolders(
     // e.g. '.obsidian' or '.obsidian/plugins' when '.obsidian' is excluded
     const firstSegment = folderPath.split('/')[0];
     if (firstSegment && excludedSet.has(firstSegment)) {
-      await unrevealFiles(plugin, folderPath, [...itemPaths]);
+      await unrevealItems(plugin, folderPath, [...itemPaths]);
       continue;
     }
     // Case 2: some revealed items in this folder are now-excluded dot-folders
     const toUnreveal = itemPaths.filter((p) => excludedSet.has(p.split('/').pop() || ''));
     if (toUnreveal.length > 0) {
-      await unrevealFiles(plugin, folderPath, toUnreveal);
+      await unrevealItems(plugin, folderPath, toUnreveal);
     }
   }
 }

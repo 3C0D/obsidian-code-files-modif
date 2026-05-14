@@ -79,7 +79,7 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
     const file = item.file;
     if (!(file instanceof TFile)) return;
 
-    const selfEl = item.selfEl || item.el;
+    const selfEl = item.selfEl;
     const tagEl = selfEl?.querySelector('.nav-file-tag');
 
     // Unregistered badge cleanup

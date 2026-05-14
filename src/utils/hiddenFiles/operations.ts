@@ -52,16 +52,16 @@ export async function revealFolderContents(
 }
 
 /**
- * Reveals specified hidden files in the Obsidian UI.
+ * Reveals specified hidden files or folders in the Obsidian UI.
  * Uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
  *
  * @param plugin - The plugin instance.
- * @param folderPath - The parent folder path.
- * @param itemPaths - Array of relative paths to reveal.
- * @param persist - Defaults to true. If true, save to revealedFiles settings (manual reveal only).
- * @returns A Promise that resolves when the operation is complete.
+ * @param folderPath - The parent folder path (normalized vault-relative).
+ * @param itemPaths - Array of vault-relative paths to the items (files or folders) to reveal.
+ * @param persist - If true (default), saves revealed items to the revealedFiles setting (manual reveal only).
+ * @returns A Promise that resolves when all items have been processed.
  */
-export async function revealFiles(
+export async function revealItems(
   plugin: CodeFilesPlugin,
   folderPath: string,
   itemPaths: string[],
@@ -112,7 +112,7 @@ export async function revealFiles(
  * @param temporary - Defaults to false. If true, skip settings, notice, badges, and persist.
  * @returns A Promise that resolves when the operation is complete.
  */
-export async function unrevealFiles(
+export async function unrevealItems(
   plugin: CodeFilesPlugin,
   folderPath: string,
   itemPaths: string[],
@@ -163,7 +163,7 @@ export async function handleTemporaryReveal(
   const normalizedPath = normalizePath(filePath);
   if (!plugin.app.vault.getAbstractFileByPath(normalizedPath)) {
     const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
-    await revealFiles(plugin, folderPath, [normalizedPath], false); // silent, no persist
+    await revealItems(plugin, folderPath, [normalizedPath], false); // silent, no persist
 
     // Track as temporary unless managed by isAutoRevealRegisteredDotfile.
     // External files (configDir) are always tracked because they're never
@@ -215,7 +215,7 @@ export async function cleanupTemporaryReveal(
       );
       if (!manuallyRevealed) {
         const folderPath = filePath.substring(0, filePath.lastIndexOf('/')) || '';
-        await unrevealFiles(plugin, folderPath, [filePath], true);
+        await unrevealItems(plugin, folderPath, [filePath], true);
       }
     }
 

@@ -16,7 +16,7 @@ import {
 import { getExtension } from '../utils/fileUtils.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
 import { getActiveExtensions } from '../utils/extensionUtils.ts';
-import { revealFiles } from '../utils/hiddenFiles/operations.ts';
+import { revealItems } from '../utils/hiddenFiles/operations.ts';
 import { viewType } from '../types/variables.ts';
 
 /** Prompts the user to rename a file (name + extension), updating the file and reloading the view. */
@@ -189,7 +189,7 @@ export class RenameExtensionModal extends Modal {
     if (!renamedFile) return;
 
     if (isInRevealedFolder) {
-      await revealFiles(this.plugin, folderPath, [newPath], false);
+      await revealItems(this.plugin, folderPath, [newPath], false);
     }
 
     // Reopen CodeFiles leaves with the new path.
