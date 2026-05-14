@@ -72,7 +72,7 @@ export interface MyPluginSettings {
    * Key: Normalized path of the parent folder.
    * Value: Array of normalized paths of revealed files within that folder.
    */
-  revealedFiles: Record<string, string[]>;
+  revealedItems: Record<string, string[]>;
   /** Automatically reveal dotfiles when their extension is registered with Code Files */
   isAutoRevealRegisteredDotfile: boolean;
   /** Paths of files temporarily revealed for editing, cleaned up on close */

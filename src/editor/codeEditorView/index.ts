@@ -337,7 +337,7 @@ export class CodeEditorView extends TextFileView {
    * Called by Obsidian when the file is unloaded from the view.
    * If the file was temporarily revealed (dotfile opened via setState restore),
    * unreveals it on close — unless it is also covered by a manual reveal
-   * (file itself or an ancestor folder in revealedFiles).
+   * (file itself or an ancestor folder in revealedItems).
    */
   async onUnloadFile(file: TFile): Promise<void> {
     await super.onUnloadFile(file);

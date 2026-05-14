@@ -16,7 +16,7 @@ import { reconcileItem } from './reconcile.ts';
 const yieldToEventLoop = (): Promise<void> => new Promise<void>((r) => setTimeout(r, 0));
 
 /**
- * Handles newly registered extensions by cleaning revealedFiles and auto-revealing
+ * Handles newly registered extensions by cleaning revealedItemsand auto-revealing
  * dotfiles matching the new extensions.
  *
  * @param plugin - The plugin instance.
@@ -31,9 +31,9 @@ export async function syncAutoRevealedDotfiles(
 
   const extSet = new Set(extensions);
 
-  // For each folder in revealedFiles, remove entries now auto-managed
+  // For each folder in revealedItems, remove entries now auto-managed
   let changed = false;
-  for (const [folderPath, paths] of Object.entries(plugin.settings.revealedFiles)) {
+  for (const [folderPath, paths] of Object.entries(plugin.settings.revealedItems)) {
     const cleaned = paths.filter((p) => {
       const ext = getExtension(p.split('/').pop() || '');
       return !ext || !extSet.has(ext); // keep extension-less files (LICENSE, README) — not extension-managed
@@ -41,9 +41,9 @@ export async function syncAutoRevealedDotfiles(
     if (cleaned.length !== paths.length) {
       changed = true;
       if (cleaned.length > 0) {
-        plugin.settings.revealedFiles[folderPath] = cleaned;
+        plugin.settings.revealedItems[folderPath] = cleaned;
       } else {
-        delete plugin.settings.revealedFiles[folderPath];
+        delete plugin.settings.revealedItems[folderPath];
       }
     }
   }
@@ -96,7 +96,7 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
         if (item.isFolder) return false;
         const ext = getExtension(item.name);
         if (!ext || !activeExts.includes(ext)) return false;
-        const revealed = plugin.settings.revealedFiles[folder.path] || [];
+        const revealed = plugin.settings.revealedItems[folder.path] || [];
         return !revealed.includes(item.path);
       })
       .map((item) => item.path);
@@ -118,7 +118,7 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
 export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
   const adapter = getAdapter(plugin);
 
-  for (const [, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
+  for (const [, itemPaths] of Object.entries(plugin.settings.revealedItems)) {
     for (const itemPath of itemPaths) {
       const realPath = getRealPathSafe(adapter, itemPath);
       try {
@@ -150,7 +150,7 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
   const adapter = getAdapter(plugin);
   let changed = false;
 
-  for (const [folderPath, itemPaths] of Object.entries(plugin.settings.revealedFiles)) {
+  for (const [folderPath, itemPaths] of Object.entries(plugin.settings.revealedItems)) {
     let normFolderPath = normalizePath(folderPath);
     if (normFolderPath === '/') normFolderPath = '';
 
@@ -166,9 +166,9 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
     // Update settings if any path was normalized or a stale entry was removed
     if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
       changed = true;
-      delete plugin.settings.revealedFiles[folderPath];
+      delete plugin.settings.revealedItems[folderPath];
       if (valid.length > 0) {
-        plugin.settings.revealedFiles[normFolderPath] = valid;
+        plugin.settings.revealedItems[normFolderPath] = valid;
       }
     }
   }
@@ -186,7 +186,7 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
   const activeExts = getActiveExtensions(plugin.settings);
   // flat because Object.values returns an array of arrays
-  const revealedPaths = new Set(Object.values(plugin.settings.revealedFiles).flat());
+  const revealedPaths = new Set(Object.values(plugin.settings.revealedItems).flat());
 
   const toHide = new Map<string, string[]>();
 
@@ -219,7 +219,7 @@ export async function unrevealExcludedFolders(
 ): Promise<void> {
   const excludedSet = new Set(newlyExcluded);
   // Snapshot to avoid mutation during iteration
-  const snapshot = { ...plugin.settings.revealedFiles };
+  const snapshot = { ...plugin.settings.revealedItems };
 
   for (const [folderPath, itemPaths] of Object.entries(snapshot)) {
     // Case 1: folderPath is rooted inside a newly excluded folder

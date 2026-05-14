@@ -53,7 +53,7 @@ export class RevealHiddenFilesModal extends Modal {
     this.sections = [];
 
     for (const folderPath of allFolderPaths) {
-      const revealed = this.plugin.settings.revealedFiles[folderPath] || [];
+      const revealed = this.plugin.settings.revealedItems[folderPath] || [];
       const initialRevealed = new Set<string>(revealed);
       const selected = new Set<string>(revealed);
 
@@ -72,13 +72,13 @@ export class RevealHiddenFilesModal extends Modal {
       const itemPaths = new Set(items.map((i) => i.path));
 
       // Sync settings: remove stale entries that are now auto-managed
-      const current = this.plugin.settings.revealedFiles[folderPath] || [];
+      const current = this.plugin.settings.revealedItems[folderPath] || [];
       const cleaned = current.filter((p) => itemPaths.has(p));
       if (cleaned.length !== current.length) {
         if (cleaned.length > 0) {
-          this.plugin.settings.revealedFiles[folderPath] = cleaned;
+          this.plugin.settings.revealedItems[folderPath] = cleaned;
         } else {
-          delete this.plugin.settings.revealedFiles[folderPath];
+          delete this.plugin.settings.revealedItems[folderPath];
         }
         await this.plugin.saveSettings();
         decorateFolders(this.plugin);
@@ -227,7 +227,7 @@ export class RevealHiddenFilesModal extends Modal {
             toHide.length === 0 &&
             toReveal.length === 0
           ) {
-            delete this.plugin.settings.revealedFiles[section.folderPath];
+            delete this.plugin.settings.revealedItems[section.folderPath];
             await this.plugin.saveSettings();
             decorateFolders(this.plugin);
           }

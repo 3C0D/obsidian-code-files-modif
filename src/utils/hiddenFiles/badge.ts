@@ -19,7 +19,7 @@ export function decorateFolders(plugin: CodeFilesPlugin): void {
 
   // Build set of folders that currently have revealed files
   const withRevealed = new Set(
-    Object.entries(plugin.settings.revealedFiles)
+    Object.entries(plugin.settings.revealedItems)
       .filter(([, paths]) => paths.length > 0)
       .map(([fp]) => fp)
   );
@@ -30,7 +30,7 @@ export function decorateFolders(plugin: CodeFilesPlugin): void {
     if (!withRevealed.has(folderPath)) badge.remove();
   });
 
-  // Add missing badges — only iterates revealedFiles keys
+  // Add missing badges — only iterates revealedItemskeys
   for (const folderPath of withRevealed) {
     const item = fileItems[folderPath];
     if (!item) continue;

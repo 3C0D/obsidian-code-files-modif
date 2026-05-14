@@ -58,7 +58,7 @@ export async function revealFolderContents(
  * @param plugin - The plugin instance.
  * @param folderPath - The parent folder path (normalized vault-relative).
  * @param itemPaths - Array of vault-relative paths to the items (files or folders) to reveal.
- * @param persist - If true (default), saves revealed items to the revealedFiles setting (manual reveal only).
+ * @param persist - If true (default), saves revealed items to the revealedItems setting (manual reveal only).
  * @returns A Promise that resolves when all items have been processed.
  */
 export async function revealItems(
@@ -91,8 +91,8 @@ export async function revealItems(
 
   // Persist the revealed state in settings (only for manual reveals)
   if (persist) {
-    const existing = plugin.settings.revealedFiles[folderPath] ?? [];
-    plugin.settings.revealedFiles[folderPath] = [...new Set([...existing, ...itemPaths])];
+    const existing = plugin.settings.revealedItems[folderPath] ?? [];
+    plugin.settings.revealedItems[folderPath] = [...new Set([...existing, ...itemPaths])];
     await plugin.saveSettings();
   }
 
@@ -138,14 +138,14 @@ export async function unrevealItems(
   if (temporary) return; // skip settings, notice, badges
 
   // Remove from persisted settings
-  const remaining = (plugin.settings.revealedFiles[folderPath] || []).filter(
+  const remaining = (plugin.settings.revealedItems[folderPath] || []).filter(
     (p) => !itemPaths.includes(p)
   );
 
   if (remaining.length > 0) {
-    plugin.settings.revealedFiles[folderPath] = remaining;
+    plugin.settings.revealedItems[folderPath] = remaining;
   } else {
-    delete plugin.settings.revealedFiles[folderPath];
+    delete plugin.settings.revealedItems[folderPath];
   }
 
   await plugin.saveSettings();
@@ -214,7 +214,7 @@ export async function cleanupTemporaryReveal(
     const isExternalFile = normalizedPath.startsWith(configDir + '/');
 
     if (!isExternalFile) {
-      const allRevealedItems = Object.values(plugin.settings.revealedFiles).flat();
+      const allRevealedItems = Object.values(plugin.settings.revealedItems).flat();
       const manuallyRevealed = allRevealedItems.some(
         (p) => normalizedPath === p || normalizedPath.startsWith(p + '/')
       );

@@ -109,7 +109,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   deleteFileHotkeyOverride: '',
   consoleHotkey: '',
   excludedFolders: ['.git', 'node_modules', '.trash'],
-  revealedFiles: {},
+  revealedItems: {},
   isAutoRevealRegisteredDotfile: true,
   temporaryRevealedPaths: [],
   consoleHeight: 200,

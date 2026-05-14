@@ -100,7 +100,7 @@ export class ChooseHiddenFileModal extends FuzzySuggestModal<FileSuggestion> {
       if (folderName.startsWith('.')) {
         // Only recurse into dot-folders explicitly revealed by the user via RevealHiddenFilesModal.
         // getAbstractFileByPath() is wrong here: .obsidian is indexed by Obsidian itself and would pass that check.
-        const isRevealedFolder = Object.values(this.plugin.settings.revealedFiles)
+        const isRevealedFolder = Object.values(this.plugin.settings.revealedItems)
           .flat()
           .includes(subFolder);
         if (!isRevealedFolder) continue;

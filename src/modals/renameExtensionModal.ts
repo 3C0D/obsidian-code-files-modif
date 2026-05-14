@@ -157,7 +157,7 @@ export class RenameExtensionModal extends Modal {
 
     // Check if any ancestor of this file is a revealed hidden folder
     // e.g. { "": [".obsidian"] } covers .obsidian/anything
-    const allRevealedPaths = Object.values(this.plugin.settings.revealedFiles).flat();
+    const allRevealedPaths = Object.values(this.plugin.settings.revealedItems).flat();
     const folderPath = this.file.parent?.path ?? '';
     const isInRevealedFolder = allRevealedPaths.some((p) =>
       this.file.path.startsWith(p + '/')

@@ -117,7 +117,7 @@ staticMap > 'plaintext'
 **Auto-Reveal System:**
 
 - `isAutoRevealRegisteredDotfile` setting (default: true)
-- `syncAutoRevealedDotfiles()` — cleans revealedFiles and auto-reveals dotfiles when extensions are registered
+- `syncAutoRevealedDotfiles()` — cleans revealedItems and auto-reveals dotfiles when extensions are registered
 - `revealRegisteredDotfiles()` — scans entire vault on startup to reveal dotfiles with active extensions
 - `hideAutoRevealedDotfiles()` — hides all auto-managed files when the feature is disabled
 - Auto-managed files are filtered from the hidden files modal UI
@@ -131,7 +131,7 @@ staticMap > 'plaintext'
     - `vault.trash` patch sets `_bypassPatch` before deletion to allow dotfile trash
     - Stores original methods in `plugin._origReconcileDeletion` and `plugin._origRename` for use by other patches
 - `patchRegisterExtensions()` — keeps dotfile visibility in sync with extension registration
-    - On `registerExtensions`: cleans revealedFiles and auto-reveals matching dotfiles via `syncAutoRevealedDotfiles()`
+    - On `registerExtensions`: cleans revealedItems and auto-reveals matching dotfiles via `syncAutoRevealedDotfiles()`
     - On `unregisterExtensions`: hides non-manually-revealed dotfiles for removed extensions using original reconcileDeletion method
 
 **Persistence:**
