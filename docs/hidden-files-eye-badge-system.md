@@ -2,7 +2,7 @@
 
 ## Summary
 
-The eye badge (👁️) appears on folders containing **manually revealed** dotfiles (stored in `plugin.settings.revealedFiles`). It's managed by `decorateFolders()` and updated after file operations. Dotfiles are registered by Obsidian as `file.extension = ""`. Files without extension (LICENSE, README) also have `extension = ""` but are visible by default when "Detect all file extensions" is enabled.
+The eye badge (👁️) appears on folders containing **manually revealed** dotfiles or dotfolders (stored in `plugin.settings.revealedItems`). It's managed by `decorateFolders()` and updated after file operations. Dotfiles and dotfolders are handled by the reveal system, with symlink detection to skip symbolic links. The system now supports revealing both files and folders, with cross-platform reconciliation.
 
 ---
 
@@ -10,28 +10,18 @@ The eye badge (👁️) appears on folders containing **manually revealed** dotf
 
 ### 1. `decorateFolders(plugin)` — Apply/Remove Eye Badge
 
-**Location:** `hiddenFilesUtils.ts`
+**Location:** `hiddenFiles/badge.ts`
 
-**Purpose:** Adds or removes the eye icon badge on folders based on whether they contain revealed files.
+**Purpose:** Adds or removes the eye icon badge on folders based on whether they contain revealed items (files or folders).
 
 **Logic:**
-```typescript
-const hasRevealed = plugin.settings.revealedFiles[file.path]?.length > 0;
-const existing = selfEl.querySelector('.hidden-files-badge');
-
-if (hasRevealed && !existing) {
-    const badge = selfEl.createSpan({ cls: 'hidden-files-badge' });
-    setIcon(badge, 'eye');
-} else if (!hasRevealed && existing) {
-    existing.remove();
-}
-```
+The function is now synchronous and builds a set of folders with revealed items for efficient DOM querying. It removes stale badges and adds missing ones without iterating all fileItems unnecessarily.
 
 **Triggered by:**
 - `revealItems()` — after revealing files or folders
 - `unrevealItems()` — after hiding files or folders
 - Vault events: `create`, `delete`, `rename` (registered in `main.ts`)
-- `syncAutoRevealedDotfiles()` — after auto-reveal operations
+- `syncAutoRevealedDotfiles()` — after auto-reveal operations (with yielding to prevent blocking)
 - `cleanStaleRevealedFiles()` — after cleaning settings
 
 ---
@@ -43,12 +33,12 @@ if (hasRevealed && !existing) {
 **Parameters:**
 - `folderPath` — parent folder
 - `itemPaths` — files or folders to reveal
-- `persist` — if true, save to `revealedFiles` settings (manual reveal only)
+- `persist` — if true, save to `revealedItems` settings (manual reveal only)
 
 **Behavior:**
-1. Uses `adapter.reconcileFileInternal()` or `adapter.reconcileFileChanged()` to force Obsidian to display the file
+1. Uses `reconcileItem()` for cross-platform reconciliation (Desktop: reconcileFileInternal, Mobile: reconcileFileChanged)
 2. For folders: calls `revealFolderContents()` to recursively reveal non-hidden children
-3. If `persist=true`, adds paths to `plugin.settings.revealedFiles[folderPath]`
+3. If `persist=true`, adds paths to `plugin.settings.revealedItems[folderPath]`
 4. Calls `decorateFolders()` to update eye badges
 5. No longer shows notices (silent by default)
 
@@ -96,10 +86,10 @@ if (hasRevealed && !existing) {
 - `temporary` — if true, skip settings/badges (for transient files)
 
 **Behavior:**
-1. Sets `_bypassPatch = true` to allow `reconcileDeletion` to work on dotfiles
-2. Calls `adapter.reconcileDeletion()` to remove file from vault index
+1. Sets `_bypassPatch = true` to allow `reconcileDeletion` to work on dot-items
+2. Calls `adapter.reconcileDeletion()` to remove item from vault index
 3. If `temporary=false`:
-   - Removes paths from `plugin.settings.revealedFiles[folderPath]`
+   - Removes paths from `plugin.settings.revealedItems[folderPath]`
    - Calls `decorateFolders()` to update eye badges
    - No longer shows notices
 
@@ -140,7 +130,7 @@ if (hasRevealed && !existing) {
 **Behavior:**
 1. Checks if file is in `temporaryRevealedPaths`
 2. Verifies file is not still open in another leaf (prevents premature cleanup)
-3. Checks if file is manually revealed (via `revealedFiles` or ancestor folder)
+3. Checks if item is manually revealed (via `revealedItems` or ancestor folder)
 4. If not manually revealed, calls `unrevealItems()` with `temporary=true`
 5. Removes from `temporaryRevealedPaths` and saves settings
 
@@ -156,12 +146,13 @@ if (hasRevealed && !existing) {
 **Triggered by:** `patchRegisterExtensions()` via `around()` on `Plugin.registerExtensions()`
 
 **Behavior:**
-1. Cleans `revealedFiles` by removing entries now managed by auto-reveal
-2. Scans all folders for dotfiles matching newly registered extensions
+1. Cleans `revealedItems` by removing entries now managed by auto-reveal
+2. Scans all folders for dotfiles matching newly registered extensions (skipping symlinks)
 3. Calls `revealItems()` with `persist=false` (auto-managed, not persisted)
 4. Calls `decorateFolders()` to update eye badges
+5. Yields to event loop every 30 folders to prevent UI blocking
 
-**Key Point:** Auto-revealed files are NOT stored in `revealedFiles` settings.
+**Key Point:** Auto-revealed items are NOT stored in `revealedItems` settings.
 
 ---
 
@@ -174,19 +165,13 @@ if (hasRevealed && !existing) {
 **Patches:**
 
 #### `adapter.reconcileDeletion`
-Blocks deletion of dotfiles unless `_bypassPatch=true`.
+Blocks deletion of dot-items (files or folders) unless `_bypassPatch=true`.
 
 #### `adapter.rename`
-Fixes drag-and-drop destination for dotfiles:
-```typescript
-if (adapter.files?.[dest]?.type === 'folder') {
-    const filename = src.split('/').pop() || '';
-    dest = dest + '/' + filename;
-}
-```
+Prevents moving the configDir itself and blocks renames that would move external files out of configDir.
 
 #### `vault.trash`
-Allows dotfile deletion via trash by setting `_bypassPatch=true`.
+Allows dot-item deletion via trash by setting `_bypassPatch=true`, and cleans up revealedItems after deletion.
 
 **Registered in:** `main.ts` via `this.register(patchAdapter(this))`
 
@@ -216,25 +201,25 @@ Allows dotfile deletion via trash by setting `_bypassPatch=true`.
 
 ## Settings Structure
 
-### `revealedFiles` — Persisted Manual Reveals
+### `revealedItems` — Persisted Manual Reveals
 
-**Type:** `Record<string, string[]>` (folder path → array of file paths)
+**Type:** `Record<string, string[]>` (folder path → array of item paths, files or folders)
 
 **Example:**
 ```json
 {
-  "": [".env", ".gitignore"],
+  "": [".env", ".gitignore", ".vscode"],
   "src": ["src/.eslintrc"]
 }
 ```
 
 **Contains:**
-- Files **manually revealed** via `RevealHiddenFilesModal`
-- Files **not managed by auto-reveal** (unregistered extensions)
+- Items **manually revealed** via `RevealHiddenFilesModal`
+- Items **not managed by auto-reveal** (unregistered extensions)
 
 **Does NOT contain:**
-- Auto-revealed files (registered extensions with auto-reveal enabled)
-- Temporarily revealed files (opened via `ChooseHiddenFileModal`)
+- Auto-revealed items (registered extensions with auto-reveal enabled)
+- Temporarily revealed items (opened via `ChooseHiddenFileModal`)
 
 ---
 
@@ -243,22 +228,22 @@ Allows dotfile deletion via trash by setting `_bypassPatch=true`.
 ### When Badge Appears
 
 The eye badge appears on a folder when:
-- `plugin.settings.revealedFiles[folderPath]` has at least one entry
-- This means the folder contains **manually revealed** dotfiles
+- `plugin.settings.revealedItems[folderPath]` has at least one entry
+- This means the folder contains **manually revealed** dotfiles or dotfolders
 
 ### When Badge Disappears
 
 The eye badge disappears when:
-- All manually revealed files in the folder are hidden
-- `plugin.settings.revealedFiles[folderPath]` is empty or deleted
+- All manually revealed items in the folder are hidden
+- `plugin.settings.revealedItems[folderPath]` is empty or deleted
 
-### Auto-Revealed Files and Badge
+### Auto-Revealed Items and Badge
 
-**Important:** Auto-revealed files (registered extensions) do NOT trigger the eye badge because they are not stored in `revealedFiles`.
+**Important:** Auto-revealed items (registered extensions) do NOT trigger the eye badge because they are not stored in `revealedItems`.
 
 **Example:**
 - Register `.env` extension → `.env` files auto-revealed → NO eye badge
-- Manually reveal `.gitignore` via modal → stored in `revealedFiles` → eye badge appears
+- Manually reveal `.gitignore` via modal → stored in `revealedItems` → eye badge appears
 
 ---
 
@@ -281,7 +266,7 @@ this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));
 
 **Status:** ✅ Fixed in `unpatchRename`
 
-**Solution:** After rename, update file paths in `revealedFiles`, handle folder renames, clean empty folders, then call `decorateFolders()`.
+**Solution:** After rename, update item paths in `revealedItems`, handle folder renames, clean empty folders, then call `decorateFolders()`.
 
 ---
 
@@ -289,11 +274,11 @@ this.registerEvent(this.app.vault.on('rename', () => decorateFolders(this)));
 
 **Status:** ⚠️ Known limitation — not currently handled.
 
-When a folder containing revealed dotfiles is renamed, the key in `revealedFiles`
+When a folder containing revealed dotfiles or dotfolders is renamed, the key in `revealedItems`
 becomes stale (old folder name). The eye badge disappears after the rename
 (correct visually, since `decorateFolders` re-reads the current file tree),
 but the stale key remains in settings until `cleanStaleRevealedFiles` runs at next startup.
-No data loss — the dotfiles remain visible — but the badge won't reappear until restart.
+No data loss — the items remain visible — but the badge won't reappear until restart.
 
 ---
 
@@ -301,17 +286,17 @@ No data loss — the dotfiles remain visible — but the badge won't reappear un
 
 **Status:** ✅ Fixed in `unpatchTrash`
 
-**Solution:** After deletion, remove file path from `revealedFiles`, delete empty folder entries, then call `decorateFolders()`.
+**Solution:** After deletion, remove item path from `revealedItems`, handle nested items, delete empty folder entries, then call `decorateFolders()`.
 
 ---
 
 ## Notes
 
-- Dotfiles and extension-less files both have `file.extension = ""`
+- Dotfiles, dotfolders, and extension-less files both have `file.extension = ""`
 - Extension-less files (LICENSE, README) are visible when "Detect all file extensions" is enabled
-- Only dotfiles (starting with `.`) are managed by the reveal system
-- Auto-revealed files (registered extensions) do NOT appear in `revealedFiles` and do NOT trigger eye badge
-- Eye badge only appears for manually revealed files
+- Dotfiles and dotfolders (starting with `.`) are managed by the reveal system, with symlink detection
+- Auto-revealed items (registered extensions) do NOT appear in `revealedItems` and do NOT trigger eye badge
+- Eye badge only appears for manually revealed items
 
 ---
 

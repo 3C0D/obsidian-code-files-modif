@@ -2,21 +2,22 @@
 
 ## Summary
 
-Files without extension (`.env`, `.gitignore`, `LICENSE`, `README`, etc.) automatically open in Monaco by registering empty string `""` as an extension in `extraExtensions`. This is the only modification needed.
+Files and folders without extension (`.env`, `.gitignore`, `.vscode`, `LICENSE`, `README`, etc.) are handled by the plugin's reveal system. Files without extension automatically open in Monaco by registering empty string `""` as an extension in `extraExtensions`. The system now supports revealing hidden folders as well as files, with symlink detection and cross-platform reconciliation.
 
 ## The Problem
 
-Obsidian's file system treats files without extension as having `file.extension = ""` (empty string):
+Obsidian's file system treats files without extension as having `file.extension = ""` (empty string). Folders don't have extensions but are handled by the reveal system:
 
 - `.env` → `file.extension = ""`
 - `LICENSE` → `file.extension = ""`
 - `.gitignore` → `file.extension = ""`
+- `.vscode` → folder, no extension
 
-These files cannot be registered individually because they all share the same "extension" (none).
+These items cannot be registered individually because files without extension all share the same "extension" (none), and folders have no extension concept.
 
 ## The Solution
 
-Register `""` (empty string) as an extension in `extraExtensions`:
+Register `""` (empty string) as an extension in `extraExtensions` for files without extension. For folders, use the reveal system in `hiddenFiles/operations.ts`.
 
 **Location:** `types.ts` - `DEFAULT_SETTINGS`
 
@@ -29,6 +30,8 @@ extraExtensions: ['']; // Handles all files without extension
 - Works in both manual and extended modes
 - Always included regardless of mode toggle
 - Merged with other extensions via `getActiveExtensions()`
+
+**For Folders:** The reveal system uses `reconcileItem()` for cross-platform support, with symlink detection in scanning.
 
 ## How It Works
 
@@ -48,6 +51,10 @@ All files with `file.extension === ""` open in Monaco:
 - `.env`, `.gitignore`, `.dockerignore`
 - `LICENSE`, `README`, `Makefile`
 - Any file starting with `.` and no extension
+
+### Folder Handling
+
+Hidden folders (starting with `.`) can be revealed manually or automatically (for registered extensions), using the same reveal system as files.
 
 ### Language Detection
 
@@ -219,23 +226,26 @@ void openInMonacoLeaf(newFile, this.plugin, false); // Open in current leaf
 
 ## Current Status
 
-The plugin now handles dotfiles natively through the **Reveal Hidden Files** system:
+The plugin now handles dotfiles and dotfolders natively through the **Reveal Hidden Files** system:
 
-### Built-in Dotfile Management
+### Built-in Dotfile/Dotfolder Management
 
 - **Automatic "Detect all file extensions"**: On plugin startup, the plugin automatically enables Obsidian's "Detect all file extensions" setting (required for dotfile visibility). A one-time notice is shown when this happens. Managed by `vaultConfigUtils.ts`.
-- **Auto-reveal**: When a dotfile extension (e.g., `.env`, `.gitignore`) is registered with Code Files, it is automatically made visible in the Obsidian file explorer (if "Auto-reveal registered dotfiles" is enabled, which is the default).
-- **Manual control**: The "Reveal Hidden Files" modal (`.re` quick action or folder context menu) allows scanning and manually revealing/hiding dotfiles per folder.
-- **Eye badge**: Folders containing manually revealed dotfiles display an eye icon (👁️). See [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md) for details.
+- **Auto-reveal**: When a dotfile extension (e.g., `.env`, `.gitignore`) is registered with Code Files, it is automatically made visible in the Obsidian file explorer (if "Auto-reveal registered dotfiles" is enabled, which is the default). Now supports folders as well.
+- **Manual control**: The "Reveal Hidden Files" modal (`.re` quick action or folder context menu) allows scanning and manually revealing/hiding dotfiles and dotfolders per folder, with symlink skipping.
+- **Eye badge**: Folders containing manually revealed dotfiles or dotfolders display an eye icon (👁️). See [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md) for details.
 - **Patch layer**: `openFilePatch.ts` intercepts Obsidian's file opening to ensure dotfiles and extension-less files open in Monaco when registered (or unconditionally for extension-less files like LICENSE, README).
-- **Adapter patches**: `patchAdapter()` prevents Obsidian from auto-deleting revealed dotfiles, fixes drag-and-drop destination paths, and allows dotfile deletion via trash. `patchRegisterExtensions()` keeps dotfile visibility in sync with extension registration state.
-- **No external plugin required**: The Code Files plugin fully manages dotfile visibility without any third-party dependencies.
+- **Adapter patches**: `patchAdapter()` prevents Obsidian from auto-deleting revealed dot-items, fixes drag-and-drop destination paths, prevents moving configDir, and allows dot-item deletion via trash. `patchRegisterExtensions()` keeps dot-item visibility in sync with extension registration state.
+- **Cross-platform reconciliation**: Uses `reconcileItem()` for consistent behavior between Desktop and Mobile.
+- **Performance improvements**: MutationObserver-based badge updates, yielding in long operations.
+- **No external plugin required**: The Code Files plugin fully manages dotfile and dotfolder visibility without any third-party dependencies.
 
-### To See Dotfiles in Explorer
+### To See Dotfiles/Dotfolders in Explorer
 
 1. Register the extension in Code Files settings (e.g., add `env` for `.env` files)
 2. The dotfile automatically becomes visible in the explorer (if "Auto-reveal registered dotfiles" is enabled, which is the default)
-3. Click to open — it opens directly in Monaco
+3. For folders, use the Reveal Hidden Files modal to manually reveal dotfolders
+4. Click to open — it opens directly in Monaco
 
 For bulk operations, open the Reveal Hidden Files modal via quick action (`.re`) or folder context menu.
 

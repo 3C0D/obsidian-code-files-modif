@@ -36,9 +36,9 @@ This function manages the lifecycle of the system. It is triggered during plugin
 ### The MutationObserver Logic
 Instead of scanning the entire vault, the plugin uses a `MutationObserver` on the explorer's `containerEl`:
 
-1.  **Lazy Rendering Detection**: When a user expands a folder, Obsidian injects the children nodes into the DOM "all at once" (in a single wrapper). 
-2.  **Targeted Updates**: For every added node, the observer looks for the `data-path` attribute—either on the node itself or its descendants (to catch all files in a newly opened folder).
-3.  **Efficiency**: It then calls `applyBadgeForPath` only for those specific items, ensuring O(1) performance per item even in large vaults.
+1.  **Lazy Rendering Detection**: When a user expands a folder, Obsidian injects the children nodes into the DOM "all at once" (in a single wrapper).
+2.  **Targeted Updates**: For every added node, the observer builds a set of unique `data-path` attributes from the node and its descendants (to catch all files in a newly opened folder), avoiding duplicates.
+3.  **Efficiency**: It then calls `applyBadgeToEl` (DOM-based, no fileItems lookup needed) only for those specific items, ensuring O(1) performance per item even in large vaults.
 
 ### The "Reattach" Mechanism
 The observer is tied to a specific `containerEl`. If the explorer is closed and reopened, or if the layout changes, this container might be destroyed or replaced. `reattachObservers` disconnects the old observer and "re-attaches" a new one to the current active explorer container, followed by a `scanAll` to cover items already rendered.
@@ -46,4 +46,4 @@ The observer is tied to a specific `containerEl`. If the explorer is closed and 
 ---
 
 ## External Events: The `rename` Listener
-A separate listener for `vault.on('rename')` is required because `MutationObserver` only detects the **addition** of nodes, not attribute changes on existing ones. Since a rename changes the `data-path` attribute of an item already present in the DOM, it must be handled explicitly to refresh the badge.
+A separate listener for `vault.on('rename')` is required because `MutationObserver` only detects the **addition** of nodes, not attribute changes on existing ones. Since a rename changes the `data-path` attribute of an item already present in the DOM, it must be handled explicitly to refresh the badge using `applyBadgeForPath`.

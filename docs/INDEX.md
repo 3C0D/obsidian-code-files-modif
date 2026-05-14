@@ -192,35 +192,25 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 ### [files-without-extension.md](files-without-extension.md)
 
-**Role:** Support for files without extensions, including editor configuration and integration with hidden files system
+**Role:** Support for files and folders without extensions, including editor configuration and integration with hidden files system
 
 - Register empty string as extension for automatic Monaco opening
-
 - Extension mapping system for per-file editor configuration
-
 - Language fallback cascade (e.g., .clangformat inherits YAML config)
-
 - Broadcasting config changes and file creation fixes
-
-- Built-in dotfile management with auto-reveal and manual control
-
-- **Key for:** Understanding dotfile support, configuration, and hidden file integration
+- Built-in dotfile/dotfolder management with auto-reveal, manual control, and symlink detection
+- **Key for:** Understanding dotfile support, configuration, and hidden item integration
 
 ### [hidden-files-eye-badge-system.md](hidden-files-eye-badge-system.md)
 
-**Role:** Eye badge system for manually revealed hidden files, with patches and bug fixes
+**Role:** Eye badge system for manually revealed hidden files and folders, with patches and performance improvements
 
-- Eye badge (👁️) on folders containing manually revealed dotfiles
-
-- Management via `decorateFolders()` and `revealedFiles` settings
-
+- Eye badge (👁️) on folders containing manually revealed dotfiles or dotfolders
+- Management via `decorateFolders()` and `revealedItems` settings (supports files and folders)
 - Integration with reveal/hide operations, vault events, and extension registration
-
-- Patches for adapter operations (deletion, rename, file opening)
-
-- Bug fixes for drag-and-drop and trash operations
-
-- **Key for:** Understanding badge behavior, hidden file management, and system patches
+- Patches for adapter operations (deletion, rename, file opening), with symlink detection
+- Bug fixes for drag-and-drop and trash operations, cross-platform reconciliation
+- **Key for:** Understanding badge behavior, hidden item management, and system patches
 
 ### [explorer-badges-system.md](explorer-badges-system.md)
 
@@ -228,7 +218,7 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 - Automatic uppercase extension badges for dotfiles (.ENV, .GITIGNORE)
 - "Unregistered" visual indicators for file types not natively supported by Obsidian
-- O(1) performance via targeted MutationObserver updates
+- O(1) performance via targeted MutationObserver updates with DOM-based badge application
 - Architecture layers: `applyBadge`, `scanAll`, and `reattachObservers`
 - **Key for:** Understanding explorer visual indicators and performance-optimized DOM monitoring
 
@@ -407,7 +397,7 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 ## 📝 Maintenance Notes
 
-- **Last Updated:** 2026-05-12
+- **Last Updated:** 2026-05-14
 - **Total Documents:** 33
 - **Categories:** 11
 - **Status:** All documents reviewed and indexed
