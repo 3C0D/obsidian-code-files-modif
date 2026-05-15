@@ -3,6 +3,7 @@
  * Handles incoming messages from the editor view and processes them.
  */
 import type { MessageHandlerContext, Prettify, IframeMessage } from '../../types/index.ts';
+import { handleConsoleMessage, cleanupConsole } from './consoleHandler.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
@@ -168,6 +169,12 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
 
     // DISPATCHING: All other messages must provide a 'context' matching this file path.
     if (msg.context !== codeContext) return;
+
+    // Handle console messages
+    if (['toggle-console', 'run-command', 'console-height-changed', 'console-visibility-changed', 'send-stdin', 'send-stdin-eof', 'console-notify', 'stop-command'].includes(msg.type)) {
+      handleConsoleMessage(msg, codeContext, send, plugin);
+      return;
+    }
 
     switch (msg.type) {
       case 'open-formatter-config': {
@@ -636,9 +643,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       // Clean up any remaining modal patches when the Monaco view is destroyed
       if (_settingsUninstall) _settingsUninstall();
       if (_paletteUninstall) _paletteUninstall();
-      const proc = activeProcesses.get(codeContext);
-      if (proc) killProcessTree(proc);
-      activeProcesses.delete(codeContext);
+      cleanupConsole();
       _removeDragRelay?.();
     }
   };
