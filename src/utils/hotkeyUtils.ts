@@ -11,6 +11,7 @@
  */
 import { Platform, type App } from 'obsidian';
 import type { HotkeyConfig } from '../types/index.ts';
+import type { MyPluginSettings } from '../types/index.ts';
 
 /**
  * Reads the configured hotkey for a given Obsidian command.
@@ -124,7 +125,7 @@ export function formatHotkey(config: HotkeyConfig, resolveMod: boolean = false):
  * @param app - The Obsidian app instance
  * @returns JSON string of all hotkey configs (settings, palette, delete file, console)
  */
-export function serializeMonacoHotkeys(app: App): string {
+export function serializeMonacoHotkeys(app: App, settings: MyPluginSettings): string {
   const settingsHotkey = getObsidianHotkey(app, 'app:open-settings') ?? {
     modifiers: ['Mod'],
     key: ','
@@ -137,8 +138,8 @@ export function serializeMonacoHotkeys(app: App): string {
     modifiers: ['Mod'],
     key: 'Delete'
   };
-  // Console hotkey is direct, not from Obsidian
-  const consoleHotkey = { modifiers: ['Mod'], key: 'j' };
+  // Console hotkey uses plugin settings override
+  const consoleHotkey = parseHotkeyOverride(settings.consoleHotkey) ?? { modifiers: ['Mod'], key: 'j' };
   return JSON.stringify({
     settingsHotkey,
     paletteHotkey,

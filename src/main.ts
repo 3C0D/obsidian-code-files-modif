@@ -56,7 +56,7 @@ export default class CodeFilesPlugin extends Plugin {
     patchMenuOverlay(this);
 
     // Initialize _lastHotkeys with current hotkey state to enable change detection
-    this._lastHotkeys = serializeMonacoHotkeys(this.app);
+    this._lastHotkeys = serializeMonacoHotkeys(this.app, this.settings);
 
     this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
     initExtensions(this);
