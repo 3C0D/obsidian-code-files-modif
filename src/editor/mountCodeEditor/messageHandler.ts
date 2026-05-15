@@ -3,7 +3,7 @@
  * Handles incoming messages from the editor view and processes them.
  */
 import type { MessageHandlerContext, Prettify, IframeMessage } from '../../types/index.ts';
-import { handleConsoleMessage, cleanupConsole } from './consoleHandler.ts';
+import { cleanupConsole } from './consoleHandler.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
@@ -129,7 +129,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     onOpenThemePicker,
     onOpenRenameExtension,
     onConsoleVisibilityChanged,
-    initialConsoleOpen
+    initialConsoleOpen: _initialConsoleOpen,
+    resolveReady
   } = ctx;
 
   let _closeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -145,36 +146,21 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     // SECURITY: Ensure we only process messages intended for THIS specific iframe instance.
     if (source !== iframe.contentWindow) return;
 
-    const msg = data as IframeMessage;
-
     // Handle 'ready' signal: Triggered when Monaco is fully loaded in the iframe.
-    if (msg.type === 'ready') {
+    if (data.type === 'ready') {
       send('init', initParams);
       send('change-value', { value: valueRef.current });
       if (autoFocus) send('focus', {});
+      if (_initialConsoleOpen) send('console-show', {});
       await loadProjectFiles(send);
-
-      // Desktop-only: initialise console state (CWD, history, visibility)
-      // The integrated console relies on Node.js APIs (child_process, path, fs),
-      // which are only available in the desktop Electron environment.
-      if (Platform.isDesktop) {
-        const { basePath, cwd } = resolveConsoleCwd(plugin, codeContext);
-        send('console-cwd-changed', { cwd, vaultPath: basePath });
-        const hist = plugin.settings.consoleHistories[codeContext];
-        if (hist?.length) send('console-history', { history: hist });
-        if (initialConsoleOpen) send('console-show', {});
-      }
+      resolveReady();
       return;
     }
 
-    // DISPATCHING: All other messages must provide a 'context' matching this file path.
+    const msg = data as IframeMessage & { context: string };
+
+    // DISPATCHING: All messages must provide a 'context' matching this file path.
     if (msg.context !== codeContext) return;
-
-    // Handle console messages
-    if (['toggle-console', 'run-command', 'console-height-changed', 'console-visibility-changed', 'send-stdin', 'send-stdin-eof', 'console-notify', 'stop-command'].includes(msg.type)) {
-      handleConsoleMessage(msg, codeContext, send, plugin);
-      return;
-    }
 
     switch (msg.type) {
       case 'open-formatter-config': {
@@ -341,12 +327,6 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        * Simply reflects the command back to the iframe.
        * The iframe manages the actual DOM visibility class.
        */
-      case 'toggle-console': {
-        if (!Platform.isDesktop) break;
-        send('console-toggle', {});
-        break;
-      }
-
       /**
        * CONSOLE: Run a new system command.
        * Spawns a child process and pipes its output to the iframe.

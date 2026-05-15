@@ -18,7 +18,7 @@
  * plugin unload.
  */
 import { around } from 'monkey-around';
-import { WorkspaceLeaf, type OpenViewState, type TFile } from 'obsidian';
+import { WorkspaceLeaf, type OpenViewState, type TFile, Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
@@ -60,6 +60,7 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
 
           // Avoid openining tabs for unknown extensions
           if (!isKnownToObsidian && !isKnownToMonaco) {
+            new Notice(`Extension .${ext} is not registered with Code Files or Obsidian`);
             return;
           }
 

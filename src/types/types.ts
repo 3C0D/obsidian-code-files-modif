@@ -336,6 +336,8 @@ export type SendFunction = <T extends object>(type: string, payload: T) => void;
 export interface CodeEditorHandle {
   /** The iframe element containing the Monaco editor */
   iframe: HTMLIFrameElement;
+  /** Promise that resolves when the Monaco editor is fully ready */
+  ready: Promise<void>;
   /**
    * Sends a typed postMessage to the Monaco iframe.
    * '*' is intentional: the iframe is a blob: URL with no stable origin to target.
@@ -513,6 +515,8 @@ export interface AssetUrls {
 export interface MessageHandlerContext {
   /** The iframe element containing the Monaco editor */
   iframe: HTMLIFrameElement;
+  /** Function to resolve the ready promise when Monaco is initialized */
+  resolveReady: () => void;
   /** Internal function to send response messages to the iframe */
   send: SendFunction;
   /** Reference to the current editor value to avoid closure issues */

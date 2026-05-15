@@ -75,15 +75,10 @@ export async function openInMonacoLeaf(
   plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
 
   if (position) {
-    // empirical delay, no clean alternative: 150ms to ensure Monaco is ready
-    // to receive the 'scroll-to-position' command after it is opened in a new tab.
-    setTimeout(
-      () => {
-        if (leaf.view instanceof CodeEditorView) {
-          leaf.view.editor?.send('scroll-to-position', { position });
-        }
-      },
-      existingLeaf ? 0 : 150
-    );
+    // Wait for Monaco to be ready before sending scroll command
+    if (leaf.view instanceof CodeEditorView && leaf.view.editor) {
+      await leaf.view.editor.ready;
+      leaf.view.editor.send('scroll-to-position', { position });
+    }
   }
 }

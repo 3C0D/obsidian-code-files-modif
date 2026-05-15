@@ -102,6 +102,10 @@ export const mountCodeEditor = async (
   const blobUrl = await buildBlobUrl(urls);
   iframe.src = blobUrl;
 
+  // Promise that resolves when Monaco is fully ready
+  let resolveReady: () => void = () => {};
+  const ready = new Promise<void>((resolve) => { resolveReady = resolve; });
+
   /**
    * Sends a typed postMessage to the Monaco iframe.
    * '*' is intentional: the iframe is a blob: URL with no stable origin to target.
@@ -123,6 +127,7 @@ export const mountCodeEditor = async (
     initParams,
     loadProjectFiles: (send) => loadProjectFiles(plugin, send),
     autoFocus,
+    resolveReady,
     onChange,
     onSave,
     onFormatDiff,
@@ -165,6 +170,7 @@ export const mountCodeEditor = async (
     clear,
     getValue,
     setValue,
-    destroy
+    destroy,
+    ready
   };
 };
