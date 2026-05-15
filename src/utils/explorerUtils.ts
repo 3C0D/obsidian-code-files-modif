@@ -6,7 +6,7 @@
  */
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView, FileTreeItem, FolderTreeItem } from 'obsidian-typings';
-import { TFile, TFolder, type App } from 'obsidian';
+import { TFile, TFolder } from 'obsidian';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
 
@@ -154,16 +154,16 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
         for (const mut of mutations) {
           for (const node of Array.from(mut.addedNodes)) {
             if (!(node instanceof HTMLElement)) continue;
-            
+
             const targets = new Set<HTMLElement>();
-            
+
             if (node.dataset.path) {
               targets.add(node);
             } else {
               // The node might be a child added later (e.g., span.nav-file-tag)
               const parent = node.closest<HTMLElement>('[data-path]');
               if (parent) targets.add(parent);
-              
+
               // Or it might be a container of files
               node.querySelectorAll<HTMLElement>('[data-path]').forEach(el => targets.add(el));
             }
@@ -235,15 +235,4 @@ export function rescanExplorerBadges(plugin: CodeFilesPlugin): void {
   }
 }
 
-/**
- * Utility to register a handler for Obsidian's 'css-change' event.
- * Returns a cleanup function to unregister the handler.
- *
- * @param app - The Obsidian App instance.
- * @param handler - The callback to execute on CSS change.
- * @returns A function that unregisters the handler when called.
- */
-export function onCssChange(app: App, handler: () => void): () => void {
-  app.workspace.on('css-change', handler);
-  return () => app.workspace.off('css-change', handler);
-}
+

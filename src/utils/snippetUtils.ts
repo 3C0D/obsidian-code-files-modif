@@ -3,7 +3,7 @@
  * Provides functions to check snippet existence, enabled state, and register change listeners.
  */
 import type { App } from 'obsidian';
-import { onCssChange } from './explorerUtils.ts';
+import { onCssChange } from './workspaceEvents.ts';
 
 /** Checks if a snippet exists in the vault
  *

@@ -6,7 +6,7 @@ import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import manifest from '../../manifest.json' with { type: 'json' };
 import { BUILTIN_THEMES } from '../types/index.ts';
-import { onCssChange } from './explorerUtils.ts';
+import { onCssChange } from './workspaceEvents.ts';
 
 let _themes: string[] = [];
 
