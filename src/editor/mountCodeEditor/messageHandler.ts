@@ -132,6 +132,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
   } = ctx;
 
   let _closeTimer: ReturnType<typeof setTimeout> | null = null;
+  // Track uninstall functions for monkey patches to prevent stacking when user opens modals multiple times
+  let _settingsUninstall: (() => void) | null = null;
+  let _paletteUninstall: (() => void) | null = null;
 
   /**
    * Main message listener function.
@@ -177,11 +180,15 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       }
 
       case 'open-settings': {
+        // Clean up any previous settings modal patch to prevent stacking
+        if (_settingsUninstall) _settingsUninstall();
         const uninstall = around(plugin.app.setting, {
           onClose(old) {
             return function (this: unknown) {
               const result = old.apply(this);
               uninstall();
+              // Clear the tracker since this patch is now uninstalled
+              _settingsUninstall = null;
               // Defer hotkey broadcast: settings modal teardown is asynchronous in Obsidian,
               // so we wait 200 ms to ensure the panel is fully closed before re-syncing.
               setTimeout(() => {
@@ -192,6 +199,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             };
           }
         });
+        // Track the uninstall function for cleanup on next modal open or view destruction
+        _settingsUninstall = uninstall;
         plugin.app.setting.open();
         plugin.app.setting.openTabById(plugin.manifest.id);
         // Scroll the left sidebar to show the active plugin tab
@@ -217,6 +226,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       }
 
       case 'open-obsidian-palette': {
+        // Clean up any previous command palette modal patch to prevent stacking
+        if (_paletteUninstall) _paletteUninstall();
         const cmdPalette = plugin.app.internalPlugins.getPluginById('command-palette');
         if (!cmdPalette) break;
         const modal = cmdPalette.instance.modal;
@@ -225,11 +236,14 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
             return function (this: unknown) {
               const result = old.apply(this);
               uninstall();
+              // Clear the tracker since this patch is now uninstalled
+              _paletteUninstall = null;
               send('focus', {});
               return result;
             };
           }
         });
+        _paletteUninstall = uninstall;
         modal.open();
         break;
       }
@@ -620,6 +634,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
      */
     cleanup: () => {
       if (_closeTimer) clearTimeout(_closeTimer);
+      // Clean up any remaining modal patches when the Monaco view is destroyed
+      if (_settingsUninstall) _settingsUninstall();
+      if (_paletteUninstall) _paletteUninstall();
       const proc = activeProcesses.get(codeContext);
       if (proc) killProcessTree(proc);
       activeProcesses.delete(codeContext);
