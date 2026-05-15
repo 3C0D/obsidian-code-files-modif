@@ -10,7 +10,7 @@ import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
-import { handleConsoleMessage, cleanupConsole } from './consoleHandler.ts';
+import { handleConsoleMessage, cleanupConsole, initConsole } from './consoleHandler.ts';
 
 // Desktop-only imports for drag-and-drop functionality
 let webUtils: { getPathForFile(file: File): string } | undefined;
@@ -67,7 +67,10 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       send('init', initParams);
       send('change-value', { value: valueRef.current });
       if (autoFocus) send('focus', {});
-      if (_initialConsoleOpen) send('console-show', {});
+      if (Platform.isDesktop) {
+        if (_initialConsoleOpen) send('console-show', {});
+        initConsole(plugin, codeContext, send);
+      }
       await loadProjectFiles(send);
       resolveReady();
       return;
@@ -352,7 +355,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       // Clean up any remaining modal patches when the Monaco view is destroyed
       if (_settingsUninstall) _settingsUninstall();
       if (_paletteUninstall) _paletteUninstall();
-      cleanupConsole();
+      cleanupConsole(codeContext);
       _removeDragRelay?.();
     }
   };

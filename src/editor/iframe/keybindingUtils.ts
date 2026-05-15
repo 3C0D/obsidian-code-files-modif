@@ -119,3 +119,28 @@ export function hotkeyToMonacoKeybinding(hk: HotkeyConfig | null): number | null
 
   return mod | keyCode;
 }
+
+/**
+ * Checks whether a keyboard event matches a hotkey configuration.
+ * Handles all modifier combinations including Mod-less shortcuts.
+ * @param e - The keyboard event (standard KeyboardEvent or Monaco's IKeyboardEvent)
+ * @param hk - The hotkey configuration to match against
+ */
+export function matchesHotkey(
+  e: KeyboardEvent | { browserEvent: KeyboardEvent },
+  hk: HotkeyConfig
+): boolean {
+  const browserEvent = 'browserEvent' in e ? e.browserEvent : e;
+  if (browserEvent.key.toLowerCase() !== hk.key.toLowerCase()) return false;
+
+  const needsMod =
+    hk.modifiers.includes('Mod') ||
+    hk.modifiers.includes('Ctrl') ||
+    hk.modifiers.includes('Meta');
+
+  return (
+    (browserEvent.ctrlKey || browserEvent.metaKey) === needsMod &&
+    browserEvent.shiftKey === hk.modifiers.includes('Shift') &&
+    browserEvent.altKey === hk.modifiers.includes('Alt')
+  );
+}

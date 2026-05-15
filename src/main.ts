@@ -34,6 +34,7 @@ import {
 } from './utils/hiddenFiles/sync.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 import { revokeBlobUrlCache } from './editor/mountCodeEditor/buildBlobUrl.ts';
+import { cleanupAllConsoles } from './editor/mountCodeEditor/consoleHandler.ts';
 
 export default class CodeFilesPlugin extends Plugin {
   settings!: MyPluginSettings;
@@ -112,6 +113,7 @@ export default class CodeFilesPlugin extends Plugin {
     this._openFilePatch = null;
     cleanupExplorerBadges();
     this.ribbonIconEl?.remove();
+    cleanupAllConsoles();
     revokeBlobUrlCache();
   }
 

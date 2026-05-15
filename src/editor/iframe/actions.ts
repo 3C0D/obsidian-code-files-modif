@@ -6,7 +6,7 @@ import type * as Monaco from 'monaco-editor';
 import type { InitParams, HotkeyConfig, Prettify } from './types/index.ts';
 import { getLastFormat } from './diff.ts';
 import { getParentOrigin } from './utils.ts';
-import { hotkeyToMonacoKeybinding } from './keybindingUtils.ts';
+import { hotkeyToMonacoKeybinding, matchesHotkey } from './keybindingUtils.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -126,26 +126,6 @@ export function registerHotkeyActions(hk: {
   );
 }
 
-/**
- * Checks whether a keyboard event matches a hotkey configuration.
- * Handles all modifier combinations including Mod-less shortcuts.
- * @param e - The Monaco keyboard event
- * @param hk - The hotkey configuration to match against
- */
-function matchesHotkey(e: Monaco.IKeyboardEvent, hk: HotkeyConfig): boolean {
-  if (e.browserEvent.key.toLowerCase() !== hk.key.toLowerCase()) return false;
-
-  const needsMod =
-    hk.modifiers.includes('Mod') ||
-    hk.modifiers.includes('Ctrl') ||
-    hk.modifiers.includes('Meta');
-
-  return (
-    (e.ctrlKey || e.metaKey) === needsMod &&
-    e.shiftKey === hk.modifiers.includes('Shift') &&
-    e.altKey === hk.modifiers.includes('Alt')
-  );
-}
 
 /**
  * Registers all Monaco actions and keyboard handlers.

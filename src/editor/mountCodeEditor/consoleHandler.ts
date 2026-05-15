@@ -32,10 +32,28 @@ const currentCwd = new Map<string, string>();
 const closeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
- * Kills all active console processes and clears tracking state.
- * Called when the editor view is destroyed.
+ * Kills the console process and clears state for a specific editor context.
+ * Called when an editor view is destroyed.
  */
-export function cleanupConsole(): void {
+export function cleanupConsole(codeContext: string): void {
+  const proc = activeProcesses.get(codeContext);
+  if (proc) {
+    killProcessTree(proc);
+    activeProcesses.delete(codeContext);
+  }
+  currentCwd.delete(codeContext);
+  const timer = closeTimers.get(codeContext);
+  if (timer) {
+    clearTimeout(timer);
+    closeTimers.delete(codeContext);
+  }
+}
+
+/**
+ * Kills ALL active console processes and clears all tracking state.
+ * Called when the plugin is unloaded.
+ */
+export function cleanupAllConsoles(): void {
   for (const proc of activeProcesses.values()) {
     killProcessTree(proc);
   }
@@ -45,6 +63,29 @@ export function cleanupConsole(): void {
     clearTimeout(timer);
   }
   closeTimers.clear();
+}
+
+/**
+ * Initializes the console state for a new editor instance.
+ * Sends the current history and working directory to the iframe.
+ */
+export function initConsole(
+  plugin: CodeFilesPlugin,
+  codeContext: string,
+  send: (type: string, payload: unknown) => void
+): void {
+  if (!Platform.isDesktop || !path) return;
+
+  const { basePath, cwd } = resolveConsoleCwd(plugin, codeContext);
+
+  // Send initial CWD to the iframe console
+  send('console-cwd-changed', { cwd, vaultPath: basePath });
+
+  // Restore command history from persistent settings
+  const hist = plugin.settings.consoleHistories[codeContext];
+  if (hist?.length) {
+    send('console-history', { history: hist });
+  }
 }
 
 /**
@@ -266,6 +307,16 @@ export async function handleConsoleMessage(
     case 'console-visibility-changed': {
       if (!Platform.isDesktop) return true;
       onConsoleVisibilityChanged?.(msg.visible);
+      return true;
+    }
+
+    /**
+     * CONSOLE: Toggle visibility.
+     * Triggered by hotkey (Ctrl+J) in Monaco.
+     */
+    case 'toggle-console': {
+      if (!Platform.isDesktop) return true;
+      send('console-toggle', {});
       return true;
     }
 

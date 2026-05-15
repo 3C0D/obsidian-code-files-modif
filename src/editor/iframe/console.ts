@@ -5,6 +5,8 @@
 import { AnsiUp } from 'ansi_up';
 import type * as monaco from 'monaco-editor';
 import { getParentOrigin, throttle } from './utils.ts';
+import { matchesHotkey } from './keybindingUtils.ts';
+import type { HotkeyConfig } from './types/index.ts';
 
 // AnsiUp converts ANSI escape codes (terminal color sequences like \x1b[32m) to HTML <span> tags,
 // so process output with colors (e.g. npm, jest, python) renders correctly in the console pane.
@@ -22,6 +24,7 @@ let currentCwd = '';
 let vaultPath = '';
 const history: string[] = [];
 let historyIndex = -1;
+let currentConsoleHotkey: HotkeyConfig | null = null;
 
 /**
  * Updates the prompt UI elements based on current state (CWD, isRunning).
@@ -57,8 +60,10 @@ const updatePrompt = (): void => {
 export function initConsolePane(
   ctx: string,
   editor: monaco.editor.IStandaloneCodeEditor | null,
-  initialHeight?: number
+  initialHeight?: number,
+  hotkey?: HotkeyConfig | null
 ): void {
+  currentConsoleHotkey = hotkey || null;
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
   const input = document.getElementById('console-input-field') as HTMLInputElement;
@@ -172,8 +177,15 @@ export function initConsolePane(
         getParentOrigin()
       );
     }
-    // Intercept Ctrl+J to toggle visibility (same shortcut as the main editor)
-    if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
+    // Intercept Console Hotkey to toggle visibility (same shortcut as the main editor)
+    if (currentConsoleHotkey && matchesHotkey(e, currentConsoleHotkey)) {
+      e.preventDefault();
+      window.parent.postMessage(
+        { type: 'toggle-console', context: ctx },
+        getParentOrigin()
+      );
+    } else if (!currentConsoleHotkey && e.key === 'j' && (e.ctrlKey || e.metaKey)) {
+      // Fallback to Ctrl+J if no hotkey is configured yet
       e.preventDefault();
       window.parent.postMessage(
         { type: 'toggle-console', context: ctx },
@@ -473,4 +485,12 @@ export function handleConsoleMessage(
     default:
       return;
   }
+}
+
+/**
+ * Updates the console hotkey dynamically when Obsidian settings change.
+ * @param hotkey - The new hotkey configuration
+ */
+export function updateConsoleHotkey(hotkey: HotkeyConfig | null): void {
+  currentConsoleHotkey = hotkey;
 }

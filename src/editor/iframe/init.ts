@@ -23,7 +23,7 @@ import {
   registerHotkeyActions
 } from './actions.ts';
 import { setParentOrigin, getParentOrigin } from './utils.ts';
-import { initConsolePane, handleConsoleMessage } from './console.ts';
+import { initConsolePane, handleConsoleMessage, updateConsoleHotkey } from './console.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -291,8 +291,8 @@ function applyParams(params: Prettify<InitParams>): void {
     console: params.consoleHotkey || null
   });
 
-  // Initialize console pane with persistent height
-  initConsolePane(context, editor, params.consoleHeight);
+  // Initialize console pane with persistent height and hotkey
+  initConsolePane(context, editor, params.consoleHeight, params.consoleHotkey || null);
 
   // Notify parent when content changes (updates dirty badge)
   editor.onDidChangeModelContent(() => {
@@ -420,6 +420,7 @@ export function initMonacoApp(): void {
           deleteFile: data.deleteFileHotkey,
           console: data.consoleHotkey
         });
+        updateConsoleHotkey(data.consoleHotkey || null);
         break;
       case 'load-project-files':
         // Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
