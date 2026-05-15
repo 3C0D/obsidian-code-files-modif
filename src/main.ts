@@ -42,6 +42,9 @@ export default class CodeFilesPlugin extends Plugin {
   private _modalOpenPatch: (() => void) | null = null;
   private _openFilePatch: (() => void) | null = null;
   _lastHotkeys?: string;
+  // Cache for flattened revealedItems to avoid recomputing Object.values(...).flat() on hot paths
+  _revealedItemsCache: Set<string> | null = null;
+  // Original reconcileDeletion method before patching, used to call the real implementation
   _origReconcileDeletion: ((realPath: string, path: string) => Promise<void>) | null =
     null;
 

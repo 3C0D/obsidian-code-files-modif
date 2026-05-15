@@ -45,6 +45,7 @@ export async function syncAutoRevealedDotfiles(
       } else {
         delete plugin.settings.revealedItems[folderPath];
       }
+      plugin._revealedItemsCache = null;
     }
   }
   if (changed) await plugin.saveSettings();
@@ -170,6 +171,7 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
       if (valid.length > 0) {
         plugin.settings.revealedItems[normFolderPath] = valid;
       }
+      plugin._revealedItemsCache = null;
     }
   }
 
@@ -185,8 +187,10 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
  */
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
   const activeExts = getActiveExtensions(plugin.settings);
-  // flat because Object.values returns an array of arrays
-  const revealedPaths = new Set(Object.values(plugin.settings.revealedItems).flat());
+  if (!plugin._revealedItemsCache) {
+    plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+  }
+  const revealedPaths = plugin._revealedItemsCache;
 
   const toHide = new Map<string, string[]>();
 

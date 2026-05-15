@@ -48,8 +48,10 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           if (basename.startsWith('.')) return;
 
           // Protect files inside revealed hidden folders
-          const allRevealedItems = Object.values(plugin.settings.revealedItems).flat();
-          for (const revealedPath of allRevealedItems) {
+          if (!plugin._revealedItemsCache) {
+            plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+          }
+          for (const revealedPath of plugin._revealedItemsCache) {
             // Check if normalizedPath is inside a revealed hidden folder
             if (normalizedPath.startsWith(revealedPath + '/')) {
               return;
@@ -65,8 +67,10 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           const cfgDir = plugin.app.vault.configDir;
           if (normalizedPath.startsWith(cfgDir + '/')) {
             const tmp = plugin.settings.temporaryRevealedPaths;
-            const rev = Object.values(plugin.settings.revealedItems).flat();
-            if (tmp.includes(normalizedPath) || rev.includes(normalizedPath)) {
+            if (!plugin._revealedItemsCache) {
+              plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+            }
+            if (tmp.includes(normalizedPath) || plugin._revealedItemsCache.has(normalizedPath)) {
               return;
             }
           }
@@ -201,9 +205,10 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
     unregisterExtensions(next) {
       return function (this: typeof viewRegistry, extensions: string[]) {
         next.call(this, extensions);
-        const revealedPaths = new Set(
-          Object.values(plugin.settings.revealedItems).flat()
-        );
+        if (!plugin._revealedItemsCache) {
+          plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+        }
+        const revealedPaths = plugin._revealedItemsCache;
         const adapter = getAdapter(plugin);
         for (const file of plugin.app.vault.getFiles()) {
           if (!extensions.includes(getExtension(file.name))) continue;

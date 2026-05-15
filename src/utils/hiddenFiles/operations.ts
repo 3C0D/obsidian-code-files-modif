@@ -93,6 +93,7 @@ export async function revealItems(
   if (persist) {
     const existing = plugin.settings.revealedItems[folderPath] ?? [];
     plugin.settings.revealedItems[folderPath] = [...new Set([...existing, ...itemPaths])];
+    plugin._revealedItemsCache = null;
     await plugin.saveSettings();
   }
 
@@ -148,6 +149,7 @@ export async function unrevealItems(
     delete plugin.settings.revealedItems[folderPath];
   }
 
+  plugin._revealedItemsCache = null;
   await plugin.saveSettings();
   decorateFolders(plugin);
 }
