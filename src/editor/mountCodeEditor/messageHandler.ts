@@ -3,7 +3,7 @@
  * Handles incoming messages from the editor view and processes them.
  */
 import type { MessageHandlerContext, Prettify, IframeMessage } from '../../types/index.ts';
-import { cleanupConsole } from './consoleHandler.ts';
+
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
@@ -35,6 +35,18 @@ export const activeProcesses = new Map<string, ChildProcess>();
 
 /** Tracks the current working directory for each file's console session. */
 const currentCwd = new Map<string, string>();
+
+/**
+ * Kills all active console processes and clears tracking state.
+ * Called when the editor view is destroyed.
+ */
+function cleanupConsole(): void {
+  for (const proc of activeProcesses.values()) {
+    killProcessTree(proc);
+  }
+  activeProcesses.clear();
+  currentCwd.clear();
+}
 
 /**
  * CP850 (DOS Latin 1) high-byte lookup table (0x80–0xFF → Unicode).
