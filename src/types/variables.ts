@@ -1,4 +1,3 @@
-import { staticMap } from '../utils/getLanguage.ts';
 import type { MyPluginSettings } from './types.ts';
 
 // ===== Editor Configuration =====
