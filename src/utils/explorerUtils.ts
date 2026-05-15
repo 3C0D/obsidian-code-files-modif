@@ -119,6 +119,7 @@ export function updateProjectFolderHighlight(plugin: CodeFilesPlugin): void {
 }
 
 let explorerObserver: MutationObserver | null = null;
+let previousView: FileExplorerView | null = null;
 
 /**
  * Ensures dotfiles (.env, .gitignore) show their extension as a badge in the
@@ -144,6 +145,9 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
   const reattachObservers = (): void => {
     const view = getFileExplorerView(plugin);
     if (!view) return;
+
+    const viewChanged = view !== previousView;
+    previousView = view;
 
     if (!explorerObserver) {
       explorerObserver = new MutationObserver((mutations) => {
@@ -179,7 +183,9 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
       childList: true,
       subtree: true
     });
-    scanAll(view); // Apply badges to all currently visible items in the explorer
+    if (viewChanged) {
+      scanAll(view); // Apply badges to all currently visible items in the explorer
+    }
   };
 
   // Reattach observer whenever the layout changes (explorer closed/reopened, pane moved)
@@ -210,6 +216,7 @@ export function cleanupExplorerBadges(): void {
     explorerObserver.disconnect();
     explorerObserver = null;
   }
+  previousView = null;
 }
 
 /**
