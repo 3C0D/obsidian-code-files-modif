@@ -6,7 +6,7 @@ import { type DataAdapterEx } from 'obsidian-typings';
 import { around } from 'monkey-around';
 import { type Plugin, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
+import { getAdapter, _bypassPatch, setBypassPatch, getRevealedItemsCache } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
@@ -49,10 +49,8 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           if (basename.startsWith('.')) return;
 
           // Protect files inside revealed hidden folders
-          if (!plugin._revealedItemsCache) {
-            plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
-          }
-          for (const revealedPath of plugin._revealedItemsCache) {
+          const revealedPaths = getRevealedItemsCache(plugin);
+          for (const revealedPath of revealedPaths) {
             // Check if normalizedPath is inside a revealed hidden folder
             if (normalizedPath.startsWith(revealedPath + '/')) {
               return;
@@ -68,10 +66,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
           const cfgDir = plugin.app.vault.configDir;
           if (normalizedPath.startsWith(cfgDir + '/')) {
             const tmp = plugin.settings.temporaryRevealedPaths;
-            if (!plugin._revealedItemsCache) {
-              plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
-            }
-            if (tmp.includes(normalizedPath) || plugin._revealedItemsCache.has(normalizedPath)) {
+            if (tmp.includes(normalizedPath) || revealedPaths.has(normalizedPath)) {
               return;
             }
           }
@@ -178,10 +173,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
     unregisterExtensions(next) {
       return function (this: typeof viewRegistry, extensions: string[]) {
         next.call(this, extensions);
-        if (!plugin._revealedItemsCache) {
-          plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
-        }
-        const revealedPaths = plugin._revealedItemsCache;
+        const revealedPaths = getRevealedItemsCache(plugin);
         const adapter = getAdapter(plugin);
         for (const file of plugin.app.vault.getFiles()) {
           if (!extensions.includes(getExtension(file.name))) continue;

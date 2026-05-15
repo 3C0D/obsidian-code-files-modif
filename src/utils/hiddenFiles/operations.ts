@@ -102,7 +102,7 @@ export async function revealItems(
 
 /**
  * Hides previously revealed hidden files or folders from the Obsidian UI.
- * Uses getRealPathSafe which falls back to the original path on Mobile, making this function fully cross-platform.
+ * Uses getRealPathSafe which falls back to the original path on Mobile.
  * If temporary is true, only removes the file from the vault index without
  * persisting any changes to settings, decorating folders, or showing a notice.
  * Use this for files revealed transiently (e.g. opened via ChooseHiddenFileModal).
@@ -235,7 +235,7 @@ export async function cleanupTemporaryReveal(
 /**
  * Updates the revealedItems setting when a file or folder is renamed.
  * This ensures that manually revealed items stay revealed under their new name.
- * 
+ *
  * @param plugin - The plugin instance.
  * @param src - The original normalized path.
  * @param dest - The new normalized path.

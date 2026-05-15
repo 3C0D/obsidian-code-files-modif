@@ -29,3 +29,21 @@ export function setBypassPatch(value: boolean): void {
 export function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
   return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
+
+/**
+ * Gets or initializes the cache of revealed items paths.
+ *
+ * Used in reconcileDeletion patches for fast checks if a file path is revealed,
+ * avoiding Set reconstruction on every call. reconcileDeletion is called by Obsidian's
+ * file watcher during renames/drag-and-drop, deletions, extension unregistration (can trigger hundreds of calls), and external changes.
+ * Without caching, each call recomputes Object.values(revealedItems).flat() + new Set().
+ *
+ * @param plugin - The plugin instance.
+ * @returns The set of revealed item paths.
+ */
+export function getRevealedItemsCache(plugin: CodeFilesPlugin): Set<string> {
+  if (!plugin._revealedItemsCache) {
+    plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+  }
+  return plugin._revealedItemsCache;
+}
