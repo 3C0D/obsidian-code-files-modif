@@ -2,7 +2,7 @@
  * Message handler for the mounted code editor.
  * Handles incoming messages from the editor view and processes them.
  */
-import type { MessageHandlerContext, Prettify } from '../../types/index.ts';
+import type { MessageHandlerContext, Prettify, IframeMessage } from '../../types/index.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
@@ -144,8 +144,10 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     // SECURITY: Ensure we only process messages intended for THIS specific iframe instance.
     if (source !== iframe.contentWindow) return;
 
+    const msg = data as IframeMessage;
+
     // Handle 'ready' signal: Triggered when Monaco is fully loaded in the iframe.
-    if (data.type === 'ready') {
+    if (msg.type === 'ready') {
       send('init', initParams);
       send('change-value', { value: valueRef.current });
       if (autoFocus) send('focus', {});
@@ -165,9 +167,9 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     }
 
     // DISPATCHING: All other messages must provide a 'context' matching this file path.
-    if (data.context !== codeContext) return;
+    if (msg.context !== codeContext) return;
 
-    switch (data.type) {
+    switch (msg.type) {
       case 'open-formatter-config': {
         const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? ''; // Extract the file extension from the path (empty string for extensionless files).
         onOpenEditorConfig?.(ext);
@@ -290,8 +292,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        * Editor content changed: sync the internal value ref and notify the parent view.
        */
       case 'change': {
-        if (valueRef.current !== data.value) {
-          valueRef.current = data.value as string;
+        if (valueRef.current !== msg.value) {
+          valueRef.current = msg.value;
           onChange?.();
         }
         break;
@@ -309,7 +311,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        * Word-wrap toggle: persist the new state immediately so it survives a reload.
        */
       case 'word-wrap-toggled': {
-        plugin.settings.wordWrap = data.wordWrap as 'on' | 'off';
+        plugin.settings.wordWrap = msg.wordWrap;
         await plugin.saveSettings();
         break;
       }
@@ -319,11 +321,8 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        * Opens the target vault file in a Monaco leaf, restoring cursor position if provided.
        */
       case 'open-file': {
-        const vaultPath = data.path as string;
-        const position = data.position as {
-          lineNumber: number;
-          column: number;
-        } | null;
+        const vaultPath = msg.path;
+        const position = msg.position;
         const file = plugin.app.vault.getFileByPath(vaultPath);
         if (!file) break;
         await openInMonacoLeaf(file, plugin, true, position, true);
@@ -347,7 +346,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        */
       case 'run-command': {
         if (!Platform.isDesktop || !spawn || !path) break;
-        const cmdLine = data.cmd as string;
+        const cmdLine = msg.cmd;
         if (!cmdLine?.trim()) break;
 
         // Persist command in history (cross-session settings)
@@ -470,7 +469,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        */
       case 'console-height-changed': {
         if (!Platform.isDesktop) break;
-        plugin.settings.consoleHeight = data.height as number;
+        plugin.settings.consoleHeight = msg.height;
         await plugin.saveSettings();
         break;
       }
@@ -480,7 +479,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        */
       case 'console-visibility-changed': {
         if (!Platform.isDesktop) break;
-        onConsoleVisibilityChanged?.(data.visible as boolean);
+        onConsoleVisibilityChanged?.(msg.visible);
         break;
       }
 
@@ -493,7 +492,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
         const proc = activeProcesses.get(codeContext);
         if (proc?.stdin?.writable) {
           // We append a newline because stdin usually expects a line-buffered input.
-          proc.stdin.write((data.text as string) + '\n');
+          proc.stdin.write(msg.text + '\n');
         }
         break;
       }
@@ -518,7 +517,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
        */
       case 'console-notify': {
         if (!Platform.isDesktop) break;
-        new Notice(data.text as string);
+        new Notice(msg.text);
         break;
       }
 
