@@ -328,8 +328,6 @@ export class CodeEditorView extends TextFileView {
     // For external files opened via leaf.open(), content is not loaded automatically —
     // super.onLoadFile handles that case here.
     await super.onLoadFile(file);
-    // this.cleanup();
-    // this.contentEl.empty();
     await this.mountAndRender();
   }
 

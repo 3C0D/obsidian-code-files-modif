@@ -8,13 +8,12 @@ import { ButtonComponent, Modal, Setting, debounce, Notice, TFolder } from 'obsi
 import type CodeFilesPlugin from '../main.ts';
 import {
   DEFAULT_EDITOR_CONFIG,
-  getExtensionConfigTemplate,
   FORMATTABLE_EXTENSIONS
 } from '../types/index.ts';
 import type { CodeEditorHandle, Prettify } from '../types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
-import { buildMergedConfig, saveEditorConfig } from '../utils/settingsUtils.ts';
+import { buildMergedConfig, saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
 import {
   broadcastProjectFiles,
   broadcastBrightness,

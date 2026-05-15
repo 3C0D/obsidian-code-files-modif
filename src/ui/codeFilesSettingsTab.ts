@@ -12,8 +12,7 @@ import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
   DEFAULT_EDITOR_CONFIG,
   DEFAULT_SETTINGS,
-  FORMATTABLE_EXTENSIONS,
-  getExtensionConfigTemplate
+  FORMATTABLE_EXTENSIONS
 } from '../types/index.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
@@ -21,7 +20,7 @@ import {
   reregisterExtensions,
   getAllMonacoExtensions
 } from '../utils/extensionUtils.ts';
-import { saveEditorConfig } from '../utils/settingsUtils.ts';
+import { saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import {
   getObsidianHotkey,

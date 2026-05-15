@@ -231,3 +231,47 @@ export async function cleanupTemporaryReveal(
     await plugin.saveSettings();
   }
 }
+
+/**
+ * Updates the revealedItems setting when a file or folder is renamed.
+ * This ensures that manually revealed items stay revealed under their new name.
+ * 
+ * @param plugin - The plugin instance.
+ * @param src - The original normalized path.
+ * @param dest - The new normalized path.
+ */
+export async function updateRevealedItemsOnRename(
+  plugin: CodeFilesPlugin,
+  src: string,
+  dest: string
+): Promise<void> {
+  const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
+  const destFolder = dest.substring(0, dest.lastIndexOf('/')) || '';
+  let changed = false;
+
+  // Remove from source folder
+  if (plugin.settings.revealedItems[srcFolder]) {
+    const original = plugin.settings.revealedItems[srcFolder];
+    const filtered = original.filter((p) => p !== src);
+    if (filtered.length !== original.length) {
+      // src was actually in revealedItems
+      if (filtered.length > 0) {
+        plugin.settings.revealedItems[srcFolder] = filtered;
+      } else {
+        delete plugin.settings.revealedItems[srcFolder];
+      }
+      changed = true;
+    }
+  }
+
+  // Add to destination folder
+  if (changed) {
+    const existing = plugin.settings.revealedItems[destFolder] ?? [];
+    plugin.settings.revealedItems[destFolder] = [...existing, dest];
+  }
+
+  if (changed) {
+    await plugin.saveSettings();
+    decorateFolders(plugin);
+  }
+}

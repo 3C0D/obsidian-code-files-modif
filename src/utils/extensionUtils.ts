@@ -81,14 +81,18 @@ export function addExtension(settings: Prettify<MyPluginSettings>, ext: string):
  * @param settings - The plugin settings object
  * @param ext - The extension to remove (e.g. "js", "ts")
  */
-export function removeExtension(settings: Prettify<MyPluginSettings>, ext: string): void {
+export function removeExtension(settings: Prettify<MyPluginSettings>, ext: string): boolean {
   // If in extraExtensions, just remove it — no need to exclude
   if (settings.extraExtensions.includes(ext)) {
     settings.extraExtensions = settings.extraExtensions.filter((e) => e !== ext);
-    return;
+    return true;
   }
   // If in base extensions, must add to excludedExtensions to override
-  settings.excludedExtensions = [...settings.excludedExtensions, ext];
+  if (settings.extensions.includes(ext) && !settings.excludedExtensions.includes(ext)) {
+    settings.excludedExtensions = [...settings.excludedExtensions, ext];
+    return true;
+  }
+  return false;
 }
 
 /**

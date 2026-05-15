@@ -70,6 +70,8 @@ const applyBadgeToEl = (el: HTMLElement, plugin: CodeFilesPlugin): void => {
 export const getFileExplorerView = (
   plugin: CodeFilesPlugin
 ): FileExplorerView | undefined => {
+  // Unsafe cast is intentional: FileExplorerView is an internal Obsidian API,
+  // so we cast the generic view to our custom interface.
   const view = plugin.app.workspace.getLeavesOfType('file-explorer').first()?.view as
     | FileExplorerView
     | undefined;

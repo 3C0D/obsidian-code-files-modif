@@ -11,6 +11,7 @@ import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
 import { rescanExplorerBadges } from '../explorerUtils.ts';
+import { updateRevealedItemsOnRename } from './operations.ts';
 
 /**
  * Patches Obsidian's DataAdapter to intercept file operations:
@@ -105,35 +106,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         }
 
         // Update revealedItems after rename
-        const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
-        const destFolder = dest.substring(0, dest.lastIndexOf('/')) || '';
-        let changed = false;
-
-        // Remove from source folder
-        if (plugin.settings.revealedItems[srcFolder]) {
-          const original = plugin.settings.revealedItems[srcFolder];
-          const filtered = original.filter((p) => p !== src);
-          if (filtered.length !== original.length) {
-            // src was actually in revealedItems
-            if (filtered.length > 0) {
-              plugin.settings.revealedItems[srcFolder] = filtered;
-            } else {
-              delete plugin.settings.revealedItems[srcFolder];
-            }
-            changed = true;
-          }
-        }
-
-        // Add to destination folder
-        if (changed) {
-          const existing = plugin.settings.revealedItems[destFolder] ?? [];
-          plugin.settings.revealedItems[destFolder] = [...existing, dest];
-        }
-
-        if (changed) {
-          void plugin.saveSettings();
-          decorateFolders(plugin);
-        }
+        void updateRevealedItemsOnRename(plugin, src, dest);
 
         return result;
       };
