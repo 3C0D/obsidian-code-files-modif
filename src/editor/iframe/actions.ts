@@ -3,7 +3,7 @@
  * All custom actions registered in Monaco's context menu and command palette
  */
 import type * as Monaco from 'monaco-editor';
-import type { InitParams, HotkeyConfig, Prettify } from './types/index.ts';
+import type { InitParams, HotkeyConfig } from './types/index.ts';
 import { getLastFormat } from './diff.ts';
 import { getParentOrigin } from './utils.ts';
 import { hotkeyToMonacoKeybinding, matchesHotkey } from './keybindingUtils.ts';
@@ -140,7 +140,7 @@ export function registerHotkeyActions(hk: {
  */
 
 export function registerActions(
-  params: Prettify<InitParams>,
+  params: InitParams,
   openDiffModal: (orig: string, fmt: string) => void,
   initialHotkeys?: {
     commandPalette: HotkeyConfig | null;

@@ -20,8 +20,7 @@ import { mountCodeEditor } from '../mountCodeEditor/index.ts';
 import { getLanguage } from '../../utils/getLanguage.ts';
 import type {
   CodeEditorHandle,
-  HeaderActionsContext,
-  Prettify
+  HeaderActionsContext
 } from '../../types/index.ts';
 import { viewType } from '../../types/index.ts';
 import {
@@ -45,7 +44,7 @@ import {
 
 export class CodeEditorView extends TextFileView {
   /** The code editor control handle (CodeEditorHandle), created by mountCodeEditor() and destroyed on view close. */
-  private codeEditor: Prettify<CodeEditorHandle> | null = null;
+  private codeEditor: CodeEditorHandle | null = null;
   /** The `forceSave` flag allows us to bypass the auto-save check in the overridden `save()` method when the user explicitly triggers a save via Ctrl+S. This ensures that even if auto-save is disabled, users can still manually save their work. */
   private forceSave = false;
   /** Flag to hide the return arrow (set via state.noReturnAction) */

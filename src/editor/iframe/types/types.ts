@@ -2,7 +2,6 @@
 // Monaco is loaded by AMD loader, Prettier by standalone scripts
 
 /** Flattens intersected types into a single object shape for readable IDE tooltips. */
-export type Prettify<T> = { [K in keyof T]: T[K] } & {};
 
 /** Configuration options for Prettier code formatting.
  *

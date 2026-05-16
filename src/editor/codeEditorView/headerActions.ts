@@ -3,7 +3,7 @@
  * Provides functions to add, remove, and manage various header buttons like theme picker, settings, diff display, and snippet controls.
  */
 import { type TFile, Platform } from 'obsidian';
-import type { HeaderActionsContext, Prettify } from '../../types/index.ts';
+import type { HeaderActionsContext } from '../../types/index.ts';
 import {
   snippetExists,
   isSnippetEnabled,
@@ -16,7 +16,7 @@ import { getExtension } from '../../utils/fileUtils.ts';
 /**
  * Removes all header actions from the view.
  */
-export function removeHeaderActions(context: Prettify<HeaderActionsContext>): void {
+export function removeHeaderActions(context: HeaderActionsContext): void {
   context.gearAction?.remove();
   context.themeAction?.remove();
   context.snippetFolderAction?.remove();
@@ -40,7 +40,7 @@ export function removeHeaderActions(context: Prettify<HeaderActionsContext>): vo
  * Since context is a persistent shared reference, changes are immediately
  * visible in CodeEditorView without any manual sync.
  */
-export function showDiffAction(context: Prettify<HeaderActionsContext>): void {
+export function showDiffAction(context: HeaderActionsContext): void {
   hideDiffAction(context);
 
   context.diffAction = context.addAction('diff', 'Show Format Diff', () => {
@@ -64,7 +64,7 @@ export function showDiffAction(context: Prettify<HeaderActionsContext>): void {
 /**
  * Hides the diff action immediately (called when all blocks are reverted)
  */
-export function hideDiffAction(context: Prettify<HeaderActionsContext>): void {
+export function hideDiffAction(context: HeaderActionsContext): void {
   if (context.diffTimer) clearTimeout(context.diffTimer);
   context.diffAction?.remove();
   context.diffAction = null;
@@ -75,7 +75,7 @@ export function hideDiffAction(context: Prettify<HeaderActionsContext>): void {
  * Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets).
  */
 export function injectHeaderActions(
-  context: Prettify<HeaderActionsContext>,
+  context: HeaderActionsContext,
   file: TFile
 ): void {
   removeHeaderActions(context);

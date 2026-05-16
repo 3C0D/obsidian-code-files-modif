@@ -3,7 +3,7 @@ import { buildMergedConfig } from '../../utils/settingsUtils.ts';
 import { getActiveExtensions } from '../../utils/extensionUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride } from '../../utils/hotkeyUtils.ts';
 import { resolveThemeParams } from '../../utils/themeUtils.ts';
-import { BUILTIN_THEMES, type InitParams, type Prettify } from '../../types/index.ts';
+import { BUILTIN_THEMES, type InitParams } from '../../types/index.ts';
 
 /**
  * Builds the initParams object sent to the Monaco iframe on 'ready'.
@@ -22,7 +22,7 @@ export async function buildInitParams(
   language: string,
   theme: string,
   extension: string
-): Promise<Prettify<InitParams>> {
+): Promise<InitParams> {
   // Reads Obsidian's configured hotkey for a command, falling back to the command's default hotkeys.
   const commandPaletteHotkey = getObsidianHotkey(plugin.app, 'command-palette:open');
   const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings');
@@ -59,7 +59,7 @@ export async function buildInitParams(
     codeContext.includes('settings-editor-config');
   const isModalEditor = codeContext.startsWith('modal-editor.');
 
-  const initParams: Prettify<InitParams> = {
+  const initParams: InitParams = {
     context: codeContext,
     lang: language,
     theme: theme.replace(/[^a-z0-9\-]/gi, '-'),

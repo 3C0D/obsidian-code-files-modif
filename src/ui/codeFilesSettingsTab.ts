@@ -7,7 +7,7 @@
 import type { App } from 'obsidian';
 import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import type { CodeEditorHandle, Prettify } from '../types/index.ts';
+import type { CodeEditorHandle } from '../types/index.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
   DEFAULT_EDITOR_CONFIG,
@@ -35,7 +35,7 @@ import {
 } from '../utils/hiddenFiles/sync.ts';
 
 export class CodeFilesSettingsTab extends PluginSettingTab {
-  private codeEditor: Prettify<CodeEditorHandle> | null = null;
+  private codeEditor: CodeEditorHandle | null = null;
 
   constructor(
     app: App,

@@ -9,7 +9,7 @@ import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { resolveThemeParams } from '../utils/themeUtils.ts';
 import type CodeFilesPlugin from '../main.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
-import type { CodeEditorHandle, Prettify, FenceData } from '../types/index.ts';
+import type { CodeEditorHandle, FenceData } from '../types/index.ts';
 import { EditorSettingsModal } from './editorSettingsModal.ts';
 import { ChooseThemeModal } from './chooseThemeModal.ts';
 import { broadcastOptions } from '../utils/broadcast.ts';
@@ -22,7 +22,7 @@ import { broadcastOptions } from '../utils/broadcast.ts';
  * @param onSave - Callback invoked on modal close with the edited content. Use this to write changes back to the note.
  */
 export class FenceEditModal extends Modal {
-  private codeEditor!: Prettify<CodeEditorHandle>;
+  private codeEditor!: CodeEditorHandle;
 
   private constructor(
     private plugin: CodeFilesPlugin,

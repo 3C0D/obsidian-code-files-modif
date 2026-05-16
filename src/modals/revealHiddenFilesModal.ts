@@ -14,7 +14,7 @@ import {
   reregisterExtensions
 } from '../utils/extensionUtils.ts';
 import { getExtension } from '../utils/fileUtils.ts';
-import type { FolderSection, Prettify } from '../types/index.ts';
+import type { FolderSection } from '../types/index.ts';
 
 /**
  * Modal to scan, reveal, and hide dotfiles within a specific folder and its subfolders.
@@ -22,7 +22,7 @@ import type { FolderSection, Prettify } from '../types/index.ts';
 export class RevealHiddenFilesModal extends Modal {
   plugin: CodeFilesPlugin;
   folderPath: string;
-  private sections: Prettify<FolderSection>[] = [];
+  private sections: FolderSection[] = [];
   private hasSubfolders = false;
 
   constructor(plugin: CodeFilesPlugin, folderPath: string) {
@@ -251,7 +251,7 @@ export class RevealHiddenFilesModal extends Modal {
 
   private renderSection(
     contentEl: HTMLElement,
-    section: Prettify<FolderSection>,
+    section: FolderSection,
     showFolderLabel: boolean
   ): void {
     if (showFolderLabel) {
