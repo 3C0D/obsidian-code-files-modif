@@ -11,6 +11,7 @@ import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { handleConsoleMessage, cleanupConsole, initConsole } from './consoleHandler.ts';
+import { getExtension } from '../../utils/fileUtils.ts';
 
 // Desktop-only imports for drag-and-drop functionality
 let webUtils: { getPathForFile(file: File): string } | undefined;
@@ -84,7 +85,7 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
 
     switch (msg.type) {
       case 'open-formatter-config': {
-        const ext = codeContext.match(/\.([^./\\]+)$/)?.[1] ?? ''; // Extract the file extension from the path (empty string for extensionless files).
+        const ext = getExtension(codeContext);
         onOpenEditorConfig?.(ext);
         break;
       }
@@ -252,14 +253,27 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
           onConsoleVisibilityChanged
         );
         if (!handled) {
-          // Unhandled message
+          console.warn(`[code-files] Unhandled message type: "${msg.type}"`);
         }
         break;
       }
     }
   };
 
-  // Store relay cleanup refs in closure for the returned cleanup fn
+  /**
+   * Drag-and-drop relay: enables dropping files or folders onto the console from the OS.
+   *
+   * Problem: the Monaco iframe is a separate browsing context. Any drag that enters
+   * the iframe area is consumed by the iframe's document — the parent's `drop` event
+   * never fires over that region. `webUtils.getPathForFile` (Electron API) is also
+   * unavailable inside the sandboxed iframe.
+   *
+   * Solution: on `dragenter`, a transparent overlay div is placed over the iframe
+   * in the parent DOM (z-index: 9999). It intercepts the drop at the Electron level,
+   * where `webUtils.getPathForFile` is accessible, then forwards the resolved paths
+   * to the iframe via `send('console-drop-paths')`.
+   * The overlay is single-use and removes itself after the drop or on drag cancel.
+   */
   let _removeDragRelay: (() => void) | undefined;
 
   if (Platform.isDesktop) {
@@ -290,6 +304,7 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
         background: transparent;
       `;
 
+      // Required: without preventDefault on dragover, the browser rejects the drop event entirely.
       dragOverlay.addEventListener('dragover', (e) => e.preventDefault());
 
       dragOverlay.addEventListener(
@@ -312,9 +327,12 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
           for (const f of files) {
             const absPath: string = webUtils?.getPathForFile(f) ?? '';
             if (!absPath) continue;
+            // If the file is inside the vault, convert to a vault-relative path.
+            // Otherwise keep the absolute path (e.g. file dropped from outside the vault).
             const resolved = absPath.startsWith(basePath)
               ? absPath.slice(basePath.length).replace(/^[/\\]/, '')
               : absPath;
+            // Quote paths containing spaces
             paths.push(resolved.includes(' ') ? `"${resolved}"` : resolved);
           }
           if (paths.length) send('console-drop-paths', { paths });
@@ -326,6 +344,9 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
     };
 
     const onDragEnter = (e: DragEvent): void => {
+      // `.files` is empty during dragenter (security restriction) — only `.items` is available here.
+      // The actual file data is only accessible in the `drop` event handler below.
+      // `kind === 'file'` covers both files and directories when dragged from the OS under Electron.
       const hasFiles = Array.from(e.dataTransfer?.items ?? []).some(
         (i) => i.kind === 'file'
       );

@@ -7,7 +7,7 @@ import { BUILTIN_THEMES, type InitParams } from '../../types/index.ts';
 
 /**
  * Builds the initParams object sent to the Monaco iframe on 'ready'.
- * Resolves hotkeys, editor settings, theme data, and editorConfig for the given context.
+ * Resolves hotkeys, theme data, editor settings(checkboxes values) and editorConfig for the given context.
  *
  * @param plugin - The plugin instance.
  * @param codeContext - Unique identifier for this editor instance (file path or modal ID).

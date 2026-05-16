@@ -128,8 +128,7 @@ function resolveConsoleCwd(
   plugin: CodeFilesPlugin,
   codeContext: string
 ): { basePath: string; cwd: string } {
-  const adapter = getDataAdapterEx(plugin.app);
-  const basePath = adapter.basePath;
+  const basePath = getDataAdapterEx(plugin.app).basePath;
   const fileDir = path!.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
   const cwd = currentCwd.get(codeContext) ?? fileDir;
   return { basePath, cwd };
