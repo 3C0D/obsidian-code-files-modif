@@ -170,8 +170,6 @@ export interface InitParams {
   projectRootFolder: string;
   /** Whether the file extension is not registered as a code file */
   isUnregisteredExtension?: boolean;
-  /** Background color for the iframe (usually 'transparent') */
-  background?: string;
   /** Height of the integrated console in pixels */
   consoleHeight: number;
 }

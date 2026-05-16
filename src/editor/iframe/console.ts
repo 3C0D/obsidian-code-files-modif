@@ -56,6 +56,8 @@ const updatePrompt = (): void => {
  *
  * @param ctx - The code context (usually the relative file path)
  * @param editor - The Monaco editor instance (used to trigger layout updates)
+ * @param initialHeight - (Optionnel) Persistent console height saved across sessions
+ * @param hotkey - (Optionnel) The console toggle hotkey configuration
  */
 export function initConsolePane(
   ctx: string,

@@ -26,22 +26,24 @@ export async function buildInitParams(
   // Reads Obsidian's configured hotkey for a command, falling back to the command's default hotkeys.
   const commandPaletteHotkey = getObsidianHotkey(plugin.app, 'command-palette:open');
   const settingsHotkey = getObsidianHotkey(plugin.app, 'app:open-settings');
-  const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file') ?? {
-    modifiers: ['Mod'],
-    key: 'Delete'
-  };
+  const deleteFileHotkey = getObsidianHotkey(plugin.app, 'app:delete-file');
 
   // Apply overrides if they exist (overrides are stored as 'Mod' internally for cross-platform consistency)
   const finalCommandPaletteHotkey = parseHotkeyOverride(
     plugin.settings.commandPaletteHotkeyOverride
   ) ??
     commandPaletteHotkey ?? { modifiers: ['Mod'], key: 'p' };
+
   const finalSettingsHotkey = parseHotkeyOverride(
     plugin.settings.settingsHotkeyOverride
   ) ??
     settingsHotkey ?? { modifiers: ['Mod'], key: ',' };
-  const finalDeleteFileHotkey =
-    parseHotkeyOverride(plugin.settings.deleteFileHotkeyOverride) ?? deleteFileHotkey;
+
+  const finalDeleteFileHotkey = parseHotkeyOverride(
+    plugin.settings.deleteFileHotkeyOverride
+  ) ??
+    deleteFileHotkey ?? { modifiers: ['Mod'], key: 'Delete' };
+
   // Console hotkey is direct (no Obsidian fallback)
   const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkey) ?? {
     modifiers: ['Mod'],
@@ -88,8 +90,6 @@ export async function buildInitParams(
     if (resolved.themeData) initParams.themeData = resolved.themeData;
   }
 
-  // Transparent background prevents a color flash in the iframe while Monaco loads.
-  initParams.background = 'transparent';
   initParams.editorConfig = buildMergedConfig(plugin, extension);
 
   return initParams;
