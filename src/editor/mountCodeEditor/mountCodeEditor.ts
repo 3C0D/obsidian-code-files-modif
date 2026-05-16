@@ -17,6 +17,7 @@ import { resolveAssetUrls } from './assetUrls.ts';
 import { buildInitParams } from './buildInitParams.ts';
 import { buildBlobUrl } from './buildBlobUrl.ts';
 import { loadProjectFiles } from './projectLoader.ts';
+import { getExtension } from '../../utils/fileUtils.ts';
 
 /**
  * Orchestrates the mounting of a Monaco Editor by creating an isolated iframe
@@ -47,6 +48,8 @@ import { loadProjectFiles } from './projectLoader.ts';
  * @param options.onOpenEditorConfig - Optional callback for when the editor config is opened.
  * @param options.onOpenThemePicker - Optional callback for when the theme picker is opened.
  * @param options.onOpenRenameExtension - Optional callback for when the rename extension is opened.
+ * @param options.onConsoleVisibilityChanged - Optional callback for console visibility changes.
+ * @param options.initialConsoleOpen - Whether the console should be initially open.
  * @param options.autoFocus - Defaults to true. If true, the editor is focused on mount.
  * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy)
  */
@@ -83,7 +86,7 @@ export const mountCodeEditor = async (
   const urls = resolveAssetUrls(plugin);
 
   // find extension for this editor based on codeContext (file path or modal ID as 'settings-editor-config.jsonc')
-  const extension = codeContext.match(/\.([^.]+)$/)?.[1] ?? '';
+  const extension = getExtension(codeContext);
 
   const initParams = await buildInitParams(
     plugin,

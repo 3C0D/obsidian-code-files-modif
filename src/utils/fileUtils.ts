@@ -12,11 +12,7 @@ import type { DataAdapterWithInternal } from '../types/index.ts';
  * @returns The extension of the file, without the leading dot
  */
 export function getExtension(filename: string): string {
-  // dot file and only 1 dot
-  if (filename.startsWith('.') && !filename.includes('.', 1)) return filename.slice(1);
-  // normal file
-  const lastDot = filename.lastIndexOf('.');
-  return lastDot > 0 ? filename.slice(lastDot + 1) : '';
+  return filename.match(/\.([^.]+)$/)?.[1] ?? '';
 }
 
 /**
