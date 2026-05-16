@@ -45,6 +45,16 @@ This directory contains all technical documentation for the Code Files Obsidian 
 - Detailed flow descriptions for key operations
 - **Key for:** Understanding CodeEditorView logical workflows
 
+### [monaco-initialization-flow.md](monaco-initialization-flow.md)
+ 
+**Role:** Monaco initialization, ready handshake and synchronization mechanism
+ 
+- Deferred Promise pattern for cross-iframe sync
+- Ready / ResolveReady handshake flow
+- Why 'ready' is special (sent before context)
+- Use cases: awaiting ready before sending commands (scroll-to-position, etc.)
+- **Key for:** Understanding how to safely interact with the editor handle
+ 
 ### [monaco-local-integration.md](monaco-local-integration.md)
 
 **Role:** Migration from external to local Monaco Editor
@@ -372,8 +382,9 @@ This directory contains all technical documentation for the Code Files Obsidian 
 ### For Understanding Architecture:
 
 1. [architecture.md](architecture.md) — System overview
-2. [monaco-local-integration.md](monaco-local-integration.md) — Local Monaco setup
-3. [cross-file-navigation.md](cross-file-navigation.md) — Code navigation
+2. [monaco-initialization-flow.md](monaco-initialization-flow.md) — Initialization flow
+3. [monaco-local-integration.md](monaco-local-integration.md) — Local Monaco setup
+4. [cross-file-navigation.md](cross-file-navigation.md) — Code navigation
 
 ### For Formatting:
 

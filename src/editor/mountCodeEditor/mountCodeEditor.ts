@@ -3,12 +3,11 @@
  * Handles bidirectional postMessage communication (init, change-value, change-theme, etc.),
  * local Monaco loading (fetch HTML, patch ./vs paths to app://, inline CSS),
  * and works around Obsidian's CSP constraints (blob URL, appendChild interception, @font-face patching).
- * Returns a CodeEditorHandle with send(), getValue(), setValue(), destroy().
+ * Returns a CodeEditorHandle with send(), getValue(), setValue(), destroy(), clear(), ready, iframe.
  */
 import type {
   CodeEditorHandle,
   MountCodeEditorOptions,
-  Prettify,
   SendFunction
 } from '../../types/index.ts';
 
@@ -51,10 +50,10 @@ import { getExtension } from '../../utils/fileUtils.ts';
  * @param options.onConsoleVisibilityChanged - Optional callback for console visibility changes.
  * @param options.initialConsoleOpen - Whether the console should be initially open.
  * @param options.autoFocus - Defaults to true. If true, the editor is focused on mount.
- * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy)
+ * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy, clear, ready, iframe)
  */
 export const mountCodeEditor = async (
-  options: Prettify<MountCodeEditorOptions>
+  options: MountCodeEditorOptions
 ): Promise<CodeEditorHandle> => {
   const {
     plugin,

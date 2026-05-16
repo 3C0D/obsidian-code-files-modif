@@ -2,7 +2,7 @@
  * Message handler for the mounted code editor.
  * Handles incoming messages from the editor view and processes them.
  */
-import type { MessageHandlerContext, Prettify, IframeMessage } from '../../types/index.ts';
+import type { MessageHandlerContext, IframeMessage } from '../../types/index.ts';
 
 import { CodeEditorView } from '../codeEditorView/index.ts';
 import { broadcastHotkeys } from '../../utils/broadcast.ts';
@@ -25,7 +25,7 @@ if (Platform.isDesktop) {
  *
  * @param ctx - The context containing refs to the iframe, current file, and plugin instance.
  */
-export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
+export function buildMessageHandler(ctx: MessageHandlerContext): {
   handler: (event: MessageEvent) => Promise<void>;
   cleanup: () => void;
 } {
@@ -62,8 +62,11 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
     // SECURITY: Ensure we only process messages intended for THIS specific iframe instance.
     if (source !== iframe.contentWindow) return;
 
+    const msg = data as IframeMessage;
+    if (!msg || !msg.type) return;
+
     // Handle 'ready' signal: Triggered when Monaco is fully loaded in the iframe.
-    if (data.type === 'ready') {
+    if (msg.type === 'ready') {
       send('init', initParams);
       send('change-value', { value: valueRef.current });
       if (autoFocus) send('focus', {});
@@ -76,9 +79,7 @@ export function buildMessageHandler(ctx: Prettify<MessageHandlerContext>): {
       return;
     }
 
-    const msg = data as IframeMessage & { context: string };
-
-    // DISPATCHING: All messages must provide a 'context' matching this file path.
+    // DISPATCHING: All remaining messages must provide a 'context' matching this file path.
     if (msg.context !== codeContext) return;
 
     switch (msg.type) {
