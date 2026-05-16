@@ -11,8 +11,7 @@ import type { CodeEditorHandle, Prettify } from '../types/index.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
 import {
   DEFAULT_EDITOR_CONFIG,
-  DEFAULT_SETTINGS,
-  FORMATTABLE_EXTENSIONS
+  DEFAULT_SETTINGS
 } from '../types/index.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
@@ -21,6 +20,7 @@ import {
   getAllMonacoExtensions
 } from '../utils/extensionUtils.ts';
 import { saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
+import { isFormattable } from '../utils/getLanguage.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import {
   getObsidianHotkey,
@@ -152,10 +152,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     });
 
     const extensions = getActiveExtensions(this.plugin.settings);
-    // Only show formattable extensions in the selector
-    const formattableExts = extensions.filter((ext) =>
-      FORMATTABLE_EXTENSIONS.includes(ext)
-    );
+    const formattableExts = extensions.filter((ext) => isFormattable(ext));
     let selectedExt = this.plugin.settings.lastSelectedConfigExtension || '';
     let isGlobal = !selectedExt;
 

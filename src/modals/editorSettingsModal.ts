@@ -7,13 +7,13 @@
 import { ButtonComponent, Modal, Setting, debounce, Notice, TFolder } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import {
-  DEFAULT_EDITOR_CONFIG,
-  FORMATTABLE_EXTENSIONS
+  DEFAULT_EDITOR_CONFIG
 } from '../types/index.ts';
 import type { CodeEditorHandle, Prettify } from '../types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
 import { buildMergedConfig, saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
+import { isFormattable } from '../utils/getLanguage.ts';
 import {
   broadcastProjectFiles,
   broadcastBrightness,
@@ -182,10 +182,9 @@ export class EditorSettingsModal extends Modal {
         });
       });
 
-    // ── Formatter Config ──────────────────────────────────────────────────
-    const isFormattable = FORMATTABLE_EXTENSIONS.includes(this.extension);
+    const isFormattableVal = isFormattable(this.extension);
 
-    if (!isFormattable) {
+    if (!isFormattableVal) {
       // Show message for non-formattable extensions
       const nonFormattableSection = contentEl.createEl('div', {
         cls: 'code-files-non-formattable-section'

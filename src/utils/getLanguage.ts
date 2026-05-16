@@ -123,6 +123,8 @@ export const staticMap: Record<string, string> = {
   clangformat: 'yaml'
 };
 
+import { FORMATTABLE_EXTENSIONS } from '../types/index.ts';
+
 /**
  * Returns the Monaco language id for a given file extension.
  *
@@ -131,4 +133,17 @@ export const staticMap: Record<string, string> = {
  */
 export function getLanguage(extension: string): string {
   return staticMap[extension] ?? 'plaintext';
+}
+
+/**
+ * Checks if a file extension (or its mapped language) has an integrated formatter.
+ *
+ * @param extension - The file extension to check
+ * @returns true if formattable, false otherwise
+ */
+export function isFormattable(extension: string): boolean {
+  return (
+    FORMATTABLE_EXTENSIONS.includes(extension) ||
+    FORMATTABLE_EXTENSIONS.includes(getLanguage(extension))
+  );
 }
