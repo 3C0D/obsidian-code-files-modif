@@ -33,8 +33,10 @@ import {
   syncAutoRevealedDotfiles
 } from './utils/hiddenFiles/sync.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
-import { revokeBlobUrlCache } from './editor/mountCodeEditor/buildBlobUrl.ts';
-import { cleanupAllConsoles } from './editor/mountCodeEditor/consoleHandler.ts';
+import {
+  revokeBlobUrlCache,
+  cleanupAllConsoles
+} from './editor/mountCodeEditor/index.ts';
 
 export default class CodeFilesPlugin extends Plugin {
   settings!: MyPluginSettings;
