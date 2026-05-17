@@ -2,19 +2,17 @@
  * Console handling for the mounted code editor.
  * Manages terminal commands, process execution, and output streaming.
  */
-import type { ChildProcess } from 'child_process';
+import type { ChildProcess, spawn as SpawnFn } from 'child_process';
+import type { join, resolve } from 'path';
+import type { statSync } from 'fs';
 import { Notice, Platform } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
 import type { IframeMessage } from '../../types/index.ts';
 
-let spawn:
-  | ((command: string, args: string[], options: unknown) => ChildProcess)
-  | undefined;
-let path:
-  | { join: (...paths: string[]) => string; resolve: (...paths: string[]) => string }
-  | undefined;
-let fs: { statSync(p: string): { isDirectory(): boolean } } | undefined;
+let spawn: typeof SpawnFn | undefined;
+let path: { join: typeof join; resolve: typeof resolve } | undefined;
+let fs: { statSync: typeof statSync } | undefined;
 
 if (Platform.isDesktop) {
   spawn = require('child_process').spawn;
@@ -29,13 +27,14 @@ export const activeProcesses = new Map<string, ChildProcess>();
 const currentCwd = new Map<string, string>();
 
 /** Tracks exit timers for processes to ensure data flush. */
-const closeTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const closeTimers = new Map<string, NodeJS.Timeout>();
 
 /**
  * Kills the console process and clears state for a specific editor context.
  * Called when an editor view is destroyed.
  */
 export function cleanupConsole(codeContext: string): void {
+  if (!Platform.isDesktop) return;
   const proc = activeProcesses.get(codeContext);
   if (proc) {
     killProcessTree(proc);
@@ -54,6 +53,7 @@ export function cleanupConsole(codeContext: string): void {
  * Called when the plugin is unloaded.
  */
 export function cleanupAllConsoles(): void {
+  if (!Platform.isDesktop) return;
   for (const proc of activeProcesses.values()) {
     killProcessTree(proc);
   }
@@ -74,7 +74,7 @@ export function initConsole(
   codeContext: string,
   send: (type: string, payload: unknown) => void
 ): void {
-  if (!Platform.isDesktop || !path) return;
+  if (!Platform.isDesktop) return;
 
   const { basePath, cwd } = resolveConsoleCwd(plugin, codeContext);
 
@@ -142,7 +142,7 @@ function killProcessTree(proc: ChildProcess): void {
   if (!proc.pid) return;
   try {
     if (process.platform === 'win32') {
-      // Windows: taskkill /T kills the entire tree, /F forces it.
+      // Windows: taskkill /T kills the entire tree, /F forces it. Runs via the system shell (shell: true).
       spawn!('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { shell: true });
     } else {
       // Unix: Passing negative PID signals the process group.
@@ -155,7 +155,7 @@ function killProcessTree(proc: ChildProcess): void {
 
 /**
  * Handles console-related iframe messages.
- * Returns true if the message was handled, false otherwise.
+ * Returns true if the message type is recognized (even if silently ignored on mobile), false if unknown.
  */
 export async function handleConsoleMessage(
   msg: IframeMessage & { context: string },
@@ -170,7 +170,7 @@ export async function handleConsoleMessage(
      * Spawns a child process and pipes its output to the iframe.
      */
     case 'run-command': {
-      if (!Platform.isDesktop || !spawn || !path) return true;
+      if (!Platform.isDesktop) return true;
       const cmdLine = msg.cmd;
       if (!cmdLine?.trim()) return true;
 
@@ -190,18 +190,22 @@ export async function handleConsoleMessage(
       // Regex allows: 'cd', 'cd ..', 'cd..', 'cd~', 'cd /abs', 'cd "path with spaces"'
       const cdMatch = cmdLine.trim().match(/^cd(\s.*|\.\.?|~.*)?$/i);
       if (cdMatch !== null) {
+        // Strip surrounding quotes from the target path (e.g. cd "my folder" → my folder).
         const target = (cdMatch[1] ?? '').trim().replace(/^["']|["']$/g, '');
-        // path.resolve() mimics `cd <target>`: combines activeCwd + target into a new absolute path.
-        // If target is empty/'' (bare 'cd') or '~' → go to vault root (mirrors shell behavior).
+        // path.resolve(activeCwd, target): if target is absolute, returns it directly;
+        // if relative (e.g. '..', 'src'), combines it with activeCwd and normalizes the result.
+        // If target is empty (bare 'cd') or '~' → go to vault root (mirrors shell behavior).
         const resolved =
           target && target !== '~' ? path!.resolve(activeCwd, target) : basePath;
         try {
+          // Valid directory: update the session CWD and notify the iframe.
           if (fs!.statSync(resolved).isDirectory()) {
             currentCwd.set(codeContext, resolved);
             send('console-cwd-changed', { cwd: resolved });
             send('console-output', { text: '' });
             send('console-process-exited', { code: 0 });
           } else {
+            // Target exists but is a file, not a directory.
             send('console-output', { text: `cd: not a directory: ${target || '~'}\n` });
             send('console-process-exited', { code: 1 });
           }

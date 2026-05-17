@@ -36,21 +36,21 @@ import { getExtension } from '../../utils/fileUtils.ts';
  *
  * @param options - Configuration object containing all required parameters and optional callbacks
  * @param options.plugin - The plugin instance.
- * @param options.language - The programming language of the code.
- * @param options.initialValue - The initial value of the code.
- * @param options.codeContext - The context of the code (file path or modal ID).
- * @param options.containerEl - The container element to mount the iframe.
- * @param options.onChange - Optional callback for when the code changes.
- * @param options.onSave - Optional callback for when the code is saved.
- * @param options.onFormatDiff - Optional callback for when the code is formatted.
- * @param options.onFormatDiffReverted - Optional callback for when the formatted code is reverted.
- * @param options.onOpenEditorConfig - Optional callback for when the editor config is opened.
- * @param options.onOpenThemePicker - Optional callback for when the theme picker is opened.
- * @param options.onOpenRenameExtension - Optional callback for when the rename extension is opened.
- * @param options.onConsoleVisibilityChanged - Optional callback for console visibility changes.
- * @param options.initialConsoleOpen - Whether the console should be initially open.
- * @param options.autoFocus - Defaults to true. If true, the editor is focused on mount.
- * @returns A CodeEditorHandle with methods to control the editor (send, getValue, setValue, destroy, clear, ready, iframe)
+ * @param options.language - Monaco language identifier for syntax highlighting (e.g. `'typescript'`, `'python'`).
+ * @param options.initialValue - Initial text content to load into the editor.
+ * @param options.codeContext - Unique identifier for this editor instance: vault file path or a modal-specific ID (e.g. `'settings-editor-config.jsonc'`).
+ * @param options.containerEl - DOM element in which the iframe will be mounted.
+ * @param options.onChange - Called when the editor content changes.
+ * @param options.onSave - Called when the user triggers a save (Ctrl+S).
+ * @param options.onFormatDiff - Called when the formatter detects a formatting diff.
+ * @param options.onFormatDiffReverted - Called when the user reverts the formatting diff.
+ * @param options.onOpenEditorConfig - Called when the user opens the formatter config for the current extension.
+ * @param options.onOpenThemePicker - Called when the user opens the theme picker.
+ * @param options.onOpenRenameExtension - Called when the user triggers the rename extension action.
+ * @param options.onConsoleVisibilityChanged - Called when the console panel is shown or hidden.
+ * @param options.initialConsoleOpen - If true, the console panel is shown immediately on mount.
+ * @param options.autoFocus - Defaults to true. If true, the editor receives focus on mount.
+ * @returns A CodeEditorHandle exposing: send, getValue, setValue, destroy, clear, ready, iframe.
  */
 export const mountCodeEditor = async (
   options: MountCodeEditorOptions
@@ -106,7 +106,9 @@ export const mountCodeEditor = async (
 
   // Promise that resolves when Monaco is fully ready
   let resolveReady: () => void = () => {};
-  const ready = new Promise<void>((resolve) => { resolveReady = resolve; });
+  const ready = new Promise<void>((resolve) => {
+    resolveReady = resolve;
+  });
 
   /**
    * Sends a typed postMessage to the Monaco iframe.
