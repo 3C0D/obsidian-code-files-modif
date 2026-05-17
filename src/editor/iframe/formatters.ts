@@ -26,7 +26,12 @@ export function setFormatterContext(ctx: string): void {
 }
 
 /**
- * Helper to register a Prettier formatting provider for a language.
+ * Helper to register a Prettier-based formatting provider for a language.
+ *
+ * @param lang - The language identifier (e.g., 'typescript', 'css')
+ * @param parser - The Prettier parser name
+ * @param plugins - The Prettier plugins required by the parser
+ * @param extraOptions - Additional Prettier options (e.g., proseWrap)
  */
 function registerPrettierProvider(
   lang: string,
@@ -59,6 +64,68 @@ function registerPrettierProvider(
 }
 
 /**
+ * Notifies the parent window about a formatting change.
+ * Used for formatters that handle diff tracking directly.
+ */
+function notifyFormatDiff(original: string, formatted: string): void {
+  setLastFormat(original, formatted);
+  window.parent.postMessage(
+    { type: 'format-diff-available', context },
+    getParentOrigin()
+  );
+}
+
+/**
+ * Helper to register a WASM-based formatting provider.
+ * Handles async initialization of the WASM module and diff notification.
+ *
+ * @param lang - The language identifier (e.g., 'python', 'go')
+ * @param formatter - The formatter object containing init and format methods
+ * @param wasmUrl - The URL to the WASM binary
+ * @param format - A callback function that performs the actual formatting
+ */
+async function registerWasmProvider(
+  lang: string,
+  formatter:
+    | { init: (url: string) => Promise<void>; format: (...args: unknown[]) => string }
+    | undefined,
+  wasmUrl: string,
+  format: (original: string) => string
+): Promise<void> {
+  if (!formatter) {
+    console.warn(`code-files: ${lang}-formatter not loaded`);
+    return;
+  }
+  try {
+    // Initialize the WASM module once at registration
+    await formatter.init(wasmUrl);
+  } catch (e) {
+    console.error(`code-files: ${lang}-formatter init failed`, e);
+    return;
+  }
+  // Register the document formatting provider with Monaco
+  monaco.languages.registerDocumentFormattingEditProvider(lang, {
+    provideDocumentFormattingEdits: (
+      model: Monaco.editor.ITextModel
+    ): Monaco.languages.TextEdit[] => {
+      try {
+        const original = model.getValue();
+        const formatted = format(original);
+        // If content changed, notify parent for diff tracking
+        if (formatted !== original) {
+          notifyFormatDiff(original, formatted);
+        }
+        // Replace the entire document content with the formatted text
+        return [{ range: model.getFullModelRange(), text: formatted }];
+      } catch (e) {
+        console.warn(`code-files: ${lang} format failed`, e);
+        return [];
+      }
+    }
+  });
+}
+
+/**
  * Registers all Monaco document formatting edit providers for supported languages.
  * Most formatters delegate diff tracking to runFormatWithDiff() in init.ts,
  * but mermaid, python, and go handle setLastFormat() directly because they have
@@ -74,12 +141,8 @@ export function registerFormatters(): void {
     monaco.languages.register({ id: 'mermaid' });
   }
 
-  /**
-   * NOTE: Prettier formatters (Markdown, TS/JS, CSS, etc.) do NOT update lastFormatOriginal
-   * or send 'format-diff-available' messages directly. This task is delegated to
-   * runFormatWithDiff() in init.ts, which handles the diff tracking logic
-   * for all formatters that use Monaco's native provideDocumentFormattingEdits API.
-   */
+  // NOTE: Prettier formatters do NOT call notifyFormatDiff() directly.
+  // Diff tracking is delegated to runFormatWithDiff() in init.ts.
 
   // Formats the full document with Prettier, then runs a second pass
   // to format any embedded ```mermaid``` blocks if the formatter is available.
@@ -123,12 +186,7 @@ export function registerFormatters(): void {
         const original = model.getValue();
         const formatted = window.mermaidFormatter.formatMermaid(original);
         if (formatted !== original) {
-          // Update lastFormatOriginal and lastFormatFormatted
-          setLastFormat(original, formatted);
-          window.parent.postMessage(
-            { type: 'format-diff-available', context },
-            getParentOrigin()
-          );
+          notifyFormatDiff(original, formatted);
         }
         return [{ range: model.getFullModelRange(), text: formatted }];
       } catch (e) {
@@ -185,114 +243,35 @@ export function registerFormatters(): void {
 
   // ── C/C++: clang-format ───────────────────────────────────────────────────
   ['c', 'cpp'].forEach((lang) => {
-    monaco.languages.registerDocumentFormattingEditProvider(lang, {
-      provideDocumentFormattingEdits: async (
-        model: Monaco.editor.ITextModel
-      ): Promise<Monaco.languages.TextEdit[]> => {
-        try {
-          if (!window.clangFormatter) {
-            console.warn('code-files: clang-formatter not loaded');
-            return [];
-          }
-          try {
-            await window.clangFormatter.init(window.__CLANG_WASM_URL__!);
-          } catch (e) {
-            console.error('code-files: clang-formatter init failed', e);
-            return [];
-          }
-          const original = model.getValue();
-          const formatted = window.clangFormatter.format(original);
-          return [{ range: model.getFullModelRange(), text: formatted }];
-        } catch (e) {
-          console.warn('code-files: clang-format ' + lang + ' format failed', e);
-          return [];
-        }
-      }
-    });
+    registerWasmProvider(
+      lang,
+      window.clangFormatter,
+      window.__CLANG_WASM_URL__!,
+      (original) => window.clangFormatter!.format(original)
+    );
   });
 
   // ── Python: Ruff Formatter ────────────────────────────────────────────────
-  (async () => {
-    if (!window.ruffFormatter) {
-      console.warn('code-files: ruff-formatter not loaded');
-      return;
-    }
-
-    try {
-      await window.ruffFormatter.init(window.__RUFF_WASM_URL__!);
-    } catch (e) {
-      console.error('code-files: ruff-formatter init failed', e);
-      return;
-    }
-
-    monaco.languages.registerDocumentFormattingEditProvider('python', {
-      provideDocumentFormattingEdits: (
-        model: Monaco.editor.ITextModel
-      ): Monaco.languages.TextEdit[] => {
-        try {
-          const original = model.getValue();
-          const formatted = window.ruffFormatter!.format(original, null, {
-            indent_style: PRETTIER_USE_TABS ? 'tab' : 'space',
-            indent_width: PRETTIER_TAB_WIDTH,
-            line_width: PRETTIER_PRINT_WIDTH,
-            line_ending: 'lf',
-            quote_style: 'double',
-            magic_trailing_comma: 'respect'
-          });
-
-          if (formatted !== original) {
-            setLastFormat(original, formatted);
-            window.parent.postMessage(
-              { type: 'format-diff-available', context },
-              getParentOrigin()
-            );
-          }
-
-          return [{ range: model.getFullModelRange(), text: formatted }];
-        } catch (e) {
-          console.warn('code-files: ruff format failed', e);
-          return [];
-        }
-      }
-    });
-  })();
+  registerWasmProvider(
+    'python',
+    window.ruffFormatter,
+    window.__RUFF_WASM_URL__!,
+    (original) =>
+      window.ruffFormatter!.format(original, null, {
+        indent_style: PRETTIER_USE_TABS ? 'tab' : 'space',
+        indent_width: PRETTIER_TAB_WIDTH,
+        line_width: PRETTIER_PRINT_WIDTH,
+        line_ending: 'lf',
+        quote_style: 'double',
+        magic_trailing_comma: 'respect'
+      })
+  );
 
   // ── Go: gofmt Formatter ───────────────────────────────────────────────────
-  (async () => {
-    if (!window.gofmtFormatter) {
-      console.warn('code-files: gofmt-formatter not loaded');
-      return;
-    }
-
-    try {
-      await window.gofmtFormatter.init(window.__GOFMT_WASM_URL__!);
-    } catch (e) {
-      console.error('code-files: gofmt-formatter init failed', e);
-      return;
-    }
-
-    monaco.languages.registerDocumentFormattingEditProvider('go', {
-      provideDocumentFormattingEdits: (
-        model: Monaco.editor.ITextModel
-      ): Monaco.languages.TextEdit[] => {
-        try {
-          const original = model.getValue();
-          const formatted = window.gofmtFormatter!.format(original);
-
-          if (formatted !== original) {
-            setLastFormat(original, formatted);
-            window.parent.postMessage(
-              { type: 'format-diff-available', context },
-              getParentOrigin()
-            );
-          }
-
-          return [{ range: model.getFullModelRange(), text: formatted }];
-        } catch (e) {
-          console.warn('code-files: gofmt format failed', e);
-          return [];
-        }
-      }
-    });
-  })();
+  registerWasmProvider(
+    'go',
+    window.gofmtFormatter,
+    window.__GOFMT_WASM_URL__!,
+    (original) => window.gofmtFormatter!.format(original)
+  );
 }
