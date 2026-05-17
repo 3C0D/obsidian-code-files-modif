@@ -5,7 +5,7 @@
  * - Per-extension editor config with Monaco JSON editor
  */
 import type { App } from 'obsidian';
-import { debounce, PluginSettingTab, Setting, TextComponent } from 'obsidian';
+import { debounce, PluginSettingTab, Setting, TextComponent, Platform } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
@@ -17,7 +17,8 @@ import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
   getActiveExtensions,
   reregisterExtensions,
-  getAllMonacoExtensions
+  getAllMonacoExtensions,
+  getCodeEditorViews
 } from '../utils/extensionUtils.ts';
 import { saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
 import { isFormattable } from '../utils/getLanguage.ts';
@@ -63,6 +64,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     this.renderExtensionsSection(containerEl);
     this.renderEditorConfigSection(containerEl);
     this.renderHotkeySection(containerEl);
+    this.renderConsoleSection(containerEl);
     this.renderHiddenFilesSection(containerEl);
   }
 
@@ -324,6 +326,36 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       'deleteFileHotkeyOverride'
     );
     this.createConsoleHotkeySetting(containerEl);
+  }
+
+  /**
+   * Renders the console settings section in the settings tab.
+   *
+   * @param containerEl HTMLElement where the section will be rendered
+   */
+  private renderConsoleSection(containerEl: HTMLElement): void {
+    if (!Platform.isWin) return;
+    
+    // -- Console Settings -------------------------------------------------
+    containerEl.createEl('h3', { text: 'Console Settings' });
+    
+    new Setting(containerEl)
+      .setName('Windows Default Shell')
+      .setDesc('Select the default shell to use in the integrated console.')
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('cmd.exe', 'Command Prompt (cmd.exe)')
+          .addOption('powershell.exe', 'Windows PowerShell (powershell.exe)')
+          .addOption('pwsh.exe', 'PowerShell Core (pwsh.exe)')
+          .setValue(this.plugin.settings.windowsShell || 'powershell.exe')
+          .onChange(async (value) => {
+            this.plugin.settings.windowsShell = value;
+            await this.plugin.saveSettings();
+            for (const view of getCodeEditorViews(this.plugin.app)) {
+              view.editor?.send('console-shell-info', { shell: value });
+            }
+          });
+      });
   }
 
   /**

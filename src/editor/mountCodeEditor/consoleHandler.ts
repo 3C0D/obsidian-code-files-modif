@@ -81,6 +81,11 @@ export function initConsole(
   // Send initial CWD to the iframe console
   send('console-cwd-changed', { cwd, vaultPath: basePath });
 
+  // Send current shell indicator (Windows only)
+  if (Platform.isWin) {
+    send('console-shell-info', { shell: plugin.settings.windowsShell ?? 'powershell.exe' });
+  }
+
   // Restore command history from persistent settings
   const hist = plugin.settings.consoleHistories[codeContext];
   if (hist?.length) {
@@ -171,8 +176,8 @@ export async function handleConsoleMessage(
      */
     case 'run-command': {
       if (!Platform.isDesktop) return true;
-      const cmdLine = msg.cmd;
-      if (!cmdLine?.trim()) return true;
+      const cmdLine = msg.cmd?.trim() ?? '';
+      if (!cmdLine) return true;
 
       // Persist command in history (cross-session settings)
       const hist = plugin.settings.consoleHistories[codeContext] ?? [];
@@ -222,12 +227,10 @@ export async function handleConsoleMessage(
       const existing = activeProcesses.get(codeContext);
       if (existing) killProcessTree(existing);
 
-      const shellCmd = cmdLine.trim();
-
       // Spawn the actual system process and pipe its stdout/stderr to the iframe.
       // If spawn itself fails (e.g. command not found), the catch sends an error to the console.
       try {
-        const proc = spawn!(shellCmd, [], {
+        const proc = spawn!(cmdLine, [], {
           cwd: activeCwd,
           env: {
             ...process.env, // Inherit PATH, HOME, etc. from the parent process
@@ -236,9 +239,10 @@ export async function handleConsoleMessage(
             FORCE_COLOR: '1' // Encourage color output for TTY-aware tools
           },
           stdio: ['pipe', 'pipe', 'pipe'], // Pipe stdin, stdout, stderr for communication
-          shell: true, // Use the system shell to allow built-in commands and complex expressions
+          shell: (process.platform === 'win32' && plugin.settings.windowsShell) ? plugin.settings.windowsShell : true, // Use the system shell to allow built-in commands and complex expressions
           detached: process.platform !== 'win32' // Detach on Unix to allow independent process groups, but not on Windows where it's unreliable
         });
+        // Register the process so it can be killed later (stop button, Ctrl+C, or view destroyed).
         activeProcesses.set(codeContext, proc);
 
         // Decode process output, handling Windows CP850 encoding.
@@ -370,6 +374,21 @@ export async function handleConsoleMessage(
       const proc = activeProcesses.get(codeContext);
       if (proc) killProcessTree(proc);
       activeProcesses.delete(codeContext);
+      return true;
+    }
+
+    /**
+     * CONSOLE: Cycle to the next shell (powershell.exe → pwsh.exe → cmd.exe).
+     * Triggered by clicking the shell indicator button in the console header.
+     */
+    case 'toggle-shell': {
+      if (!Platform.isDesktop) return true;
+      const shells = ['powershell.exe', 'pwsh.exe', 'cmd.exe'];
+      const current = plugin.settings.windowsShell ?? 'powershell.exe';
+      const next = shells[(shells.indexOf(current) + 1) % shells.length];
+      plugin.settings.windowsShell = next;
+      await plugin.saveSettings();
+      send('console-shell-info', { shell: next });
       return true;
     }
 

@@ -112,7 +112,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   isAutoRevealRegisteredDotfile: true,
   temporaryRevealedPaths: [],
   consoleHeight: 200,
-  consoleHistories: {}
+  consoleHistories: {},
+  windowsShell: 'powershell.exe'
 };
 
 // ===== Formatter Extensions =====

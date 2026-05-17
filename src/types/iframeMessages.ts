@@ -26,6 +26,7 @@ export type IframeMessage =
       position: { lineNumber: number; column: number } | null;
     }
   | { type: 'toggle-console'; context: string }
+  | { type: 'toggle-shell'; context: string }
   | { type: 'run-command'; context: string; cmd: string }
   | { type: 'console-height-changed'; context: string; height: number }
   | { type: 'console-visibility-changed'; context: string; visible: boolean }

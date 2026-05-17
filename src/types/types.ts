@@ -79,6 +79,8 @@ export interface MyPluginSettings {
   consoleHeight: number;
   /** Command history per file context, saved across sessions */
   consoleHistories: Record<string, string[]>;
+  /** Shell to use on Windows (e.g., 'cmd.exe', 'powershell.exe', 'pwsh.exe') */
+  windowsShell: string;
 }
 
 /** Typed suggestion for the CSS snippet picker — 'existing' for an existing snippet, 'new' to create one */

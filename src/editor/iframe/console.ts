@@ -85,6 +85,16 @@ export function initConsolePane(
     });
   }
 
+  const shellBtn = document.getElementById('console-shell-btn') as HTMLButtonElement | null;
+  if (shellBtn) {
+    shellBtn.addEventListener('click', () => {
+      window.parent.postMessage(
+        { type: 'toggle-shell', context: ctx },
+        getParentOrigin()
+      );
+    });
+  }
+
   // Restore persistent console height if provided
   if (initialHeight) {
     pane.style.height = initialHeight + 'px';
@@ -480,6 +490,21 @@ export function handleConsoleMessage(
           false,
           (inputEl.value ? ' ' : '') + paths.join(' ')
         );
+      }
+      return;
+    }
+
+    case 'console-shell-info': {
+      const shell = data.shell as string;
+      const btn = document.getElementById('console-shell-btn') as HTMLButtonElement | null;
+      if (btn) {
+        const labels: Record<string, string> = {
+          'cmd.exe': 'CMD',
+          'powershell.exe': 'PS',
+          'pwsh.exe': 'PS7'
+        };
+        btn.textContent = labels[shell] ?? shell;
+        btn.style.display = '';
       }
       return;
     }
