@@ -107,6 +107,7 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
               // Defer hotkey broadcast: settings modal teardown is asynchronous in Obsidian,
               // so we wait 200 ms to ensure the panel is fully closed before re-syncing.
               setTimeout(() => {
+                // Refresh hotkeys after settings modal closes
                 broadcastHotkeys(plugin);
               }, 200);
               send('focus', {});

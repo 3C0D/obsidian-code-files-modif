@@ -26,6 +26,39 @@ export function setFormatterContext(ctx: string): void {
 }
 
 /**
+ * Helper to register a Prettier formatting provider for a language.
+ */
+function registerPrettierProvider(
+  lang: string,
+  parser: string,
+  plugins: unknown[],
+  extraOptions: object = {}
+): void {
+  monaco.languages.registerDocumentFormattingEditProvider(lang, {
+    provideDocumentFormattingEdits: async (
+      model: Monaco.editor.ITextModel
+    ): Promise<Monaco.languages.TextEdit[]> => {
+      try {
+        const original = model.getValue(); // full raw text of the document
+        const formatted = await prettier.format(original, {
+          parser, // which Prettier parser to use
+          plugins, // AMD global containing the parser
+          printWidth: PRETTIER_PRINT_WIDTH,
+          tabWidth: PRETTIER_TAB_WIDTH,
+          useTabs: PRETTIER_USE_TABS,
+          ...extraOptions
+        });
+        // Single TextEdit replacing the entire document; empty array = no edits applied
+        return [{ range: model.getFullModelRange(), text: formatted }];
+      } catch (e) {
+        console.warn(`code-files: prettier ${lang} format failed`, e);
+        return [];
+      }
+    }
+  });
+}
+
+/**
  * Registers all Monaco document formatting edit providers for supported languages.
  * Most formatters delegate diff tracking to runFormatWithDiff() in init.ts,
  * but mermaid, python, and go handle setLastFormat() directly because they have
@@ -48,6 +81,8 @@ export function registerFormatters(): void {
    * for all formatters that use Monaco's native provideDocumentFormattingEdits API.
    */
 
+  // Formats the full document with Prettier, then runs a second pass
+  // to format any embedded ```mermaid``` blocks if the formatter is available.
   monaco.languages.registerDocumentFormattingEditProvider('markdown', {
     provideDocumentFormattingEdits: async (
       model: Monaco.editor.ITextModel
@@ -74,6 +109,8 @@ export function registerFormatters(): void {
     }
   });
 
+  // Formats mermaid diagrams; handles diff tracking directly
+  // since mermaid is a custom language outside Monaco's native formatter pipeline.
   monaco.languages.registerDocumentFormattingEditProvider('mermaid', {
     provideDocumentFormattingEdits: (
       model: Monaco.editor.ITextModel
@@ -86,6 +123,7 @@ export function registerFormatters(): void {
         const original = model.getValue();
         const formatted = window.mermaidFormatter.formatMermaid(original);
         if (formatted !== original) {
+          // Update lastFormatOriginal and lastFormatFormatted
           setLastFormat(original, formatted);
           window.parent.postMessage(
             { type: 'format-diff-available', context },
@@ -100,116 +138,24 @@ export function registerFormatters(): void {
     }
   });
 
-  monaco.languages.registerDocumentFormattingEditProvider('typescript', {
-    provideDocumentFormattingEdits: async (
-      model: Monaco.editor.ITextModel
-    ): Promise<Monaco.languages.TextEdit[]> => {
-      try {
-        const original = model.getValue();
-        const formatted = await prettier.format(original, {
-          parser: 'typescript',
-          plugins: [prettierPlugins.estree, prettierPlugins.typescript],
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
-        });
-        return [{ range: model.getFullModelRange(), text: formatted }];
-      } catch (e) {
-        console.warn('code-files: prettier typescript format failed', e);
-        return [];
-      }
-    }
-  });
+  registerPrettierProvider('typescript', 'typescript', [
+    prettierPlugins.estree,
+    prettierPlugins.typescript
+  ]);
+  registerPrettierProvider('javascript', 'babel', [
+    prettierPlugins.babel,
+    prettierPlugins.estree
+  ]);
+  registerPrettierProvider('html', 'html', [prettierPlugins.html]);
+  registerPrettierProvider('json', 'json', [
+    prettierPlugins.babel,
+    prettierPlugins.estree
+  ]);
+  registerPrettierProvider('graphql', 'graphql', [prettierPlugins.graphql]);
 
-  monaco.languages.registerDocumentFormattingEditProvider('javascript', {
-    provideDocumentFormattingEdits: async (
-      model: Monaco.editor.ITextModel
-    ): Promise<Monaco.languages.TextEdit[]> => {
-      try {
-        const original = model.getValue();
-        const formatted = await prettier.format(original, {
-          parser: 'babel',
-          plugins: [prettierPlugins.babel, prettierPlugins.estree],
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
-        });
-        return [{ range: model.getFullModelRange(), text: formatted }];
-      } catch (e) {
-        console.warn('code-files: prettier javascript format failed', e);
-        return [];
-      }
-    }
-  });
-
-  // ── Prettier: CSS / SCSS / Less ───────────────────────────────────────────
-  ['css', 'scss', 'less'].forEach((lang) => {
-    monaco.languages.registerDocumentFormattingEditProvider(lang, {
-      provideDocumentFormattingEdits: async (
-        model: Monaco.editor.ITextModel
-      ): Promise<Monaco.languages.TextEdit[]> => {
-        try {
-          const original = model.getValue();
-          const formatted = await prettier.format(original, {
-            parser: lang,
-            plugins: [prettierPlugins.postcss],
-            printWidth: PRETTIER_PRINT_WIDTH,
-            tabWidth: PRETTIER_TAB_WIDTH,
-            useTabs: PRETTIER_USE_TABS
-          });
-          return [{ range: model.getFullModelRange(), text: formatted }];
-        } catch (e) {
-          console.warn('code-files: prettier ' + lang + ' format failed', e);
-          return [];
-        }
-      }
-    });
-  });
-
-  // ── Prettier: HTML ────────────────────────────────────────────────────────
-  monaco.languages.registerDocumentFormattingEditProvider('html', {
-    provideDocumentFormattingEdits: async (
-      model: Monaco.editor.ITextModel
-    ): Promise<Monaco.languages.TextEdit[]> => {
-      try {
-        const original = model.getValue();
-        const formatted = await prettier.format(original, {
-          parser: 'html',
-          plugins: [prettierPlugins.html],
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
-        });
-        return [{ range: model.getFullModelRange(), text: formatted }];
-      } catch (e) {
-        console.warn('code-files: prettier html format failed', e);
-        return [];
-      }
-    }
-  });
-
-  // ── Prettier: JSON ────────────────────────────────────────────────────────
-  // Overrides Monaco's native JSON formatter for consistency with other languages
-  monaco.languages.registerDocumentFormattingEditProvider('json', {
-    provideDocumentFormattingEdits: async (
-      model: Monaco.editor.ITextModel
-    ): Promise<Monaco.languages.TextEdit[]> => {
-      try {
-        const original = model.getValue();
-        const formatted = await prettier.format(original, {
-          parser: 'json',
-          plugins: [prettierPlugins.babel, prettierPlugins.estree],
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
-        });
-        return [{ range: model.getFullModelRange(), text: formatted }];
-      } catch (e) {
-        console.warn('code-files: prettier json format failed', e);
-        return [];
-      }
-    }
-  });
+  ['css', 'scss', 'less'].forEach((lang) =>
+    registerPrettierProvider(lang, lang, [prettierPlugins.postcss])
+  );
 
   // ── Prettier: YAML ────────────────────────────────────────────────────────
   monaco.languages.registerDocumentFormattingEditProvider('yaml', {
@@ -232,28 +178,6 @@ export function registerFormatters(): void {
         return [{ range: model.getFullModelRange(), text: formatted }];
       } catch (e) {
         console.warn('code-files: prettier yaml format failed', e);
-        return [];
-      }
-    }
-  });
-
-  // ── Prettier: GraphQL ─────────────────────────────────────────────────────
-  monaco.languages.registerDocumentFormattingEditProvider('graphql', {
-    provideDocumentFormattingEdits: async (
-      model: Monaco.editor.ITextModel
-    ): Promise<Monaco.languages.TextEdit[]> => {
-      try {
-        const original = model.getValue();
-        const formatted = await prettier.format(original, {
-          parser: 'graphql',
-          plugins: [prettierPlugins.graphql],
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
-        });
-        return [{ range: model.getFullModelRange(), text: formatted }];
-      } catch (e) {
-        console.warn('code-files: prettier graphql format failed', e);
         return [];
       }
     }

@@ -33,11 +33,11 @@ let currentLang = 'plaintext';
 let initialized = false;
 
 /**
- * Displays a temporary message overlay in the editor area.
+ * Displays a temporary notice overlay in the editor area, mirroring Obsidian's Notice style.
  * Used for status notifications like "Formatting..." or errors.
  * @param message - The message text to display
  */
-function showInEditorMessage(message: string): void {
+function editorNotice(message: string): void {
   const container = document.getElementById('container');
   if (!container) return;
 
@@ -223,7 +223,7 @@ function applyParams(params: InitParams): void {
       selectionOrPosition: Monaco.IRange | Monaco.IPosition | undefined
     ) => {
       if (!params.projectRootFolder) {
-        showInEditorMessage(
+        editorNotice(
           'To navigate cross-file, define the parent folder as project root folder.'
         );
         return true; // Don't attempt to open
