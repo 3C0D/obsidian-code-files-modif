@@ -22,6 +22,7 @@ import {
 } from '../utils/extensionUtils.ts';
 import { saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
 import { isFormattable } from '../utils/getLanguage.ts';
+import { isShellAvailable } from '../utils/shellUtils.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import {
   getObsidianHotkey,
@@ -338,16 +339,33 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     
     // -- Console Settings -------------------------------------------------
     containerEl.createEl('h3', { text: 'Console Settings' });
-    
+
     new Setting(containerEl)
       .setName('Windows Default Shell')
       .setDesc('Select the default shell to use in the integrated console.')
       .addDropdown((dropdown) => {
+        const availableShells: string[] = [];
+        
+        if (isShellAvailable('powershell.exe')) {
+          dropdown.addOption('powershell.exe', 'Windows PowerShell (powershell.exe)');
+          availableShells.push('powershell.exe');
+        }
+        if (isShellAvailable('pwsh.exe')) {
+          dropdown.addOption('pwsh.exe', 'PowerShell Core (pwsh.exe)');
+          availableShells.push('pwsh.exe');
+        }
+        if (isShellAvailable('cmd.exe')) {
+          dropdown.addOption('cmd.exe', 'Command Prompt (cmd.exe)');
+          availableShells.push('cmd.exe');
+        }
+
+        const currentShell = this.plugin.settings.windowsShell;
+        const defaultValue = availableShells.includes(currentShell) 
+          ? currentShell 
+          : (availableShells[0] || 'powershell.exe');
+
         dropdown
-          .addOption('cmd.exe', 'Command Prompt (cmd.exe)')
-          .addOption('powershell.exe', 'Windows PowerShell (powershell.exe)')
-          .addOption('pwsh.exe', 'PowerShell Core (pwsh.exe)')
-          .setValue(this.plugin.settings.windowsShell || 'powershell.exe')
+          .setValue(defaultValue)
           .onChange(async (value) => {
             this.plugin.settings.windowsShell = value;
             await this.plugin.saveSettings();

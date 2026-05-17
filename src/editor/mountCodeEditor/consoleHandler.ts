@@ -9,6 +9,7 @@ import { Notice, Platform } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
 import type { IframeMessage } from '../../types/index.ts';
+import { isShellAvailable } from '../../utils/shellUtils.ts';
 
 let spawn: typeof SpawnFn | undefined;
 let path: { join: typeof join; resolve: typeof resolve } | undefined;
@@ -383,9 +384,18 @@ export async function handleConsoleMessage(
      */
     case 'toggle-shell': {
       if (!Platform.isDesktop) return true;
+
       const shells = ['powershell.exe', 'pwsh.exe', 'cmd.exe'];
       const current = plugin.settings.windowsShell ?? 'powershell.exe';
-      const next = shells[(shells.indexOf(current) + 1) % shells.length];
+      let nextIndex = (shells.indexOf(current) + 1) % shells.length;
+      let next = shells[nextIndex];
+
+      // Cycle until we find an available shell
+      while (next !== current && !isShellAvailable(next)) {
+        nextIndex = (nextIndex + 1) % shells.length;
+        next = shells[nextIndex];
+      }
+
       plugin.settings.windowsShell = next;
       await plugin.saveSettings();
       send('console-shell-info', { shell: next });
