@@ -22,11 +22,36 @@ ansiUp.use_classes = true; // Use CSS classes instead of inline styles for bette
 let isRunning = false;
 let currentCwd = '';
 let vaultPath = '';
+let homePath = '';
 const history: string[] = [];
 let historyIndex = -1;
 let currentConsoleHotkey: HotkeyConfig | null = null;
 let currentCommandPaletteHotkey: HotkeyConfig | null = null;
 let currentSettingsHotkey: HotkeyConfig | null = null;
+
+/**
+ * Formats a given path for display in the prompt or command line.
+ * Handles vault-relative paths and home-relative paths (~).
+ */
+const formatCwd = (path: string): string => {
+  const norm = (p: string): string => p.replace(/\\/g, '/').toLowerCase();
+  const normPath = norm(path);
+  const normVault = vaultPath ? norm(vaultPath) : '';
+  const normHome = homePath ? norm(homePath) + '/' : '';
+
+  const formatted =
+    normVault && normPath.startsWith(normVault)
+      ? path.slice(vaultPath.length).replace(/^[/\\]/, '')
+      : normHome && normPath.startsWith(normHome)
+        ? '~/' +
+          path
+            .slice(homePath.length)
+            .replace(/^[/\\]/, '')
+            .replace(/\\/g, '/')
+        : path;
+
+  return formatted || '/';
+};
 
 /**
  * Updates the prompt UI elements based on current state (CWD, isRunning).
@@ -36,12 +61,7 @@ const updatePrompt = (): void => {
   const symbolEl = document.getElementById('console-prompt-symbol');
   const input = document.getElementById('console-input-field') as HTMLInputElement;
   if (cwdEl) {
-    // Strip everything before the vault root, then show full relative path
-    const relative =
-      vaultPath && currentCwd.startsWith(vaultPath)
-        ? currentCwd.slice(vaultPath.length).replace(/^[/\\]/, '')
-        : currentCwd.split(/[/\\]/).slice(-2).join('/');
-    cwdEl.textContent = relative || '/';
+    cwdEl.textContent = formatCwd(currentCwd);
     cwdEl.style.display = isRunning ? 'none' : '';
   }
   if (symbolEl) {
@@ -122,7 +142,7 @@ export function initConsolePane(
 
     // Handle 'pwd' locally to diagnose currentCwd state without round-tripping
     if (cmd === 'pwd') {
-      const shortDir = currentCwd.split(/[/\\]/).slice(-2).join('/') || '/';
+      const shortDir = formatCwd(currentCwd);
       output.innerHTML += `<span class="console-cwd">${shortDir}</span><span class="console-command-line"> $ pwd\n${currentCwd || '/'}\n</span>`;
       output.scrollTop = output.scrollHeight;
       input.value = '';
@@ -150,7 +170,7 @@ export function initConsolePane(
      * MODE: New Command Execution
      * No process is active, so we treat the input as a new shell command to spawn.
      */
-    const shortDir = currentCwd.split(/[/\\]/).slice(-2).join('/') || '/';
+    const shortDir = formatCwd(currentCwd);
     output.innerHTML += `<span class="console-cwd">${shortDir}</span><span class="console-command-line"> $ ${cmd}\n</span>`;
     output.scrollTop = output.scrollHeight;
 
@@ -483,6 +503,7 @@ export function handleConsoleMessage(
     case 'console-cwd-changed': {
       currentCwd = data.cwd as string;
       if (data.vaultPath) vaultPath = data.vaultPath as string;
+      if (data.homePath) homePath = data.homePath as string;
       updatePrompt();
       return;
     }

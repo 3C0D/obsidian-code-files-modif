@@ -79,8 +79,10 @@ export function initConsole(
 
   const { basePath, cwd } = resolveConsoleCwd(plugin, codeContext);
 
+  const homePath = Platform.isDesktop ? require('os').homedir() : '';
+
   // Send initial CWD to the iframe console
-  send('console-cwd-changed', { cwd, vaultPath: basePath });
+  send('console-cwd-changed', { cwd, vaultPath: basePath, homePath });
 
   // Send current shell indicator (Windows only)
   if (Platform.isWin) {
@@ -209,7 +211,12 @@ export async function handleConsoleMessage(
           // Valid directory: update the session CWD and notify the iframe.
           if (fs!.statSync(resolved).isDirectory()) {
             currentCwd.set(codeContext, resolved);
-            send('console-cwd-changed', { cwd: resolved });
+            const homePath = Platform.isDesktop ? require('os').homedir() : '';
+            send('console-cwd-changed', {
+              cwd: resolved,
+              vaultPath: basePath,
+              homePath
+            });
             send('console-output', { text: '' });
             send('console-process-exited', { code: 0 });
           } else {
