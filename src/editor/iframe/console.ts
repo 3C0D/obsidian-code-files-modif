@@ -25,6 +25,8 @@ let vaultPath = '';
 const history: string[] = [];
 let historyIndex = -1;
 let currentConsoleHotkey: HotkeyConfig | null = null;
+let currentCommandPaletteHotkey: HotkeyConfig | null = null;
+let currentSettingsHotkey: HotkeyConfig | null = null;
 
 /**
  * Updates the prompt UI elements based on current state (CWD, isRunning).
@@ -63,9 +65,13 @@ export function initConsolePane(
   ctx: string,
   editor: monaco.editor.IStandaloneCodeEditor | null,
   initialHeight?: number,
-  hotkey?: HotkeyConfig | null
+  hotkey?: HotkeyConfig | null,
+  commandPaletteHotkey?: HotkeyConfig | null,
+  settingsHotkey?: HotkeyConfig | null
 ): void {
   currentConsoleHotkey = hotkey || null;
+  currentCommandPaletteHotkey = commandPaletteHotkey || null;
+  currentSettingsHotkey = settingsHotkey || null;
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
   const input = document.getElementById('console-input-field') as HTMLInputElement;
@@ -188,6 +194,24 @@ export function initConsolePane(
         { type: 'send-stdin-eof', context: ctx },
         getParentOrigin()
       );
+    }
+    if (currentCommandPaletteHotkey && matchesHotkey(e, currentCommandPaletteHotkey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage(
+        { type: 'open-obsidian-palette', context: ctx },
+        getParentOrigin()
+      );
+      return;
+    }
+    if (currentSettingsHotkey && matchesHotkey(e, currentSettingsHotkey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage(
+        { type: 'open-settings', context: ctx },
+        getParentOrigin()
+      );
+      return;
     }
     // Intercept Console Hotkey to toggle visibility (same shortcut as the main editor)
     if (currentConsoleHotkey && matchesHotkey(e, currentConsoleHotkey)) {
@@ -518,6 +542,12 @@ export function handleConsoleMessage(
  * Updates the console hotkey dynamically when Obsidian settings change.
  * @param hotkey - The new hotkey configuration
  */
-export function updateConsoleHotkey(hotkey: HotkeyConfig | null): void {
+export function updateConsoleHotkey(
+  hotkey: HotkeyConfig | null,
+  commandPaletteHotkey?: HotkeyConfig | null,
+  settingsHotkey?: HotkeyConfig | null
+): void {
   currentConsoleHotkey = hotkey;
+  if (commandPaletteHotkey !== undefined) currentCommandPaletteHotkey = commandPaletteHotkey;
+  if (settingsHotkey !== undefined) currentSettingsHotkey = settingsHotkey;
 }

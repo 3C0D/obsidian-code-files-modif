@@ -292,7 +292,14 @@ function applyParams(params: InitParams): void {
   });
 
   // Initialize console pane with persistent height and hotkey
-  initConsolePane(context, editor, params.consoleHeight, params.consoleHotkey || null);
+  initConsolePane(
+    context,
+    editor,
+    params.consoleHeight,
+    params.consoleHotkey || null,
+    params.commandPaletteHotkey || null,
+    params.settingsHotkey || null
+  );
 
   // Notify parent when content changes (updates dirty badge)
   editor.onDidChangeModelContent(() => {
@@ -420,7 +427,11 @@ export function initMonacoApp(): void {
           deleteFile: data.deleteFileHotkey,
           console: data.consoleHotkey
         });
-        updateConsoleHotkey(data.consoleHotkey || null);
+        updateConsoleHotkey(
+          data.consoleHotkey || null,
+          data.commandPaletteHotkey || null,
+          data.settingsHotkey || null
+        );
         break;
       case 'load-project-files':
         // Load TypeScript/JavaScript project files for IntelliSense and cross-file navigation.
