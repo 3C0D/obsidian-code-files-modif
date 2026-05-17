@@ -19,10 +19,10 @@ export function findRootMonacoLeaf(
   const allLeaves = plugin.app.workspace.getLeavesOfType(viewType);
   const existingLeaf = allLeaves.find((leaf) => {
     const isRoot = leaf.getRoot() === plugin.app.workspace.rootSplit;
+    if (!isRoot) return false;
     const viewFilePath =
       leaf.view instanceof CodeEditorView ? leaf.view.file?.path : undefined;
     const stateFilePath = leaf.getViewState().state?.file as string | undefined;
-    if (!isRoot) return false;
     // Prefer the live file path from the view instance (fully loaded),
     // fall back to the persisted state path (view still loading at startup).
     return (viewFilePath ?? stateFilePath) === filePath;

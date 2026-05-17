@@ -1,7 +1,19 @@
 /**
  * File utilities for handling extensions and file names.
  */
+import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/index.ts';
+import type { App } from 'obsidian';
+
+/**
+ * Gets the absolute filesystem path to the vault's root folder.
+ *
+ * @param app - The Obsidian App instance.
+ * @returns The absolute base path of the vault.
+ */
+export function getVaultBasePath(app: App): string {
+  return getDataAdapterEx(app).basePath;
+}
 
 /**
  * Extracts the extension from a filename.

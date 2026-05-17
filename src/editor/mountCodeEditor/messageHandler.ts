@@ -9,9 +9,8 @@ import { broadcastHotkeys } from '../../utils/broadcast.ts';
 import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
-import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import { handleConsoleMessage, cleanupConsole, initConsole } from './consoleHandler.ts';
-import { getExtension } from '../../utils/fileUtils.ts';
+import { getExtension, getVaultBasePath } from '../../utils/fileUtils.ts';
 
 // Desktop-only imports for drag-and-drop functionality
 let webUtils: { getPathForFile(file: File): string } | undefined;
@@ -321,7 +320,7 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
           hideOverlay();
 
           const files = Array.from(e.dataTransfer?.files ?? []);
-          const basePath = getDataAdapterEx(plugin.app).basePath;
+          const basePath = getVaultBasePath(plugin.app);
           const paths: string[] = [];
 
           for (const f of files) {

@@ -6,10 +6,10 @@ import type { ChildProcess, spawn as SpawnFn } from 'child_process';
 import type { join, resolve } from 'path';
 import type { statSync } from 'fs';
 import { Notice, Platform } from 'obsidian';
-import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
 import type { IframeMessage } from '../../types/index.ts';
 import { isShellAvailable } from '../../utils/shellUtils.ts';
+import { getVaultBasePath } from '../../utils/fileUtils.ts';
 
 let spawn: typeof SpawnFn | undefined;
 let path: { join: typeof join; resolve: typeof resolve } | undefined;
@@ -134,7 +134,7 @@ function resolveConsoleCwd(
   plugin: CodeFilesPlugin,
   codeContext: string
 ): { basePath: string; cwd: string } {
-  const basePath = getDataAdapterEx(plugin.app).basePath;
+  const basePath = getVaultBasePath(plugin.app);
   const fileDir = path!.join(basePath, codeContext.replace(/[^/\\]*$/, ''));
   const cwd = currentCwd.get(codeContext) ?? fileDir;
   return { basePath, cwd };
