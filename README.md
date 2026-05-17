@@ -20,7 +20,7 @@ Open and edit code files directly in Obsidian using a full Monaco Editor (the sa
 - **Editor Settings Modal** — inline Monaco JSON editor with live preview, accessible via ⚙️ gear icon in tab header
 - **AutoSave (OFF by default)** — visual dirty indicator (circle in tab header); prevents accidental saves. Format on save optional
 - **Code Block Editing** — open any code fence in full Monaco modal from editor context menu
-- **Integrated Console** — run terminal commands directly from Monaco (Ctrl+J to toggle); execute scripts, build tools, and dev workflows without leaving the editor
+- **Integrated Console** — run terminal commands directly from Monaco (Ctrl+J to toggle); execute scripts, build tools, and dev workflows without leaving the editor. On Windows: choose default shell (PowerShell / pwsh / cmd.exe) and cycle shells; drag & drop files/folders from OS into console.
 - **Open Any File in Monaco** — command palette or right-click → "Open in Monaco Editor"
 - **Smart Tab Reuse for Project Files** — Files within the project root folder that are already open in Monaco are reopened in the same tab instead of creating duplicates. Click multiple times on the same file without worrying about multiple tabs.
 - **Popout Windows** — secondary windows support (Ctrl+Shift+Alt+Click)

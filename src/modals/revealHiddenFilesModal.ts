@@ -205,9 +205,28 @@ export class RevealHiddenFilesModal extends Modal {
       .addEventListener('click', async () => {
         let anyRegistered = false;
 
+        // 1. Process registrations first
+        for (const section of this.sections) {
+          for (const filePath of section.selectedForRegistration) {
+            const item = section.items.find((i) => i.path === filePath);
+            if (!item || item.isFolder) continue;
+            const ext = getExtension(item.name);
+            if (ext && addExtension(this.plugin.settings, ext)) anyRegistered = true;
+          }
+        }
+
+        if (anyRegistered) {
+          await reregisterExtensions(this.plugin);
+        }
+
+        // 2. Then process reveal / unreveal items to avoid visual flash
         for (const section of this.sections) {
           const toReveal = section.items
-            .filter((item) => section.selected.has(item.path))
+            .filter(
+              (item) =>
+                section.selected.has(item.path) &&
+                !section.selectedForRegistration.has(item.path)
+            )
             .map((item) => item.path);
 
           const toHide = section.items
@@ -231,16 +250,8 @@ export class RevealHiddenFilesModal extends Modal {
             await this.plugin.saveSettings();
             decorateFolders(this.plugin);
           }
-
-          for (const filePath of section.selectedForRegistration) {
-            const item = section.items.find((i) => i.path === filePath);
-            if (!item || item.isFolder) continue;
-            const ext = getExtension(item.name);
-            if (ext && addExtension(this.plugin.settings, ext)) anyRegistered = true;
-          }
         }
 
-        if (anyRegistered) await reregisterExtensions(this.plugin);
         this.close();
       });
 
@@ -323,8 +334,16 @@ export class RevealHiddenFilesModal extends Modal {
         registerSec.createSpan({ text: `register as .${ext}` });
 
         registerCb.addEventListener('change', () => {
-          if (registerCb.checked) section.selectedForRegistration.add(item.path);
-          else section.selectedForRegistration.delete(item.path);
+          if (registerCb.checked) {
+            section.selectedForRegistration.add(item.path);
+            // Registering an extension makes it auto-visible: force reveal checked.
+            revealCb.checked = true;
+            section.selected.add(item.path);
+            masterReveal.checked = section.items.every((i) => section.selected.has(i.path));
+            masterReveal.indeterminate = !masterReveal.checked && section.selected.size > 0;
+          } else {
+            section.selectedForRegistration.delete(item.path);
+          }
           masterRegister.checked = registerableItems.every((i) =>
             section.selectedForRegistration.has(i.path)
           );
