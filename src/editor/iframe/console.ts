@@ -91,7 +91,9 @@ export function initConsolePane(
     });
   }
 
-  const shellBtn = document.getElementById('console-shell-btn') as HTMLButtonElement | null;
+  const shellBtn = document.getElementById(
+    'console-shell-btn'
+  ) as HTMLButtonElement | null;
   if (shellBtn) {
     shellBtn.addEventListener('click', () => {
       window.parent.postMessage(
@@ -520,12 +522,14 @@ export function handleConsoleMessage(
 
     case 'console-shell-info': {
       const shell = data.shell as string;
-      const btn = document.getElementById('console-shell-btn') as HTMLButtonElement | null;
+      const btn = document.getElementById(
+        'console-shell-btn'
+      ) as HTMLButtonElement | null;
       if (btn) {
         const labels: Record<string, string> = {
           'cmd.exe': 'CMD',
           'powershell.exe': 'PS',
-          'pwsh.exe': 'PS7'
+          'pwsh.exe': 'PWSH'
         };
         btn.textContent = labels[shell] ?? shell;
         btn.style.display = '';
@@ -548,6 +552,7 @@ export function updateConsoleHotkey(
   settingsHotkey?: HotkeyConfig | null
 ): void {
   currentConsoleHotkey = hotkey;
-  if (commandPaletteHotkey !== undefined) currentCommandPaletteHotkey = commandPaletteHotkey;
+  if (commandPaletteHotkey !== undefined)
+    currentCommandPaletteHotkey = commandPaletteHotkey;
   if (settingsHotkey !== undefined) currentSettingsHotkey = settingsHotkey;
 }
