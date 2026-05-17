@@ -9,10 +9,7 @@ import { debounce, PluginSettingTab, Setting, TextComponent, Platform } from 'ob
 import type CodeFilesPlugin from '../main.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import { ChooseExtensionModal } from '../modals/chooseExtensionModal.ts';
-import {
-  DEFAULT_EDITOR_CONFIG,
-  DEFAULT_SETTINGS
-} from '../types/index.ts';
+import { DEFAULT_EDITOR_CONFIG, DEFAULT_SETTINGS } from '../types/index.ts';
 import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
   getActiveExtensions,
@@ -22,7 +19,7 @@ import {
 } from '../utils/extensionUtils.ts';
 import { saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
 import { isFormattable } from '../utils/getLanguage.ts';
-import { isShellAvailable } from '../utils/shellUtils.ts';
+import { getAvailableShells } from '../utils/shellUtils.ts';
 import { ExtensionSuggest } from './extensionSuggest.ts';
 import {
   getObsidianHotkey,
@@ -336,7 +333,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
    */
   private renderConsoleSection(containerEl: HTMLElement): void {
     if (!Platform.isWin) return;
-    
+
     // -- Console Settings -------------------------------------------------
     containerEl.createEl('h3', { text: 'Console Settings' });
 
@@ -344,35 +341,28 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
       .setName('Windows Default Shell')
       .setDesc('Select the default shell to use in the integrated console.')
       .addDropdown((dropdown) => {
-        const availableShells: string[] = [];
-        
-        if (isShellAvailable('powershell.exe')) {
-          dropdown.addOption('powershell.exe', 'Windows PowerShell (powershell.exe)');
-          availableShells.push('powershell.exe');
-        }
-        if (isShellAvailable('pwsh.exe')) {
-          dropdown.addOption('pwsh.exe', 'PowerShell Core (pwsh.exe)');
-          availableShells.push('pwsh.exe');
-        }
-        if (isShellAvailable('cmd.exe')) {
-          dropdown.addOption('cmd.exe', 'Command Prompt (cmd.exe)');
-          availableShells.push('cmd.exe');
+        const shellLabels: Record<string, string> = {
+          'powershell.exe': 'Windows PowerShell (powershell.exe)',
+          'pwsh.exe': 'PowerShell Core (pwsh.exe)',
+          'cmd.exe': 'Command Prompt (cmd.exe)'
+        };
+        const availableShells = getAvailableShells();
+        for (const shell of availableShells) {
+          dropdown.addOption(shell, shellLabels[shell]);
         }
 
         const currentShell = this.plugin.settings.windowsShell;
-        const defaultValue = availableShells.includes(currentShell) 
-          ? currentShell 
-          : (availableShells[0] || 'powershell.exe');
+        const defaultValue = availableShells.includes(currentShell)
+          ? currentShell
+          : availableShells[0] || 'powershell.exe';
 
-        dropdown
-          .setValue(defaultValue)
-          .onChange(async (value) => {
-            this.plugin.settings.windowsShell = value;
-            await this.plugin.saveSettings();
-            for (const view of getCodeEditorViews(this.plugin.app)) {
-              view.editor?.send('console-shell-info', { shell: value });
-            }
-          });
+        dropdown.setValue(defaultValue).onChange(async (value) => {
+          this.plugin.settings.windowsShell = value;
+          await this.plugin.saveSettings();
+          for (const view of getCodeEditorViews(this.plugin.app)) {
+            view.editor?.send('console-shell-info', { shell: value });
+          }
+        });
       });
   }
 

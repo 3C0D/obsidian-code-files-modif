@@ -8,7 +8,7 @@ import type { statSync } from 'fs';
 import { Notice, Platform } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import type { IframeMessage } from '../../types/index.ts';
-import { isShellAvailable } from '../../utils/shellUtils.ts';
+import { getAvailableShells } from '../../utils/shellUtils.ts';
 import { getVaultBasePath } from '../../utils/fileUtils.ts';
 
 let spawn: typeof SpawnFn | undefined;
@@ -84,7 +84,9 @@ export function initConsole(
 
   // Send current shell indicator (Windows only)
   if (Platform.isWin) {
-    send('console-shell-info', { shell: plugin.settings.windowsShell ?? 'powershell.exe' });
+    send('console-shell-info', {
+      shell: plugin.settings.windowsShell ?? 'powershell.exe'
+    });
   }
 
   // Restore command history from persistent settings
@@ -240,7 +242,10 @@ export async function handleConsoleMessage(
             FORCE_COLOR: '1' // Encourage color output for TTY-aware tools
           },
           stdio: ['pipe', 'pipe', 'pipe'], // Pipe stdin, stdout, stderr for communication
-          shell: (process.platform === 'win32' && plugin.settings.windowsShell) ? plugin.settings.windowsShell : true, // Use the system shell to allow built-in commands and complex expressions
+          shell:
+            process.platform === 'win32' && plugin.settings.windowsShell
+              ? plugin.settings.windowsShell
+              : true, // Use the system shell to allow built-in commands and complex expressions
           detached: process.platform !== 'win32' // Detach on Unix to allow independent process groups, but not on Windows where it's unreliable
         });
         // Register the process so it can be killed later (stop button, Ctrl+C, or view destroyed).
@@ -384,17 +389,11 @@ export async function handleConsoleMessage(
      */
     case 'toggle-shell': {
       if (!Platform.isDesktop) return true;
-
-      const shells = ['powershell.exe', 'pwsh.exe', 'cmd.exe'];
+      const shells = getAvailableShells();
       const current = plugin.settings.windowsShell ?? 'powershell.exe';
-      let nextIndex = (shells.indexOf(current) + 1) % shells.length;
-      let next = shells[nextIndex];
-
-      // Cycle until we find an available shell
-      while (next !== current && !isShellAvailable(next)) {
-        nextIndex = (nextIndex + 1) % shells.length;
-        next = shells[nextIndex];
-      }
+      const idx = shells.indexOf(current);
+      // idx < 0 if stored shell is no longer available (e.g. pwsh.exe uninstalled between sessions)
+      const next = shells[(idx < 0 ? 0 : idx + 1) % shells.length];
 
       plugin.settings.windowsShell = next;
       await plugin.saveSettings();
