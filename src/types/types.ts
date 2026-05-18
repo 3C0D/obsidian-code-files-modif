@@ -52,6 +52,10 @@ export interface MyPluginSettings {
   maxFileSize: number;
   /** Project root folder (vault-relative path) for inter-file navigation and imports resolution */
   projectRootFolder: string;
+  /** Use tsconfig.json compilerOptions for JS/TS language services */
+  useTsConfig: boolean;
+  /** Show hidden files (dotfiles) in the file explorer */
+  showHiddenFiles: boolean;
   /** Last selected extension in the settings tab Editor Config section */
   lastSelectedConfigExtension: string;
   /** Override for command palette hotkey (empty string = use Obsidian default) */

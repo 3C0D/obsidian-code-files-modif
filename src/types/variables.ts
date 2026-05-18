@@ -102,6 +102,8 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   extraExtensions: [],
   maxFileSize: 10,
   projectRootFolder: '',
+  useTsConfig: true,
+  showHiddenFiles: true,
   lastSelectedConfigExtension: '',
   commandPaletteHotkeyOverride: '',
   settingsHotkeyOverride: '',

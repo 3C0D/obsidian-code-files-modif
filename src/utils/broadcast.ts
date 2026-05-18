@@ -13,7 +13,7 @@ import { getCodeEditorViews } from './extensionUtils.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
 import { getExtension } from './fileUtils.ts';
 import { staticMap } from './getLanguage.ts';
-import { readProjectFiles } from './projectUtils.ts';
+import { readProjectFiles, readTsConfig } from './projectUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride, formatHotkey } from './hotkeyUtils.ts';
 
 /**
@@ -106,8 +106,9 @@ export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): voi
  */
 export async function broadcastProjectFiles(plugin: CodeFilesPlugin): Promise<void> {
   const files = await readProjectFiles(plugin);
+  const tsConfigOptions = plugin.settings.useTsConfig ? await readTsConfig(plugin) : null;
   for (const view of getCodeEditorViews(plugin.app)) {
-    view.editor?.send('load-project-files', { files });
+    view.editor?.send('load-project-files', { files, tsConfigOptions });
   }
 }
 

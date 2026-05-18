@@ -28,6 +28,7 @@ import { initConsolePane, handleConsoleMessage, updateConsoleHotkey } from './co
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
 let editorDefaults: Monaco.editor.IStandaloneEditorConstructionOptions = {};
+let projectRootFolder: string | null = null;
 
 let currentLang = 'plaintext';
 let initialized = false;
@@ -157,6 +158,7 @@ function applyParams(params: InitParams): void {
   if (initialized) return;
   initialized = true;
   context = params.context;
+  projectRootFolder = params.projectRootFolder ?? null;
   currentLang = params.lang || 'plaintext';
   editorDefaults = {
     folding: params.folding !== false,
@@ -201,19 +203,7 @@ function applyParams(params: InitParams): void {
 
   // Configure TypeScript compiler options for inter-file navigation
   if (params.projectRootFolder) {
-    const compilerOptions = {
-      // baseUrl must be a file:// URI string. Uri.file() normalizes the path
-      baseUrl: monaco.Uri.file(params.projectRootFolder).toString(),
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-      allowNonTsExtensions: true,
-      target: monaco.languages.typescript.ScriptTarget.ESNext,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
-      allowJs: true,
-      checkJs: false,
-      paths: {}
-    };
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
-    monaco.languages.typescript.javascriptDefaults.setCompilerOptions(compilerOptions);
+    applyDefaultCompilerOptions();
   }
 
   // Create (or reuse) the model for this file. A model is the text buffer Monaco
@@ -328,6 +318,88 @@ function applyParams(params: InitParams): void {
       getParentOrigin()
     );
   });
+}
+
+/** Applies the hardcoded fallback TS compiler options when no tsconfig.json is used. */
+function applyDefaultCompilerOptions(): void {
+  if (!projectRootFolder) return;
+  const compilerOptions = {
+    // baseUrl must be a file:// URI string. Uri.file() normalizes the path
+    baseUrl: monaco.Uri.file(projectRootFolder).toString(),
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    allowNonTsExtensions: true,
+    target: monaco.languages.typescript.ScriptTarget.ESNext,
+    module: monaco.languages.typescript.ModuleKind.ESNext,
+    allowJs: true,
+    checkJs: false,
+    paths: {}
+  };
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
+  monaco.languages.typescript.javascriptDefaults.setCompilerOptions(compilerOptions);
+}
+
+/**
+ * Maps raw tsconfig compilerOptions strings to Monaco TypeScript enum values,
+ * then applies them to both TS and JS language service defaults.
+ * Falls back to the hardcoded defaults for missing or unrecognized fields.
+ * @param opts - Raw compilerOptions from tsconfig.json
+ */
+function applyTsConfigCompilerOptions(opts: Record<string, unknown>): void {
+  if (!projectRootFolder) return;
+  const ts = monaco.languages.typescript;
+
+  const moduleResolutionMap: Record<string, number> = {
+    node: ts.ModuleResolutionKind.NodeJs,
+    node16: ts.ModuleResolutionKind.NodeJs,
+    nodenext: ts.ModuleResolutionKind.NodeJs,
+    bundler: ts.ModuleResolutionKind.NodeJs,
+    classic: ts.ModuleResolutionKind.Classic
+  };
+  const targetMap: Record<string, number> = {
+    es3: ts.ScriptTarget.ES3,
+    es5: ts.ScriptTarget.ES5,
+    es6: ts.ScriptTarget.ES2015,
+    es2015: ts.ScriptTarget.ES2015,
+    es2016: ts.ScriptTarget.ES2016,
+    es2017: ts.ScriptTarget.ES2017,
+    es2018: ts.ScriptTarget.ES2018,
+    es2019: ts.ScriptTarget.ES2019,
+    es2020: ts.ScriptTarget.ES2020,
+    es2021: ts.ScriptTarget.ES2021,
+    es2022: ts.ScriptTarget.ES2022,
+    esnext: ts.ScriptTarget.ESNext
+  };
+  const moduleMap: Record<string, number> = {
+    none: ts.ModuleKind.None,
+    commonjs: ts.ModuleKind.CommonJS,
+    amd: ts.ModuleKind.AMD,
+    umd: ts.ModuleKind.UMD,
+    system: ts.ModuleKind.System,
+    es6: ts.ModuleKind.ES2015,
+    es2015: ts.ModuleKind.ES2015,
+    es2020: ts.ModuleKind.ES2020,
+    esnext: ts.ModuleKind.ESNext,
+    node16: ts.ModuleKind.ESNext,
+    nodenext: ts.ModuleKind.ESNext
+  };
+
+  const mr = (opts.moduleResolution as string)?.toLowerCase();
+  const tgt = (opts.target as string)?.toLowerCase();
+  const mod = (opts.module as string)?.toLowerCase();
+
+  const compilerOptions = {
+    baseUrl: monaco.Uri.file(projectRootFolder).toString(),
+    allowNonTsExtensions: true,
+    moduleResolution: moduleResolutionMap[mr] ?? ts.ModuleResolutionKind.NodeJs,
+    target: targetMap[tgt] ?? ts.ScriptTarget.ESNext,
+    module: moduleMap[mod] ?? ts.ModuleKind.ESNext,
+    allowJs: (opts.allowJs as boolean) ?? true,
+    checkJs: (opts.checkJs as boolean) ?? false,
+    paths: (opts.paths as object) ?? {}
+  };
+
+  ts.typescriptDefaults.setCompilerOptions(compilerOptions);
+  ts.javascriptDefaults.setCompilerOptions(compilerOptions);
 }
 
 /**
@@ -489,6 +561,12 @@ export function initMonacoApp(): void {
               if (!monaco.editor.getModel(uri)) {
                 monaco.editor.createModel(file.content, undefined, uri);
               }
+            }
+            // Override compiler options with tsconfig.json if provided
+            if (data.tsConfigOptions) {
+              applyTsConfigCompilerOptions(data.tsConfigOptions);
+            } else {
+              applyDefaultCompilerOptions();
             }
           }
         }

@@ -1,4 +1,4 @@
-import { Plugin, debounce } from 'obsidian';
+import { Plugin, debounce, type TAbstractFile } from 'obsidian';
 import { CodeEditorView } from './editor/codeEditorView/index.ts';
 import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/index.ts';
@@ -37,6 +37,7 @@ import {
   revokeBlobUrlCache,
   cleanupAllConsoles
 } from './editor/mountCodeEditor/index.ts';
+import { broadcastProjectFiles } from './utils/broadcast.ts';
 
 export default class CodeFilesPlugin extends Plugin {
   settings!: MyPluginSettings;
@@ -76,7 +77,9 @@ export default class CodeFilesPlugin extends Plugin {
       await cleanStaleRevealedFiles(this);
       // Verify projectRootFolder still exists on disk
       if (this.settings.projectRootFolder) {
-        const exists = await this.app.vault.adapter.exists(this.settings.projectRootFolder);
+        const exists = await this.app.vault.adapter.exists(
+          this.settings.projectRootFolder
+        );
         if (!exists) {
           this.settings.projectRootFolder = '';
           await this.saveSettings();
@@ -84,7 +87,7 @@ export default class CodeFilesPlugin extends Plugin {
       }
       await restoreRevealedFiles(this);
       // Re-scan badges only if hidden folders were revealed (key "" in revealedItems)
-      if (this.settings.revealedItems[""]?.length) {
+      if (this.settings.revealedItems['']?.length) {
         rescanExplorerBadges(this);
         updateProjectFolderHighlight(this);
       }
@@ -106,6 +109,16 @@ export default class CodeFilesPlugin extends Plugin {
     this.registerEvent(this.app.vault.on('create', debouncedDecorateFolders));
     this.registerEvent(this.app.vault.on('delete', debouncedDecorateFolders));
     this.registerEvent(this.app.vault.on('rename', debouncedDecorateFolders));
+
+    // Watch for tsconfig.json changes in the project root to update Monaco IntelliSense
+    const onTsConfigChange = async (file: TAbstractFile): Promise<void> => {
+      const root = this.settings.projectRootFolder;
+      if (!root || file.path !== root + '/tsconfig.json') return;
+      await broadcastProjectFiles(this);
+    };
+    this.registerEvent(this.app.vault.on('modify', onTsConfigChange));
+    this.registerEvent(this.app.vault.on('create', onTsConfigChange));
+    this.registerEvent(this.app.vault.on('delete', onTsConfigChange));
   }
 
   onunload(): void {

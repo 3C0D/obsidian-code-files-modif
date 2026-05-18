@@ -6,13 +6,15 @@
  */
 import { ButtonComponent, Modal, Setting, debounce, Notice, TFolder } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import {
-  DEFAULT_EDITOR_CONFIG
-} from '../types/index.ts';
+import { DEFAULT_EDITOR_CONFIG } from '../types/index.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import { getCodeEditorViews } from '../utils/extensionUtils.ts';
-import { buildMergedConfig, saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
+import {
+  buildMergedConfig,
+  saveEditorConfig,
+  getExtensionConfigTemplate
+} from '../utils/settingsUtils.ts';
 import { isFormattable } from '../utils/getLanguage.ts';
 import {
   broadcastProjectFiles,
@@ -21,6 +23,7 @@ import {
 } from '../utils/broadcast.ts';
 import { FolderSuggest } from '../ui/folderSuggest.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
+import { hasTsConfig } from '../utils/projectUtils.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -181,6 +184,36 @@ export class EditorSettingsModal extends Modal {
           updateProjectFolderHighlight(this.plugin);
         });
       });
+
+    // ── Project sub-options (shown when a project root is configured) ──
+
+    // useTsConfig: override hardcoded TS compiler options with tsconfig.json if present
+    if (hasTsConfig(this.plugin)) {
+      new Setting(toggleSection)
+        .setName('Use tsconfig.json')
+        .setDesc(
+          'Apply compiler options from tsconfig.json for IntelliSense and navigation'
+        )
+        .addToggle((t) =>
+          t.setValue(this.plugin.settings.useTsConfig).onChange(async (v) => {
+            this.plugin.settings.useTsConfig = v;
+            await this.plugin.saveSettings();
+            await broadcastProjectFiles(this.plugin);
+          })
+        );
+    }
+
+    // showHiddenFiles: reveal dotfiles in the file explorer (implementation pending)
+    new Setting(toggleSection)
+      .setName('Show Hidden Files')
+      .setDesc('Show dotfiles and hidden folders in the file explorer')
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.showHiddenFiles).onChange(async (v) => {
+          this.plugin.settings.showHiddenFiles = v;
+          await this.plugin.saveSettings();
+          // TODO: broadcast to file explorer
+        })
+      );
 
     const isFormattableVal = isFormattable(this.extension);
 

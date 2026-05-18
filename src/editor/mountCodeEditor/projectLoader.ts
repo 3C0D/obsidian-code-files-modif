@@ -1,6 +1,6 @@
 import type { SendFunction } from '../../types/index.ts';
 import type CodeFilesPlugin from '../../main.ts';
-import { readProjectFiles } from '../../utils/projectUtils.ts';
+import { readProjectFiles, readTsConfig } from '../../utils/projectUtils.ts';
 
 /**
  * Reads all TS/JS files under the project root and sends them to Monaco for IntelliSense.
@@ -16,5 +16,7 @@ export async function loadProjectFiles(
   send: SendFunction
 ): Promise<void> {
   const files = await readProjectFiles(plugin);
-  send('load-project-files', { files });
+  // Include tsconfig compilerOptions if the setting is enabled
+  const tsConfigOptions = plugin.settings.useTsConfig ? await readTsConfig(plugin) : null;
+  send('load-project-files', { files, tsConfigOptions });
 }
