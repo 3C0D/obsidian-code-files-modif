@@ -106,18 +106,26 @@ export function applyEditorConfig(cfg: EditorConfig): void {
  * Runs Monaco's built-in formatDocument action and tracks if content changed for diff display.
  * Uses a fallback timeout because some formatters may not trigger the change event reliably.
  * FORMAT_CHANGE_TIMEOUT provides a safety net to prevent hanging promises.
+ *
+ * @returns A promise that resolves when the formatting process is complete.
  */
 export function runFormatWithDiff(): Promise<void> {
   if (!editor) return Promise.resolve();
+  // Retrieve the native Monaco formatting action
   const formatAction = editor.getAction('editor.action.formatDocument');
   if (!formatAction || !formatAction.isSupported()) return Promise.resolve();
+
+  // Store the current content to compare it after formatting
   const original = editor.getValue();
 
   return new Promise((resolve) => {
+    // Listen for the next content change (the result of the formatting below)
     const disposable = editor!.onDidChangeModelContent(() => {
-      disposable.dispose();
-      clearTimeout(fallback);
+      disposable.dispose(); // Stop listening after the first change
+      clearTimeout(fallback); // Cancel the safety timeout
+
       const formatted = editor!.getValue();
+      // If formatting changed the text, notify the parent to show the diff UI
       if (formatted !== original) {
         setLastFormat(original, formatted);
         window.parent.postMessage(
@@ -128,11 +136,13 @@ export function runFormatWithDiff(): Promise<void> {
       resolve();
     });
 
+    // Safety timeout: resolve the promise even if the formatter does nothing (no change)
     const fallback = setTimeout(() => {
       disposable.dispose();
       resolve();
     }, FORMAT_CHANGE_TIMEOUT);
 
+    // Trigger the formatting action
     formatAction.run();
   });
 }
@@ -192,7 +202,8 @@ function applyParams(params: InitParams): void {
   // Configure TypeScript compiler options for inter-file navigation
   if (params.projectRootFolder) {
     const compilerOptions = {
-      baseUrl: 'file:///' + params.projectRootFolder,
+      // baseUrl must be a file:// URI string. Uri.file() normalizes the path
+      baseUrl: monaco.Uri.file(params.projectRootFolder).toString(),
       moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
       allowNonTsExtensions: true,
       target: monaco.languages.typescript.ScriptTarget.ESNext,
@@ -206,7 +217,7 @@ function applyParams(params: InitParams): void {
   }
 
   // Create model with file:/// URI for proper TypeScript resolution
-  const modelUri = monaco.Uri.parse('file:///' + context);
+  const modelUri = monaco.Uri.file(context);
   const existingModel = monaco.editor.getModel(modelUri);
   const model =
     existingModel || monaco.editor.createModel('', params.lang || 'plaintext', modelUri);
@@ -333,7 +344,7 @@ export function initMonacoApp(): void {
           const files = window._pendingProjectFiles;
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const uri = monaco.Uri.parse('file:///' + file.path);
+            const uri = monaco.Uri.file(file.path);
             monaco.languages.typescript.typescriptDefaults.addExtraLib(
               file.content,
               uri.toString()
@@ -456,7 +467,7 @@ export function initMonacoApp(): void {
             // Load new project files into Monaco's TypeScript language service
             for (let i = 0; i < data.files.length; i++) {
               const file = data.files[i];
-              const uri = monaco.Uri.parse('file:///' + file.path);
+              const uri = monaco.Uri.file(file.path);
               // addExtraLib registers the file content with TypeScript for IntelliSense
               monaco.languages.typescript.typescriptDefaults.addExtraLib(
                 file.content,
