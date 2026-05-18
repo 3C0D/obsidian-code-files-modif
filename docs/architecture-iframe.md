@@ -133,7 +133,6 @@ Main messages include:
 - `change-editor-config`
 - `change-options`
 - `change-word-wrap`
-- `change-background`
 - `focus`
 - `scroll-to-position`
 - `trigger-show-diff`

@@ -70,8 +70,8 @@ function editorNotice(message: string): void {
 }
 
 /**
- * Applies dynamic editor configuration settings from the parent window.
- * Updates tab size, spaces vs tabs, format-on-save, and Prettier options.
+ * Applies dynamic editor configuration settings (tab size, spaces vs tabs, format-on-save, Prettier options).
+ * Called at init from params, and on each config update message from the parent window.
  * @param cfg - The editor configuration object
  */
 export function applyEditorConfig(cfg: EditorConfig): void {
@@ -216,7 +216,9 @@ function applyParams(params: InitParams): void {
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions(compilerOptions);
   }
 
-  // Create model with file:/// URI for proper TypeScript resolution
+  // Create (or reuse) the model for this file. A model is the text buffer Monaco
+  // tracks internally — it holds content, language, identified
+  // by its URI. Reusing an existing model avoids duplicates if the file is already open.
   const modelUri = monaco.Uri.file(context);
   const existingModel = monaco.editor.getModel(modelUri);
   const model =
@@ -226,7 +228,9 @@ function applyParams(params: InitParams): void {
   // Create editor instance
   editor = monaco.editor.create(document.getElementById('container')!, opts);
 
-  // Intercept cross-file navigation (Ctrl+Click on imports)
+  // Intercept cross-file navigation (Ctrl+Click, go-to-definition): instead of Monaco
+  // trying to open the file itself, delegate to Obsidian via postMessage so it can open
+  // the target file in its own leaf system.
   monaco.editor.registerEditorOpener({
     openCodeEditor: (
       _source: unknown,
@@ -239,7 +243,8 @@ function applyParams(params: InitParams): void {
         );
         return true; // Don't attempt to open
       }
-      // resource.path = '/my-project/utils.ts' (without 'file://')
+      // Monaco passes either an IRange (selection) or IPosition (cursor) — normalize both
+      // into a single {lineNumber, column} to send to the parent via postMessage.
       let position = null;
       if (selectionOrPosition && 'startLineNumber' in selectionOrPosition) {
         position = {
@@ -255,7 +260,8 @@ function applyParams(params: InitParams): void {
       window.parent.postMessage(
         {
           type: 'open-file',
-          path: resource.path.replace(/^\//, ''), // vault-relative path
+          // resource.path is '/vault/file.ts' — strip the leading slash to get the vault-relative path
+          path: resource.path.replace(/^\//, ''),
           position,
           context
         },
@@ -265,7 +271,9 @@ function applyParams(params: InitParams): void {
     }
   });
 
-  // Suppress Monaco's "Canceled" unhandled rejection when intercepting navigation
+  // When registerEditorOpener returns true, Monaco internally cancels its own file-open
+  // operation via a CancellationToken, which surfaces as an unhandled "Canceled" rejection.
+  // Suppress it to avoid console noise on every Ctrl+Click navigation.
   window.addEventListener('unhandledrejection', (e) => {
     if (e.reason && (e.reason.name === 'Canceled' || e.reason.message === 'Canceled')) {
       e.preventDefault();
@@ -286,6 +294,7 @@ function applyParams(params: InitParams): void {
   // Register all document formatters
   registerFormatters();
 
+  // Apply initial editor config from the plugin's saved settings
   if (params.editorConfig) {
     try {
       applyEditorConfig(JSON.parse(params.editorConfig));
@@ -335,16 +344,20 @@ export function initMonacoApp(): void {
     if (!data || !data.type) return;
 
     switch (data.type) {
+      // Received from parent after sending 'ready' signal
       case 'init':
-        // e.origin = 'app://obsidian.md' (desktop) or 'http://localhost:port' (mobile)
+        // Capture the parent window origin for postMessage communication
         setParentOrigin(e.origin);
         applyParams(data);
         window._initialized = true;
+        // Load pending project files
         if (window._pendingProjectFiles) {
           const files = window._pendingProjectFiles;
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const uri = monaco.Uri.file(file.path);
+            // Register file with Monaco's TS/JS language service for cross-file IntelliSense,
+            // import resolution, and semantic validation
             monaco.languages.typescript.typescriptDefaults.addExtraLib(
               file.content,
               uri.toString()
@@ -403,11 +416,6 @@ export function initMonacoApp(): void {
         break;
       case 'change-word-wrap':
         if (editor) editor.updateOptions({ wordWrap: data.wordWrap });
-        break;
-      case 'change-background':
-        document.body.style.background = data.background;
-        document.documentElement.style.background = data.background;
-        if (data.theme) monaco.editor.setTheme(data.theme);
         break;
       case 'focus':
         if (editor) editor.focus();
