@@ -460,7 +460,7 @@ export function initMonacoApp(): void {
         } else {
           // Empty array = clear all project files (user cleared the project root folder)
           if (data.files.length === 0) {
-            // Dispose all models except the current editor's model and diff editor models
+            // Dispose all models except the currently open file's model
             const currentModel = editor ? editor.getModel() : null;
             const allModels = monaco.editor.getModels();
             for (let i = 0; i < allModels.length; i++) {
