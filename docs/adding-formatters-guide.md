@@ -111,9 +111,9 @@ In `monacoEditor.html`, initialize WASM and register the formatter:
             try {
                 var original = model.getValue();
                 var formatted = window.ruffFormatter.format(original, null, {
-                    indent_style: PRETTIER_USE_TABS ? 'tab' : 'space',
-                    indent_width: PRETTIER_TAB_WIDTH,
-                    line_width: PRETTIER_PRINT_WIDTH,
+                    indent_style: DEFAULT_USE_TABS ? 'tab' : 'space',
+                    indent_width: DEFAULT_TAB_WIDTH,
+                    line_width: DEFAULT_PRINT_WIDTH,
                     line_ending: 'lf',
                     quote_style: 'double',
                     magic_trailing_comma: 'respect'

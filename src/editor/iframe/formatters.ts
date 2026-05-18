@@ -6,10 +6,10 @@
 // @ts-nocheck - Monaco global types don't match AMD-loaded runtime
 import type * as Monaco from 'monaco-editor';
 import {
-  PRETTIER_PROSE_WRAP,
-  PRETTIER_PRINT_WIDTH,
-  PRETTIER_TAB_WIDTH,
-  PRETTIER_USE_TABS
+  DEFAULT_PROSE_WRAP,
+  DEFAULT_PRINT_WIDTH,
+  DEFAULT_TAB_WIDTH,
+  DEFAULT_USE_TABS
 } from './types/index.ts';
 import { setLastFormat } from './diff.ts';
 import { getParentOrigin } from './utils.ts';
@@ -48,9 +48,9 @@ function registerPrettierProvider(
         const formatted = await prettier.format(original, {
           parser, // which Prettier parser to use
           plugins, // AMD global containing the parser
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS,
+          printWidth: DEFAULT_PRINT_WIDTH,
+          tabWidth: DEFAULT_TAB_WIDTH,
+          useTabs: DEFAULT_USE_TABS,
           ...extraOptions
         });
         // Single TextEdit replacing the entire document; empty array = no edits applied
@@ -155,10 +155,10 @@ export function registerFormatters(): void {
         let formatted = await prettier.format(original, {
           parser: 'markdown',
           plugins: [prettierPlugins.markdown],
-          proseWrap: PRETTIER_PROSE_WRAP,
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
+          proseWrap: DEFAULT_PROSE_WRAP,
+          printWidth: DEFAULT_PRINT_WIDTH,
+          tabWidth: DEFAULT_TAB_WIDTH,
+          useTabs: DEFAULT_USE_TABS
         });
         // Format mermaid blocks inside the markdown
         if (window.mermaidFormatter?.formatMarkdownMermaidBlocks) {
@@ -229,9 +229,9 @@ export function registerFormatters(): void {
         const formatted = await prettier.format(original, {
           parser: 'yaml',
           plugins: [prettierPlugins.yaml],
-          printWidth: PRETTIER_PRINT_WIDTH,
-          tabWidth: PRETTIER_TAB_WIDTH,
-          useTabs: PRETTIER_USE_TABS
+          printWidth: DEFAULT_PRINT_WIDTH,
+          tabWidth: DEFAULT_TAB_WIDTH,
+          useTabs: DEFAULT_USE_TABS
         });
         return [{ range: model.getFullModelRange(), text: formatted }];
       } catch (e) {
@@ -258,9 +258,9 @@ export function registerFormatters(): void {
     window.__RUFF_WASM_URL__!,
     (original) =>
       window.ruffFormatter!.format(original, null, {
-        indent_style: PRETTIER_USE_TABS ? 'tab' : 'space',
-        indent_width: PRETTIER_TAB_WIDTH,
-        line_width: PRETTIER_PRINT_WIDTH,
+        indent_style: DEFAULT_USE_TABS ? 'tab' : 'space',
+        indent_width: DEFAULT_TAB_WIDTH,
+        line_width: DEFAULT_PRINT_WIDTH,
         line_ending: 'lf',
         quote_style: 'double',
         magic_trailing_comma: 'respect'

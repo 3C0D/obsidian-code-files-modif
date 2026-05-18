@@ -168,14 +168,14 @@ Opening a `.md` (Markdown) file:
 
 ### Why No HTML Defaults?
 
-Previous versions had a fourth level with hardcoded defaults in the iframe runtime config layer (now exposed via `src/editor/iframe/types/variables.ts`) such as `PRETTIER_PRINT_WIDTH = 80`. These were removed because:
+Previous versions had a fourth level with hardcoded defaults in the iframe runtime config layer (now exposed via `src/editor/iframe/types/variables.ts`) such as `DEFAULT_PRINT_WIDTH = 80`. These were removed because:
 
 1. **Redundant:** Always overwritten by `applyEditorConfig()` before first use
 2. **Confusing:** Created a false impression of being configurable
 3. **Inconsistent:** Values didn't match `DEFAULT_EDITOR_CONFIG` (80 vs 100 for printWidth)
 4. **Maintenance burden:** Required syncing two sources of truth
 
-Now, configuration variables in the HTML (`formatOnSave`, `PRETTIER_PRINT_WIDTH`, etc.) are declared without initial values and set by `applyEditorConfig()` during initialization.
+Now, configuration variables in the HTML (`formatOnSave`, `DEFAULT_PRINT_WIDTH`, etc.) are declared without initial values and set by `applyEditorConfig()` during initialization.
 
 ---
 

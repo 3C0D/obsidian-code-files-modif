@@ -86,6 +86,26 @@ To prevent the interface from freezing while dragging the handle, the logic is s
 
 The chosen height is persisted in the plugin settings when the mouse is released.
 
+### Path Handling and Normalization (CWD)
+
+The console implements a robust system for displaying the current working directory (CWD) in the prompt, supporting vault-relative and home-relative paths.
+
+1. **Home Directory Resolution**:
+   - The `homePath` is resolved on the **parent side** (Obsidian) using `require('os').homedir()` (Desktop only).
+   - This path is sent to the iframe via `postMessage` during initialization and whenever the CWD changes (e.g., after a `cd` command).
+   - This avoids issues with native Node.js modules in the iframe context and ensures cross-platform compatibility (mobile safety).
+
+2. **Normalization and Robustness**:
+   - **Case-Insensitivity**: On Windows, paths are normalized to lowercase for comparison, preventing mismatches between `C:\Users` and `c:\users`.
+   - **Separator Uniformity**: All backslashes (`\`) are converted to forward slashes (`/`) for internal comparison and display.
+   - **Trailing Slashes**: A trailing slash is added to the home directory path during comparison to avoid partial matches (e.g., matching `Users/mik` against `Users/mik_extra`).
+
+3. **Smart Display Logic (`formatCwd`)**:
+   - **Vault-relative**: If the CWD is inside the vault, the path is shown relative to the vault root.
+   - **Home-relative**: If the CWD is outside the vault but inside the user's home directory, it is displayed starting with `~/`.
+   - **Absolute fallback**: If neither matches, the full absolute path is shown.
+   - This logic is unified in a `formatCwd()` function used for the prompt, the `pwd` command, and command execution echoes.
+
 ### Visibility State Persistence
 
 Console visibility is persisted per file. If the console is open when Obsidian is closed or when changing files, it will reappear open upon the next load.

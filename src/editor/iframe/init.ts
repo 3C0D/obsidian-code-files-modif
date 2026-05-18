@@ -9,9 +9,9 @@ import type * as Monaco from 'monaco-editor';
 import type { InitParams, EditorConfig } from './types/index.ts';
 import {
   FORMAT_CHANGE_TIMEOUT,
-  setPrettierPrintWidth,
-  setPrettierTabWidth,
-  setPrettierUseTabs
+  setFormatPrintWidth,
+  setFormatTabWidth,
+  setFormatUseTabs
 } from './types/index.ts';
 import { setSharedState, setLastFormat, getLastFormat, openDiffModal } from './diff.ts';
 import { registerFormatters, setFormatterContext } from './formatters.ts';
@@ -81,16 +81,16 @@ export function applyEditorConfig(cfg: EditorConfig): void {
   if (cfg.insertSpaces !== undefined) modelOpts.insertSpaces = cfg.insertSpaces;
   if (Object.keys(modelOpts).length) editor.getModel()?.updateOptions(modelOpts);
   setFormatOnSave(!!cfg.formatOnSave);
-  // Update Prettier printWidth if specified
+  // Update formatting options if specified
   if (cfg.printWidth !== undefined) {
-    setPrettierPrintWidth(cfg.printWidth);
+    setFormatPrintWidth(cfg.printWidth);
   }
-  // Update Prettier tabWidth and useTabs from Monaco config
+  // Update formatting tabWidth and useTabs from Monaco config
   if (cfg.tabSize !== undefined) {
-    setPrettierTabWidth(cfg.tabSize);
+    setFormatTabWidth(cfg.tabSize);
   }
   if (cfg.insertSpaces !== undefined) {
-    setPrettierUseTabs(!cfg.insertSpaces);
+    setFormatUseTabs(!cfg.insertSpaces);
   }
   const {
     tabSize: _tabSize,

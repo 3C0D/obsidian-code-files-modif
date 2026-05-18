@@ -62,9 +62,9 @@ monaco.languages.registerDocumentFormattingEditProvider('typescript', {
         var formatted = await prettier.format(original, {
             parser: 'typescript',
             plugins: [prettierPlugins.estree, prettierPlugins.typescript],
-            printWidth: PRETTIER_PRINT_WIDTH,
-            tabWidth: PRETTIER_TAB_WIDTH,
-            useTabs: PRETTIER_USE_TABS
+            printWidth: DEFAULT_PRINT_WIDTH,
+            tabWidth: DEFAULT_TAB_WIDTH,
+            useTabs: DEFAULT_USE_TABS
         });
         return [{ range: model.getFullModelRange(), text: formatted }];
     }
