@@ -30,7 +30,9 @@ let lastFormatOriginal: string | null = null;
 let lastFormatFormatted: string | null = null;
 
 /**
- * Sets the shared editor state for the diff module.
+ * Receives shared editor state pushed by init.ts.
+ * Called once after the editor is created — diff.ts cannot import
+ * directly from init.ts (circular dependency), so state is pushed in from outside.
  * @param editorInstance - The Monaco editor instance
  * @param ctx - The file context/path identifier
  * @param lang - The current language identifier (e.g. 'typescript')

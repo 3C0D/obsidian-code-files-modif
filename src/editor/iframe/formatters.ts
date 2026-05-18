@@ -17,7 +17,7 @@ import { getParentOrigin } from './utils.ts';
 let context: string | null = null;
 
 /**
- * Sets the context identifier for the formatter module.
+ * Receives the file context pushed by init.ts into the formatter module.
  * Used for file-specific formatting logic (e.g., excluding .lock files).
  * @param ctx - The file context/path identifier
  */

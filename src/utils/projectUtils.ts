@@ -15,12 +15,12 @@ import type CodeFilesPlugin from '../main.ts';
 export async function readProjectFiles(
   plugin: CodeFilesPlugin
 ): Promise<{ path: string; content: string }[]> {
-  const root = plugin.settings.projectRootFolder;
-  if (!root) return [];
+  const projectRootFolder = plugin.settings.projectRootFolder;
+  if (!projectRootFolder) return [];
 
   const files: { path: string; content: string }[] = [];
   for (const file of plugin.app.vault.getFiles()) {
-    if (!file.path.startsWith(root + '/')) continue;
+    if (!file.path.startsWith(projectRootFolder + '/')) continue;
     if (!['ts', 'tsx', 'js', 'jsx'].includes(file.extension)) continue;
     try {
       files.push({

@@ -21,7 +21,7 @@ let currentConsoleHotkey: HotkeyConfig | null = null;
 let runFormatWithDiff: () => Promise<void>;
 
 /**
- * Sets the shared state for actions module.
+ * Receives shared state pushed by init.ts into the actions module.
  * @param editorInstance - The Monaco editor instance
  * @param ctx - The context identifier for this editor
  * @param formatFn - Function to run formatting with diff tracking
@@ -125,7 +125,6 @@ export function registerHotkeyActions(hk: {
     })
   );
 }
-
 
 /**
  * Registers all Monaco actions and keyboard handlers.

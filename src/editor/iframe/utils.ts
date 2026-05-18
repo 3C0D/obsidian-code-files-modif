@@ -13,7 +13,8 @@ let parentOrigin = '*';
 /**
  * Captures the parent window origin from the `init` message event.
  * Called once on `init` — locks all subsequent postMessage calls to the real origin.
- * @param origin - `e.origin` from the `init` MessageEvent (`app://obsidian.md` or `http://localhost:port`)
+ * @param origin - `e.origin` from the `init` MessageEvent (`app://obsidian.md` or `http://localhost:port` on mobile)
+ * @returns `void`
  */
 export function setParentOrigin(origin: string): void {
   parentOrigin = origin;
