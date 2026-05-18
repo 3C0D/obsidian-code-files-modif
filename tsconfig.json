@@ -28,5 +28,5 @@
     "lib": ["DOM", "ES2024"]
   },
   "include": ["./src/**/*.ts", "./scripts/**/*.ts"],
-  "exclude": ["node_modules", "eslint.config.ts", "templates"]
+  "exclude": ["node_modules", "eslint.config.ts", "templates-for-obsidian"]
 }

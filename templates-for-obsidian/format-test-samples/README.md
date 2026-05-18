@@ -1,6 +1,6 @@
 # Format Test Samples
 
-This folder contains test files to verify Prettier formatting in Obsidian Code Files plugin.
+This folder contains test files to verify Prettier and other formatters.
 
 ## ⚠️ Important
 
