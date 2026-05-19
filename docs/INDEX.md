@@ -173,6 +173,8 @@ This directory contains all technical documentation for the Code Files Obsidian 
 
 - Project Root Folder setup and configuration
 - Loading TS/JS files into Monaco's TypeScript service
+- Support for `tsconfig.json` compiler options
+- Automatic reveal/hide of dotfiles in project root
 - Navigation flow: Ctrl+Click → open-file message → Obsidian opens file
 - **Key for:** Understanding how code navigation works across files
 

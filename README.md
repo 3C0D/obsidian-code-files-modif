@@ -114,14 +114,17 @@ Navigate between TypeScript and JavaScript files in your project:
     - Select **Code Files → Define as Project Root Folder**
     - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
     - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
+    - **Note:** Defining or clearing the root folder via the context menu automatically reveals or hides dotfiles according to your "Show Hidden Files" setting.
 
 2. **Via Editor Settings**:
     - Open Editor Settings (⚙️ gear icon in tab header)
     - Set **Project Root Folder** to your TypeScript/JavaScript project folder
+    - Toggle **Use tsconfig.json** to apply compiler options from your project's `tsconfig.json` for IntelliSense and navigation.
+    - Toggle **Show Hidden Files** to reveal dotfiles and dot-folders in the project root and its subfolders.
 
 Monaco will load all TS/JS files from that folder for IntelliSense and navigation.
 
-**Note:** Without a Project Root Folder, Ctrl+Click on imports will not work.
+**Note:** Without a Project Root Folder, Ctrl+Click on imports will not work. Clearing the project root folder (by emptying the field or via the context menu) will automatically hide the revealed dotfiles.
 
 See `docs/cross-file-navigation.md` for implementation details. _(Developer only)_
 
