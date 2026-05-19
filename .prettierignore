@@ -1,5 +1,5 @@
 # Exclude format test samples - they contain intentional formatting errors
-templates/format-test-samples-for-obsidian/
+templates-for-obsidian/format-test-samples/
 
 # Build output
 dist/
