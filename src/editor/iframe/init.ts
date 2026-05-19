@@ -64,9 +64,7 @@ function editorNotice(message: string): void {
 
   // Remove after 5 seconds
   setTimeout(() => {
-    if (messageEl.parentNode) {
-      messageEl.parentNode.removeChild(messageEl);
-    }
+    messageEl.remove();
   }, 5000);
 }
 
@@ -100,7 +98,7 @@ export function applyEditorConfig(cfg: EditorConfig): void {
     printWidth: _printWidth,
     ...editorOpts
   } = cfg;
-  editor.updateOptions(Object.assign({}, editorDefaults, editorOpts));
+  editor.updateOptions({ ...editorDefaults, ...editorOpts });
 }
 
 /**
@@ -121,11 +119,11 @@ export function runFormatWithDiff(): Promise<void> {
 
   return new Promise((resolve) => {
     // Listen for the next content change (the result of the formatting below)
-    const disposable = editor!.onDidChangeModelContent(() => {
+    const disposable = editor.onDidChangeModelContent(() => {
       disposable.dispose(); // Stop listening after the first change
       clearTimeout(fallback); // Cancel the safety timeout
 
-      const formatted = editor!.getValue();
+      const formatted = editor.getValue();
       // If formatting changed the text, notify the parent to show the diff UI
       if (formatted !== original) {
         setLastFormat(original, formatted);
@@ -314,7 +312,7 @@ function applyParams(params: InitParams): void {
   // Notify parent when content changes (updates dirty badge)
   editor.onDidChangeModelContent(() => {
     window.parent.postMessage(
-      { type: 'change', value: editor!.getValue(), context },
+      { type: 'change', value: editor.getValue(), context },
       getParentOrigin()
     );
   });
@@ -367,6 +365,8 @@ function applyTsConfigCompilerOptions(opts: Record<string, unknown>): void {
     es2020: ts.ScriptTarget.ES2020,
     es2021: ts.ScriptTarget.ES2021,
     es2022: ts.ScriptTarget.ES2022,
+    es2023: ts.ScriptTarget.ES2023,
+    es2024: ts.ScriptTarget.ES2024,
     esnext: ts.ScriptTarget.ESNext
   };
   const moduleMap: Record<string, number> = {
@@ -425,8 +425,7 @@ export function initMonacoApp(): void {
         // Load pending project files
         if (window._pendingProjectFiles) {
           const files = window._pendingProjectFiles;
-          for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+          for (const file of files) {
             const uri = monaco.Uri.file(file.path);
             // Register file with Monaco's TS/JS language service for cross-file IntelliSense,
             // import resolution, and semantic validation
@@ -535,18 +534,15 @@ export function initMonacoApp(): void {
             // Dispose all models except the currently open file's model
             const currentModel = editor ? editor.getModel() : null;
             const allModels = monaco.editor.getModels();
-            for (let i = 0; i < allModels.length; i++) {
-              if (allModels[i] !== currentModel) {
-                allModels[i].dispose();
-              }
+            for (const model of allModels) {
+              if (model !== currentModel) model.dispose();
             }
             // Clear extra libs to remove all project files from TypeScript language service
             monaco.languages.typescript.typescriptDefaults.setExtraLibs([]);
             monaco.languages.typescript.javascriptDefaults.setExtraLibs([]);
           } else {
             // Load new project files into Monaco's TypeScript language service
-            for (let i = 0; i < data.files.length; i++) {
-              const file = data.files[i];
+            for (const file of data.files) {
               const uri = monaco.Uri.file(file.path);
               // addExtraLib registers the file content with TypeScript for IntelliSense
               monaco.languages.typescript.typescriptDefaults.addExtraLib(
