@@ -17,6 +17,7 @@ import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
 import { rescanExplorerBadges, updateProjectFolderHighlight } from '../explorerUtils.ts';
 import { updateRevealedItemsOnRename } from './operations.ts';
+import { unrevealProjectDotfiles } from '../projectUtils.ts';
 
 /**
  * Patches Obsidian's DataAdapter to intercept file operations:
@@ -146,7 +147,10 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
             }
             // Clear projectRootFolder if the deleted item was the project root
             if (itemPath === plugin.settings.projectRootFolder) {
+              const oldRoot = plugin.settings.projectRootFolder;
               plugin.settings.projectRootFolder = '';
+              if (plugin.settings.showHiddenFiles)
+                await unrevealProjectDotfiles(plugin, oldRoot);
               updateProjectFolderHighlight(plugin);
             }
             void plugin.saveSettings();

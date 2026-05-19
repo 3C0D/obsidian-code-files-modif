@@ -181,8 +181,10 @@ export class EditorSettingsModal extends Modal {
           await this.plugin.saveSettings();
           await broadcastProjectFiles(this.plugin);
           updateProjectFolderHighlight(this.plugin);
+
           if (this.plugin.settings.showHiddenFiles) {
-            if (oldRoot && oldRoot !== trimmed) await unrevealProjectDotfiles(this.plugin, oldRoot);
+            if (oldRoot && oldRoot !== trimmed)
+              await unrevealProjectDotfiles(this.plugin, oldRoot);
             if (trimmed) await revealProjectDotfiles(this.plugin);
           }
         });
@@ -194,7 +196,8 @@ export class EditorSettingsModal extends Modal {
           await broadcastProjectFiles(this.plugin);
           updateProjectFolderHighlight(this.plugin);
           if (this.plugin.settings.showHiddenFiles) {
-            if (oldRoot && oldRoot !== folder.path) await unrevealProjectDotfiles(this.plugin, oldRoot);
+            if (oldRoot && oldRoot !== folder.path)
+              await unrevealProjectDotfiles(this.plugin, oldRoot);
             await revealProjectDotfiles(this.plugin);
           }
         });

@@ -13,6 +13,7 @@ import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { RevealHiddenFilesModal } from '../modals/revealHiddenFilesModal.ts';
 import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
+import { unrevealProjectDotfiles, revealProjectDotfiles } from '../utils/projectUtils.ts';
 import type { MenuItem } from '../types/index.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
@@ -132,10 +133,16 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItem[] {
       title: 'Define as Project Root Folder',
       icon: 'folder-tree',
       action: async () => {
+        const oldRoot = plugin.settings.projectRootFolder;
         plugin.settings.projectRootFolder = folder.path;
         await plugin.saveSettings();
         updateProjectFolderHighlight(plugin);
         await broadcastProjectFiles(plugin);
+        if (plugin.settings.showHiddenFiles) {
+          if (oldRoot && oldRoot !== folder.path)
+            await unrevealProjectDotfiles(plugin, oldRoot);
+          await revealProjectDotfiles(plugin);
+        }
       }
     });
   } else {
@@ -144,7 +151,10 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItem[] {
       title: 'Clear Project Root Folder',
       icon: 'x',
       action: async () => {
+        const oldRoot = plugin.settings.projectRootFolder;
         plugin.settings.projectRootFolder = '';
+        if (plugin.settings.showHiddenFiles)
+          await unrevealProjectDotfiles(plugin, oldRoot);
         await plugin.saveSettings();
         updateProjectFolderHighlight(plugin);
         await broadcastProjectFiles(plugin);
