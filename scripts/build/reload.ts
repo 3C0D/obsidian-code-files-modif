@@ -32,6 +32,15 @@ export async function reloadObsidian(): Promise<void> {
       );
     }
   } catch (e) {
-    console.warn('Obsidian REST API unreachable:', e);
+    const isConnRefused =
+      e instanceof Error &&
+      (e.message.includes('ECONNREFUSED') || e.message.includes('fetch failed'));
+    if (isConnRefused) {
+      console.warn(
+        '⚠ Obsidian REST API unreachable: Obsidian is not running or the Local REST API plugin is disabled'
+      );
+    } else {
+      console.warn('⚠ Obsidian REST API error:', e);
+    }
   }
 }
