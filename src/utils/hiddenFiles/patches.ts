@@ -6,11 +6,16 @@ import { type DataAdapterEx } from 'obsidian-typings';
 import { around } from 'monkey-around';
 import { type Plugin, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getAdapter, _bypassPatch, setBypassPatch, getRevealedItemsCache } from './state.ts';
+import {
+  getAdapter,
+  _bypassPatch,
+  setBypassPatch,
+  getRevealedItemsCache
+} from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { syncAutoRevealedDotfiles } from './sync.ts';
-import { rescanExplorerBadges } from '../explorerUtils.ts';
+import { rescanExplorerBadges, updateProjectFolderHighlight } from '../explorerUtils.ts';
 import { updateRevealedItemsOnRename } from './operations.ts';
 
 /**
@@ -98,6 +103,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         if (plugin.settings.projectRootFolder === src) {
           plugin.settings.projectRootFolder = dest;
           void plugin.saveSettings();
+          updateProjectFolderHighlight(plugin);
         }
 
         // Update revealedItems after rename
@@ -121,8 +127,9 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         try {
           const result = await next.call(this, file, system);
 
-          // Clean up revealedItemsafter deletion
+          // Clean up revealedItems after deletion
           if (itemPath) {
+            // Clean up revealedItems after deletion
             for (const [folderPath, paths] of Object.entries(
               plugin.settings.revealedItems
             )) {
@@ -136,6 +143,11 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
                   delete plugin.settings.revealedItems[folderPath];
                 }
               }
+            }
+            // Clear projectRootFolder if the deleted item was the project root
+            if (itemPath === plugin.settings.projectRootFolder) {
+              plugin.settings.projectRootFolder = '';
+              updateProjectFolderHighlight(plugin);
             }
             void plugin.saveSettings();
             decorateFolders(plugin);

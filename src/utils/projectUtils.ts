@@ -4,6 +4,9 @@
  */
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
+import { scanDotEntries } from './hiddenFiles/index.ts';
+import { revealItems, unrevealItems } from './hiddenFiles/index.ts';
+import { collectSubfolderPaths } from './fileUtils.ts';
 
 /**
  * Reads all TypeScript/JavaScript files from the project root folder.
@@ -56,8 +59,8 @@ export async function readTsConfig(
 ): Promise<Record<string, unknown> | null> {
   const root = plugin.settings.projectRootFolder;
   if (!root) return null;
-  const file = plugin.app.vault.getAbstractFileByPath(root + '/tsconfig.json');
-  if (!(file instanceof TFile)) return null;
+  const file = plugin.app.vault.getFileByPath(root + '/tsconfig.json');
+  if (!file) return null;
   try {
     const raw = await plugin.app.vault.cachedRead(file);
     // Strip // line comments and /* block comments */ for JSONC compatibility
@@ -66,5 +69,69 @@ export async function readTsConfig(
     return (parsed.compilerOptions as Record<string, unknown>) ?? null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Checks if the project root (and its subfolders) contains any dotfiles or dot-folders.
+ * Used to conditionally show the "Show Hidden Files" toggle in the settings modal.
+ * @param plugin - The plugin instance
+ */
+export async function projectRootHasDotfiles(plugin: CodeFilesPlugin): Promise<boolean> {
+  const root = plugin.settings.projectRootFolder;
+  if (!root) return false;
+  const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
+  for (const folder of allFolders) {
+    const items = await scanDotEntries(plugin, folder);
+    if (items.length > 0) return true;
+  }
+  return false;
+}
+
+/**
+ * Reveals all dotfiles and dot-folders found in the project root and its subfolders.
+ * Called when the "Show Hidden Files" toggle is turned on.
+ * @param plugin - The plugin instance
+ * @param rootOverride - Optional path to reveal instead of the configured project root
+ */
+export async function revealProjectDotfiles(
+  plugin: CodeFilesPlugin,
+  rootOverride?: string
+): Promise<void> {
+  const root = rootOverride ?? plugin.settings.projectRootFolder;
+  if (!root) return;
+  const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
+  for (const folder of allFolders) {
+    const items = await scanDotEntries(plugin, folder);
+    if (items.length === 0) continue;
+    await revealItems(
+      plugin,
+      folder,
+      items.map((i) => i.path)
+    );
+  }
+}
+
+/**
+ * Unreveals all dotfiles and dot-folders found in the project root and its subfolders.
+ * Called when the "Show Hidden Files" toggle is turned off.
+ * @param plugin - The plugin instance
+ * @param rootOverride - Optional path to unreveal instead of the configured project root
+ */
+export async function unrevealProjectDotfiles(
+  plugin: CodeFilesPlugin,
+  rootOverride?: string
+): Promise<void> {
+  const root = rootOverride ?? plugin.settings.projectRootFolder;
+  if (!root) return;
+  const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
+  for (const folder of allFolders) {
+    const items = await scanDotEntries(plugin, folder);
+    if (items.length === 0) continue;
+    await unrevealItems(
+      plugin,
+      folder,
+      items.map((i) => i.path)
+    );
   }
 }

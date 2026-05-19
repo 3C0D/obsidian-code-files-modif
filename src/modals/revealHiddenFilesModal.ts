@@ -6,15 +6,14 @@ import {
   cleanStaleRevealedFiles,
   revealItems,
   unrevealItems,
-  decorateFolders,
-  getAdapter
+  decorateFolders
 } from '../utils/hiddenFiles/index.ts';
 import {
   addExtension,
   getActiveExtensions,
   reregisterExtensions
 } from '../utils/extensionUtils.ts';
-import { getExtension } from '../utils/fileUtils.ts';
+import { getExtension, collectSubfolderPaths } from '../utils/fileUtils.ts';
 import type { FolderSection } from '../types/index.ts';
 
 /**
@@ -39,7 +38,7 @@ export class RevealHiddenFilesModal extends Modal {
 
     const allFolderPaths = [
       this.folderPath,
-      ...(await this.getSubfolderPathsFromDisk(this.folderPath))
+      ...(await collectSubfolderPaths(this.plugin, this.folderPath))
     ];
 
     this.hasSubfolders = allFolderPaths.length > 1;
@@ -103,31 +102,6 @@ export class RevealHiddenFilesModal extends Modal {
     }
 
     this.render();
-  }
-
-  /** Collects all non-hidden subfolders recursively via adapter.list(), independent of vault index state. */
-  private async getSubfolderPathsFromDisk(folderPath: string): Promise<string[]> {
-    const adapter = getAdapter(this.plugin);
-    const results: string[] = [];
-
-    const collect = async (dir: string): Promise<void> => {
-      try {
-        const listed = await adapter.list(dir || '');
-        for (const rawFolder of listed.folders) {
-          const childPath = normalizePath(rawFolder);
-          const basename = childPath.split('/').pop() || '';
-          if (basename.startsWith('.')) continue; // dot-subfolders are items to reveal, not containers to scan
-          if (this.plugin.settings.excludedFolders.includes(basename)) continue;
-          results.push(childPath);
-          await collect(childPath);
-        }
-      } catch {
-        /* ignore listing errors */
-      }
-    };
-
-    await collect(folderPath);
-    return results;
   }
 
   private renderLoading(): void {
@@ -257,7 +231,8 @@ export class RevealHiddenFilesModal extends Modal {
         setTimeout(() => {
           const folder = this.plugin.app.vault.getFolderByPath(this.folderPath || '/');
           if (folder) {
-            const explorerLeaf = this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
+            const explorerLeaf =
+              this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
             (explorerLeaf?.view as FileExplorerView).revealInFolder(folder);
           }
         }, 100);
@@ -349,8 +324,11 @@ export class RevealHiddenFilesModal extends Modal {
             // Registering an extension makes it auto-visible: force reveal checked.
             revealCb.checked = true;
             section.selected.add(item.path);
-            masterReveal.checked = section.items.every((i) => section.selected.has(i.path));
-            masterReveal.indeterminate = !masterReveal.checked && section.selected.size > 0;
+            masterReveal.checked = section.items.every((i) =>
+              section.selected.has(i.path)
+            );
+            masterReveal.indeterminate =
+              !masterReveal.checked && section.selected.size > 0;
           } else {
             section.selectedForRegistration.delete(item.path);
           }

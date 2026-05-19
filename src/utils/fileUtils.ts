@@ -1,9 +1,12 @@
 /**
  * File utilities for handling extensions and file names.
  */
+import { normalizePath } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/index.ts';
 import type { App } from 'obsidian';
+import type CodeFilesPlugin from '../main.ts';
+import { getAdapter } from './hiddenFiles/index.ts';
 
 /**
  * Gets the absolute filesystem path to the vault's root folder.
@@ -40,4 +43,34 @@ export function getRealPathSafe(
   itemPath: string
 ): string {
   return adapter.getRealPath?.(itemPath) ?? itemPath;
+}
+
+/**
+ * Collects all subfolder paths within a given folder, respecting exclusion settings.
+ * @param plugin - The plugin instance
+ * @param folderPath - The path of the folder to scan
+ */
+export async function collectSubfolderPaths(
+  plugin: CodeFilesPlugin,
+  folderPath: string
+): Promise<string[]> {
+  const adapter = getAdapter(plugin);
+  const results: string[] = [];
+  const collect = async (dir: string): Promise<void> => {
+    try {
+      const listed = await adapter.list(dir || '');
+      for (const rawFolder of listed.folders) {
+        const childPath = normalizePath(rawFolder);
+        const basename = childPath.split('/').pop() || '';
+        if (basename.startsWith('.')) continue;
+        if (plugin.settings.excludedFolders.includes(basename)) continue;
+        results.push(childPath);
+        await collect(childPath);
+      }
+    } catch {
+      /* ignore listing errors */
+    }
+  };
+  await collect(folderPath);
+  return results;
 }
