@@ -168,6 +168,8 @@ export class EditorSettingsModal extends Modal {
         // Validate on blur (when user leaves the field)
         text.inputEl.addEventListener('blur', async () => {
           const trimmed = text.inputEl.value.trim();
+          // No-op if value hasn't changed — avoids triggering broadcasts and side effects unnecessarily
+          if (trimmed === this.plugin.settings.projectRootFolder) return;
           if (trimmed) {
             const folder = this.plugin.app.vault.getAbstractFileByPath(trimmed);
             if (!(folder instanceof TFolder)) {

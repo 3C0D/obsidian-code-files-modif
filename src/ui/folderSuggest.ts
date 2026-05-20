@@ -24,7 +24,8 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
   }
 
   protected getSuggestions(query: string): TFolder[] {
-    const folders = this.plugin.app.vault.getAllFolders(true);
+    const includeRoot = false;
+    const folders = this.plugin.app.vault.getAllFolders(includeRoot);
     const q = query.toLowerCase();
     if (!q) return folders;
 

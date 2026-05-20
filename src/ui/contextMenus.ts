@@ -127,8 +127,11 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItem[] {
     }
   ];
 
-  // Show "Define" only if this folder isn't already the project root
-  if (plugin.settings.projectRootFolder !== folder.path) {
+  // Vault root folder (no parent) cannot be set as project root
+  const isVaultRoot = !folder.parent;
+
+  if (!isVaultRoot && plugin.settings.projectRootFolder !== folder.path) {
+    // Non-root folder not yet set as project root: offer to define it
     items.push({
       title: 'Define as Project Root Folder',
       icon: 'folder-tree',
@@ -145,8 +148,8 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItem[] {
         }
       }
     });
-  } else {
-    // Show "Clear" only if this folder is already the project root
+  } else if (plugin.settings.projectRootFolder === folder.path) {
+    // Already set as project root (even if vault root via legacy/manual edit): offer to clear it
     items.push({
       title: 'Clear Project Root Folder',
       icon: 'x',
