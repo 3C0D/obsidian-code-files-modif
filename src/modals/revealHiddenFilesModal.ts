@@ -1,5 +1,4 @@
 import { Modal, normalizePath } from 'obsidian';
-import type { FileExplorerView } from 'obsidian-typings';
 import type CodeFilesPlugin from '../main.ts';
 import {
   scanDotEntries,
@@ -14,6 +13,7 @@ import {
   reregisterExtensions
 } from '../utils/extensionUtils.ts';
 import { getExtension, collectSubfolderPaths } from '../utils/fileUtils.ts';
+import { revealFolderInExplorer } from '../utils/explorerUtils.ts';
 import type { FolderSection } from '../types/index.ts';
 
 /**
@@ -227,15 +227,7 @@ export class RevealHiddenFilesModal extends Modal {
           }
         }
 
-        // Scroll the file explorer to the target folder after the tree refreshes
-        setTimeout(() => {
-          const folder = this.plugin.app.vault.getFolderByPath(this.folderPath || '/');
-          if (folder) {
-            const explorerLeaf =
-              this.plugin.app.workspace.getLeavesOfType('file-explorer')[0];
-            (explorerLeaf?.view as FileExplorerView).revealInFolder(folder);
-          }
-        }, 100);
+        revealFolderInExplorer(this.plugin, this.folderPath || '/');
 
         this.close();
       });

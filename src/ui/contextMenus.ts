@@ -12,7 +12,10 @@ import { FenceEditModal } from '../modals/fenceEditModal.ts';
 import { FenceEditContext } from '../utils/fenceEditContext.ts';
 import { RenameExtensionModal } from '../modals/renameExtensionModal.ts';
 import { RevealHiddenFilesModal } from '../modals/revealHiddenFilesModal.ts';
-import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
+import {
+  updateProjectFolderHighlight,
+  revealFolderInExplorer
+} from '../utils/explorerUtils.ts';
 import { unrevealProjectDotfiles, revealProjectDotfiles } from '../utils/projectUtils.ts';
 import type { MenuItem } from '../types/index.ts';
 import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
@@ -146,6 +149,7 @@ function getFolderItems(plugin: CodeFilesPlugin, folder: TFolder): MenuItem[] {
             await unrevealProjectDotfiles(plugin, oldRoot);
           await revealProjectDotfiles(plugin);
         }
+        revealFolderInExplorer(plugin, folder);
       }
     });
   } else if (plugin.settings.projectRootFolder === folder.path) {

@@ -22,7 +22,7 @@ import {
   broadcastEditorConfig
 } from '../utils/broadcast.ts';
 import { FolderSuggest } from '../ui/folderSuggest.ts';
-import { updateProjectFolderHighlight } from '../utils/explorerUtils.ts';
+import { updateProjectFolderHighlight, revealFolderInExplorer } from '../utils/explorerUtils.ts';
 import {
   hasTsConfig,
   projectRootHasDotfiles,
@@ -189,6 +189,8 @@ export class EditorSettingsModal extends Modal {
               await unrevealProjectDotfiles(this.plugin, oldRoot);
             if (trimmed) await revealProjectDotfiles(this.plugin);
           }
+
+          if (trimmed) revealFolderInExplorer(this.plugin, trimmed);
         });
 
         new FolderSuggest(this.plugin, text.inputEl, async (folder) => {
@@ -202,6 +204,8 @@ export class EditorSettingsModal extends Modal {
               await unrevealProjectDotfiles(this.plugin, oldRoot);
             await revealProjectDotfiles(this.plugin);
           }
+
+          revealFolderInExplorer(this.plugin, folder);
         });
       });
 

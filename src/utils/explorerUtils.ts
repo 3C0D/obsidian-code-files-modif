@@ -238,3 +238,35 @@ export function rescanExplorerBadges(plugin: CodeFilesPlugin): void {
     applyBadge(item as FileTreeItem, plugin);
   }
 }
+
+/**
+ * Reveals the given folder in the file explorer view after a short delay.
+ * The delay allows the explorer tree to refresh after structural changes
+ * (e.g. revealing hidden files or switching project root folder).
+ *
+ * Accepts either a TFolder object or a vault-relative path string.
+ * If a string is passed, it will be resolved with `vault.getFolderByPath`.
+ */
+export function revealFolderInExplorer(
+  plugin: CodeFilesPlugin,
+  folderOrPath: TFolder | string
+): void {
+  setTimeout(() => {
+    let folder: TFolder | null = null;
+
+    if (typeof folderOrPath === 'string') {
+      const path = folderOrPath || '/';
+      folder = plugin.app.vault.getFolderByPath(path);
+      if (!folder && path === '/') {
+        folder = plugin.app.vault.getRoot();
+      }
+    } else {
+      folder = folderOrPath;
+    }
+
+    if (!folder) return;
+
+    const explorerLeaf = plugin.app.workspace.getLeavesOfType('file-explorer')[0];
+    (explorerLeaf?.view as FileExplorerView | undefined)?.revealInFolder(folder);
+  }, 100);
+}
