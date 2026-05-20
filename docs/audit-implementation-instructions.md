@@ -120,7 +120,7 @@ if (resolvedCmd !== cmdLine) {
 
 ---
 
-## 3. Error Recovery in buildBlobUrl
+## 3. Error Recovery in buildBlobUrl ✅ Implemented
 
 ### Context
 `buildBlobUrl.ts` has a `fetchText` helper that returns `''` on failure (line 58-66). This prevents crashes, but if the **main bundle** (`bundleJsUrl`) or **HTML** (`htmlUrl`) fails, the iframe will be blank with no feedback. The `fetchText` fallback of `''` is fine for optional formatters but should not silently swallow critical asset failures.

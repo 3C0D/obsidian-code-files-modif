@@ -24,7 +24,7 @@ Comprehensive plugin audit. Previous critical and major bugs have all been resol
 **Issue:** Console output uses raw DOM insertion. Tested with 2000 console.log messages — no freeze observed. The 5000-line truncation is working correctly.
 **Status:** Not priority. Revisit only if users report performance issues with very large outputs.
 
-### 3. Error Recovery in buildBlobUrl (Resilience)
+### 3. Error Recovery in buildBlobUrl (Resilience) ✅ Fixed
 **File:** `src/editor/mountCodeEditor/buildBlobUrl.ts`
 **Issue:** If critical assets (bundle.js, CSS) fail to load, user sees a blank iframe with no explanation.
 **Suggestion:** Throw on critical asset failure + catch in `mountCodeEditor.ts` → show Notice "Failed to load editor assets."

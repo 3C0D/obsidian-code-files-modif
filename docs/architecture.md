@@ -67,6 +67,7 @@ Monaco Editor cannot run directly in Obsidian's DOM due to:
 7. Encode each script as base64 → inject via `(0,eval)(atob(...))` (avoids `</script>` parsing issues)
 8. Wrap in a `Blob` → `URL.createObjectURL()` → set as iframe `src`
 9. Cache the blob URL for the plugin session (invalidated on rebuild)
+10. Critical asset check: if bundle.js or CSS fails to load, revoke cache and throw — caught in mountCodeEditor to show Notice instead of blank iframe
 
 ### Communication Protocol
 

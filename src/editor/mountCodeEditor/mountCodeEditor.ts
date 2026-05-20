@@ -17,6 +17,7 @@ import { buildInitParams } from './buildInitParams.ts';
 import { buildBlobUrl } from './buildBlobUrl.ts';
 import { loadProjectFiles } from './projectLoader.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
+import { Notice } from 'obsidian';
 
 /**
  * Orchestrates the mounting of a Monaco Editor by creating an isolated iframe
@@ -101,7 +102,17 @@ export const mountCodeEditor = async (
   iframe.style.height = '100%';
   iframe.style.filter = `brightness(${plugin.settings.editorBrightness})`;
 
-  const blobUrl = await buildBlobUrl(urls);
+  const blobUrl = await buildBlobUrl(urls).catch((err) => {
+    new Notice(
+      'Failed to load Monaco Editor assets.\n\n' +
+      '1. Try reloading Obsidian (Ctrl+R)\n' +
+      '2. If it persists, reinstall the plugin\n' +
+      '3. If still broken, report on GitHub',
+      15000
+    );
+    console.error('[Code Files] Critical asset loading failure:', err);
+    throw err; // Re-throw to propagate the error to the caller
+  });
   iframe.src = blobUrl;
 
   // Promise that resolves when Monaco is fully ready

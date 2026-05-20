@@ -119,6 +119,12 @@ export async function buildBlobUrl(urls: AssetUrls): Promise<string> {
     fetchText(urls.bundleJsUrl)
   ]);
 
+  // Critical assets: without these, the editor cannot function at all
+  if (!bundleJs || !cssText) {
+    revokeBlobUrlCache();
+    throw new Error('Failed to load critical Monaco assets (bundle or CSS). Check network/disk access.');
+  }
+
   // Replaces the inlined data: font source in Monaco's @font-face with an app:// URL.
   // Obsidian's CSP blocks data: URIs for fonts inside child frames; an app:// URL is allowed.
   //
