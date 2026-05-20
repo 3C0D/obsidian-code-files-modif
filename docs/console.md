@@ -26,7 +26,7 @@ The Monaco editor and the console are encapsulated in a flex `#wrapper` (column 
         <div id="console-prompt-line">
             <span id="console-prompt-cwd"></span>
             <span id="console-prompt-symbol">$</span>
-            <input id="console-input-field" type="text" spellcheck="false" />
+            <textarea id="console-input-field" spellcheck="false" rows="1"></textarea>
         </div>
     </div>
 </div>
@@ -122,7 +122,8 @@ Console visibility is persisted per file. If the console is open when Obsidian i
   - **Ctrl+C** (or Cmd+C): Interrupts the current process (sends SIGINT/taskkill).
   - **Ctrl+D/Z** (or Cmd+D/Z): Sends EOF (end-of-stream) to the current process (closes the stdin pipe).
   - **Enter**: Executes the command or sends the input to the current process.
-  - **Up/Down Arrows**: Navigates through command history.
+  - **Shift+Enter**: Inserts a newline for multi-line input (e.g. multi-line code or stdin).
+  - **Up/Down Arrows**: Navigates through command history (disabled while a process is running).
 - **Cleanup**: The input field is systematically cleared after sending.
 - **History**: Navigation with Up/Down arrows. History is persisted in plugin settings per file (limited to the last 50 unique commands).
 - **Visual Prompt (Inline)**: Displays the current folder (CWD) in color and a `$` symbol directly in the prompt line. The input is transparent and borderless for smooth integration. CWD is updated dynamically via `cd` and persists per file.
@@ -144,6 +145,7 @@ Console visibility is persisted per file. If the console is open when Obsidian i
 
 - **Copy**: Right-click on output to copy selection to clipboard via `navigator.clipboard`.
 - **Drag-and-Drop**: Dragging files from the explorer into the input inserts their path (in quotes if necessary).
+- **Multi-line input**: The input area auto-resizes up to ~8 lines (max-height 120px) then scrolls internally. Shift+Enter creates newlines; Enter submits.
 - **Multi-line Paste (stdin mode)**: In interactive mode, pasting text containing line breaks sends each line separately.
 - **ANSI**: Color rendering via `ansi_up`.
 - **Truncate**: Output is limited to the last 5,000 lines to preserve DOM performance.

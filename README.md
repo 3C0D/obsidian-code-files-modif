@@ -283,6 +283,7 @@ Run terminal commands directly from the Monaco editor with full support for inte
 - **Process control**: Start/stop processes (Ctrl+C), proper tree killing for child processes
 - **Clear output**: `Ctrl+L` (or Cmd+L) clears the console — even while a process is running
 - **Command history**: Up/down arrows for history, persistent per file (up to 50 commands)
+- **Multi-line input**: Shift+Enter for newlines in the console input (auto-resizing textarea)
 - **Encoding support**: Automatic UTF-8/CP850 fallback for Windows compatibility
 - **Visual interface**: CWD display in prompt, ANSI colors, resizable panel
 - **Local commands**: `pwd` to display current working directory
@@ -294,7 +295,7 @@ Run terminal commands directly from the Monaco editor with full support for inte
 
 - **Toggle console**: Click the console icon in tab header or press `Ctrl+J`
 - **Clear console**: Press `Ctrl+L` (or Cmd+L) to clear the output
-- **Run commands**: Type and press Enter; `cd` changes directory, `pwd` shows current directory, other commands run there
+- **Run commands**: Type and press Enter; `cd` changes directory, `pwd` shows current directory, other commands run there; Shift+Enter for multi-line
 - **Interactive input**: Commands that prompt for input work normally
 - **Stop processes**: Ctrl+C interrupts running commands
 - **Send EOF**: Press `Ctrl+D` to send end-of-file signal to running processes

@@ -59,7 +59,7 @@ const formatCwd = (path: string): string => {
 const updatePrompt = (): void => {
   const cwdEl = document.getElementById('console-prompt-cwd');
   const symbolEl = document.getElementById('console-prompt-symbol');
-  const input = document.getElementById('console-input-field') as HTMLInputElement;
+  const input = document.getElementById('console-input-field') as HTMLTextAreaElement;
   if (cwdEl) {
     cwdEl.textContent = formatCwd(currentCwd);
     cwdEl.style.display = isRunning ? 'none' : '';
@@ -94,11 +94,18 @@ export function initConsolePane(
   currentSettingsHotkey = settingsHotkey || null;
   const pane = document.getElementById('console-pane');
   const output = document.getElementById('console-output');
-  const input = document.getElementById('console-input-field') as HTMLInputElement;
+  const input = document.getElementById('console-input-field') as HTMLTextAreaElement;
   const resizeHandle = document.getElementById('console-resize-handle');
 
   // Guard against missing DOM elements (e.g. if the HTML template changed)
   if (!pane || !output || !input) return;
+
+  // Auto-resize textarea to fit content, up to max-height
+  const resizeInput = (): void => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  };
+  input.addEventListener('input', resizeInput);
 
   // Add close button event listener
   const closeButton = document.getElementById('console-close-btn') as HTMLButtonElement;
@@ -250,8 +257,8 @@ export function initConsolePane(
         getParentOrigin()
       );
     }
-    // Global Enter key for the whole console area
-    if (e.key === 'Enter') {
+    // Global Enter key for the whole console area (bypass when input focused, handled directly on textarea)
+    if (e.key === 'Enter' && document.activeElement !== input) {
       e.preventDefault();
       sendCommand();
     }
@@ -288,7 +295,20 @@ export function initConsolePane(
    * Handles Enter to submit and Arrows for history navigation.
    */
   input.addEventListener('keydown', (e) => {
+    // Enter submits; Shift+Enter inserts a real newline
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendCommand();
+      input.style.height = 'auto'; // Reset height after submit
+      return;
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      // Let the browser insert \n naturally, then resize
+      setTimeout(resizeInput, 0);
+      return;
+    }
+
     if (e.key === 'ArrowUp') {
+      if (isRunning) return;
       // Navigate backward in command history
       e.preventDefault();
       if (historyIndex > 0) {
@@ -296,6 +316,7 @@ export function initConsolePane(
         input.value = history[historyIndex];
       }
     } else if (e.key === 'ArrowDown') {
+      if (isRunning) return;
       // Navigate forward in command history
       e.preventDefault();
       if (historyIndex < history.length - 1) {
