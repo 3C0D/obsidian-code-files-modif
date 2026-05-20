@@ -118,6 +118,16 @@ export function initConsolePane(
     });
   }
 
+  const maximizeBtn = document.getElementById('console-maximize-btn') as HTMLButtonElement | null;
+  if (maximizeBtn) {
+    maximizeBtn.addEventListener('click', () => {
+      const isMaximized = pane.classList.toggle('maximized');
+      maximizeBtn.title = isMaximized ? 'Restore console' : 'Maximize console';
+      maximizeBtn.textContent = isMaximized ? '▼' : '▲';
+      editor?.layout();
+    });
+  }
+
   const shellBtn = document.getElementById(
     'console-shell-btn'
   ) as HTMLButtonElement | null;
