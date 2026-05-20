@@ -478,7 +478,7 @@ export function handleConsoleMessage(
         const text = data.text as string;
 
         // Convert ANSI escape codes (colors) to HTML spans
-        output.innerHTML += ansiUp.ansi_to_html(text);
+        output.insertAdjacentHTML('beforeend', ansiUp.ansi_to_html(text));
 
         // Auto-truncate output to prevent DOM bloat (keep last 5000 lines)
         const MAX_OUTPUT_LINES = 5000;
