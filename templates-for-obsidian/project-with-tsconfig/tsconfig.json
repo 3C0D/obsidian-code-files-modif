@@ -1,12 +1,12 @@
-{ 
-  "compilerOptions": { 
-    "baseUrl": ".", 
-    "paths": { 
-      "@utils/*": ["src/utils/*"], 
-      "@models/*": ["src/models/*"] 
-    }, 
-    "target": "ESNext", 
-    "module": "ESNext", 
-    "moduleResolution": "node" 
-  } 
- } 
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@utils/*": ["src/utils/*"],
+      "@models/*": ["src/models/*"]
+    },
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node"
+  }
+}

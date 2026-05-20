@@ -183,7 +183,6 @@ export const DEFAULT_EXTENSION_CONFIG = `{
     // "trimTrailingWhitespace": false,
 }`;
 
-
 /** Built-in Monaco themes that don't require external JSON files */
 export const BUILTIN_THEMES = ['vs', 'vs-dark', 'hc-black', 'hc-light', 'default'];
 

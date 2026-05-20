@@ -105,9 +105,9 @@ export const mountCodeEditor = async (
   const blobUrl = await buildBlobUrl(urls).catch((err) => {
     new Notice(
       'Failed to load Monaco Editor assets.\n\n' +
-      '1. Try reloading Obsidian (Ctrl+R)\n' +
-      '2. If it persists, reinstall the plugin\n' +
-      '3. If still broken, report on GitHub',
+        '1. Try reloading Obsidian (Ctrl+R)\n' +
+        '2. If it persists, reinstall the plugin\n' +
+        '3. If still broken, report on GitHub',
       15000
     );
     console.error('[Code Files] Critical asset loading failure:', err);

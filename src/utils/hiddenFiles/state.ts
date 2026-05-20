@@ -43,7 +43,9 @@ export function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
  */
 export function getRevealedItemsCache(plugin: CodeFilesPlugin): Set<string> {
   if (!plugin._revealedItemsCache) {
-    plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+    plugin._revealedItemsCache = new Set(
+      Object.values(plugin.settings.revealedItems).flat()
+    );
   }
   return plugin._revealedItemsCache;
 }

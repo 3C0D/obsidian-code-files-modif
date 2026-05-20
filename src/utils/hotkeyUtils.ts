@@ -139,7 +139,10 @@ export function serializeMonacoHotkeys(app: App, settings: MyPluginSettings): st
     key: 'Delete'
   };
   // Console hotkey uses plugin settings override
-  const consoleHotkey = parseHotkeyOverride(settings.consoleHotkey) ?? { modifiers: ['Mod'], key: 'j' };
+  const consoleHotkey = parseHotkeyOverride(settings.consoleHotkey) ?? {
+    modifiers: ['Mod'],
+    key: 'j'
+  };
   return JSON.stringify({
     settingsHotkey,
     paletteHotkey,

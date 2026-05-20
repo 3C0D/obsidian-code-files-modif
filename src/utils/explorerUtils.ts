@@ -167,7 +167,9 @@ export function setupExplorerBadges(plugin: CodeFilesPlugin): void {
               if (parent) targets.add(parent);
 
               // Or it might be a container of files
-              node.querySelectorAll<HTMLElement>('[data-path]').forEach(el => targets.add(el));
+              node
+                .querySelectorAll<HTMLElement>('[data-path]')
+                .forEach((el) => targets.add(el));
             }
 
             for (const el of targets) {
@@ -236,5 +238,3 @@ export function rescanExplorerBadges(plugin: CodeFilesPlugin): void {
     applyBadge(item as FileTreeItem, plugin);
   }
 }
-
-
