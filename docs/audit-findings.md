@@ -29,7 +29,7 @@ Comprehensive plugin audit. Previous critical and major bugs have all been resol
 **Issue:** If critical assets (bundle.js, CSS) fail to load, user sees a blank iframe with no explanation.
 **Suggestion:** Throw on critical asset failure + catch in `mountCodeEditor.ts` → show Notice "Failed to load editor assets."
 
-### 4. Console History Deduplication Race (Low priority)
+### 4. Console History Deduplication Race (Low priority) ✅ Fixed
 **File:** `src/editor/mountCodeEditor/consoleHandler.ts`
 **Issue:** `saveSettings()` called on every command without debounce. Harmless but wasteful.
 **Suggestion:** Debounce history persistence by 500ms.
