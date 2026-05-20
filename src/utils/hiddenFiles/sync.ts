@@ -2,7 +2,7 @@
  * Synchronization utilities for hidden files.
  * Manages auto-reveal of dotfiles, cleaning stale entries, and batch operations.
  */
-import { normalizePath } from 'obsidian';
+import { normalizePath, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
@@ -11,6 +11,8 @@ import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
 import { revealItems, unrevealItems, revealFolderContents } from './operations.ts';
 import { reconcileItem } from './reconcile.ts';
+import { unrevealProjectDotfiles } from '../projectUtils.ts';
+import { updateProjectFolderHighlight } from '../explorerUtils.ts';
 
 /** Yields control to the event loop to prevent UI blocking during long operations. */
 const yieldToEventLoop = (): Promise<void> => new Promise<void>((r) => setTimeout(r, 0));
@@ -179,6 +181,62 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 }
 
 /**
+ * Handles cleanup of settings (revealedItems, projectRootFolder) when a file or folder is deleted.
+ * Registered as a 'delete' event on the vault.
+ *
+ * @param plugin - The plugin instance.
+ * @param file - The file or folder that was deleted.
+ */
+export async function handleFileDeletion(
+  plugin: CodeFilesPlugin,
+  file: TAbstractFile
+): Promise<void> {
+  const itemPath = file.path;
+  let changed = false;
+
+  // 1. Clean up revealedItems
+  for (const [folderPath, paths] of Object.entries(plugin.settings.revealedItems)) {
+    const filtered = paths.filter((p) => p !== itemPath && !p.startsWith(itemPath + '/'));
+    if (filtered.length !== paths.length) {
+      changed = true;
+      if (filtered.length > 0) {
+        plugin.settings.revealedItems[folderPath] = filtered;
+      } else {
+        delete plugin.settings.revealedItems[folderPath];
+      }
+      plugin._revealedItemsCache = null;
+    }
+  }
+
+  // 2. Clear projectRootFolder if the deleted item was the project root
+  if (itemPath === plugin.settings.projectRootFolder) {
+    const oldRoot = plugin.settings.projectRootFolder;
+    plugin.settings.projectRootFolder = '';
+    if (plugin.settings.showHiddenFiles) {
+      await unrevealProjectDotfiles(plugin, oldRoot);
+    }
+    updateProjectFolderHighlight(plugin);
+    changed = true;
+  }
+
+  if (changed) {
+    await plugin.saveSettings();
+  }
+}
+
+/**
+ * Registers the vault 'delete' event handler to clean up hidden files settings.
+ * @param plugin - The plugin instance.
+ */
+export function registerHiddenFilesDeleteHandler(plugin: CodeFilesPlugin): void {
+  plugin.registerEvent(
+    plugin.app.vault.on('delete', (file) => {
+      void handleFileDeletion(plugin, file);
+    })
+  );
+}
+
+/**
  * Hides all auto-revealed dotfiles (those with registered extensions that are not manually revealed).
  * Called when the auto-reveal toggle is turned off.
  *
@@ -188,7 +246,9 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
   const activeExts = getActiveExtensions(plugin.settings);
   if (!plugin._revealedItemsCache) {
-    plugin._revealedItemsCache = new Set(Object.values(plugin.settings.revealedItems).flat());
+    plugin._revealedItemsCache = new Set(
+      Object.values(plugin.settings.revealedItems).flat()
+    );
   }
   const revealedPaths = plugin._revealedItemsCache;
 

@@ -15,6 +15,7 @@ export {
   restoreRevealedFiles,
   cleanStaleRevealedFiles,
   hideAutoRevealedDotfiles,
-  unrevealExcludedFolders
+  unrevealExcludedFolders,
+  registerHiddenFilesDeleteHandler
 } from './sync.ts';
 export { isSymlink } from './symlink.ts';

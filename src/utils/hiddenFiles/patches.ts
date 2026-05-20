@@ -13,11 +13,9 @@ import {
   getRevealedItemsCache
 } from './state.ts';
 import { getExtension, getRealPathSafe } from '../fileUtils.ts';
-import { decorateFolders } from './badge.ts';
-import { syncAutoRevealedDotfiles } from './sync.ts';
+import { syncAutoRevealedDotfiles, registerHiddenFilesDeleteHandler } from './sync.ts';
 import { rescanExplorerBadges, updateProjectFolderHighlight } from '../explorerUtils.ts';
 import { updateRevealedItemsOnRename } from './operations.ts';
-import { unrevealProjectDotfiles } from '../projectUtils.ts';
 
 /**
  * Patches Obsidian's DataAdapter to intercept file operations:
@@ -38,10 +36,14 @@ import { unrevealProjectDotfiles } from '../projectUtils.ts';
 export function patchAdapter(plugin: CodeFilesPlugin): () => void {
   const adapter = getAdapter(plugin);
 
+  // Register the deletion handler for settings cleanup
+  registerHiddenFilesDeleteHandler(plugin);
+
   // Save originals before patching
   plugin._origReconcileDeletion = adapter.reconcileDeletion.bind(adapter);
 
-  // Patch reconcileDeletion with monkey-around
+  // Patch reconcileDeletion with monkey-around.
+  // Intercepts file deletions to block removal of revealed dotfiles.
   const unpatchReconcile = around(adapter, {
     reconcileDeletion(next) {
       return async function (
@@ -126,38 +128,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         const itemPath = file?.path;
         if (itemPath) setBypassPatch(true);
         try {
-          const result = await next.call(this, file, system);
-
-          // Clean up revealedItems after deletion
-          if (itemPath) {
-            // Clean up revealedItems after deletion
-            for (const [folderPath, paths] of Object.entries(
-              plugin.settings.revealedItems
-            )) {
-              const filtered = paths.filter(
-                (p) => p !== itemPath && !p.startsWith(itemPath + '/')
-              );
-              if (filtered.length !== paths.length) {
-                if (filtered.length > 0) {
-                  plugin.settings.revealedItems[folderPath] = filtered;
-                } else {
-                  delete plugin.settings.revealedItems[folderPath];
-                }
-              }
-            }
-            // Clear projectRootFolder if the deleted item was the project root
-            if (itemPath === plugin.settings.projectRootFolder) {
-              const oldRoot = plugin.settings.projectRootFolder;
-              plugin.settings.projectRootFolder = '';
-              if (plugin.settings.showHiddenFiles)
-                await unrevealProjectDotfiles(plugin, oldRoot);
-              updateProjectFolderHighlight(plugin);
-            }
-            void plugin.saveSettings();
-            decorateFolders(plugin);
-          }
-
-          return result;
+          return await next.call(this, file, system);
         } finally {
           setBypassPatch(false);
         }
