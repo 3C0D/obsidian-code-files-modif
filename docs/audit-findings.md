@@ -3,6 +3,8 @@
 ## Summary
 Comprehensive plugin audit. Previous critical and major bugs have all been resolved. Current code is solid. The findings below are improvements and one real bug discovered during testing.
 
+**Status:** All issues from this audit (May 20, 2025) have been fixed. See [audit-findings-2025-05-21.md](audit-findings-2025-05-21.md) for the second audit pass.
+
 **Implementation instructions:** See [audit-implementation-instructions.md](audit-implementation-instructions.md) for detailed LLM-ready fix instructions.
 
 ## Bug: REPL Interactive Mode Broken (Priority: Medium) ✅ Fixed
@@ -65,28 +67,68 @@ Comprehensive plugin audit. Previous critical and major bugs have all been resol
 ### Documentation Files (all reviewed and consolidated)
 - All files in `docs/` directory (29 documents audited, 12 deleted, 5 consolidated, rest updated)
 
+## Files Reviewed in Second Audit Pass (May 21, 2025)
+
+### Core Files
+- `src/main.ts` — Plugin lifecycle, patching, initialization ✅
+- `src/editor/codeEditorView/index.ts` — View lifecycle, file I/O, header management ✅
+- `src/editor/mountCodeEditor/mountCodeEditor.ts` — Iframe orchestration ✅
+- `src/editor/mountCodeEditor/buildInitParams.ts` — Init params resolution ✅
+- `src/editor/mountCodeEditor/projectLoader.ts` — Project file loading ✅
+- `src/editor/iframe/init.ts` — Monaco initialization, message handling ✅
+
+### Modals
+- `src/modals/chooseExtensionModal.ts` — Extension add/remove modal ✅
+
+### Utils
+- `src/utils/settingsUtils.ts` — Settings persistence, config cascade ✅
+- `src/utils/broadcast.ts` — Config broadcasting to open editors ✅
+- `src/utils/extensionUtils.ts` — Extension management, registration ✅
+- `src/utils/fileUtils.ts` — File size checks, path utilities ✅
+
+### UI
+- `src/ui/codeFilesSettingsTab.ts` — Settings tab with Monaco editor ✅
+
 ## Files NOT Yet Reviewed (For Next Audit Pass)
-- `src/editor/codeEditorView/index.ts` — CodeEditorView class (main view logic)
-- `src/editor/mountCodeEditor/mountCodeEditor.ts` — Mount orchestration
-- `src/editor/mountCodeEditor/buildInitParams.ts` — Init params resolution
-- `src/editor/mountCodeEditor/projectLoader.ts` — Project file loading for IntelliSense
-- `src/editor/iframe/init.ts` — Iframe initialization
+
+### Iframe Side
 - `src/editor/iframe/actions.ts` — Context menu actions
 - `src/editor/iframe/formatters.ts` — Formatter providers
 - `src/editor/iframe/diff.ts` — Diff modal
 - `src/editor/iframe/keybindingUtils.ts` — Keybinding conversion
 - `src/editor/monacoMain.ts` — IIFE bundle entry
-- `src/modals/` — All modal files
-- `src/ui/` — Settings tab, commands, context menus
-- `src/utils/broadcast.ts` — Config broadcasting
-- `src/utils/extensionUtils.ts` — Extension registration
-- `src/utils/fileUtils.ts` — Path utilities
-- `src/utils/settingsUtils.ts` — Settings management
+
+### Modals (Remaining)
+- `src/modals/createCodeFileModal.ts` — File creation modal
+- `src/modals/renameExtensionModal.ts` — Rename modal
+- `src/modals/editorSettingsModal.ts` — Settings gear modal
+- `src/modals/chooseThemeModal.ts` — Theme picker
+- `src/modals/chooseHiddenFileModal.ts` — Hidden file opener
+- `src/modals/chooseExternalFileModal.ts` — External file opener
+- `src/modals/fenceEditModal.ts` — Code fence editor
+
+### UI (Remaining)
+- `src/ui/commands.ts` — Command palette commands
+- `src/ui/contextMenus.ts` — Context menu registration
+- `src/ui/ribbonIcon.ts` — Ribbon icon
+
+### Utils (Remaining)
 - `src/utils/hiddenFiles/sync.ts` — Auto-reveal sync
 - `src/utils/hiddenFiles/badge.ts` — Folder eye badges
 - `src/utils/hiddenFiles/scan.ts` — Hidden file scanning
-- `src/types/` — Type definitions
+- `src/utils/projectUtils.ts` — Project file reading
+- `src/utils/themeUtils.ts` — Theme resolution
+- `src/utils/vaultConfigUtils.ts` — Vault config management
+- `src/utils/modalPatch.ts` — Modal patching
+- `src/utils/openFilePatch.ts` — Open file patching
+- `src/utils/menuPatch.ts` — Menu overlay patching
+- `src/utils/shellUtils.ts` — Shell detection (Windows)
+
+### Types
+- `src/types/index.ts` — Type definitions
 
 ---
 
-**Date:** 2025-05-20
+**Date:** 2025-05-20  
+**Status:** ✅ All issues fixed  
+**Next audit:** [audit-findings-2025-05-21.md](audit-findings-2025-05-21.md)
