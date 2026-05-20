@@ -30,6 +30,16 @@ const currentCwd = new Map<string, string>();
 /** Tracks exit timers for processes to ensure data flush. */
 const closeTimers = new Map<string, NodeJS.Timeout>();
 
+/** Debounced settings save to avoid rapid concurrent writes from console history. */
+let _saveTimer: NodeJS.Timeout | null = null;
+function debouncedSaveSettings(plugin: CodeFilesPlugin): void {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    _saveTimer = null;
+    plugin.saveSettings();
+  }, 500);
+}
+
 /**
  * Kills the console process and clears state for a specific editor context.
  * Called when an editor view is destroyed.
@@ -64,6 +74,11 @@ export function cleanupAllConsoles(): void {
     clearTimeout(timer);
   }
   closeTimers.clear();
+
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+  }
 }
 
 /**
@@ -191,7 +206,7 @@ export async function handleConsoleMessage(
         // Keep only last 50 entries per file
         if (hist.length > 50) hist.shift();
         plugin.settings.consoleHistories[codeContext] = hist;
-        await plugin.saveSettings();
+        debouncedSaveSettings(plugin);
       }
 
       const { basePath, cwd: activeCwd } = resolveConsoleCwd(plugin, codeContext);
