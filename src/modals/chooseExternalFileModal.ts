@@ -6,7 +6,8 @@
 import { FuzzySuggestModal, Notice } from 'obsidian';
 import type { FuzzyMatch } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getMaxFileSize, isSymlink } from '../utils/hiddenFiles/index.ts';
+import { isSymlink } from '../utils/hiddenFiles/index.ts';
+import { getMaxFileSize } from '../utils/fileUtils.ts';
 import type { FileSuggestion } from '../types/index.ts';
 import { EXCLUDED_EXTENSIONS } from '../types/index.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';

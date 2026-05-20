@@ -7,15 +7,7 @@ import type CodeFilesPlugin from '../../main.ts';
 import type { HiddenItem } from '../../types/index.ts';
 import { getAdapter } from './state.ts';
 import { isSymlink } from './symlink.ts';
-
-/**
- * Max file size in MB for Monaco (configurable in settings)
- * @param plugin - The plugin instance
- * @returns The max file size in bytes
- */
-export function getMaxFileSize(plugin: CodeFilesPlugin): number {
-  return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
-}
+import { getMaxFileSize } from '../fileUtils.ts';
 
 /**
  * Scans a folder on the physical file system to find dotfiles and dot-folders

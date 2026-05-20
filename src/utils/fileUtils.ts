@@ -1,12 +1,48 @@
 /**
  * File utilities for handling extensions and file names.
  */
-import { normalizePath } from 'obsidian';
+import { normalizePath, Notice, type TFile } from 'obsidian';
 import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/index.ts';
 import type { App } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getAdapter } from './hiddenFiles/index.ts';
+
+/**
+ * Gets the maximum file size in bytes from the plugin settings.
+ * Defaults to 10MB if not configured.
+ */
+export function getMaxFileSize(plugin: CodeFilesPlugin): number {
+  return (plugin.settings.maxFileSize || 10) * 1024 * 1024;
+}
+
+/**
+ * Checks if a file size exceeds the configured limit.
+ * If exceeded, shows an Obsidian Notice and returns true.
+ * @param fileOrSize - The TFile or the size in bytes to check.
+ * @param plugin - The plugin instance.
+ * @returns True if the file is too large, false otherwise.
+ */
+export function isFileSizeTooLarge(
+  fileOrSize: TFile | number,
+  plugin: CodeFilesPlugin
+): boolean {
+  const size = typeof fileOrSize === 'number' ? fileOrSize : fileOrSize.stat?.size;
+  if (!size) return false;
+
+  const maxBytes = getMaxFileSize(plugin);
+  if (size > maxBytes) {
+    const sizeMB = (size / (1024 * 1024)).toFixed(1);
+    const maxMB = plugin.settings.maxFileSize || 10;
+    new Notice(
+      `File too large (${sizeMB} MB). Maximum is ${maxMB} MB.\n` +
+        `Change this in Settings → Code Files → Maximum file size.`,
+      6000
+    );
+    return true;
+  }
+  return false;
+}
 
 /**
  * Gets the absolute filesystem path to the vault's root folder.

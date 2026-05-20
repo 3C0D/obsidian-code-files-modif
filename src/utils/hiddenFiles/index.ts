@@ -7,7 +7,7 @@ export {
 } from './operations.ts';
 export { patchAdapter, patchRegisterExtensions } from './patches.ts';
 export { reconcileItem } from './reconcile.ts';
-export { scanDotEntries, getMaxFileSize } from './scan.ts';
+export { scanDotEntries } from './scan.ts';
 export { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
 export {
   syncAutoRevealedDotfiles,

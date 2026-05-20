@@ -119,21 +119,23 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Maximum file size')
-      .setDesc('Maximum file size in MB for opening files in Monaco (default: 10 MB)')
-      .addText((text) =>
+      .setDesc('Maximum file size in MB for opening files in Monaco (default: 10 MB, min: 0.1 MB)')
+      .addText((text) => {
         text
           .setPlaceholder('10')
-          .setValue(String(this.plugin.settings.maxFileSize))
-          .onChange(async (v) => {
-            const value = parseInt(v);
-            if (!isNaN(value) && value >= 1 && value <= 100) {
-              this.plugin.settings.maxFileSize = value;
-              await this.plugin.saveSettings();
-            } else {
-              text.setValue(String(this.plugin.settings.maxFileSize));
-            }
-          })
-      );
+          .setValue(String(this.plugin.settings.maxFileSize));
+        text.inputEl.type = 'number';
+        text.inputEl.step = '0.1';
+        text.inputEl.min = '0.1';
+        text.inputEl.max = '100';
+        text.onChange(async (v) => {
+          const value = parseFloat(v);
+          if (!isNaN(value) && value >= 0.1 && value <= 100) {
+            this.plugin.settings.maxFileSize = value;
+            await this.plugin.saveSettings();
+          }
+        });
+      });
   }
 
   /**

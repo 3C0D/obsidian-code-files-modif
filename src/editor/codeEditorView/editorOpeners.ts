@@ -6,6 +6,7 @@ import type { WorkspaceLeaf } from 'obsidian';
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { viewType } from '../../types/index.ts';
+import { isFileSizeTooLarge } from '../../utils/fileUtils.ts';
 import { CodeEditorView } from '../codeEditorView/index.ts';
 
 /**
@@ -34,6 +35,7 @@ export function findRootMonacoLeaf(
  * Opens a file (vault or external) in a Monaco editor leaf.
  * Activates an existing leaf if the file is already open,
  * otherwise opens it in a new tab or the current leaf.
+ *
  * @param fileOrPath - TFile or absolute path of the file to open.
  * @param plugin - The CodeFilesPlugin instance.
  * @param newTab - Whether to open in a new tab or reuse the current leaf.
@@ -50,6 +52,16 @@ export async function openInMonacoLeaf(
   noReturnAction = false
 ): Promise<void> {
   const filePath = fileOrPath instanceof TFile ? fileOrPath.path : fileOrPath;
+
+  // Check file size against the configured maximum before opening
+  if (fileOrPath instanceof TFile) {
+    if (isFileSizeTooLarge(fileOrPath, plugin)) return;
+  } else {
+    // For external files or paths, check via adapter.stat
+    const stat = await plugin.app.vault.adapter.stat(filePath);
+    if (stat && isFileSizeTooLarge(stat.size, plugin)) return;
+  }
+
   const isExternal = !plugin.app.vault.getAbstractFileByPath(filePath);
   const existingLeaf = reuseExisting ? findRootMonacoLeaf(plugin, filePath) : null;
   const leaf =

@@ -22,8 +22,10 @@ import { WorkspaceLeaf, type OpenViewState, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { getActiveExtensions } from './extensionUtils.ts';
 import { getExtension } from './fileUtils.ts';
-import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
-import { findRootMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
+import {
+  openInMonacoLeaf,
+  findRootMonacoLeaf
+} from '../editor/codeEditorView/editorOpeners.ts';
 
 /**
  * Applies the open file patch to the plugin instance.
@@ -37,7 +39,7 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
         this: WorkspaceLeaf,
         file: TFile,
         openState?: OpenViewState // navigation state (cursor position, scroll, etc.)
-        ) {
+      ) {
         // Reuse existing Monaco leaf for files inside the project root
         const projectRoot = plugin.settings.projectRootFolder;
         if (
