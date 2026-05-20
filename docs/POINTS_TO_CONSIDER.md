@@ -1,74 +1,42 @@
-# Points to Consider & Technical Debt
+# Points to Consider
 
-This document tracks known edge cases, technical debt, and architectural trade-offs in the
-Code Files plugin.
+Technical debt, edge cases, and architectural decisions to keep in mind when modifying the plugin.
 
-## 1. Vault Cache Synchronization (setTimeout Smell)
-In `CreateCodeFileModal.ts` and `RenameExtensionModal.ts`, `setTimeout(resolve, 50)` is used after
-calling `reconcileFileInternal`.
+## Active Concerns
 
-- **Reason**: Obsidian's vault cache does not always update immediately after a forced
-  reconciliation of hidden/dotfiles.
-- **Risk**: On extremely slow systems, 50ms might not be enough, leading to
-  `getAbstractFileByPath` returning `null`.
-- **Future Improvement**: Investigate if there's a more reliable event to hook into (like
-  `vault.on('modify', ...)` or checking the cache in a loop with a timeout).
+### 1. Console Output Memory
+The console auto-truncates at 5000 lines, but large volumes of rapid output (e.g., build tools with ANSI colors) can still cause temporary DOM bloat before truncation kicks in.
 
-## 2. Hidden File vs. Extension Registration Edge Case
-In `CreateCodeFileModal.ts`, a user might type a hidden file name (e.g., `.prettierrc`) in the
-name field while the extension suggest/field still contains a value (e.g., `json`).
+**Potential improvement:** Virtual scrolling or output chunking instead of raw DOM insertion.
 
-- **Current Behavior**: The plugin creates `.prettierrc` (ignoring the extension field for the
-  filename) and skips registering `json` as a Code Files extension.
-- **Rationale**: If the user intentionally typed a full hidden filename, they likely don't want
-  to register a "dangling" extension that wasn't used for the created file.
+### 2. Blob URL Cache Invalidation
+The blob URL cache is keyed on `bundleJsUrl`. If a formatter asset changes but the bundle stays the same, the cache won't invalidate. This is unlikely in practice (rebuild always touches the bundle) but worth noting.
 
-## 3. Circular Dependency Workaround (Duck Typing)
-In `EditorSettingsModal.ts`, duck typing (`'clearDirty' in view`) is used instead of a proper
-`instanceof CodeEditorView` check.
+### 3. Cross-Platform Path Handling
+The plugin normalizes paths using `/` internally but must handle Windows `\` from `adapter.getBasePath()` and Node.js `child_process`. The `normalizePath()` utility handles most cases, but edge cases may exist with UNC paths or drive-letter-relative paths.
 
-- **Reason**: A circular dependency exists between `EditorSettingsModal` and `CodeEditorView`.
-  Esbuild/JavaScript module resolution sometimes leaves the class `undefined` at runtime if
-  imported directly.
-- **Risk**: Fragile if the property name `clearDirty` changes or if other view types accidentally
-  implement a property with the same name.
-- **Future Improvement**: Refactor the architecture to break the circular dependency (e.g., using
-  an interface, an event bus, or a separate controller).
+### 4. Monaco Worker Memory
+Each open editor shares the same iframe blob URL but creates its own workers (language service, etc.). With many tabs open (10+), memory usage may grow. Monaco's built-in worker recycling helps, but no explicit limit is enforced.
 
-## 4. Modal Close Button Selector
-In `FenceEditModal.ts`, the close button is accessed via `.modal-close-button`.
+### 5. File Size Limits
+No explicit file size check before opening in Monaco. Very large files (>10MB) may cause the editor to lag. The hidden files modal already filters by configurable max size, but the main open path does not.
 
-- **Risk**: Since this is an internal Obsidian CSS class, it might change in future Obsidian
-  updates.
-- **Handling**: A safe check is implemented to prevent crashes, but the styling might stop
-  working if the class name changes.
+### 6. Process Tree Kill on Windows
+`consoleHandler.ts` uses `taskkill /F /T /PID` on Windows to kill process trees. This is reliable for most cases but may fail for elevated processes or system-protected PIDs (graceful degradation: the process exits naturally when the console closes).
 
-## 5. Monaco Mount Delay (setTimeout Smell)
-In `mountCodeEditor.ts`, `setTimeout(..., 150)` is used after opening a file in a new tab.
+### 7. CSS Snippet Toggle State
+When editing a CSS snippet and toggling it off/on, the toggle state is synced to Obsidian's snippet configuration. If the user has the Obsidian settings page open simultaneously, there may be a brief visual desync (non-critical, cosmetic).
 
-- **Reason**: Monaco needs time to initialize and mount its internal editor after the iframe is
-  appended to the DOM in a new tab.
-- **Risk**: On slower systems or large files, 150ms might be insufficient to send the initial
-  `scroll-to-position` command accurately.
-- **Future Improvement**: Implement a 'monaco-ready' signal from the iframe specifically for
-  newly mounted editors before sending position synchronization messages.
+## Resolved (Previously Tracked)
 
-## 6. Monaco Iframe CSS Injection Patch (Element.prototype.appendChild)
-Inside the Monaco iframe HTML blob in `mountCodeEditor.ts`, `Element.prototype.appendChild` is
-patched.
+- ~~Hardcoded 150ms timeout for editor ready~~ → Replaced with ready promise
+- ~~reconcileDeletion uses O(n) array scan~~ → Now uses Set cache
+- ~~monkey-patch stacking on settings/palette~~ → Now tracks uninstall functions
+- ~~console logic inline in messageHandler~~ → Extracted to consoleHandler.ts
+- ~~onCssChange event leak~~ → Now uses offref() with proper cleanup
+- ~~operations.ts filePath vs normalizedPath~~ → Fixed, uses normalizedPath
+- ~~layout-change triggers expensive scanAll~~ → Guarded by view-change check
 
-- **Reason**: Monaco attempts to inject its CSS via `<link rel="stylesheet">` at runtime, which
-  is blocked by Obsidian's Content Security Policy (CSP) for child frames (iframes).
-- **Behavior**: The patch silently drops `<link>` nodes to prevent errors, while the actual CSS
-  is inlined as `<style>` tags during the initial HTML build.
-- **Risk**: If Monaco changes its internal loading mechanism to rely on features other than
-  simple `<link>` insertion, this patch might become obsolete or break.
+---
 
-## 7. Safe Monkey-Patching (monkey-around)
-In `mountCodeEditor.ts`, `monkey-around` is used to patch `plugin.app.setting.onClose` and the
-command palette's `onClose`.
-
-- **Reason**: Reassigning `onClose` manually is fragile and can lead to lost patches if multiple
-  editor instances (or other plugins) attempt to patch the same method.
-- **Benefit**: `monkey-around` allows patches to be stacked safely and provides an `uninstall`
-  function to restore the original state cleanly.
+**Revised:** ✓

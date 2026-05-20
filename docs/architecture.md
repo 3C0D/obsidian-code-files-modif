@@ -1,175 +1,165 @@
-# Architecture — Code Files Plugin
+# Plugin Architecture
 
 ## Summary
+Code Files is an Obsidian plugin that embeds a Monaco Editor (the VS Code engine) inside Obsidian to edit code files with full IDE features. The key architectural challenge is running Monaco inside a sandboxed iframe while communicating bidirectionally with the Obsidian host.
 
-Monaco Editor integration via iframe with postMessage communication. Single entry point `mountCodeEditor()` creates isolated Monaco instances with blob URLs to bypass CSP restrictions. The actual Monaco editor objects reside in the iframes; the main code interacts with them through `CodeEditorHandle` proxies that manage postMessage communication.
-
-## Core Components
-
-### Communication Flow
+## High-Level Module Map
 
 ```
-CodeEditorView → mountCodeEditor() → iframe (monacoEditor.html) → Monaco Editor
-                     ↕ postMessage protocol
+src/
+├── main.ts                        → Plugin entry: lifecycle, patches, event registration
+├── editor/
+│   ├── codeEditorView/            → Obsidian TextFileView subclass (per-tab lifecycle)
+│   │   ├── index.ts              → CodeEditorView: load/unload/save, state management
+│   │   ├── editorOpeners.ts      → Open files in Monaco leaves (new tab, reuse, position)
+│   │   ├── editorModals.ts       → Modal triggers (theme picker, rename, settings gear)
+│   │   ├── headerActions.ts      → Tab header action buttons (format diff, return arrow)
+│   │   └── headerBadges.ts       → Tab header badges (unregistered ext, project root)
+│   ├── mountCodeEditor/           → Iframe bridge layer (one instance per open file)
+│   │   ├── index.ts              → Re-exports, cleanupAllConsoles, revokeBlobUrlCache
+│   │   ├── mountCodeEditor.ts    → Creates iframe, wires message handler, returns API
+│   │   ├── buildBlobUrl.ts       → Fetches assets, inlines CSS/scripts, creates blob: URL
+│   │   ├── buildInitParams.ts    → Resolves editor options, hotkeys, theme for init message
+│   │   ├── messageHandler.ts     → Central postMessage dispatcher (parent side)
+│   │   ├── consoleHandler.ts     → Console process management (spawn, kill, stdin/stdout)
+│   │   ├── projectLoader.ts      → Loads project files for cross-file IntelliSense
+│   │   └── assetUrls.ts          → Resolves app:// URLs for all Monaco/formatter assets
+│   ├── iframe/                    → Code running INSIDE the Monaco iframe (bundled as IIFE)
+│   │   ├── init.ts               → Editor creation, message listener, applyParams
+│   │   ├── actions.ts            → Context menu actions, hotkey registration
+│   │   ├── formatters.ts         → Prettier/Mermaid/Clang/Ruff/Gofmt formatter providers
+│   │   ├── diff.ts               → Diff modal, revert widget
+│   │   ├── console.ts            → Console pane UI (input, output, resize, history)
+│   │   ├── keybindingUtils.ts    → Hotkey conversion (Obsidian format → Monaco keybinding)
+│   │   ├── utils.ts              → Shared utilities (throttle, getParentOrigin)
+│   │   └── types/                → TypeScript declarations for iframe globals
+│   └── monacoMain.ts             → IIFE bundle entry point for all iframe code
+├── modals/                        → Various picker/creation modals
+├── ui/                            → Settings tab, commands, context menus, ribbon icon
+├── utils/                         → Shared utilities
+│   ├── hiddenFiles/              → Dotfile visibility system (8 modules)
+│   ├── broadcast.ts              → Broadcast config/hotkey changes to all open views
+│   ├── explorerUtils.ts          → File explorer badges and project root highlight
+│   ├── extensionUtils.ts         → Extension registration (add/remove from Obsidian)
+│   ├── hotkeyUtils.ts            → Hotkey reading, parsing, serialization
+│   ├── fileUtils.ts              → Path utilities, extension detection, vault base path
+│   ├── settingsUtils.ts          → Settings load/save, editorConfig parsing
+│   └── ...                       → Other utility modules
+└── types/                         → Shared TypeScript interfaces and constants
 ```
 
-### Key Files
+## The Iframe Boundary
 
-- `mountCodeEditor/` — Monaco iframe integration (modular)
-  - `mountCodeEditor.ts` — main entry point, iframe creation
-  - `messageHandler.ts` — postMessage protocol handling
-  - `buildInitParams.ts` — initialization parameters builder
-  - `projectLoader.ts` — TypeScript/JavaScript project file loading
-  - `assetUrls.ts` — asset path resolution
-  - `buildBlobUrl.ts` — blob URL creation with CSP workarounds
-- `monacoEditor.html` — Monaco instance, receives messages
-- `codeEditorView.ts` — Obsidian TextFileView wrapper
-- `getLanguage.ts` — extension → language mapping
-- `hiddenFiles/` — hidden files management (modular)
-  - `operations.ts` — reveal/hide operations, temporary reveal handling
-  - `badge.ts` — folder decoration with eye badges
-  - `patches.ts` — adapter patching for dotfile support
-  - `scan.ts` — dotfile scanning
-  - `sync.ts` — auto-reveal synchronization
-- `vaultConfigUtils.ts` — vault-level settings management ("Detect all file extensions")
-- `revealHiddenFilesModal.ts` — modal for revealing/hiding dotfiles per folder
+Monaco Editor cannot run directly in Obsidian's DOM due to:
+1. **CSP restrictions**: Obsidian blocks external scripts, `data:` fonts, and dynamic `<link>` insertions in child frames
+2. **AMD loader conflict**: Monaco uses its own `require()` which would conflict with Obsidian's module system
+3. **Isolation**: Monaco's global state (models, workers) must be scoped per-editor without polluting Obsidian
 
-## postMessage Protocol
+**Solution:** A `blob:` URL iframe.
 
-### Parent → iframe
+### Blob URL Construction (`buildBlobUrl.ts`)
+1. Fetch `monacoEditor.html` from `app://` (Obsidian's local protocol)
+2. Inject `<base href>` so Monaco's AMD loader resolves `vs/` paths
+3. Fetch all assets in parallel (Monaco CSS, Prettier plugins, formatters, bundle)
+4. Inline Monaco CSS as `<style>` (CSP blocks `<link>` in iframes)
+5. Patch `@font-face` to use `app://` URL for codicon font (CSP blocks `data:` fonts)
+6. Monkey-patch `appendChild` to silently drop dynamic `<link>` insertions
+7. Encode each script as base64 → inject via `(0,eval)(atob(...))` (avoids `</script>` parsing issues)
+8. Wrap in a `Blob` → `URL.createObjectURL()` → set as iframe `src`
+9. Cache the blob URL for the plugin session (invalidated on rebuild)
 
-| Type                   | Purpose                           |
-| ---------------------- | --------------------------------- |
-| `init`                 | Create Monaco editor (once)       |
-| `change-value`         | Replace content                   |
-| `change-theme`         | Apply theme                       |
-| `change-editor-config` | Update settings (tabSize, etc.)   |
-| `load-project-files`   | Load TS/JS files for IntelliSense |
+### Communication Protocol
 
-### iframe → parent
+All communication between parent (Obsidian) and iframe (Monaco) uses `postMessage`. The two directions work differently:
 
-| Type                    | Purpose               |
-| ----------------------- | --------------------- |
-| `ready`                 | Monaco loaded         |
-| `change`                | Content modified      |
-| `save-document`         | Ctrl+S pressed        |
-| `open-file`             | Ctrl+Click navigation |
-| `format-diff-available` | Formatting completed  |
-
-## Language System
-
+**Parent → Iframe** (via the `send()` function in `mountCodeEditor.ts`):
+```ts
+const send = (type, payload) => {
+  iframe.contentWindow?.postMessage({ type, ...payload }, '*');
+};
 ```
-staticMap > 'plaintext'
+Uses `'*'` as target origin because the iframe is loaded from a `blob:` URL which has no stable origin. The parent calls `send('init', ...)`, `send('change-value', ...)`, `send('change-theme', ...)`, etc.
+
+**Iframe → Parent** (from inside the iframe, e.g., `init.ts`, `console.ts`):
+```ts
+window.parent.postMessage({ type: 'ready' }, getParentOrigin());
+window.parent.postMessage({ type: 'change', value, context }, getParentOrigin());
 ```
+Uses the captured parent origin (set during the `init` handshake). The `context` field is always the vault-relative file path, used to route messages to the correct editor instance when multiple files are open.
 
-- `staticMap` — maps 80+ common file extensions to Monaco language IDs, available at startup
-- Unknown extensions → 'plaintext' (no syntax highlighting)
-- The map is defined in `getLanguage.ts` and used throughout the plugin
+**Parent listens** via `win.addEventListener('message', onMessage)` on the iframe's `contentWindow`. The `onMessage` handler in `messageHandler.ts` receives all messages FROM the iframe and dispatches them (spawn process, save settings, trigger navigation, etc.).
 
-## Extension Management
+**Security:** The parent message handler checks `event.source === iframe.contentWindow` to ignore messages from other iframes.
 
-**Unified System:**
+## CodeEditorView Lifecycle
 
-- `extensions[]` — base list (changes only when switching modes)
-- `extraExtensions[]` — user additions (common to both modes)
-- `excludedExtensions[]` — user exclusions (common to both modes)
-- Active extensions = `(extensions + extraExtensions) - excludedExtensions`
+**File:** `src/editor/codeEditorView/index.ts`
 
-**Two Modes:**
+`CodeEditorView extends TextFileView` — one instance per open file tab.
 
-- **Manual mode** (`allExtensions: false`): `extensions[]` = curated default list
-- **Extended mode** (`allExtensions: true`): `extensions[]` = all Monaco-supported extensions
-
-**Mode Switching:**
-
-- Switching to extended: `extensions = getAllMonacoExtensions()` (all staticMap keys)
-- Switching to manual: `extensions = DEFAULT_SETTINGS.extensions` (curated list)
-- Customizations (`extraExtensions`, `excludedExtensions`) persist across mode switches
-
-**Runtime Operations:**
-
-- `addExtension()`: blocks empty string, native extensions, and already registered extensions; removes from `excludedExtensions`, adds to `extraExtensions` if not in base
-- `removeExtension()`: if in `extraExtensions`, just removes it; if in base `extensions`, adds to `excludedExtensions` to override
-- `reregisterExtensions()` diffs changes to avoid re-registering identical extensions
-
-## Hidden Files Management
-
-**Vault Configuration:**
-
-- `ensureDetectAllExtensions()` — automatically enables Obsidian's "Detect all file extensions" setting on plugin startup (required for dotfile visibility)
-- `showDetectAllExtensionsNotice()` — one-time notice shown when the setting is first enabled
-- Located in `vaultConfigUtils.ts`
-
-**Reveal System:**
-
-- `revealedFiles` — map of folder paths to arrays of revealed file paths
-- `temporaryRevealedPaths` — array of file paths temporarily revealed (e.g., workspace restore)
-- `scanDotEntries()` — scans folder for dotfiles, respects exclusion settings, filters by max file size
-- `revealItems()` — makes dotfiles and dotfolders visible in Obsidian's file explorer
-    - `persist` parameter (default: true) — saves to settings for manual reveals only
-    - No longer shows notices (silent by default)
-- `unrevealItems()` — removes dotfiles and dotfolders from explorer
-    - `temporary` parameter (default: false) — skips settings/badges for transient reveals
-- `handleTemporaryReveal()` — reveals a file temporarily and tracks it in `temporaryRevealedPaths`
-- `cleanupTemporaryReveal()` — unreveals a temporarily revealed file when closed (unless manually revealed)
-- `decorateFolders()` — adds eye icon badge to folders with revealed files
-
-**Auto-Reveal System:**
-
-- `isAutoRevealRegisteredDotfile` setting (default: true)
-- `syncAutoRevealedDotfiles()` — cleans revealedItems and auto-reveals dotfiles when extensions are registered
-- `revealRegisteredDotfiles()` — scans entire vault on startup to reveal dotfiles with active extensions
-- `hideAutoRevealedDotfiles()` — hides all auto-managed files when the feature is disabled
-- Auto-managed files are filtered from the hidden files modal UI
-
-**Adapter Patching:**
-
-- `patchAdapter()` — prevents Obsidian from auto-deleting revealed dotfiles
-    - `reconcileDeletion` override blocks deletion unless `_bypassPatch` flag is set
-    - `rename` patch fixes drag-and-drop destination path for dotfiles (checks if dest is folder, appends filename)
-    - `rename` patch blocks moves of external files (snippets, etc.) out of configDir
-    - `vault.trash` patch sets `_bypassPatch` before deletion to allow dotfile trash
-    - Stores original methods in `plugin._origReconcileDeletion` and `plugin._origRename` for use by other patches
-- `patchRegisterExtensions()` — keeps dotfile visibility in sync with extension registration
-    - On `registerExtensions`: cleans revealedItems and auto-reveals matching dotfiles via `syncAutoRevealedDotfiles()`
-    - On `unregisterExtensions`: hides non-manually-revealed dotfiles for removed extensions using original reconcileDeletion method
-
-**Persistence:**
-
-- Revealed files stored in `settings.revealedFiles` per folder
-- `restoreRevealedFiles()` re-registers dotfiles on plugin load using cross-platform DataAdapter APIs
-- `cleanStaleRevealedFiles()` removes entries for deleted files and normalizes paths
-
-**User Interface:**
-
-- `RevealHiddenFilesModal` — two-column modal (reveal checkboxes | register checkboxes)
-- Allows on-the-fly extension registration via "register as .ext" checkboxes
-- Master checkboxes control all items in each column
-
-## File Explorer Badges
-
-**Visual Indicators:**
-
-- `updateProjectFolderHighlight()` — highlights the Project Root folder in the file explorer (color via `projectRootFolderColor` setting)
-- `setupExplorerBadges()` — adds badges to file entries:
-    - **Dotfiles with registered extensions** → uppercase extension badge (e.g., "ENV", "GITIGNORE")
-    - **Files with unregistered extensions** (excluding native Obsidian extensions like `.md`, `.canvas`) → muted yellow "unregistered" badge
-    - Badges update automatically when extensions are registered or unregistered
-
-## Editor Config
-
+### Opening a File
 ```
-editorConfigs['*'] (global) + editorConfigs['ts'] (per-extension) → merged config
+Obsidian calls onLoadFile(file)
+  → mount code editor (create iframe, build blob URL, wire message handler)
+  → iframe sends 'ready' message
+  → parent sends 'init' (params) + 'change-value' (file content)
+  → resolveReady() fulfills the ready promise
+  → if position requested: send 'scroll-to-position'
 ```
 
-## CSP Solutions
+### Saving
+```
+User presses Ctrl+S → iframe sends 'save-document'
+  → parent messageHandler calls onSave()
+  → CodeEditorView.save() writes via vault.modify() or adapter.write()
+```
 
-| Problem                  | Solution                          |
-| ------------------------ | --------------------------------- |
-| Dynamic `<link>` blocked | CSS inlined + patch `appendChild` |
-| `data:` fonts blocked    | TTF copied, `app://` URLs         |
-| Relative `./vs` broken   | Absolute `app://` URLs            |
-| `file://` blocked        | Blob URL as iframe src            |
+### Closing
+```
+Obsidian calls onUnloadFile()
+  → messageHandler.cleanup() kills processes, removes patches, removes drag overlay
+  → iframe.remove()
+  → revokeBlobUrlCache() if last editor
+  → cleanupTemporaryReveal() for dotfiles
+```
+
+## Ready Mechanism
+
+Each mounted editor exposes a `ready: Promise<void>` that resolves when the iframe Monaco instance has fully initialized. This allows callers (e.g., `openInMonacoLeaf`) to await readiness before sending commands like `scroll-to-position`, eliminating hardcoded timeouts.
+
+**Flow:**
+```
+mountCodeEditor() creates a Promise
+  → iframe loads, Monaco initializes
+  → iframe sends { type: 'ready' }
+  → parent handler calls resolveReady()
+  → await editor.ready resolves
+  → safe to send commands
+```
+
+## Plugin Startup Sequence
+
+```
+onload()
+  ├─ loadSettings()
+  ├─ ensureDetectAllExtensions()       → enables "show unsupported files" in Obsidian
+  ├─ patchModalOpen()                  → fixes iframe focus crash on modal open
+  ├─ patchOpenFile()                   → intercepts file opens to route to Monaco
+  ├─ patchMenuOverlay()                → adds file-type indicator to context menus
+  ├─ serializeMonacoHotkeys()          → snapshot for change detection
+  ├─ registerView(viewType, factory)   → registers CodeEditorView
+  ├─ initExtensions()                  → registers file extensions with Obsidian
+  ├─ addRibbonIcon, registerCommands, registerContextMenus, addSettingTab
+  ├─ onLayoutReady (async):
+  │   ├─ cleanStaleRevealedFiles()     → prune settings of deleted files
+  │   ├─ verify projectRootFolder exists
+  │   ├─ restoreRevealedFiles()        → re-reveal for workspace restore
+  │   ├─ syncAutoRevealedDotfiles()    → reveal dotfiles for registered extensions
+  │   └─ decorateFolders()             → eye badges on folders
+  ├─ setupExplorerBadges()             → MutationObserver for extension badges
+  ├─ patchAdapter() + patchRegisterExtensions()  → hidden files system
+  └─ register vault events (create/delete/rename → decorateFolders, tsconfig → broadcastProjectFiles)
+```
 
 ---
 

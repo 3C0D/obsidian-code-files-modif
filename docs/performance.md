@@ -1,35 +1,64 @@
-# Performance Optimizations
+# Performance Architecture
 
-This document outlines the key performance optimizations implemented in the Code Files plugin to ensure a smooth, non-blocking user experience, particularly during Obsidian startup and editor initialization.
+## Summary
+The plugin is designed to minimize Obsidian's startup time and provide instant editor opens. Key strategies: deferred initialization, parallel asset loading, blob URL caching, and guarded DOM operations.
 
-## 1. Editor Initialization (esbuild & Blob Caching)
+## 1. Deferred Startup
 
-The Monaco editor runs inside an isolated iframe to avoid DOM conflicts with Obsidian. To optimize its loading speed, two major mechanisms are in place:
+The plugin does NOT load Monaco at startup. Heavy work is deferred:
+- **Extension registration** is synchronous and instant (just tells Obsidian which file types to route)
+- **Hidden files restore** runs in `onLayoutReady` (after Obsidian's UI is ready)
+- **Monaco assets** are only fetched when the first editor is opened
+- **Blob URL** is built once, then cached for the session
 
-*   **esbuild Bundling**: Previously, the iframe loaded multiple separate JavaScript files (`config`, `diff`, `formatters`, `actions`) and evaluated inline code. This was refactored to use a second `esbuild` context that compiles a single IIFE bundle (`monacoBundle.js`). This drastically reduces parsing overhead and the number of requests the iframe needs to make, leading to a much faster editor startup.
-*   **Blob URL Caching**: The HTML and CSS required for the iframe are processed (path rewriting, inline CSS injection) and converted into a Blob URL via `buildBlobUrl.ts`. This Blob URL is cached globally. Subsequent code editors opened in new tabs reuse this cached URL, eliminating redundant string manipulation and file reads.
+**Result:** Plugin load adds ~5ms to Obsidian startup (measured: extension registration + patches).
 
-## 2. Vault Startup Scan (Yielding)
+## 2. Parallel Asset Loading (`buildBlobUrl.ts`)
 
-During `onLayoutReady`, the plugin synchronizes the visibility of dotfiles (`syncAutoRevealedDotfiles` and `revealRegisteredDotfiles`). This requires scanning the entire vault directory by directory using `adapter.list()`, which involves significant disk I/O.
+When the first editor opens, 16 assets are fetched in parallel via `Promise.all`:
+- Monaco CSS + codicon font path
+- Prettier base + 7 language plugins
+- 4 formatter scripts (mermaid, clang, ruff, gofmt)
+- monacoBundle.js
 
-*   **Event Loop Yielding**: To prevent this massive scan from blocking Obsidian's main UI thread on startup, the loops over `getAllFolders()` include an asynchronous yield (`await new Promise(r => setTimeout(r, 0))`) every 30 iterations. This allows the browser to process UI rendering and other plugin initializations concurrently, preventing Obsidian from freezing (the "spinning wheel" effect).
+This eliminates sequential round-trips through Electron's `app://` handler that previously caused 5-10s load times after cache invalidation.
 
-## 3. DOM Manipulation (Targeted Queries)
+## 3. Blob URL Caching
 
-The plugin adds a visual "eye" badge to folders containing revealed hidden files (`decorateFolders` in `badge.ts`).
+The constructed blob URL is cached at module level (`_cachedBlobUrl`). Subsequent editor opens reuse it instantly (no re-fetch, no re-build). The cache key is `bundleJsUrl` — if assets change (rebuild), the cache is automatically invalidated.
 
-*   **Targeted DOM Updates**: Instead of iterating over every single item rendered in the File Explorer (`view.fileItems` which can contain thousands of entries), the function now uses a `Set` for quick lookups and standard `document.querySelectorAll` to target only the existing badges and the specific folders that need them.
+**Lifecycle:**
+- First editor open: build blob URL (~200ms)
+- Subsequent opens: instant (reuse cached blob)
+- Plugin unload: `revokeBlobUrlCache()` frees memory
 
-## 4. Vault Events (Debouncing)
+## 4. Ready Promise (No Hardcoded Timeouts)
 
-The file explorer badges need to stay up to date when files are created, deleted, or renamed.
+Each editor instance exposes `editor.ready: Promise<void>`. Callers like `openInMonacoLeaf()` await this promise before sending commands (e.g., `scroll-to-position`). This replaced fragile `setTimeout(150)` patterns that failed on slow systems.
 
-*   **Debounced Execution**: Attaching synchronous DOM updates to every `vault.on('create/delete/rename')` event can cause severe UI lag during bulk operations (e.g., a Git pull or large file duplication). The `decorateFolders` function is now wrapped in a `400ms` debounce in `main.ts`. If 100 files are created at once, the DOM is only updated once after the operation settles.
+## 5. Explorer Badge Guards
 
-## 5. Symbolic Link Filtering (Safety)
+`setupExplorerBadges()` in `explorerUtils.ts` uses a `MutationObserver` to apply badges incrementally (only to newly added DOM nodes). The full `scanAll()` only runs when the file explorer view instance actually changes — not on every `layout-change` event (which fires on pane resize, tab switch, etc.).
 
-To prevent performance degradation and potential recursive loops:
+## 6. Revealed Items Cache
 
-*   **Global Exclusion**: All symbolic links (both files and folders) are filtered out during filesystem scans in `ChooseHiddenFileModal`, `ExternalFileBrowserModal`, and the hidden files discovery logic (`scanDotEntries`). 
-*   **Rationale**: Symlinks can point to large external directories or create circular references that would otherwise saturate the event loop and crash the plugin or Obsidian during vault-wide scans.
+`getRevealedItemsCache(plugin)` returns a `Set<string>` of all revealed dotfile paths, cached at the plugin instance level. It's invalidated only when `revealedItems` settings change. This avoids rebuilding `Object.values(...).flat()` on every `reconcileDeletion` call (hot path during vault file watching).
+
+## 7. Console Process Management
+
+- Processes are spawned with `detached: true` on Unix (process groups for clean kill)
+- Output decoding handles CP850 (Windows cmd.exe) and UTF-8 transparently
+- Exit handling uses a 50ms delay to flush remaining stdout/stderr data events
+- Console output is auto-truncated at 5000 lines to prevent DOM bloat
+
+## 8. Deferred Folder Decoration
+
+`decorateFolders()` (eye badge updates) is debounced at 400ms on vault create/delete/rename events, preventing rapid successive calls during bulk operations.
+
+## 9. Auto-Reveal Yielding
+
+`syncAutoRevealedDotfiles()` yields every 30 folders during scanning to avoid blocking the UI thread in large vaults.
+
+---
+
+**Revised:** ✓

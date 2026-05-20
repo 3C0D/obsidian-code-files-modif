@@ -62,7 +62,7 @@
     - Regular files with unregistered extensions (excluding native Obsidian extensions like `.md`, `.canvas`) show a muted yellow "unregistered" badge
     - Native Obsidian files (`.md`, `.canvas`) show no badge
 
-- Badges update automatically when extensions are registered or unregistered. See [explorer-badges-system.md](explorer-badges-system.md) for details.
+- Badges update automatically when extensions are registered or unregistered. See [hidden-files-system.md](hidden-files-system.md) for details.
 
 ### 7. **Dynamic Extension Management**
 
@@ -222,10 +222,6 @@ yarn real   # Install to production vault
 - Themes: ~2 MB
 - Formatters (Prettier, Mermaid, Ruff, gofmt, clang-format): ~5 MB
 - Plugin code: ~1 MB
-- Other assets and overhead: ~1.4 MB
-
-Formatters contribute significantly to the total size. The plugin is fully offline with no external dependencies.
-
 - Other assets and overhead: ~1.4 MB
 
 Formatters contribute significantly to the total size. The plugin is fully offline with no external dependencies.
