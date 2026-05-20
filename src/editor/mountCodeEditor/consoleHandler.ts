@@ -237,10 +237,27 @@ export async function handleConsoleMessage(
       const existing = activeProcesses.get(codeContext);
       if (existing) killProcessTree(existing);
 
+      /**
+       * REPL Detection: Force interactive mode for known interpreters.
+       * Without this, bare REPL commands (node, python) in pipe mode
+       * buffer all stdin until EOF instead of evaluating line-by-line.
+       * Adding -i forces interactive behavior over piped stdio.
+       */
+      const REPL_INTERACTIVE_FLAGS: Record<string, string> = {
+        node: 'node -i',
+        python: 'python -i',
+        python3: 'python3 -i',
+        py: 'py -i'
+      };
+      const resolvedCmd = REPL_INTERACTIVE_FLAGS[cmdLine] ?? cmdLine;
+      if (resolvedCmd !== cmdLine) {
+        send('console-output', { text: `[Interactive mode: ${resolvedCmd}]\n` });
+      }
+
       // Spawn the actual system process and pipe its stdout/stderr to the iframe.
       // If spawn itself fails (e.g. command not found), the catch sends an error to the console.
       try {
-        const proc = spawn!(cmdLine, [], {
+        const proc = spawn!(resolvedCmd, [], {
           cwd: activeCwd,
           env: {
             ...process.env, // Inherit PATH, HOME, etc. from the parent process
