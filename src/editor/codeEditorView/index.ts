@@ -41,6 +41,7 @@ import {
   showDiffAction,
   hideDiffAction
 } from './headerActions.ts';
+import { isFileSizeTooLarge } from '../../utils/fileUtils.ts';
 
 export class CodeEditorView extends TextFileView {
   /** The code editor control handle (CodeEditorHandle), created by mountCodeEditor() and destroyed on view close. */
@@ -323,9 +324,7 @@ export class CodeEditorView extends TextFileView {
 
   /** Initializes the Monaco editor when a file is loaded into the view. */
   async onLoadFile(file: TFile): Promise<void> {
-    // super.onLoadFile reads file content into this.data and calls setViewData().
-    // For external files opened via leaf.open(), content is not loaded automatically —
-    // super.onLoadFile handles that case here.
+    if (isFileSizeTooLarge(file, this.plugin)) return;
     await super.onLoadFile(file);
     await this.mountAndRender();
   }

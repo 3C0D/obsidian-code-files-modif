@@ -37,7 +37,7 @@ export function isFileSizeTooLarge(
     new Notice(
       `File too large (${sizeMB} MB). Maximum is ${maxMB} MB.\n` +
         `Change this in Settings → Code Files → Maximum file size.`,
-      6000
+      7000
     );
     return true;
   }
