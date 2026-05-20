@@ -4,7 +4,7 @@
 
 ---
 
-## 1. File Size Guard on Open
+## 1. File Size Guard on Open ✅ Implemented (in CodeEditorView.onLoadFile)
 
 ### Context
 The setting `maxFileSize` (MB) already exists in settings and is used by modals (`chooseHiddenFileModal.ts`, `chooseExternalFileModal.ts`) via `getMaxFileSize(plugin)` (in `src/utils/hiddenFiles/scan.ts`). However, the main opening path (`editorOpeners.ts` → `openInMonacoLeaf`) does NOT check file size before loading into Monaco.
@@ -50,9 +50,11 @@ import { Notice, TFile } from 'obsidian';
 - Open a file < 10MB → normal behavior unchanged
 - Change `maxFileSize` in settings to 1 → files > 1MB should be blocked
 
+**Note:** Final implementation placed the check in `CodeEditorView.onLoadFile()` (src/editor/codeEditorView/index.ts:325) to cover all open paths (registered extensions bypass openInMonacoLeaf and patches). Uses `isFileSizeTooLarge` + adapter.stat for external files (though onLoadFile receives only TFiles).
+
 ---
 
-## 2. REPL/Interactive Mode Bug (NEW — Priority: Medium)
+## 2. REPL/Interactive Mode Bug (NEW — Priority: Medium) ✅ Implemented
 
 ### Context (Root Cause)
 When a user launches a bare REPL command (`node`, `python`, `py`) via the console, the process is spawned with `stdio: ['pipe', 'pipe', 'pipe']`. In pipe mode (no PTY), REPLs behave differently:

@@ -5,7 +5,7 @@ Comprehensive plugin audit. Previous critical and major bugs have all been resol
 
 **Implementation instructions:** See [audit-implementation-instructions.md](audit-implementation-instructions.md) for detailed LLM-ready fix instructions.
 
-## Bug: REPL Interactive Mode Broken (Priority: Medium)
+## Bug: REPL Interactive Mode Broken (Priority: Medium) ✅ Fixed
 
 **File:** `src/editor/mountCodeEditor/consoleHandler.ts`
 **Issue:** Launching bare REPL commands (`node`, `python`, `py`) in the console doesn't work interactively. The process spawns with piped stdio (`['pipe', 'pipe', 'pipe']`), which causes REPLs to enter "script mode" — they buffer ALL stdin until EOF instead of evaluating line-by-line. The user sees "stdin..." but typing expressions produces no output.
@@ -14,7 +14,7 @@ Comprehensive plugin audit. Previous critical and major bugs have all been resol
 
 ## Remaining Suggestions
 
-### 1. File Size Guard on Open (Low priority)
+### 1. File Size Guard on Open (Low priority) ✅ Fixed
 **File:** `src/editor/codeEditorView/editorOpeners.ts`
 **Issue:** No file size check before opening in Monaco. The `maxFileSize` setting is used in modals but not in the main open path.
 **Suggestion:** Check file size against `getMaxFileSize(plugin)` and show a Notice with a link to settings if exceeded.

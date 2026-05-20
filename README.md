@@ -390,7 +390,7 @@ Changes save automatically when the panel closes.
 
 - **Use extended extensions list** — auto-register all Monaco-supported extensions (80+) vs. manual management
 - **Manage extensions** — add or remove extensions; changes take effect immediately
-- **Maximum file size** — maximum file size in MB for Monaco (default: 10 MB, range 1-100 MB)
+- **Maximum file size** — maximum file size in MB for Monaco (default: 10 MB, range 0.1–100 MB). Files larger than the limit trigger a notice and are not loaded in the editor.
 - **Editor Config** — same JSON editor as the gear panel, with extension picker
 - **Monaco Hotkey Overrides** — configure overrides for Command Palette (Ctrl+P), Settings (Ctrl+,), and Delete File (Ctrl+Delete). Changes require Monaco to reload.
 - **Project Root Folder Highlight Color** — customize the color used to highlight the project root in the explorer

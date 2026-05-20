@@ -183,6 +183,8 @@ env: {
 
 These variables ensure better compatibility with modern tools and avoid common blockages (like Git waiting for keyboard interaction).
 
+Bare REPL commands (`node`, `python`, `py`) are automatically prefixed with `-i` to force interactive line-by-line evaluation over pipes (prevents buffering until EOF).
+
 The CWD (working directory) is maintained by the parent in a `Map` per context. It is initialized to the file's directory but can be modified via the intercepted `cd` command.
 
 ### 2. Process Exit Notification
