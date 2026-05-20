@@ -34,6 +34,8 @@ The Monaco editor and the console are encapsulated in a flex `#wrapper` (column 
 
 `tabindex="0"` makes the `div` focusable, allowing keyboard shortcuts (Ctrl+C, Ctrl+J) to be captured even when the cursor is not in the input field.
 
+A maximize button (▲) in the console header expands the console to fill available space and collapses Monaco; clicking again restores the split view.
+
 ---
 
 ## Integration in Monaco (actions.ts)

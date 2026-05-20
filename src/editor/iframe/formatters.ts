@@ -162,7 +162,10 @@ export function registerFormatters(): void {
         });
         // Format mermaid blocks inside the markdown
         if (window.mermaidFormatter?.formatMarkdownMermaidBlocks) {
-          formatted = window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted);
+          formatted = window.mermaidFormatter.formatMarkdownMermaidBlocks(formatted, {
+            indentSize: DEFAULT_TAB_WIDTH,
+            useTabs: DEFAULT_USE_TABS
+          });
         }
         return [{ range: model.getFullModelRange(), text: formatted }];
       } catch (e) {
@@ -184,7 +187,10 @@ export function registerFormatters(): void {
           return [];
         }
         const original = model.getValue();
-        const formatted = window.mermaidFormatter.formatMermaid(original);
+        const formatted = window.mermaidFormatter.formatMermaid(original, {
+          indentSize: DEFAULT_TAB_WIDTH,
+          useTabs: DEFAULT_USE_TABS
+        });
         if (formatted !== original) {
           notifyFormatDiff(original, formatted);
         }
