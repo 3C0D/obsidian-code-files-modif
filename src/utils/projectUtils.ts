@@ -5,7 +5,6 @@
  * - Manages dotfile reveal/unreveal (using manual-only filter) when the project
  *   root is defined or cleared.
  */
-import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { scanDotEntries, filterManualDotEntries } from './hiddenFiles/index.ts';
 import { revealItems, unrevealItems } from './hiddenFiles/index.ts';
@@ -48,7 +47,7 @@ export async function readProjectFiles(
 export function hasTsConfig(plugin: CodeFilesPlugin): boolean {
   const root = plugin.settings.projectRootFolder;
   if (!root) return false;
-  return plugin.app.vault.getAbstractFileByPath(root + '/tsconfig.json') instanceof TFile;
+  return plugin.app.vault.getFileByPath(root + '/tsconfig.json') !== null;
 }
 
 /**

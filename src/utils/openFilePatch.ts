@@ -56,12 +56,11 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
         // Intercept files with no Obsidian extension (dotfiles + extension-less)
         if (file && !file.extension) {
           const ext = getExtension(file.name);
-          const isKnownToObsidian = !!plugin.app.viewRegistry.typeByExtension[ext];
           const isKnownToMonaco =
             !ext || getActiveExtensions(plugin.settings).includes(ext);
 
           // Avoid openining tabs for unknown extensions
-          if (!isKnownToObsidian && !isKnownToMonaco) {
+          if (!isKnownToMonaco) {
             return;
           }
 
