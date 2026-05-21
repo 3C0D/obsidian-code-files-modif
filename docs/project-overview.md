@@ -26,7 +26,7 @@
 
 ### 4. **Cross-File Navigation (TypeScript/JavaScript)**
 
-1- **Project Root setup**: Right-click folder → "Define as Project Root Folder"
+1- **Project Root setup**: Right-click any non-root folder → "Define as Project Root Folder" (vault root cannot be designated as project root)
 2- **Ctrl+Click** to jump to definitions
 
 - **Smart tab reuse**: For files within the project root folder, opens in existing Monaco tab if file already open, preventing duplicate tabs for both navigation and direct file openings

@@ -10,12 +10,12 @@ Ctrl+Click on imports/functions to jump to definitions in other files. Requires 
 
 **Two ways to set the Project Root Folder:**
 
-1. **Via context menu**:
-    - Right-click any folder in the file explorer
-    - Select **Code Files → Define as Project Root Folder**
-    - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
-    - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
-    - **Note:** Defining or clearing the root folder via the context menu automatically reveals or hides dotfiles according to your "Show Hidden Files" setting.
+  1. **Via context menu**:
+     - Right-click any non-root folder in the file explorer (the vault root folder cannot be set as project root)
+     - Select **Code Files → Define as Project Root Folder**
+     - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
+     - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
+     - **Note:** Defining or clearing the root folder via the context menu automatically reveals or hides dotfiles according to your "Show Hidden Files" setting.
 
 2. **Via Editor Settings**:
     - Open Editor Settings (⚙️ gear icon in tab header)

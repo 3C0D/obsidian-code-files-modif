@@ -16,7 +16,7 @@ main.ts onload()
   └─ decorateFolders(plugin)       → adds eye badge to folders containing hidden items
 ```
 
-**Key modules:** `src/utils/hiddenFiles/` (8 files: index, state, operations, patches, sync, scan, badge, reconcile, symlink)
+**Key modules:** `src/utils/hiddenFiles/` (index, state, operations, patches, sync, scan, badge, reconcile, symlink, dotfileFilters) — ~10 files; reconcile and some sync internals are no longer re-exported from index.ts for a stable public API.
 
 ## Core Mechanism: Adapter Patching
 
@@ -104,6 +104,20 @@ interface MyPluginSettings {
 - `getRevealedItemsCache(plugin)` returns a `Set<string>` cached at plugin level, invalidated when `revealedItems` changes. Avoids rebuilding `Object.values(...).flat()` on every `reconcileDeletion` call.
 - `syncAutoRevealedDotfiles` yields every 30 folders to avoid blocking.
 - `setupExplorerBadges` guards full scan behind a view-change check.
+
+## Dotfile Filtering and State Unification
+
+Extracted dedicated helpers in `src/utils/hiddenFiles/dotfileFilters.ts` (`isAutoManagedDotfile`, `filterManualDotEntries`) to exclude auto-revealed dotfiles (those with registered extensions when the auto-reveal toggle is on) from all manual reveal/hide operations, badge counting, and project-root scans. This ensures auto-managed items are never persisted in `revealedItems` or accidentally hidden.
+
+A new internal helper `forEachVaultFolder` centralizes vault-wide iteration with yield-to-event-loop every 30 folders.
+
+State mutations for `revealedItems` were unified via `setRevealedItemsEntry` (in operations.ts) which also invalidates the cache; used everywhere instead of direct assignments + delete.
+
+Public exports from `index.ts` were pruned to stable surface: now exposes `filterManualDotEntries`, `setRevealedItemsEntry`; `reconcileItem` and several internal sync helpers are no longer re-exported.
+
+Key modules list expanded to include `dotfileFilters.ts` (reconcile.ts remains internal).
+
+Centralized folder reveal after structural changes (reveal/hide, project root switch) into `revealFolderInExplorer` (explorerUtils.ts).
 
 ---
 

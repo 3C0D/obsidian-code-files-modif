@@ -109,12 +109,12 @@ Navigate between TypeScript and JavaScript files in your project:
 
 **Two ways to set the Project Root Folder:**
 
-1. **Via context menu**:
-    - Right-click any folder in the file explorer
-    - Select **Code Files → Define as Project Root Folder**
-    - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
-    - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
-    - **Note:** Defining or clearing the root folder via the context menu automatically reveals or hides dotfiles according to your "Show Hidden Files" setting.
+  1. **Via context menu**:
+     - Right-click any non-root folder in the file explorer (the vault root folder cannot be set as project root)
+     - Select **Code Files → Define as Project Root Folder**
+     - The folder is highlighted (default purple/rose matching Obsidian's accent color) in the explorer
+     - To clear: right-click the same folder → **Code Files → Clear Project Root Folder**
+     - **Note:** Defining or clearing the root folder via the context menu automatically reveals or hides dotfiles according to your "Show Hidden Files" setting.
 
 2. **Via Editor Settings**:
     - Open Editor Settings (⚙️ gear icon in tab header)
@@ -284,6 +284,7 @@ Run terminal commands directly from the Monaco editor with full support for inte
 - **Clear output**: `Ctrl+L` (or Cmd+L) clears the console — even while a process is running
 - **Command history**: Up/down arrows for history, persistent per file (up to 50 commands)
 - **Multi-line input**: Shift+Enter for newlines in the console input (auto-resizing textarea)
+- **Pane maximization**: ▲/▼ button in console header to expand console full-height (collapses Monaco editor) or restore the split view
 - **Encoding support**: Automatic UTF-8/CP850 fallback for Windows compatibility
 - **Visual interface**: CWD display in prompt, ANSI colors, resizable panel
 - **Local commands**: `pwd` to display current working directory
