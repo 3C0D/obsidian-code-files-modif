@@ -20,7 +20,7 @@
 import { around } from 'monkey-around';
 import { WorkspaceLeaf, type OpenViewState, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getActiveExtensions } from './extensionUtils.ts';
+import { viewType } from '../types/index.ts';
 import { getExtension } from './fileUtils.ts';
 import {
   openInMonacoLeaf,
@@ -56,18 +56,15 @@ export function patchOpenFile(plugin: CodeFilesPlugin): () => void {
         // Intercept files with no Obsidian extension (dotfiles + extension-less)
         if (file && !file.extension) {
           const ext = getExtension(file.name);
-          const isKnownToMonaco =
-            !ext || getActiveExtensions(plugin.settings).includes(ext);
+          const isHandledByCodeFiles =
+            !ext || plugin.app.viewRegistry.getTypeByExtension(ext) === viewType;
 
-          // Avoid openining tabs for unknown extensions
-          if (!isKnownToMonaco) {
+          // Avoid opening tabs for unknown extensions
+          if (!isHandledByCodeFiles) {
             return;
           }
-
-          if (isKnownToMonaco) {
-            await openInMonacoLeaf(file, plugin, false, null, false);
-            return;
-          }
+          await openInMonacoLeaf(file, plugin, false, null, false);
+          return;
         }
         // Fall through to original Obsidian behavior
         return next.call(this, file, openState);

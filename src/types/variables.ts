@@ -37,32 +37,6 @@ export const DEFAULT_EDITOR_CONFIG = `{
     // "bracketPairColorization.enabled": true,
 }`;
 
-/** Extensions that Obsidian handles natively — excluded by default when allExtensions is on */
-export const OBSIDIAN_NATIVE_EXTENSIONS = [
-  'md',
-  'canvas',
-  'pdf',
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'bmp',
-  'svg',
-  'webp',
-  'mp3',
-  'wav',
-  'm4a',
-  'ogg',
-  '3gp',
-  'flac',
-  'mp4',
-  'webm',
-  'ogv',
-  'mov',
-  'mkv',
-  'base'
-];
-
 /** Plugin default settings applied on first install */
 export const DEFAULT_SETTINGS: MyPluginSettings = {
   extensions: [
@@ -98,7 +72,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   minimap: true,
   editorConfigs: { '*': DEFAULT_EDITOR_CONFIG },
   allExtensions: false,
-  excludedExtensions: [...OBSIDIAN_NATIVE_EXTENSIONS],
+  excludedExtensions: [],
   extraExtensions: [],
   maxFileSize: 10,
   projectRootFolder: '',

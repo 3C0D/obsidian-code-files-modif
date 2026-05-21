@@ -146,7 +146,7 @@ export class RenameExtensionModal extends Modal {
           `".${ext}" is not registered. Register it with Code Files?`
         );
         if (ok) {
-          addExtension(this.plugin.settings, ext);
+          addExtension(this.plugin.app, this.plugin.settings, ext);
           registerExtension(this.plugin, ext);
           await this.plugin.saveSettings();
           syncRegisteredExts(this.plugin);

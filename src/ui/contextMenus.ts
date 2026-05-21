@@ -18,7 +18,6 @@ import {
 } from '../utils/explorerUtils.ts';
 import { unrevealProjectDotfiles, revealProjectDotfiles } from '../utils/projectUtils.ts';
 import type { MenuItem } from '../types/index.ts';
-import { OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
 import { broadcastProjectFiles } from '../utils/broadcast.ts';
 import {
   addExtension,
@@ -177,10 +176,9 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] 
   const ext = getExtension(file.name);
   const items: MenuItem[] = [];
 
-  // Check if extension is registered and if it's native to Obsidian
+  // Check if extension is already registered in our settings
   const activeExts = getActiveExtensions(plugin.settings);
   const isRegistered = activeExts.includes(ext);
-  const isNative = OBSIDIAN_NATIVE_EXTENSIONS.includes(ext);
 
   // Show "Open in Monaco Editor" only if extension is not registered
   if (ext && !isRegistered) {
@@ -191,13 +189,13 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] 
     });
   }
 
-  // Show "Register Extension" only if has extension AND not registered AND not native
-  if (ext && !isRegistered && !isNative) {
+  // Show "Register Extension" only if the extension is not yet claimed by Obsidian or any plugin
+  if (ext && !plugin.app.viewRegistry.getTypeByExtension(ext)) {
     items.push({
       title: 'Register Extension',
       icon: 'plus-circle',
       action: async () => {
-        const added = addExtension(plugin.settings, ext);
+        const added = addExtension(plugin.app, plugin.settings, ext);
         if (!added) {
           new Notice('Extension already registered or native extension not allowed');
           return;
@@ -210,8 +208,8 @@ function getFileExplorerItems(plugin: CodeFilesPlugin, file: TFile): MenuItem[] 
     });
   }
 
-  // Show "Unregister Extension" only if registered AND not native
-  if (ext && isRegistered && !isNative) {
+  // Show "Unregister Extension" only if registered (Code Files never registers native/claimed extensions)
+  if (ext && isRegistered) {
     items.push({
       title: 'Unregister Extension',
       icon: 'minus-circle',

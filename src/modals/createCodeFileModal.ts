@@ -164,7 +164,7 @@ export class CreateCodeFileModal extends Modal {
     }
 
     if (shouldRegisterExt) {
-      addExtension(this.plugin.settings, ext);
+      addExtension(this.plugin.app, this.plugin.settings, ext);
       registerExtension(this.plugin, ext);
       await this.plugin.saveSettings();
       new Notice(`Added ".${ext}" to registered extensions`);
@@ -223,7 +223,7 @@ export class CreateCodeFileModal extends Modal {
         `Register ".${ext}" as a new extension with Code Files?`
       );
       if (registerExt) {
-        addExtension(this.plugin.settings, ext);
+        addExtension(this.plugin.app, this.plugin.settings, ext);
         registerExtension(this.plugin, ext);
         await this.plugin.saveSettings();
         new Notice(`Added ".${ext}" to registered extensions`);

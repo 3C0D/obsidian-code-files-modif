@@ -174,7 +174,7 @@ export class RevealHiddenFilesModal extends Modal {
             const item = section.items.find((i) => i.path === filePath);
             if (!item || item.isFolder) continue;
             const ext = getExtension(item.name);
-            if (ext && addExtension(this.plugin.settings, ext)) anyRegistered = true;
+            if (ext && addExtension(this.plugin.app, this.plugin.settings, ext)) anyRegistered = true;
           }
         }
 

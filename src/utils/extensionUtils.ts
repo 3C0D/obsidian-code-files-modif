@@ -6,7 +6,7 @@
  */
 import type { App } from 'obsidian';
 import type { MyPluginSettings } from '../types/index.ts';
-import { viewType, OBSIDIAN_NATIVE_EXTENSIONS } from '../types/index.ts';
+import { viewType } from '../types/index.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';
@@ -45,19 +45,14 @@ export function getActiveExtensions(settings: MyPluginSettings): string[] {
  * @param ext - The extension to add (e.g. "js", "ts")
  * @returns true if the extension was added, false if blocked (empty, native or already registered)
  */
-export function addExtension(settings: MyPluginSettings, ext: string): boolean {
+export function addExtension(app: App, settings: MyPluginSettings, ext: string): boolean {
   // Block empty string
   if (!ext) {
     console.warn('code-files: cannot add empty extension');
     return false;
   }
-  // Block native extensions
-  if (OBSIDIAN_NATIVE_EXTENSIONS.includes(ext)) {
-    return false;
-  }
-
-  // Block already registered extensions
-  if (getActiveExtensions(settings).includes(ext)) {
+  // Block extensions already claimed by Obsidian or any plugin
+  if (app.viewRegistry.getTypeByExtension(ext)) {
     return false;
   }
 

@@ -62,7 +62,7 @@ export class ChooseExtensionModal extends SuggestModal<ExtensionSuggestion> {
 
   async onChooseSuggestion(item: ExtensionSuggestion): Promise<void> {
     if (item.kind === 'add') {
-      addExtension(this.plugin.settings, item.ext);
+      addExtension(this.plugin.app, this.plugin.settings, item.ext);
       registerExtension(this.plugin, item.ext);
       new Notice(`Added ".${item.ext}"`);
       await this.plugin.saveSettings();
