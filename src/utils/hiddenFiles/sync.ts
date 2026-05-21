@@ -22,6 +22,17 @@ import { updateProjectFolderHighlight } from '../explorerUtils.ts';
 /** Yields control to the event loop to prevent UI blocking during long operations. */
 const yieldToEventLoop = (): Promise<void> => new Promise<void>((r) => setTimeout(r, 0));
 
+async function forEachVaultFolder(
+  plugin: CodeFilesPlugin,
+  callback: (folderPath: string) => Promise<void>
+): Promise<void> {
+  const allFolders = plugin.app.vault.getAllFolders();
+  for (let i = 0; i < allFolders.length; i++) {
+    if (i > 0 && i % 30 === 0) await yieldToEventLoop();
+    await callback(allFolders[i].path);
+  }
+}
+
 /**
  * Handles newly registered extensions by cleaning revealedItems and auto-revealing
  * dotfiles matching the new extensions.
@@ -52,14 +63,8 @@ export async function syncAutoRevealedDotfiles(
   }
   if (changed) await plugin.saveSettings();
 
-  // Auto-reveal dotfiles matching the new extensions
-  const allFolders = plugin.app.vault.getAllFolders();
-  for (let i = 0; i < allFolders.length; i++) {
-    // Yield every 30 folders to avoid saturating the event loop on startup
-    if (i > 0 && i % 30 === 0) await yieldToEventLoop();
-
-    const folder = allFolders[i];
-    const items = await scanDotEntries(plugin, folder.path);
+  await forEachVaultFolder(plugin, async (folderPath) => {
+    const items = await scanDotEntries(plugin, folderPath);
     const toReveal = items
       .filter((item) => {
         if (item.isFolder) return false;
@@ -68,9 +73,9 @@ export async function syncAutoRevealedDotfiles(
       })
       .map((item) => item.path);
     if (toReveal.length > 0) {
-      await revealItems(plugin, folder.path, toReveal, false);
+      await revealItems(plugin, folderPath, toReveal, false);
     }
-  }
+  });
 
   decorateFolders(plugin);
 }
@@ -87,27 +92,22 @@ export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise
 
   const activeExts = getActiveExtensions(plugin.settings);
 
-  const allFolders = plugin.app.vault.getAllFolders();
-  for (let i = 0; i < allFolders.length; i++) {
-    // Yield every 30 folders to avoid saturating the event loop on startup
-    if (i > 0 && i % 30 === 0) await yieldToEventLoop();
-
-    const folder = allFolders[i];
-    const items = await scanDotEntries(plugin, folder.path);
+  await forEachVaultFolder(plugin, async (folderPath) => {
+    const items = await scanDotEntries(plugin, folderPath);
     const toReveal = items
       .filter((item) => {
         if (item.isFolder) return false;
         const ext = getExtension(item.name);
         if (!ext || !activeExts.includes(ext)) return false;
-        const revealed = plugin.settings.revealedItems[folder.path] || [];
+        const revealed = plugin.settings.revealedItems[folderPath] || [];
         return !revealed.includes(item.path);
       })
       .map((item) => item.path);
 
     if (toReveal.length > 0) {
-      await revealItems(plugin, folder.path, toReveal, false);
+      await revealItems(plugin, folderPath, toReveal, false);
     }
-  }
+  });
 }
 
 /**
