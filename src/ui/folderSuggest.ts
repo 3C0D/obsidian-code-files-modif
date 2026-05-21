@@ -1,5 +1,5 @@
 /**
- * Reusable autocomplete suggester for vault folders.
+ * Reusable autocomplete suggester for vault folders (excludes the vault root, which cannot be used as project root).
  * Attaches to a text input and provides filtered folder suggestions as the user types.
  * Used in EditorSettingsModal for selecting the project root folder.
  */

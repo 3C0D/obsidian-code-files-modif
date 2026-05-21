@@ -1,6 +1,9 @@
 /**
- * Reads TypeScript/JavaScript source files from the configured project root
- * to feed Monaco's IntelliSense (autocomplete, type checking, cross-file navigation).
+ * Project root utilities:
+ * - Reads TypeScript/JavaScript source files from the configured project root
+ *   to feed Monaco's IntelliSense (autocomplete, type checking, cross-file navigation).
+ * - Manages dotfile reveal/unreveal (using manual-only filter) when the project
+ *   root is defined or cleared.
  */
 import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';

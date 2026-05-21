@@ -3,6 +3,8 @@
  * Adds/removes a CSS class to the folder title element to show which folder
  * is set as the project root for TypeScript/JavaScript cross-file navigation.
  * The highlight color is customizable via plugin settings.
+ * Also provides `revealFolderInExplorer` to scroll the explorer to a folder
+ * (used after reveal/hide and project-root changes to keep UI in sync).
  */
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView, FileTreeItem, FolderTreeItem } from 'obsidian-typings';

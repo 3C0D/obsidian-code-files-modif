@@ -27,10 +27,8 @@ import {
 } from './editorModals.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
 import { getExtension } from '../../utils/fileUtils.ts';
-import {
-  handleTemporaryReveal,
-  cleanupTemporaryReveal
-} from '../../utils/hiddenFiles/index.ts';
+import { handleTemporaryReveal } from '../../utils/hiddenFiles/index.ts';
+import { cleanupTemporaryReveal } from '../../utils/hiddenFiles/operations.ts';
 import { updateExtBadge, updateDirtyBadgeVisibility, setDirty } from './headerBadges.ts';
 import {
   injectHeaderActions,
