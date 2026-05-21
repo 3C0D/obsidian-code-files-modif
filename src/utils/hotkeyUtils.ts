@@ -104,7 +104,7 @@ export function parseHotkeyOverride(override: string): HotkeyConfig | null {
 }
 
 /**
- * Formats a HotkeyConfig as a display string (e.g., "Mod+P").
+ * Formats a HotkeyConfig as a display string (e.g., "Ctrl+P").
  *
  * @param config - The hotkey configuration
  * @param resolveMod - If true, replaces 'Mod' with 'Ctrl' or 'Cmd' based on platform

@@ -4,6 +4,7 @@
  * before any Monaco iframe is initialized. The dynamic map from Monaco itself
  * is loaded and persisted separately (see mountCodeEditor.ts).
  */
+import { FORMATTABLE_EXTENSIONS } from '../types/index.ts';
 
 /**
  * Static map of file extensions to Monaco language IDs.
@@ -122,8 +123,6 @@ export const staticMap: Record<string, string> = {
   swcrc: 'json',
   clangformat: 'yaml'
 };
-
-import { FORMATTABLE_EXTENSIONS } from '../types/index.ts';
 
 /**
  * Returns the Monaco language id for a given file extension.

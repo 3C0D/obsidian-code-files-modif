@@ -23,7 +23,7 @@ export function patchModalOpen(): () => void {
           // as the element to restore focus to after the modal closes.
           (active as HTMLElement).blur();
 
-          // Explicitly move focus to body — guarantees document.activeElement
+          // Explicitly move focus to document.body — guarantees document.activeElement
           // is a standard DOM element that Obsidian's instanceOf can handle.
           // The modal will register this and focus it on close, so no more error.
           document.body.focus();

@@ -91,6 +91,7 @@ export async function collectSubfolderPaths(
   folderPath: string
 ): Promise<string[]> {
   const adapter = getAdapter(plugin);
+  const normalizedFolderPath = normalizePath(folderPath);
   const results: string[] = [];
   const collect = async (dir: string): Promise<void> => {
     try {
@@ -107,6 +108,6 @@ export async function collectSubfolderPaths(
       /* ignore listing errors */
     }
   };
-  await collect(folderPath);
+  await collect(normalizedFolderPath);
   return results;
 }
