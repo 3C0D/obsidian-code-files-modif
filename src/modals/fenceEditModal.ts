@@ -66,7 +66,9 @@ export class FenceEditModal extends Modal {
         this.plugin,
         this.fenceData.langKey,
         () => broadcastOptions(this.plugin),
-        (config) => this.codeEditor?.send('change-editor-config', { config })
+        (config) => this.codeEditor?.send('change-editor-config', { config }),
+        undefined,
+        true
       ).open();
     });
     this.titleEl.appendChild(gearEl);
@@ -98,7 +100,8 @@ export class FenceEditModal extends Modal {
           ext,
           () => broadcastOptions(this.plugin),
           (config) => this.codeEditor?.send('change-editor-config', { config }),
-          () => this.codeEditor?.send('focus', {})
+          () => this.codeEditor?.send('focus', {}),
+          true
         ).open();
       },
       // onOpenThemePicker

@@ -48,7 +48,8 @@ export class EditorSettingsModal extends Modal {
     private extension: string,
     private onSettingsChanged: () => void,
     private onConfigApplied: (config: string) => void,
-    private restoreFocus?: () => void
+    private restoreFocus?: () => void,
+    private savedOnClose = false
   ) {
     super(plugin.app);
   }
@@ -91,26 +92,28 @@ export class EditorSettingsModal extends Modal {
       cls: 'code-files-settings-toggles'
     });
 
-    new Setting(toggleSection)
-      .setName('Auto Save')
-      .setDesc('(Ctrl+S) to save when Off')
-      .addToggle((t) =>
-        t.setValue(this.plugin.settings.autoSave).onChange(async (v) => {
-          this.plugin.settings.autoSave = v;
-          await this.plugin.saveSettings();
-          // Update all open code editor views to show/hide dirty badge
-          // Duck typing avoids the circular import between editorSettingsModal and codeEditorView,
-          // which esbuild resolves in the wrong order and leaves the class undefined at runtime.
-          for (const view of getCodeEditorViews(this.app)) {
-            if (!('updateDirtyBadgeVisibility' in view)) continue;
-            if (v) {
-              void view.save();
+    if (this.savedOnClose) {
+      // In fence edit context, the editor always saves on close
+      new Setting(toggleSection)
+        .setName('Auto Save')
+        .setDesc('Saved on close');
+    } else {
+      new Setting(toggleSection)
+        .setName('Auto Save')
+        .setDesc('(Ctrl+S) to save when Off')
+        .addToggle((t) =>
+          t.setValue(this.plugin.settings.autoSave).onChange(async (v) => {
+            this.plugin.settings.autoSave = v;
+            await this.plugin.saveSettings();
+            for (const view of getCodeEditorViews(this.app)) {
+              if (!('updateDirtyBadgeVisibility' in view)) continue;
+              if (v) void view.save();
+              view.updateDirtyBadgeVisibility();
             }
-            view.updateDirtyBadgeVisibility();
-          }
-          this.onSettingsChanged();
-        })
-      );
+            this.onSettingsChanged();
+          })
+        );
+    }
 
     const isJsTs = ['js', 'ts', 'jsx', 'tsx'].includes(this.extension);
 
