@@ -6,7 +6,8 @@ import {
   revealItems,
   unrevealItems,
   decorateFolders,
-  filterManualDotEntries
+  filterManualDotEntries,
+  setRevealedItemsEntry
 } from '../utils/hiddenFiles/index.ts';
 import {
   addExtension,
@@ -66,11 +67,7 @@ export class RevealHiddenFilesModal extends Modal {
       const current = this.plugin.settings.revealedItems[folderPath] || [];
       const cleaned = current.filter((p) => itemPaths.has(p));
       if (cleaned.length !== current.length) {
-        if (cleaned.length > 0) {
-          this.plugin.settings.revealedItems[folderPath] = cleaned;
-        } else {
-          delete this.plugin.settings.revealedItems[folderPath];
-        }
+        setRevealedItemsEntry(this.plugin, folderPath, cleaned);
         await this.plugin.saveSettings();
         decorateFolders(this.plugin);
       }
@@ -212,7 +209,7 @@ export class RevealHiddenFilesModal extends Modal {
             toHide.length === 0 &&
             toReveal.length === 0
           ) {
-            delete this.plugin.settings.revealedItems[section.folderPath];
+            setRevealedItemsEntry(this.plugin, section.folderPath, []);
             await this.plugin.saveSettings();
             decorateFolders(this.plugin);
           }

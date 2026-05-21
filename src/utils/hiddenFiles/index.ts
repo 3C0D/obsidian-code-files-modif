@@ -2,7 +2,8 @@ export { decorateFolders } from './badge.ts';
 export {
   revealItems,
   unrevealItems,
-  handleTemporaryReveal
+  handleTemporaryReveal,
+  setRevealedItemsEntry
 } from './operations.ts';
 export { patchAdapter, patchRegisterExtensions } from './patches.ts';
 export { scanDotEntries } from './scan.ts';

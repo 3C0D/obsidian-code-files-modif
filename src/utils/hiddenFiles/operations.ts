@@ -12,6 +12,27 @@ import { getActiveExtensions } from '../extensionUtils.ts';
 import { reconcileItem } from './reconcile.ts';
 
 /**
+ * Updates or removes a folder's entry in revealedItems and invalidates the cache.
+ * Does NOT save settings — callers handle persistence when batching multiple updates.
+ *
+ * @param plugin - The plugin instance.
+ * @param folderPath - The key (folder path) under which to store the list, as currently keyed in settings (may be non-normalized only during migration).
+ * @param paths - The list of revealed item paths for that folder. Empty list removes the entry.
+ */
+export function setRevealedItemsEntry(
+  plugin: CodeFilesPlugin,
+  folderPath: string,
+  paths: string[]
+): void {
+  if (paths.length > 0) {
+    plugin.settings.revealedItems[folderPath] = paths;
+  } else {
+    delete plugin.settings.revealedItems[folderPath];
+  }
+  plugin._revealedItemsCache = null;
+}
+
+/**
  * Reveals all non-hidden (non-dot) children of a folder, recursively.
  * Called automatically when a dot-folder is revealed to make its contents visible in the vault.
  * Does not persist to settings — folder persistence is handled by the parent call.
@@ -92,8 +113,8 @@ export async function revealItems(
   // Persist the revealed state in settings (only for manual reveals)
   if (persist) {
     const existing = plugin.settings.revealedItems[folderPath] ?? [];
-    plugin.settings.revealedItems[folderPath] = [...new Set([...existing, ...itemPaths])];
-    plugin._revealedItemsCache = null;
+    const merged = [...new Set([...existing, ...itemPaths])];
+    setRevealedItemsEntry(plugin, folderPath, merged);
     await plugin.saveSettings();
   }
 
@@ -142,14 +163,8 @@ export async function unrevealItems(
   const remaining = (plugin.settings.revealedItems[folderPath] || []).filter(
     (p) => !itemPaths.includes(p)
   );
+  setRevealedItemsEntry(plugin, folderPath, remaining);
 
-  if (remaining.length > 0) {
-    plugin.settings.revealedItems[folderPath] = remaining;
-  } else {
-    delete plugin.settings.revealedItems[folderPath];
-  }
-
-  plugin._revealedItemsCache = null;
   await plugin.saveSettings();
   decorateFolders(plugin);
 }
@@ -255,11 +270,7 @@ export async function updateRevealedItemsOnRename(
     const filtered = original.filter((p) => p !== src);
     if (filtered.length !== original.length) {
       // src was actually in revealedItems
-      if (filtered.length > 0) {
-        plugin.settings.revealedItems[srcFolder] = filtered;
-      } else {
-        delete plugin.settings.revealedItems[srcFolder];
-      }
+      setRevealedItemsEntry(plugin, srcFolder, filtered);
       changed = true;
     }
   }
@@ -267,7 +278,8 @@ export async function updateRevealedItemsOnRename(
   // Add to destination folder
   if (changed) {
     const existing = plugin.settings.revealedItems[destFolder] ?? [];
-    plugin.settings.revealedItems[destFolder] = [...existing, dest];
+    const updated = [...existing, dest];
+    setRevealedItemsEntry(plugin, destFolder, updated);
   }
 
   if (changed) {

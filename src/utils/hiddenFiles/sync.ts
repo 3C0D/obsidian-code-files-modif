@@ -9,7 +9,12 @@ import { getExtension, getRealPathSafe } from '../fileUtils.ts';
 import { getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
-import { revealItems, unrevealItems, revealFolderContents } from './operations.ts';
+import {
+  revealItems,
+  unrevealItems,
+  revealFolderContents,
+  setRevealedItemsEntry
+} from './operations.ts';
 import { reconcileItem } from './reconcile.ts';
 import { unrevealProjectDotfiles } from '../projectUtils.ts';
 import { updateProjectFolderHighlight } from '../explorerUtils.ts';
@@ -18,7 +23,7 @@ import { updateProjectFolderHighlight } from '../explorerUtils.ts';
 const yieldToEventLoop = (): Promise<void> => new Promise<void>((r) => setTimeout(r, 0));
 
 /**
- * Handles newly registered extensions by cleaning revealedItemsand auto-revealing
+ * Handles newly registered extensions by cleaning revealedItems and auto-revealing
  * dotfiles matching the new extensions.
  *
  * @param plugin - The plugin instance.
@@ -42,12 +47,7 @@ export async function syncAutoRevealedDotfiles(
     });
     if (cleaned.length !== paths.length) {
       changed = true;
-      if (cleaned.length > 0) {
-        plugin.settings.revealedItems[folderPath] = cleaned;
-      } else {
-        delete plugin.settings.revealedItems[folderPath];
-      }
-      plugin._revealedItemsCache = null;
+      setRevealedItemsEntry(plugin, folderPath, cleaned);
     }
   }
   if (changed) await plugin.saveSettings();
@@ -169,11 +169,8 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
     // Update settings if any path was normalized or a stale entry was removed
     if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
       changed = true;
-      delete plugin.settings.revealedItems[folderPath];
-      if (valid.length > 0) {
-        plugin.settings.revealedItems[normFolderPath] = valid;
-      }
-      plugin._revealedItemsCache = null;
+      setRevealedItemsEntry(plugin, folderPath, []);
+      setRevealedItemsEntry(plugin, normFolderPath, valid);
     }
   }
 
@@ -199,12 +196,7 @@ export async function handleFileDeletion(
     const filtered = paths.filter((p) => p !== itemPath && !p.startsWith(itemPath + '/'));
     if (filtered.length !== paths.length) {
       changed = true;
-      if (filtered.length > 0) {
-        plugin.settings.revealedItems[folderPath] = filtered;
-      } else {
-        delete plugin.settings.revealedItems[folderPath];
-      }
-      plugin._revealedItemsCache = null;
+      setRevealedItemsEntry(plugin, folderPath, filtered);
     }
   }
 
