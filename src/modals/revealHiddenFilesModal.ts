@@ -5,7 +5,8 @@ import {
   cleanStaleRevealedFiles,
   revealItems,
   unrevealItems,
-  decorateFolders
+  decorateFolders,
+  filterManualDotEntries
 } from '../utils/hiddenFiles/index.ts';
 import {
   addExtension,
@@ -43,10 +44,6 @@ export class RevealHiddenFilesModal extends Modal {
 
     this.hasSubfolders = allFolderPaths.length > 1;
 
-    const activeExts = this.plugin.settings.isAutoRevealRegisteredDotfile
-      ? getActiveExtensions(this.plugin.settings)
-      : null;
-
     // Always fetch registered extensions to pre-check the registration column on re-open
     const registeredExts = getActiveExtensions(this.plugin.settings);
 
@@ -59,13 +56,7 @@ export class RevealHiddenFilesModal extends Modal {
 
       const allItems = await scanDotEntries(this.plugin, folderPath);
 
-      const items = activeExts
-        ? allItems.filter((item) => {
-            if (item.isFolder) return true;
-            const ext = getExtension(item.name);
-            return !ext || !activeExts.includes(ext);
-          })
-        : allItems;
+      const items = filterManualDotEntries(allItems, this.plugin);
 
       if (items.length === 0) continue;
 

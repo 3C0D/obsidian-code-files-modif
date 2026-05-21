@@ -2,20 +2,11 @@ export { decorateFolders } from './badge.ts';
 export {
   revealItems,
   unrevealItems,
-  handleTemporaryReveal,
-  cleanupTemporaryReveal
+  handleTemporaryReveal
 } from './operations.ts';
 export { patchAdapter, patchRegisterExtensions } from './patches.ts';
-export { reconcileItem } from './reconcile.ts';
 export { scanDotEntries } from './scan.ts';
-export { getAdapter, _bypassPatch, setBypassPatch } from './state.ts';
-export {
-  syncAutoRevealedDotfiles,
-  revealRegisteredDotfiles,
-  restoreRevealedFiles,
-  cleanStaleRevealedFiles,
-  hideAutoRevealedDotfiles,
-  unrevealExcludedFolders,
-  registerHiddenFilesDeleteHandler
-} from './sync.ts';
+export { getAdapter } from './state.ts';
+export { cleanStaleRevealedFiles } from './sync.ts';
+export { filterManualDotEntries } from './dotfileFilters.ts';
 export { isSymlink } from './symlink.ts';

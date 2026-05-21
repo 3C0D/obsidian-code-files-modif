@@ -28,9 +28,7 @@ import {
   revealProjectDotfiles,
   unrevealProjectDotfiles
 } from '../utils/projectUtils.ts';
-import { scanDotEntries } from '../utils/hiddenFiles/index.ts';
-import { getExtension } from '../utils/fileUtils.ts';
-import { getActiveExtensions } from '../utils/extensionUtils.ts';
+import { scanDotEntries, filterManualDotEntries } from '../utils/hiddenFiles/index.ts';
 
 /** Unified editor settings modal — toggles for global editor options + Monaco JSON editor for formatter config.
  *  Opened via the gear icon in the tab header of code-editor views. */
@@ -229,18 +227,7 @@ export class EditorSettingsModal extends Modal {
       }
 
       const rootDotEntries = await scanDotEntries(this.plugin, this.plugin.settings.projectRootFolder);
-      const activeExts = this.plugin.settings.isAutoRevealRegisteredDotfile
-        ? getActiveExtensions(this.plugin.settings)
-        : null;
-      const manualDotEntries = activeExts
-        ? rootDotEntries.filter((item) => {
-            if (item.isFolder) return true;
-            const ext = getExtension(item.name);
-            return !ext || !activeExts.includes(ext);
-          })
-        : rootDotEntries;
-
-      if (manualDotEntries.length > 0) {
+      if (filterManualDotEntries(rootDotEntries, this.plugin).length > 0) {
         new Setting(toggleSection)
           .setName('Show Hidden Files')
           .setDesc('Reveal dotfiles and dot-folders in the project root and subfolders')
