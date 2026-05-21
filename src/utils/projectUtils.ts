@@ -6,7 +6,8 @@ import { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { scanDotEntries } from './hiddenFiles/index.ts';
 import { revealItems, unrevealItems } from './hiddenFiles/index.ts';
-import { collectSubfolderPaths } from './fileUtils.ts';
+import { collectSubfolderPaths, getExtension } from './fileUtils.ts';
+import { getActiveExtensions } from './extensionUtils.ts';
 
 /**
  * Reads all TypeScript/JavaScript files from the project root folder.
@@ -80,10 +81,22 @@ export async function readTsConfig(
 export async function projectRootHasDotfiles(plugin: CodeFilesPlugin): Promise<boolean> {
   const root = plugin.settings.projectRootFolder;
   if (!root) return false;
+
+  const activeExts = plugin.settings.isAutoRevealRegisteredDotfile
+    ? getActiveExtensions(plugin.settings)
+    : null;
+
   const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
   for (const folder of allFolders) {
     const items = await scanDotEntries(plugin, folder);
-    if (items.length > 0) return true;
+    const manual = activeExts
+      ? items.filter((item) => {
+          if (item.isFolder) return true;
+          const ext = getExtension(item.name);
+          return !ext || !activeExts.includes(ext);
+        })
+      : items;
+    if (manual.length > 0) return true;
   }
   return false;
 }
@@ -124,14 +137,27 @@ export async function unrevealProjectDotfiles(
 ): Promise<void> {
   const root = rootOverride ?? plugin.settings.projectRootFolder;
   if (!root) return;
+
+  // Auto-managed files (registered extensions + isAutoRevealRegisteredDotfile)
+  // are kept visible by Obsidian itself — never unreveal them
+  const activeExts = plugin.settings.isAutoRevealRegisteredDotfile
+    ? getActiveExtensions(plugin.settings)
+    : null;
+
   const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
   for (const folder of allFolders) {
     const items = await scanDotEntries(plugin, folder);
     if (items.length === 0) continue;
-    await unrevealItems(
-      plugin,
-      folder,
-      items.map((i) => i.path)
-    );
+
+    const toUnreveal = activeExts
+      ? items.filter((item) => {
+          if (item.isFolder) return true;
+          const ext = getExtension(item.name);
+          return !ext || !activeExts.includes(ext);
+        })
+      : items;
+
+    if (toUnreveal.length === 0) continue;
+    await unrevealItems(plugin, folder, toUnreveal.map((i) => i.path));
   }
 }
