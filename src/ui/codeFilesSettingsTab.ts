@@ -399,10 +399,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
             this.plugin.settings.isAutoRevealRegisteredDotfile = value;
             await this.plugin.saveSettings();
             if (value) {
-              await syncAutoRevealedDotfiles(
-                this.plugin,
-                getActiveExtensions(this.plugin.settings)
-              );
+              await syncAutoRevealedDotfiles(this.plugin);
             } else {
               await hideAutoRevealedDotfiles(this.plugin);
             }

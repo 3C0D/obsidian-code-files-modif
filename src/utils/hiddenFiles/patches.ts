@@ -165,7 +165,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
         const adapter = getAdapter(plugin);
         for (const file of plugin.app.vault.getFiles()) {
           if (!extensions.includes(getExtension(file.name))) continue;
-          if (file.extension) continue; // skip files with a regular extension, dotfiles have none
+          if (!file.name.startsWith('.')) continue; // only process dotfiles
           if (revealedPaths.has(file.path)) continue;
           const orig =
             plugin._origReconcileDeletion ?? adapter.reconcileDeletion.bind(adapter);
@@ -182,7 +182,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
       return function (this: Plugin, exts: string[], vType: string) {
         const result = next.call(this, exts, vType);
         if (plugin.app.workspace.layoutReady) {
-          void syncAutoRevealedDotfiles(plugin, exts);
+          void syncAutoRevealedDotfiles(plugin);
         }
         // Update badges after registering extensions
         rescanExplorerBadges(plugin);

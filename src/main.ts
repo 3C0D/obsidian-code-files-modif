@@ -4,7 +4,7 @@ import { CodeFilesSettingsTab } from './ui/codeFilesSettingsTab.ts';
 import type { MyPluginSettings } from './types/index.ts';
 import { viewType } from './types/index.ts';
 
-import { initExtensions, getActiveExtensions } from './utils/extensionUtils.ts';
+import { initExtensions } from './utils/extensionUtils.ts';
 import { loadSettings, saveSettings } from './utils/settingsUtils.ts';
 import {
   ensureDetectAllExtensions,
@@ -94,9 +94,7 @@ export default class CodeFilesPlugin extends Plugin {
 
       // Re-trigger auto-reveal for all currently registered extensions.
       // registerExtensions is called before layoutReady, so the around patch skips it.
-      if (this.settings.isAutoRevealRegisteredDotfile) {
-        await syncAutoRevealedDotfiles(this, getActiveExtensions(this.settings));
-      }
+      await syncAutoRevealedDotfiles(this);
       decorateFolders(this);
     });
 

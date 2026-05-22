@@ -35,18 +35,17 @@ async function forEachVaultFolder(
 
 /**
  * Handles newly registered extensions by cleaning revealedItems and auto-revealing
- * dotfiles matching the new extensions.
+ * dotfiles matching the new extensions. Uses active extensions from plugin settings.
  *
  * @param plugin - The plugin instance.
- * @param extensions - The extensions to sync.
  * @returns A Promise that resolves when the operation is complete.
  */
 export async function syncAutoRevealedDotfiles(
-  plugin: CodeFilesPlugin,
-  extensions: string[]
+  plugin: CodeFilesPlugin
 ): Promise<void> {
   if (!plugin.settings.isAutoRevealRegisteredDotfile) return;
 
+  const extensions = getActiveExtensions(plugin.settings);
   const extSet = new Set(extensions);
 
   // For each folder in revealedItems, remove entries now auto-managed
@@ -54,7 +53,7 @@ export async function syncAutoRevealedDotfiles(
   for (const [folderPath, paths] of Object.entries(plugin.settings.revealedItems)) {
     const cleaned = paths.filter((p) => {
       const ext = getExtension(p.split('/').pop()!);
-      return !ext || !extSet.has(ext); // keep extension-less files (LICENSE, README) — not extension-managed
+      return ext && !extSet.has(ext); // keep not extension-managed
     });
     if (cleaned.length !== paths.length) {
       changed = true;
@@ -63,6 +62,7 @@ export async function syncAutoRevealedDotfiles(
   }
   if (changed) await plugin.saveSettings();
 
+  // Scan the entire vault and auto-reveal dotfiles.
   await forEachVaultFolder(plugin, async (folderPath) => {
     const items = await scanDotEntries(plugin, folderPath);
     const toReveal = items
@@ -78,36 +78,6 @@ export async function syncAutoRevealedDotfiles(
   });
 
   decorateFolders(plugin);
-}
-
-/**
- * Automatically reveals dotfiles whose extensions are registered with Code Files.
- * Scans the entire vault for hidden files and reveals those matching active extensions.
- * Called on plugin startup after restoreRevealedFiles.
- * @param plugin - The plugin instance.
- * @returns A Promise that resolves when the operation is complete.
- */
-export async function revealRegisteredDotfiles(plugin: CodeFilesPlugin): Promise<void> {
-  if (!plugin.settings.isAutoRevealRegisteredDotfile) return;
-
-  const activeExts = getActiveExtensions(plugin.settings);
-
-  await forEachVaultFolder(plugin, async (folderPath) => {
-    const items = await scanDotEntries(plugin, folderPath);
-    const toReveal = items
-      .filter((item) => {
-        if (item.isFolder) return false;
-        const ext = getExtension(item.name);
-        if (!ext || !activeExts.includes(ext)) return false;
-        const revealed = plugin.settings.revealedItems[folderPath] || [];
-        return !revealed.includes(item.path);
-      })
-      .map((item) => item.path);
-
-    if (toReveal.length > 0) {
-      await revealItems(plugin, folderPath, toReveal, false);
-    }
-  });
 }
 
 /**
