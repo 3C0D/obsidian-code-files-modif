@@ -13,7 +13,7 @@ import { getActiveExtensions } from '../extensionUtils.ts';
  * its extension is registered AND isAutoRevealRegisteredDotfile is enabled.
  * Auto-managed dotfiles are always visible and must be excluded from manual reveal/hide flows.
  */
-export function isAutoManagedDotfile(name: string, plugin: CodeFilesPlugin): boolean {
+export function isRegisteredDotfile(name: string, plugin: CodeFilesPlugin): boolean {
   if (!plugin.settings.isAutoRevealRegisteredDotfile) return false;
   const ext = getExtension(name);
   if (!ext) return false;
@@ -28,5 +28,5 @@ export function filterManualDotEntries<T extends { name: string; isFolder: boole
   items: T[],
   plugin: CodeFilesPlugin
 ): T[] {
-  return items.filter((item) => item.isFolder || !isAutoManagedDotfile(item.name, plugin));
+  return items.filter((item) => item.isFolder || !isRegisteredDotfile(item.name, plugin));
 }

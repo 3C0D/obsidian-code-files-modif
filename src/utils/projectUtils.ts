@@ -6,9 +6,10 @@
  *   root is defined or cleared.
  */
 import type CodeFilesPlugin from '../main.ts';
-import { scanDotEntries, filterManualDotEntries } from './hiddenFiles/index.ts';
-import { revealItems, unrevealItems } from './hiddenFiles/index.ts';
+import type { HiddenItem } from '../types/index.ts';
+import { scanDotEntries, filterManualDotEntries, revealItems, unrevealItems } from './hiddenFiles/index.ts';
 import { collectSubfolderPaths } from './fileUtils.ts';
+import { parseEditorConfig } from './settingsUtils.ts';
 
 /**
  * Reads all TypeScript/JavaScript files from the project root folder.
@@ -66,9 +67,10 @@ export async function readTsConfig(
   try {
     const raw = await plugin.app.vault.cachedRead(file);
     // Strip // line comments and /* block comments */ for JSONC compatibility
-    const stripped = raw.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-    const parsed = JSON.parse(stripped);
-    return (parsed.compilerOptions as Record<string, unknown>) ?? null;
+    const parsed = parseEditorConfig(raw) as {
+      compilerOptions?: Record<string, unknown>;
+    };
+    return parsed.compilerOptions ?? null;
   } catch {
     return null;
   }
@@ -83,12 +85,37 @@ export async function projectRootHasDotfiles(plugin: CodeFilesPlugin): Promise<b
   const root = plugin.settings.projectRootFolder;
   if (!root) return false;
 
+  let found = false;
+  await forEachDotFolder(plugin, root, async (_folder, items) => {
+    if (filterManualDotEntries(items, plugin).length > 0) {
+      found = true;
+      return false; // stop early
+    }
+  });
+  return found;
+}
+
+/**
+ * Iterates over the project root and every subfolder.
+ * For each folder that contains at least one dot entry, invokes the callback
+ * with the folder path and the list of dot entries.
+ *
+ * If the callback returns `false`, iteration stops immediately (short-circuit).
+ * This is an internal implementation detail and is not exported.
+ */
+async function forEachDotFolder(
+  plugin: CodeFilesPlugin,
+  root: string,
+  callback: (folder: string, items: HiddenItem[]) => Promise<boolean | void>
+): Promise<void> {
   const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
   for (const folder of allFolders) {
     const items = await scanDotEntries(plugin, folder);
-    if (filterManualDotEntries(items, plugin).length > 0) return true;
+    if (items.length === 0) continue;
+
+    const result = await callback(folder, items);
+    if (result === false) return;
   }
-  return false;
 }
 
 /**
@@ -103,16 +130,10 @@ export async function revealProjectDotfiles(
 ): Promise<void> {
   const root = rootOverride ?? plugin.settings.projectRootFolder;
   if (!root) return;
-  const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
-  for (const folder of allFolders) {
-    const items = await scanDotEntries(plugin, folder);
-    if (items.length === 0) continue;
-    await revealItems(
-      plugin,
-      folder,
-      items.map((i) => i.path)
-    );
-  }
+
+  await forEachDotFolder(plugin, root, (folder, items) =>
+    revealItems(plugin, folder, items.map((i) => i.path))
+  );
 }
 
 /**
@@ -130,13 +151,9 @@ export async function unrevealProjectDotfiles(
 
   // Auto-managed files (registered extensions + isAutoRevealRegisteredDotfile)
   // are kept visible by Obsidian itself — never unreveal them
-  const allFolders = [root, ...(await collectSubfolderPaths(plugin, root))];
-  for (const folder of allFolders) {
-    const items = await scanDotEntries(plugin, folder);
-    if (items.length === 0) continue;
-
+  await forEachDotFolder(plugin, root, (folder, items) => {
     const toUnreveal = filterManualDotEntries(items, plugin);
-    if (toUnreveal.length === 0) continue;
-    await unrevealItems(plugin, folder, toUnreveal.map((i) => i.path));
-  }
+    if (toUnreveal.length === 0) return Promise.resolve();
+    return unrevealItems(plugin, folder, toUnreveal.map((i) => i.path));
+  });
 }

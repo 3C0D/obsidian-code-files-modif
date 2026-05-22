@@ -2,7 +2,6 @@
  * Visual highlighting for the project root folder in the file explorer.
  * Adds/removes a CSS class to the folder title element to show which folder
  * is set as the project root for TypeScript/JavaScript cross-file navigation.
- * The highlight color is customizable via plugin settings.
  * Also provides `revealFolderInExplorer` to scroll the explorer to a folder
  * (used after reveal/hide and project-root changes to keep UI in sync).
  */
@@ -25,8 +24,6 @@ const applyBadgeLogic = (
 ): void => {
   if (!tagEl) return;
 
-  tagEl.classList.remove('code-files-unregistered-badge');
-
   if (!file.extension) {
     const ext = getExtension(file.name);
     const activeExts = getActiveExtensions(plugin.settings);
@@ -35,6 +32,8 @@ const applyBadgeLogic = (
     }
     return;
   }
+
+  tagEl.classList.remove('code-files-unregistered-badge');
 
   if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
     tagEl.classList.add('code-files-unregistered-badge');
@@ -61,8 +60,8 @@ const applyBadgeToEl = (el: HTMLElement, plugin: CodeFilesPlugin): void => {
   const path = el.dataset.path;
   if (!path) return;
 
-  const file = plugin.app.vault.getAbstractFileByPath(path);
-  if (!(file instanceof TFile)) return;
+  const file = plugin.app.vault.getFileByPath(path);
+  if (!file) return;
 
   const tagEl = el.querySelector<HTMLElement>('.nav-file-tag');
   applyBadgeLogic(file, tagEl, plugin);
@@ -268,7 +267,7 @@ export function revealFolderInExplorer(
 
     if (!folder) return;
 
-    const explorerLeaf = plugin.app.workspace.getLeavesOfType('file-explorer')[0];
-    (explorerLeaf?.view as FileExplorerView | undefined)?.revealInFolder(folder);
+    const view = getFileExplorerView(plugin);
+    if (view) view.revealInFolder(folder);
   }, 100);
 }

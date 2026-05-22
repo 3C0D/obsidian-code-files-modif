@@ -64,9 +64,7 @@ export function broadcastBrightness(plugin: CodeFilesPlugin): void {
 
  */
 export function broadcastEditorConfig(plugin: CodeFilesPlugin, ext: string): void {
-  const views = getCodeEditorViews(plugin.app);
-
-  for (const view of views) {
+  for (const view of getCodeEditorViews(plugin.app)) {
     if (!view.file) continue;
 
     const fileExt = getExtension(view.file.name);
@@ -148,7 +146,7 @@ export function broadcastHotkeys(plugin: CodeFilesPlugin): void {
     { modifiers: ['Mod'], key: 'Delete' },
     plugin.settings.deleteFileHotkeyOverride
   );
-  // Console hotkey is direct (no Obsidian fallback)
+  // Console hotkey is direct (no Obsidian hotkey)
   const finalConsoleHotkey = parseHotkeyOverride(plugin.settings.consoleHotkey) ?? {
     modifiers: ['Mod'],
     key: 'j'

@@ -107,7 +107,7 @@ interface MyPluginSettings {
 
 ## Dotfile Filtering and State Unification
 
-Extracted dedicated helpers in `src/utils/hiddenFiles/dotfileFilters.ts` (`isAutoManagedDotfile`, `filterManualDotEntries`) to exclude auto-revealed dotfiles (those with registered extensions when the auto-reveal toggle is on) from all manual reveal/hide operations, badge counting, and project-root scans. This ensures auto-managed items are never persisted in `revealedItems` or accidentally hidden.
+Extracted dedicated helpers in `src/utils/hiddenFiles/dotfileFilters.ts` (`isRegisteredDotfile`, `filterManualDotEntries`) to exclude auto-revealed dotfiles (those with registered extensions when the auto-reveal toggle is on) from all manual reveal/hide operations, badge counting, and project-root scans. This ensures auto-managed items are never persisted in `revealedItems` or accidentally hidden.
 
 A new internal helper `forEachVaultFolder` centralizes vault-wide iteration with yield-to-event-loop every 30 folders.
 

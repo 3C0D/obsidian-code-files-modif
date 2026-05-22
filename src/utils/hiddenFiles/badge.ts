@@ -6,7 +6,7 @@ import { setIcon } from 'obsidian';
 import { type FolderTreeItem } from 'obsidian-typings';
 import type CodeFilesPlugin from '../../main.ts';
 import { getFileExplorerView } from '../explorerUtils.ts';
-import { isAutoManagedDotfile } from './dotfileFilters.ts';
+import { isRegisteredDotfile } from './dotfileFilters.ts';
 
 /**
  * Adds visual badges (eye icon) to folders in the file explorer that contain revealed hidden files.
@@ -21,10 +21,12 @@ export function decorateFolders(plugin: CodeFilesPlugin): void {
   // Build set of folders that have at least one manually-revealed (non-auto-managed) file
   const withRevealed = new Set(
     Object.entries(plugin.settings.revealedItems)
-      .filter(([, paths]) => paths.some((p) => {
-        const name = p.split('/').pop() ?? '';
-        return !isAutoManagedDotfile(name, plugin);
-      }))
+      .filter(([, paths]) =>
+        paths.some((p) => {
+          const name = p.split('/').pop() ?? '';
+          return !isRegisteredDotfile(name, plugin);
+        })
+      )
       .map(([fp]) => fp)
   );
 

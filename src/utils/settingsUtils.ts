@@ -33,9 +33,9 @@ import { staticMap } from '../utils/getLanguage.ts';
 export function parseEditorConfig(str: string): unknown {
   return JSON.parse(
     str
-      .replace(/\/\/[^\n]*/g, '')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/,(\s*[}\]])/g, '$1')
+      .replace(/\/\/[^\n]*/g, '') // Single-line comments
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Multi-line block comments
+      .replace(/,(\s*[}\]])/g, '$1') // Trailing commas before closing brackets/braces
   );
 }
 
