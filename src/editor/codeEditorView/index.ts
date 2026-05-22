@@ -115,7 +115,7 @@ export class CodeEditorView extends TextFileView {
     const configDir = this.plugin.app.vault.configDir;
     if (
       this.file &&
-      (!this.file.extension || this.file.path.startsWith(`${configDir}/`))
+      (this.file.name.startsWith('.') || this.file.path.startsWith(`${configDir}/`))
     ) {
       state.reveal = true;
     }

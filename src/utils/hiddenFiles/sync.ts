@@ -4,7 +4,7 @@
  */
 import { normalizePath, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getAdapter } from './state.ts';
+import { getAdapter, getRevealedItemsCache } from './state.ts';
 import { getRealPathSafe } from '../fileUtils.ts';
 import { getExtension, getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
@@ -53,7 +53,7 @@ export async function syncAutoRevealedDotfiles(
   let changed = false;
   for (const [folderPath, paths] of Object.entries(plugin.settings.revealedItems)) {
     const cleaned = paths.filter((p) => {
-      const ext = getExtension(p.split('/').pop() || '');
+      const ext = getExtension(p.split('/').pop()!);
       return !ext || !extSet.has(ext); // keep extension-less files (LICENSE, README) — not extension-managed
     });
     if (cleaned.length !== paths.length) {
@@ -169,7 +169,9 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
     // Update settings if any path was normalized or a stale entry was removed
     if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
       changed = true;
-      setRevealedItemsEntry(plugin, folderPath, []);
+      if (folderPath !== normFolderPath) {
+        setRevealedItemsEntry(plugin, folderPath, []);
+      }
       setRevealedItemsEntry(plugin, normFolderPath, valid);
     }
   }
@@ -237,18 +239,12 @@ export function registerHiddenFilesDeleteHandler(plugin: CodeFilesPlugin): void 
  */
 export async function hideAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
   const activeExts = getActiveExtensions(plugin.settings);
-  if (!plugin._revealedItemsCache) {
-    plugin._revealedItemsCache = new Set(
-      Object.values(plugin.settings.revealedItems).flat()
-    );
-  }
-  const revealedPaths = plugin._revealedItemsCache;
+  const revealedPaths = getRevealedItemsCache(plugin);
 
   const toHide = new Map<string, string[]>();
 
   for (const file of plugin.app.vault.getFiles()) {
-    // dotfiles have extension ""
-    if (file.extension) continue; // only dotfiles
+    if (!file.name.startsWith('.')) continue; // only dotfiles
     const ext = getExtension(file.name);
     if (!ext || !activeExts.includes(ext)) continue;
     if (revealedPaths.has(file.path)) continue;
