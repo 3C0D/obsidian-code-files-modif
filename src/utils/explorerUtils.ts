@@ -8,8 +8,7 @@
 import type CodeFilesPlugin from '../main.ts';
 import type { FileExplorerView, FileTreeItem, FolderTreeItem } from 'obsidian-typings';
 import { TFile, TFolder } from 'obsidian';
-import { getActiveExtensions } from './extensionUtils.ts';
-import { getExtension } from './fileUtils.ts';
+import { getActiveExtensions, getExtension } from './extensionUtils.ts';
 
 const PROJECT_ROOT_CLASS = 'code-files-project-root-folder';
 

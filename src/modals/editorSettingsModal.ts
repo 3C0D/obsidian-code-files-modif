@@ -9,7 +9,7 @@ import type CodeFilesPlugin from '../main.ts';
 import { DEFAULT_EDITOR_CONFIG } from '../types/index.ts';
 import type { CodeEditorHandle } from '../types/index.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
-import { getCodeEditorViews } from '../utils/extensionUtils.ts';
+import { getCodeEditorViews } from '../editor/codeEditorView/index.ts';
 import {
   buildMergedConfig,
   saveEditorConfig,

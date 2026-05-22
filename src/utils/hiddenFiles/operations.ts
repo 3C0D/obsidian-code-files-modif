@@ -7,8 +7,8 @@ import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, setBypassPatch } from './state.ts';
 import { decorateFolders } from './badge.ts';
 import { viewType, type DataAdapterWithInternal } from '../../types/index.ts';
-import { getExtension, getRealPathSafe } from '../fileUtils.ts';
-import { getActiveExtensions } from '../extensionUtils.ts';
+import { getRealPathSafe } from '../fileUtils.ts';
+import { getExtension, getActiveExtensions } from '../extensionUtils.ts';
 import { reconcileItem } from './reconcile.ts';
 
 /**

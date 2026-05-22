@@ -9,9 +9,9 @@
  */
 import { Notice } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getCodeEditorViews } from './extensionUtils.ts';
+import { getCodeEditorViews } from '../editor/codeEditorView/index.ts';
 import { buildMergedConfig } from './settingsUtils.ts';
-import { getExtension } from './fileUtils.ts';
+import { getExtension } from './extensionUtils.ts';
 import { staticMap } from './getLanguage.ts';
 import { readProjectFiles, readTsConfig } from './projectUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride, formatHotkey } from './hotkeyUtils.ts';

@@ -1,6 +1,6 @@
 import type { TFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
-import { getExtension } from '../../utils/fileUtils.ts';
+import { getExtension } from '../../utils/extensionUtils.ts';
 
 /**
  * Updates the header with the file extension badge and creates a dirty badge when autoSave is disabled.

@@ -12,9 +12,10 @@ import {
 import {
   addExtension,
   getActiveExtensions,
-  reregisterExtensions
+  reregisterExtensions,
+  getExtension
 } from '../utils/extensionUtils.ts';
-import { getExtension, collectSubfolderPaths } from '../utils/fileUtils.ts';
+import { collectSubfolderPaths } from '../utils/fileUtils.ts';
 import { revealFolderInExplorer } from '../utils/explorerUtils.ts';
 import type { FolderSection } from '../types/index.ts';
 

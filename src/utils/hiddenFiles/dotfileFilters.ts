@@ -5,8 +5,7 @@
  */
 
 import type CodeFilesPlugin from '../../main.ts';
-import { getExtension } from '../fileUtils.ts';
-import { getActiveExtensions } from '../extensionUtils.ts';
+import { getExtension, getActiveExtensions } from '../extensionUtils.ts';
 
 /**
  * Returns true if a dotfile is auto-managed by Code Files:

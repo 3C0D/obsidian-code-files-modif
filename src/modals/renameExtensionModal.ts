@@ -11,11 +11,11 @@ import { confirmation } from './confirmationModal.ts';
 import {
   addExtension,
   registerExtension,
-  syncRegisteredExts
+  syncRegisteredExts,
+  getExtension,
+  getActiveExtensions
 } from '../utils/extensionUtils.ts';
-import { getExtension } from '../utils/fileUtils.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
-import { getActiveExtensions } from '../utils/extensionUtils.ts';
 import { revealItems } from '../utils/hiddenFiles/operations.ts';
 import { viewType } from '../types/variables.ts';
 

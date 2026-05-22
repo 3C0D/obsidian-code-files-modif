@@ -10,7 +10,8 @@ import { around } from 'monkey-around';
 import { openInMonacoLeaf } from '../codeEditorView/editorOpeners.ts';
 import { Platform } from 'obsidian';
 import { handleConsoleMessage, cleanupConsole, initConsole } from './consoleHandler.ts';
-import { getExtension, getVaultBasePath } from '../../utils/fileUtils.ts';
+import { getVaultBasePath } from '../../utils/fileUtils.ts';
+import { getExtension } from '../../utils/extensionUtils.ts';
 
 // Desktop-only imports for drag-and-drop functionality
 let webUtils: { getPathForFile(file: File): string } | undefined;

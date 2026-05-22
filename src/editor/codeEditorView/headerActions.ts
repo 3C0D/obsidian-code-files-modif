@@ -9,9 +9,8 @@ import {
   isSnippetEnabled,
   registerSnippetChangeHandler
 } from '../../utils/snippetUtils.ts';
-import { getActiveExtensions } from '../../utils/extensionUtils.ts';
+import { getActiveExtensions, getExtension } from '../../utils/extensionUtils.ts';
 import { DIFF_BUTTON_DISPLAY_DURATION } from '../../types/index.ts';
-import { getExtension } from '../../utils/fileUtils.ts';
 
 /**
  * Removes all header actions from the view.

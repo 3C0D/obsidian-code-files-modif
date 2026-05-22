@@ -21,7 +21,7 @@ import { around } from 'monkey-around';
 import { WorkspaceLeaf, type OpenViewState, type TFile } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { viewType } from '../types/index.ts';
-import { getExtension } from './fileUtils.ts';
+import { getExtension } from './extensionUtils.ts';
 import {
   openInMonacoLeaf,
   findRootMonacoLeaf

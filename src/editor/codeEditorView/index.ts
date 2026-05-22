@@ -26,7 +26,7 @@ import {
   openRenameExtension
 } from './editorModals.ts';
 import { registerThemeChangeHandler } from '../../utils/themeUtils.ts';
-import { getExtension } from '../../utils/fileUtils.ts';
+import { getExtension } from '../../utils/extensionUtils.ts';
 import { handleTemporaryReveal } from '../../utils/hiddenFiles/index.ts';
 import { cleanupTemporaryReveal } from '../../utils/hiddenFiles/operations.ts';
 import { updateExtBadge, updateDirtyBadgeVisibility, setDirty } from './headerBadges.ts';
@@ -364,12 +364,14 @@ export class CodeEditorView extends TextFileView {
    * @param data The file content to sync to the editor.
    * @param _clear Whether to clear the editor before setting the content. (Unused here)
    */
-  setViewData(data: string, _clear: boolean): void {
-    this.data = data;
-    if (this.codeEditor) {
-      if (this.codeEditor.getValue() !== data) {
-        this.codeEditor.setValue(data);
-      }
-    }
-  }
-}
+   setViewData(data: string, _clear: boolean): void {
+     this.data = data;
+     if (this.codeEditor) {
+       if (this.codeEditor.getValue() !== data) {
+         this.codeEditor.setValue(data);
+       }
+     }
+   }
+ }
+
+export { getCodeEditorViews } from './utils.ts';

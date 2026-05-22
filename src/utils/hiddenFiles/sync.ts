@@ -5,8 +5,8 @@
 import { normalizePath, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter } from './state.ts';
-import { getExtension, getRealPathSafe } from '../fileUtils.ts';
-import { getActiveExtensions } from '../extensionUtils.ts';
+import { getRealPathSafe } from '../fileUtils.ts';
+import { getExtension, getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
 import {

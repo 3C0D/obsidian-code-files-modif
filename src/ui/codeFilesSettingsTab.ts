@@ -14,9 +14,9 @@ import { broadcastEditorConfig } from '../utils/broadcast.ts';
 import {
   getActiveExtensions,
   reregisterExtensions,
-  getAllMonacoExtensions,
-  getCodeEditorViews
+  getAllMonacoExtensions
 } from '../utils/extensionUtils.ts';
+import { getCodeEditorViews } from '../editor/codeEditorView/index.ts';
 import { saveEditorConfig, getExtensionConfigTemplate } from '../utils/settingsUtils.ts';
 import { isFormattable } from '../utils/getLanguage.ts';
 import { getAvailableShells } from '../utils/shellUtils.ts';

@@ -16,7 +16,7 @@ import { resolveAssetUrls } from './assetUrls.ts';
 import { buildInitParams } from './buildInitParams.ts';
 import { buildBlobUrl } from './buildBlobUrl.ts';
 import { loadProjectFiles } from './projectLoader.ts';
-import { getExtension } from '../../utils/fileUtils.ts';
+import { getExtension } from '../../utils/extensionUtils.ts';
 import { Notice } from 'obsidian';
 
 /**

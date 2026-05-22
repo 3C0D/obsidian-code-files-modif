@@ -25,9 +25,9 @@ import {
   registerExtension,
   unregisterExtension,
   syncRegisteredExts,
-  getActiveExtensions
+  getActiveExtensions,
+  getExtension
 } from '../utils/extensionUtils.ts';
-import { getExtension } from '../utils/fileUtils.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 import { CodeEditorView } from '../editor/codeEditorView/index.ts';
 

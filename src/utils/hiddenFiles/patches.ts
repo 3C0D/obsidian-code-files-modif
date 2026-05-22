@@ -12,7 +12,8 @@ import {
   setBypassPatch,
   getRevealedItemsCache
 } from './state.ts';
-import { getExtension, getRealPathSafe } from '../fileUtils.ts';
+import { getRealPathSafe } from '../fileUtils.ts';
+import { getExtension } from '../extensionUtils.ts';
 import { syncAutoRevealedDotfiles, registerHiddenFilesDeleteHandler } from './sync.ts';
 import { rescanExplorerBadges, updateProjectFolderHighlight } from '../explorerUtils.ts';
 import { updateRevealedItemsOnRename } from './operations.ts';

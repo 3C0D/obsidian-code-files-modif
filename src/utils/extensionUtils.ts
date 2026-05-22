@@ -10,7 +10,18 @@ import { viewType } from '../types/index.ts';
 import { staticMap } from './getLanguage.ts';
 import type { CodeEditorView } from '../editor/codeEditorView/index.ts';
 import type CodeFilesPlugin from '../main.ts';
-import { getExtension } from './fileUtils.ts';
+
+/**
+ * Extracts the extension from a filename.
+ * Handles dotfiles (.env → "env") and normal files (myfile.py → "py").
+ * Returns empty string for files without extension that don't start with a dot (like LICENSE, README).
+ *
+ * @param filename - The filename to extract the extension from
+ * @returns The extension of the file, without the leading dot
+ */
+export function getExtension(filename: string): string {
+  return filename.match(/\.([^.]+)$/)?.[1] ?? '';
+}
 
 /**
  * Returns all known code extensions from staticMap.
@@ -88,16 +99,6 @@ export function removeExtension(settings: MyPluginSettings, ext: string): boolea
     return true;
   }
   return false;
-}
-
-/**
- * Gets all currently open CodeEditorView instances.
- *
- * @param app - The Obsidian app instance
- * @returns An array of open CodeEditorView instances
- */
-export function getCodeEditorViews(app: App): CodeEditorView[] {
-  return app.workspace.getLeavesOfType(viewType).map((l) => l.view as CodeEditorView);
 }
 
 /**
