@@ -118,7 +118,9 @@ export function initConsolePane(
     });
   }
 
-  const maximizeBtn = document.getElementById('console-maximize-btn') as HTMLButtonElement | null;
+  const maximizeBtn = document.getElementById(
+    'console-maximize-btn'
+  ) as HTMLButtonElement | null;
   if (maximizeBtn) {
     maximizeBtn.addEventListener('click', () => {
       const isMaximized = pane.classList.toggle('maximized');

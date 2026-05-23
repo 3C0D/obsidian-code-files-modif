@@ -7,7 +7,12 @@
  */
 import type CodeFilesPlugin from '../main.ts';
 import type { HiddenItem } from '../types/index.ts';
-import { scanDotEntries, filterManualDotEntries, revealItems, unrevealItems } from './hiddenFiles/index.ts';
+import {
+  scanDotEntries,
+  filterManualDotEntries,
+  revealItems,
+  unrevealItems
+} from './hiddenFiles/index.ts';
 import { collectSubfolderPaths } from './fileUtils.ts';
 import { parseEditorConfig } from './settingsUtils.ts';
 
@@ -132,7 +137,11 @@ export async function revealProjectDotfiles(
   if (!root) return;
 
   await forEachDotFolder(plugin, root, (folder, items) =>
-    revealItems(plugin, folder, items.map((i) => i.path))
+    revealItems(
+      plugin,
+      folder,
+      items.map((i) => i.path)
+    )
   );
 }
 
@@ -154,6 +163,10 @@ export async function unrevealProjectDotfiles(
   await forEachDotFolder(plugin, root, (folder, items) => {
     const toUnreveal = filterManualDotEntries(items, plugin);
     if (toUnreveal.length === 0) return Promise.resolve();
-    return unrevealItems(plugin, folder, toUnreveal.map((i) => i.path));
+    return unrevealItems(
+      plugin,
+      folder,
+      toUnreveal.map((i) => i.path)
+    );
   });
 }

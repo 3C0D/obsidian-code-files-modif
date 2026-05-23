@@ -27,10 +27,7 @@ import {
   patchRegisterExtensions,
   decorateFolders
 } from './utils/hiddenFiles/index.ts';
-import {
-  cleanStaleRevealedFiles,
-  initRevealedFiles
-} from './utils/hiddenFiles/sync.ts';
+import { cleanStaleRevealedFiles, initRevealedFiles } from './utils/hiddenFiles/sync.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 import {
   revokeBlobUrlCache,

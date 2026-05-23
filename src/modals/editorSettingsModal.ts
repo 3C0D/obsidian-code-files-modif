@@ -22,7 +22,10 @@ import {
   broadcastEditorConfig
 } from '../utils/broadcast.ts';
 import { FolderSuggest } from '../ui/folderSuggest.ts';
-import { updateProjectFolderHighlight, revealFolderInExplorer } from '../utils/explorerUtils.ts';
+import {
+  updateProjectFolderHighlight,
+  revealFolderInExplorer
+} from '../utils/explorerUtils.ts';
 import {
   hasTsConfig,
   projectRootHasDotfiles,
@@ -94,9 +97,7 @@ export class EditorSettingsModal extends Modal {
 
     if (this.savedOnClose) {
       // In fence edit context, the editor always saves on close
-      new Setting(toggleSection)
-        .setName('Auto Save')
-        .setDesc('Saved on close');
+      new Setting(toggleSection).setName('Auto Save').setDesc('Saved on close');
     } else {
       new Setting(toggleSection)
         .setName('Auto Save')

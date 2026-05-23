@@ -364,14 +364,14 @@ export class CodeEditorView extends TextFileView {
    * @param data The file content to sync to the editor.
    * @param _clear Whether to clear the editor before setting the content. (Unused here)
    */
-   setViewData(data: string, _clear: boolean): void {
-     this.data = data;
-     if (this.codeEditor) {
-       if (this.codeEditor.getValue() !== data) {
-         this.codeEditor.setValue(data);
-       }
-     }
-   }
- }
+  setViewData(data: string, _clear: boolean): void {
+    this.data = data;
+    if (this.codeEditor) {
+      if (this.codeEditor.getValue() !== data) {
+        this.codeEditor.setValue(data);
+      }
+    }
+  }
+}
 
 export { getCodeEditorViews } from './utils.ts';
