@@ -40,29 +40,12 @@ async function forEachVaultFolder(
  * @param plugin - The plugin instance.
  * @returns A Promise that resolves when the operation is complete.
  */
-export async function syncAutoRevealedDotfiles(
-  plugin: CodeFilesPlugin
-): Promise<void> {
+export async function syncAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
   if (!plugin.settings.isAutoRevealRegisteredDotfile) return;
-
   const extensions = getActiveExtensions(plugin.settings);
   const extSet = new Set(extensions);
 
-  // For each folder in revealedItems, remove entries now auto-managed
-  let changed = false;
-  for (const [folderPath, paths] of Object.entries(plugin.settings.revealedItems)) {
-    const cleaned = paths.filter((p) => {
-      const ext = getExtension(p.split('/').pop()!);
-      return ext && !extSet.has(ext); // keep not extension-managed
-    });
-    if (cleaned.length !== paths.length) {
-      changed = true;
-      setRevealedItemsEntry(plugin, folderPath, cleaned);
-    }
-  }
-  if (changed) await plugin.saveSettings();
-
-  // Scan the entire vault and auto-reveal dotfiles.
+  // Scan the entire vault and reveal registered dotfiles.
   await forEachVaultFolder(plugin, async (folderPath) => {
     const items = await scanDotEntries(plugin, folderPath);
     const toReveal = items
