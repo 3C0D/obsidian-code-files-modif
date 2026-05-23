@@ -2,9 +2,7 @@
  * Global state management for hidden files functionality.
  * Manages adapter access and patch bypass flags.
  */
-import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type CodeFilesPlugin from '../../main.ts';
-import type { DataAdapterWithInternal } from '../../types/index.ts';
 
 /**
  * Global flag used to temporarily bypass the deletion patch.
@@ -19,15 +17,6 @@ export let _bypassPatch = false;
  */
 export function setBypassPatch(value: boolean): void {
   _bypassPatch = value;
-}
-
-/**
- * Retrieves the platform-specific data adapter
- * @param plugin - The plugin instance.
- * @returns The platform-specific data adapter.
- */
-export function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
-  return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
 
 /**
@@ -49,3 +38,5 @@ export function getRevealedItemsCache(plugin: CodeFilesPlugin): Set<string> {
   }
   return plugin._revealedItemsCache;
 }
+
+export { getAdapter } from '../fileUtils.ts';

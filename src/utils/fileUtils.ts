@@ -6,7 +6,6 @@ import { getDataAdapterEx } from 'obsidian-typings/implementations';
 import type { DataAdapterWithInternal } from '../types/index.ts';
 import type { App } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getAdapter } from './hiddenFiles/index.ts';
 
 /**
  * Gets the maximum file size in bytes from the plugin settings.
@@ -98,4 +97,13 @@ export async function collectSubfolderPaths(
   };
   await collect(normalizedFolderPath);
   return results;
+}
+
+/**
+ * Retrieves the platform-specific data adapter
+ * @param plugin - The plugin instance.
+ * @returns The platform-specific data adapter.
+ */
+export function getAdapter(plugin: CodeFilesPlugin): DataAdapterWithInternal {
+  return getDataAdapterEx(plugin.app) as unknown as DataAdapterWithInternal;
 }
