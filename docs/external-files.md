@@ -28,12 +28,12 @@ When opening a file with `external: true` in the view state:
 
 ## Persistence Across Sessions
 
-External files that were open when Obsidian closes are tracked via `temporaryRevealedPaths` in settings. On next startup, `restoreRevealedFiles()` re-reveals them so Obsidian can restore the workspace layout (which references file paths that must exist in the vault index).
+External files that were open when Obsidian closes are tracked via `temporaryRevealedPaths` in settings. On next startup, `initRevealedFiles()` ensures revealed items are restored (so that paths referenced by the workspace state exist in the vault index for Obsidian to restore the layout).
 
 **Flow:**
 ```
 Plugin unload → temporaryRevealedPaths saved in settings
-Plugin load → restoreRevealedFiles() → revealItems(persist=false) for each tracked path
+Plugin load → initRevealedFiles() (restores revealed items for workspace) → revealItems(persist=false) for each tracked path
 Workspace restore → CodeEditorView.onLoadFile() finds the file in vault index → opens normally
 ```
 

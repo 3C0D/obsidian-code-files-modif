@@ -64,33 +64,66 @@ export async function syncAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise
 }
 
 /**
- * Re-reveals all files stored in the plugin settings.
- * This is called on plugin startup to restore the user's view.
- * Uses the Obsidian DataAdapter API, making it cross-platform (Desktop & Mobile).
+ * Single-pass startup function. Iterates the vault root and all folders once
+ * to restore persisted revealed items (for workspace restore of external files
+ * etc.) and auto-reveal registered dotfiles when the setting is enabled.
+ * Calls decorateFolders at the end.
  *
  * @param plugin - The plugin instance.
- * @returns A Promise that resolves when the operation is complete.
  */
-export async function restoreRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
+export async function initRevealedFiles(plugin: CodeFilesPlugin): Promise<void> {
   const adapter = getAdapter(plugin);
+  const extSet = new Set(
+    plugin.settings.isAutoRevealRegisteredDotfile
+      ? getActiveExtensions(plugin.settings)
+      : []
+  );
 
-  for (const [, itemPaths] of Object.entries(plugin.settings.revealedItems)) {
-    for (const itemPath of itemPaths) {
+  // Handle root folder revealed items (key "" not covered by getAllFolders)
+  const rootItems = plugin.settings.revealedItems[''] ?? [];
+  for (const itemPath of rootItems) {
+    const realPath = getRealPathSafe(adapter, itemPath);
+    try {
+      const stat = await adapter.stat(itemPath);
+      if (!stat) continue;
+      await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
+      if (stat.type === 'folder') {
+        await revealFolderContents(plugin, adapter, itemPath);
+      }
+    } catch { /* file no longer exists */ }
+  }
+
+  await forEachVaultFolder(plugin, async (folderPath) => {
+    // 1. Restore manually revealed items for this folder
+    const revealed = plugin.settings.revealedItems[folderPath] ?? [];
+    for (const itemPath of revealed) {
       const realPath = getRealPathSafe(adapter, itemPath);
       try {
         const stat = await adapter.stat(itemPath);
         if (!stat) continue;
-
         await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
-
         if (stat.type === 'folder') {
           await revealFolderContents(plugin, adapter, itemPath);
         }
-      } catch {
-        // File or folder no longer exists or access denied
-      }
+      } catch { /* file no longer exists */ }
     }
-  }
+
+    // 2. Auto-reveal registered dotfiles
+    if (extSet.size === 0) return;
+    const items = await scanDotEntries(plugin, folderPath);
+    const toReveal = items
+      .filter((item) => {
+        if (item.isFolder) return false;
+        const ext = getExtension(item.name);
+        return ext && extSet.has(ext);
+      })
+      .map((item) => item.path);
+    if (toReveal.length > 0) {
+      await revealItems(plugin, folderPath, toReveal, false);
+    }
+  });
+
+  decorateFolders(plugin);
 }
 
 /**

@@ -10,10 +10,9 @@ main.ts onload()
   ├─ patchAdapter(plugin)          → intercepts reconcileDeletion, rename, trash
   ├─ patchRegisterExtensions(plugin) → syncs dotfile visibility on ext add/remove
   ├─ setupExplorerBadges(plugin)   → MutationObserver for extension badges
-  ├─ cleanStaleRevealedFiles()     → removes settings entries for deleted files
-  ├─ restoreRevealedFiles()        → re-reveals persisted items on startup
-  ├─ syncAutoRevealedDotfiles()    → reveals dotfiles matching registered extensions
-  └─ decorateFolders(plugin)       → adds eye badge to folders containing hidden items
+   ├─ cleanStaleRevealedFiles()     → removes settings entries for deleted files
+   ├─ initRevealedFiles()           → single-pass startup: restores persisted revealed items (incl. for workspace restore of external files) + auto-reveals registered dotfiles; calls decorateFolders internally
+   └─ setupExplorerBadges(plugin)   → MutationObserver + badge application (rescan may be triggered after init if needed)
 ```
 
 **Key modules:** `src/utils/hiddenFiles/` (index, state, operations, patches, sync, scan, badge, reconcile, symlink, dotfileFilters) — ~10 files; reconcile and some sync internals are no longer re-exported from index.ts for a stable public API.

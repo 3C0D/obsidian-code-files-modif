@@ -29,8 +29,7 @@ import {
 } from './utils/hiddenFiles/index.ts';
 import {
   cleanStaleRevealedFiles,
-  restoreRevealedFiles,
-  syncAutoRevealedDotfiles
+  initRevealedFiles
 } from './utils/hiddenFiles/sync.ts';
 import { patchMenuOverlay } from './utils/menuPatch.ts';
 import {
@@ -85,16 +84,12 @@ export default class CodeFilesPlugin extends Plugin {
           await this.saveSettings();
         }
       }
-      await restoreRevealedFiles(this);
-      // Re-scan badges only if hidden folders were revealed (key "" in revealedItems).e.g .obsidian
+      await initRevealedFiles(this);
+      // Re-scan badges only if hidden folders were revealed (key "" in revealedItems)
       if (this.settings.revealedItems['']?.length) {
         rescanExplorerBadges(this);
         updateProjectFolderHighlight(this);
       }
-
-      // Re-trigger auto-reveal for all currently registered extensions.
-      // registerExtensions is called before layoutReady, so the around patch skips it.
-      await syncAutoRevealedDotfiles(this);
     });
 
     setupExplorerBadges(this);

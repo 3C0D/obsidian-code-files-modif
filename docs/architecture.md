@@ -152,11 +152,10 @@ onload()
   ├─ initExtensions()                  → registers file extensions with Obsidian
   ├─ addRibbonIcon, registerCommands, registerContextMenus, addSettingTab
   ├─ onLayoutReady (async):
-  │   ├─ cleanStaleRevealedFiles()     → prune settings of deleted files
-  │   ├─ verify projectRootFolder exists
-  │   ├─ restoreRevealedFiles()        → re-reveal for workspace restore
-  │   ├─ syncAutoRevealedDotfiles()    → reveal dotfiles for registered extensions
-  │   └─ decorateFolders()             → eye badges on folders
+   │   ├─ cleanStaleRevealedFiles()     → prune settings of deleted files
+   │   ├─ verify projectRootFolder exists
+   │   ├─ initRevealedFiles()           → single-pass startup: restores persisted revealed items (for workspace restore) + auto-reveals registered dotfiles; calls decorateFolders
+   │   └─ conditional rescan of explorer badges + project highlight (only if root-level items were restored)
   ├─ setupExplorerBadges()             → MutationObserver for extension badges
   ├─ patchAdapter() + patchRegisterExtensions()  → hidden files system
   └─ register vault events (create/delete/rename → decorateFolders, tsconfig → broadcastProjectFiles)

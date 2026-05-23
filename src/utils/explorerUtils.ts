@@ -225,7 +225,7 @@ export function cleanupExplorerBadges(): void {
 
 /**
  * Re-scans all currently visible file explorer items to apply badges.
- * Call this after async operations that reveal new files (e.g. restoreRevealedFiles),
+ * Call this after async operations that reveal new files (e.g. initRevealedFiles at startup),
  * since the initial scanAll in setupExplorerBadges may have run before those files
  * were added to fileItems.
  *
