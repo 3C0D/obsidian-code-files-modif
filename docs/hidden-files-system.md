@@ -65,7 +65,7 @@ Called when a temporarily revealed file's editor leaf is closed. Checks if still
 
 **File:** `src/utils/hiddenFiles/sync.ts`
 
-When `settings.isAutoRevealRegisteredDotfile` is enabled, all dotfiles matching registered extensions are automatically revealed. The `syncAutoRevealedDotfiles(plugin)` function:
+When `settings.isAutoRevealRegisteredDotfile` is enabled, all dotfiles matching registered extensions are automatically revealed. The `syncExtensionDotfiles (plugin)` function:
 1. Scans the vault for dot-entries matching the given extensions
 2. Reveals them without persisting (they are re-synced on each startup)
 3. Yields every 30 folders to avoid blocking the UI
@@ -101,7 +101,7 @@ interface MyPluginSettings {
 ## Performance Considerations
 
 - `getRevealedItemsCache(plugin)` returns a `Set<string>` cached at plugin level, invalidated when `revealedItems` changes. Avoids rebuilding `Object.values(...).flat()` on every `reconcileDeletion` call.
-- `syncAutoRevealedDotfiles` yields every 30 folders to avoid blocking.
+- `syncExtensionDotfiles ` yields every 30 folders to avoid blocking.
 - `setupExplorerBadges` guards full scan behind a view-change check.
 
 ## Dotfile Filtering and State Unification

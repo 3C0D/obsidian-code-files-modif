@@ -57,7 +57,7 @@ Each editor instance exposes `editor.ready: Promise<void>`. Callers like `openIn
 
 ## 9. Auto-Reveal Yielding
 
-`syncAutoRevealedDotfiles()` yields every 30 folders during scanning to avoid blocking the UI thread in large vaults.
+`syncExtensionDotfiles ()` yields every 30 folders during scanning to avoid blocking the UI thread in large vaults.
 
 ---
 

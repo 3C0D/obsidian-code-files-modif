@@ -14,7 +14,7 @@ import {
 } from './state.ts';
 import { getRealPathSafe } from '../fileUtils.ts';
 import { getExtension } from '../extensionUtils.ts';
-import { syncAutoRevealedDotfiles, registerHiddenFilesDeleteHandler } from './sync.ts';
+import { syncExtensionDotfiles, registerHiddenFilesDeleteHandler } from './sync.ts';
 import { rescanExplorerBadges, updateProjectFolderHighlight } from '../explorerUtils.ts';
 import { updateRevealedItemsOnRename } from './operations.ts';
 
@@ -182,7 +182,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
       return function (this: Plugin, exts: string[], vType: string) {
         const result = next.call(this, exts, vType);
         if (plugin.app.workspace.layoutReady) {
-          void syncAutoRevealedDotfiles(plugin);
+          void syncExtensionDotfiles(plugin);
         }
         // Update badges after registering extensions
         rescanExplorerBadges(plugin);

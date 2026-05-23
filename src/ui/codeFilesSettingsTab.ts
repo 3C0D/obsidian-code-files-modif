@@ -28,7 +28,7 @@ import {
 } from '../utils/hotkeyUtils.ts';
 import { mountCodeEditor } from '../editor/mountCodeEditor/index.ts';
 import {
-  syncAutoRevealedDotfiles,
+  syncExtensionDotfiles,
   hideAutoRevealedDotfiles,
   unrevealExcludedFolders
 } from '../utils/hiddenFiles/sync.ts';
@@ -399,7 +399,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
             this.plugin.settings.isAutoRevealRegisteredDotfile = value;
             await this.plugin.saveSettings();
             if (value) {
-              await syncAutoRevealedDotfiles(this.plugin);
+              await syncExtensionDotfiles(this.plugin);
             } else {
               await hideAutoRevealedDotfiles(this.plugin);
             }

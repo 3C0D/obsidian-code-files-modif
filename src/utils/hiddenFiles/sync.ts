@@ -40,7 +40,7 @@ async function forEachVaultFolder(
  * @param plugin - The plugin instance.
  * @returns A Promise that resolves when the operation is complete.
  */
-export async function syncAutoRevealedDotfiles(plugin: CodeFilesPlugin): Promise<void> {
+export async function syncExtensionDotfiles(plugin: CodeFilesPlugin): Promise<void> {
   if (!plugin.settings.isAutoRevealRegisteredDotfile) return;
   const extensions = getActiveExtensions(plugin.settings);
   const extSet = new Set(extensions);
@@ -90,7 +90,9 @@ export async function initRevealedFiles(plugin: CodeFilesPlugin): Promise<void> 
       if (stat.type === 'folder') {
         await revealFolderContents(plugin, adapter, itemPath);
       }
-    } catch { /* file no longer exists */ }
+    } catch {
+      /* file no longer exists */
+    }
   }
 
   await forEachVaultFolder(plugin, async (folderPath) => {
@@ -105,7 +107,9 @@ export async function initRevealedFiles(plugin: CodeFilesPlugin): Promise<void> 
         if (stat.type === 'folder') {
           await revealFolderContents(plugin, adapter, itemPath);
         }
-      } catch { /* file no longer exists */ }
+      } catch {
+        /* file no longer exists */
+      }
     }
 
     // 2. Auto-reveal registered dotfiles
