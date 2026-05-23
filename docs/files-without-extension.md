@@ -68,7 +68,7 @@ Files like `.prettierrc`, `.env`, or `LICENSE` need per-file editor configuratio
 
 ### How It Works
 
-**Step 1: Extension Mapping** (`getExtension` in `fileUtils.ts`)
+**Step 1: Extension Mapping** (`getExtension` in `extensionUtils.ts`)
 
 Maps files to unique identifiers for configuration:
 
