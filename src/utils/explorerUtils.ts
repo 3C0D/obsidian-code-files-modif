@@ -33,9 +33,11 @@ const applyBadgeLogic = (
   }
 
   tagEl.classList.remove('code-files-unregistered-badge');
+  const titleEl = tagEl.closest<HTMLElement>('.nav-file-title');
 
   if (!plugin.app.viewRegistry.typeByExtension[file.extension]) {
     tagEl.classList.add('code-files-unregistered-badge');
+    titleEl?.classList.remove('is-active');
   }
 };
 
