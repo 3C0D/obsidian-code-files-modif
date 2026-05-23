@@ -205,6 +205,7 @@ export async function handleFileDeletion(
 
   if (changed) {
     await plugin.saveSettings();
+    decorateFolders(plugin);
   }
 }
 
