@@ -8,6 +8,6 @@ export {
 export { patchAdapter, patchRegisterExtensions } from './patches.ts';
 export { scanDotEntries } from './scan.ts';
 export { getAdapter } from '../fileUtils.ts';
-export { cleanStaleRevealedFiles } from './sync.ts';
+export { cleanStaleRevealedFiles, cleanRevealedItemsForExtensions } from './sync.ts';
 export { filterManualDotEntries } from './dotfileFilters.ts';
 export { isSymlink } from './symlink.ts';

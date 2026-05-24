@@ -51,8 +51,37 @@ async function revealMatchingDotfiles(
 }
 
 /**
- * Handles newly registered extensions by cleaning revealedItems and auto-revealing
- * dotfiles matching the new extensions. Uses active extensions from plugin settings.
+ * Removes from revealedItems all paths whose extension matches any of the given extensions.
+ * Called when extensions are registered — auto-reveal takes over, manual entries are redundant.
+ *
+ * @param plugin - The plugin instance.
+ * @param exts - The newly registered extensions (without leading dot).
+ */
+export async function cleanRevealedItemsForExtensions(
+  plugin: CodeFilesPlugin,
+  exts: string[]
+): Promise<void> {
+  const extSet = new Set(exts);
+  let changed = false;
+
+  for (const [folderPath, paths] of Object.entries(plugin.settings.revealedItems)) {
+    const filtered = paths.filter((p) => {
+      const ext = getExtension(p.split('/').pop() || '');
+      return !ext || !extSet.has(ext);
+    });
+    if (filtered.length !== paths.length) {
+      setRevealedItemsEntry(plugin, folderPath, filtered);
+      changed = true;
+    }
+  }
+
+  if (changed) await plugin.saveSettings();
+}
+
+/**
+ * Auto-reveals dotfiles matching registered extensions when the setting is enabled.
+ * Cleaning of revealedItems happens unconditionally on extension registration
+ * (see patchRegisterExtensions).
  *
  * @param plugin - The plugin instance.
  * @returns A Promise that resolves when the operation is complete.

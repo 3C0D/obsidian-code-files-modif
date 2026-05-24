@@ -14,7 +14,11 @@ import {
 } from './state.ts';
 import { getRealPathSafe } from '../fileUtils.ts';
 import { getExtension } from '../extensionUtils.ts';
-import { syncExtensionDotfiles, registerHiddenFilesDeleteHandler } from './sync.ts';
+import {
+  syncExtensionDotfiles,
+  cleanRevealedItemsForExtensions,
+  registerHiddenFilesDeleteHandler
+} from './sync.ts';
 import { rescanExplorerBadges, updateProjectFolderHighlight } from '../explorerUtils.ts';
 import { updateRevealedItemsOnRename } from './operations.ts';
 
@@ -149,7 +153,7 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
  * Patches Plugin.registerExtensions (via monkey-around) and viewRegistry.unregisterExtensions
  * (via direct patch) to keep dotfile visibility in sync with extension registration state.
  *
- * - On register: cleans revealedItemsand auto-reveals dotfiles for the new extensions.
+ * - On register: cleans revealedItems and auto-reveals dotfiles for the new extensions.
  * - On unregister: hides dotfiles for removed extensions, unless explicitly in revealedItems.
  *
  * @param plugin - The plugin instance.
@@ -182,6 +186,7 @@ export function patchRegisterExtensions(plugin: CodeFilesPlugin): () => void {
       return function (this: Plugin, exts: string[], vType: string) {
         const result = next.call(this, exts, vType);
         if (plugin.app.workspace.layoutReady) {
+          void cleanRevealedItemsForExtensions(plugin, exts); // always clean, regardless of auto-reveal setting
           void syncExtensionDotfiles(plugin);
         }
         // Update badges after registering extensions
