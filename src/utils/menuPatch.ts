@@ -40,8 +40,12 @@ export function patchMenuOverlay(plugin: CodeFilesPlugin): void {
     around(Menu.prototype, {
       hide(next: Menu['hide']) {
         return function (this: Menu) {
-          removeOverlays();
-          return next.call(this);
+          const result = next.call(this);
+          // Only remove overlays when no menus remain open (submenus are also Menu instances)
+          if (!document.querySelector('.menu')) {
+            removeOverlays();
+          }
+          return result;
         };
       }
     })
