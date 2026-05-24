@@ -95,15 +95,15 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         if (src === configDir) {
           return;
         }
-        // Block renames that would move external files (snippets, etc.) out of configDir
-        // Fix drag-and-drop destination for dotfiles
-        if (adapter.files?.[dest]?.type === 'folder') {
+        // When dragging a dotfile to a folder, Obsidian passes the target folder as dest
+        // instead of the final path — correct it to dest/filename.
+        if ((src.split('/').pop() || '').startsWith('.')) {
           const filename = src.split('/').pop() || '';
           dest = dest + '/' + filename;
         }
         const result = await next.call(this, src, dest);
 
-        // Update projectRootFolder if it was renamed
+        // Update projectRootFolder if it was changed
         if (plugin.settings.projectRootFolder === src) {
           plugin.settings.projectRootFolder = dest;
           void plugin.saveSettings();

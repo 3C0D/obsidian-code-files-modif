@@ -31,6 +31,25 @@ async function forEachVaultFolder(
   }
 }
 
+/** Reveals dotfiles in a folder whose extension is in the given active set (no persist). */
+async function revealMatchingDotfiles(
+  plugin: CodeFilesPlugin,
+  folderPath: string,
+  extSet: Set<string>
+): Promise<void> {
+  const items = await scanDotEntries(plugin, folderPath);
+  const toReveal = items
+    .filter((item) => {
+      if (item.isFolder) return false;
+      const ext = getExtension(item.name);
+      return ext && extSet.has(ext);
+    })
+    .map((item) => item.path);
+  if (toReveal.length > 0) {
+    await revealItems(plugin, folderPath, toReveal, false);
+  }
+}
+
 /**
  * Handles newly registered extensions by cleaning revealedItems and auto-revealing
  * dotfiles matching the new extensions. Uses active extensions from plugin settings.
@@ -45,17 +64,7 @@ export async function syncExtensionDotfiles(plugin: CodeFilesPlugin): Promise<vo
 
   // Scan the entire vault and reveal registered dotfiles.
   await forEachVaultFolder(plugin, async (folderPath) => {
-    const items = await scanDotEntries(plugin, folderPath);
-    const toReveal = items
-      .filter((item) => {
-        if (item.isFolder) return false;
-        const ext = getExtension(item.name);
-        return ext && extSet.has(ext);
-      })
-      .map((item) => item.path);
-    if (toReveal.length > 0) {
-      await revealItems(plugin, folderPath, toReveal, false);
-    }
+    await revealMatchingDotfiles(plugin, folderPath, extSet);
   });
 
   decorateFolders(plugin);
@@ -88,17 +97,7 @@ export async function initRevealedFiles(plugin: CodeFilesPlugin): Promise<void> 
 
     // 2. Auto-reveal registered dotfiles
     if (extSet.size === 0) return;
-    const items = await scanDotEntries(plugin, folderPath);
-    const toReveal = items
-      .filter((item) => {
-        if (item.isFolder) return false;
-        const ext = getExtension(item.name);
-        return ext && extSet.has(ext);
-      })
-      .map((item) => item.path);
-    if (toReveal.length > 0) {
-      await revealItems(plugin, folderPath, toReveal, false);
-    }
+    await revealMatchingDotfiles(plugin, folderPath, extSet);
   });
 
   decorateFolders(plugin);
@@ -131,12 +130,15 @@ export async function cleanStaleRevealedFiles(plugin: CodeFilesPlugin): Promise<
     }
 
     // Update settings if any path was normalized or a stale entry was removed
-    if (folderPath !== normFolderPath || valid.length !== itemPaths.length) {
-      changed = true;
-      if (folderPath !== normFolderPath) {
-        setRevealedItemsEntry(plugin, folderPath, []);
-      }
+    if (folderPath !== normFolderPath) {
+      // Key migration: remove old, write normalized
+      setRevealedItemsEntry(plugin, folderPath, []);
       setRevealedItemsEntry(plugin, normFolderPath, valid);
+      changed = true;
+    } else if (valid.length !== itemPaths.length) {
+      // Stale entries removed only
+      setRevealedItemsEntry(plugin, normFolderPath, valid);
+      changed = true;
     }
   }
 

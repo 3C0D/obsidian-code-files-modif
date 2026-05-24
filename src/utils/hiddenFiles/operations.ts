@@ -264,26 +264,26 @@ export async function updateRevealedItemsOnRename(
   src: string,
   dest: string
 ): Promise<void> {
+  // revealedItems is keyed by parent folder, values are the revealed item paths inside it.
+  // e.g. { "src/utils": ["src/utils/.prettierrc", "src/utils/.eslintrc"] }
   const srcFolder = src.substring(0, src.lastIndexOf('/')) || '';
   const destFolder = dest.substring(0, dest.lastIndexOf('/')) || '';
   let changed = false;
 
-  // Remove from source folder
+  // Remove the old path from its parent folder entry
   if (plugin.settings.revealedItems[srcFolder]) {
     const original = plugin.settings.revealedItems[srcFolder];
     const filtered = original.filter((p) => p !== src);
     if (filtered.length !== original.length) {
-      // src was actually in revealedItems
       setRevealedItemsEntry(plugin, srcFolder, filtered);
       changed = true;
     }
   }
 
-  // Add to destination folder
+  // Add the new path to the destination folder entry
   if (changed) {
     const existing = plugin.settings.revealedItems[destFolder] ?? [];
-    const updated = [...existing, dest];
-    setRevealedItemsEntry(plugin, destFolder, updated);
+    setRevealedItemsEntry(plugin, destFolder, [...existing, dest]);
   }
 
   if (changed) {
