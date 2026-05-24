@@ -71,7 +71,7 @@ export function hideDiffAction(context: HeaderActionsContext): void {
 }
 
 /**
- * Adds header actions: theme picker, editor settings, return to default view (only for unregistered extensions), and snippet controls (only for CSS snippets).
+ * Adds header actions: theme picker, editor settings, return to default view (only for extensions that have a native Obsidian viewer but are not managed by Code Files), and snippet controls (only for CSS snippets).
  */
 export function injectHeaderActions(context: HeaderActionsContext, file: TFile): void {
   removeHeaderActions(context);
@@ -87,9 +87,10 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
     context.onOpenEditorConfig(ext);
   });
 
-  // Add return-to-default-view (normal obsidian view) action ONLY when the extension is not registered AND noReturnAction is false
-  const isUnregistered = !getActiveExtensions(context.plugin.settings).includes(ext);
-  if (isUnregistered && !context.noReturnAction) {
+  // Extension has a native Obsidian viewer but is not managed by Code Files:
+  // offer a way back to the default view.
+  const hasNativeViewer = !getActiveExtensions(context.plugin.settings).includes(ext) && context.plugin.app.viewRegistry.typeByExtension[ext];
+  if (hasNativeViewer && !context.noReturnAction) {
     context.returnAction = context.addAction(
       'undo-2',
       'Return to default view',

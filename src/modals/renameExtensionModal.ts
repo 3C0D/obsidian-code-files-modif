@@ -4,7 +4,7 @@
  * If the new extension is unknown to both Code Files and Obsidian, offers to register it.
  * After renaming, reloads the leaf to open the file with the correct view for the new extension.
  */
-import { ButtonComponent, Modal, Notice, TextComponent, View } from 'obsidian';
+import { ButtonComponent, Modal, normalizePath, Notice, TextComponent, View } from 'obsidian';
 import type { TFile, WorkspaceLeaf } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { confirmation } from './confirmationModal.ts';
@@ -108,15 +108,12 @@ export class RenameExtensionModal extends Modal {
       return;
     }
 
-    let newFilename: string;
     const isExtRegistered = getActiveExtensions(this.plugin.settings).includes(ext);
 
-    // Dotfile: no name, only extension
+    // Compute newFilename tentatively (no confirmation yet) to detect no-op early
+    let newFilename: string;
     if (!cleanName) {
-      const confirmed = await confirmation(this.app, `Rename to dotfile: .${ext}?`);
-      if (!confirmed) return;
       newFilename = `.${ext}`;
-      // Hidden file typed directly in name field
     } else if (cleanName.startsWith('.') && !cleanName.slice(1).includes('.')) {
       newFilename = cleanName;
     } else {
@@ -128,13 +125,19 @@ export class RenameExtensionModal extends Modal {
       newFilename = `${cleanName}.${ext}`;
     }
 
-    const newPath = this.file.parent
-      ? `${this.file.parent.path}/${newFilename}`
-      : newFilename;
+    const newPath = normalizePath(
+      this.file.parent?.path ? `${this.file.parent.path}/${newFilename}` : newFilename
+    );
 
     if (newPath === this.file.path) {
       this.close();
       return;
+    }
+
+    // Confirmation for dotfile rename (only if path actually changes)
+    if (!cleanName) {
+      const confirmed = await confirmation(this.app, `Rename to dotfile: .${ext}?`);
+      if (!confirmed) return;
     }
 
     // Unregistered extension confirmation
