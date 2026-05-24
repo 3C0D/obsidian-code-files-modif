@@ -169,9 +169,11 @@ export function isInPluginsFolder(currentPath: string): boolean {
 
 /** Validates that a path points to an Obsidian vault with a plugins directory */
 export function validateVaultPath(vaultPath: string): boolean {
+  // Normalize path to handle both forward and backward slashes
+  const normalizedPath = path.normalize(vaultPath);
   return (
-    existsSync(path.join(vaultPath, '.obsidian')) &&
-    existsSync(path.join(vaultPath, '.obsidian', 'plugins'))
+    existsSync(path.join(normalizedPath, '.obsidian')) &&
+    existsSync(path.join(normalizedPath, '.obsidian', 'plugins'))
   );
 }
 
