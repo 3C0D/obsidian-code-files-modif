@@ -15,7 +15,6 @@ import { isRegisteredDotfile } from './dotfileFilters.ts';
 export function decorateFolders(plugin: CodeFilesPlugin): void {
   const view = getFileExplorerView(plugin);
   if (!view) return;
-
   const fileItems = view.fileItems;
 
   // Build set of folders that have at least one manually-revealed (non-auto-managed) file
@@ -27,7 +26,7 @@ export function decorateFolders(plugin: CodeFilesPlugin): void {
           return !isRegisteredDotfile(name, plugin);
         })
       )
-      .map(([fp]) => fp)
+      .map(([fp]) => fp) // Folder path
   );
 
   // Remove stale badges via DOM query — avoids iterating all fileItems

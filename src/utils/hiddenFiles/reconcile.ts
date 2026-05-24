@@ -7,21 +7,27 @@ import type { DataAdapterWithInternal } from '../../types/index.ts';
 /**
  * Reconciles a single file or folder with Obsidian's vault index.
  * Handles both Desktop (reconcileFileInternal) and Mobile (reconcileFileChanged) APIs.
+ * Safely no-ops if the item no longer exists on disk (defensive).
  *
- * @param adapter - The data adapter.
- * @param itemPath - The normalized vault path.
- * @param realPath - The real filesystem path.
- * @param isFolder - Whether the item is a folder.
+  * @param adapter - The data adapter.
+  * @param itemPath - The normalized vault path.
+  * @param realPath - The real filesystem path.
+  * @returns The type that was actually reconciled, or null if the item did not exist.
  */
-export async function reconcileItem(
-  adapter: DataAdapterWithInternal,
-  itemPath: string,
-  realPath: string,
-  isFolder: boolean
-): Promise<void> {
-  if (isFolder) {
-    await adapter.reconcileFolderCreation(realPath, itemPath);
-  } else {
+  export async function reconcileItem(
+    adapter: DataAdapterWithInternal,
+    itemPath: string,
+    realPath: string
+  ): Promise<'file' | 'folder' | null> {
+    const stat = await adapter.stat(itemPath);
+    if (!stat) return null; // item no longer exists — defensive no-op
+
+    if (stat.type === 'folder') {
+      await adapter.reconcileFolderCreation(realPath, itemPath);
+      return 'folder';
+    }
+
+    // file
     if (adapter.reconcileFileInternal) {
       await adapter.reconcileFileInternal(realPath, itemPath);
     } else if (
@@ -35,5 +41,5 @@ export async function reconcileItem(
         await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
       }
     }
+    return 'file';
   }
-}

@@ -177,7 +177,7 @@ export class CreateCodeFileModal extends Modal {
 
     if (await adapter.exists(newPath)) {
       if (basename.startsWith('.') && !this.app.vault.getAbstractFileByPath(newPath)) {
-        await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath), false);
+        await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath));
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
       const existingFile = this.app.vault.getAbstractFileByPath(newPath);
@@ -194,7 +194,7 @@ export class CreateCodeFileModal extends Modal {
     try {
       if (basename.startsWith('.')) {
         await adapter.write(newPath, '');
-        await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath), false);
+        await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath));
         await new Promise((resolve) => setTimeout(resolve, 50));
         newFile = this.app.vault.getFileByPath(newPath);
       } else {

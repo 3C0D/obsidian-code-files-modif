@@ -59,15 +59,33 @@ export async function revealFolderContents(
     const childPath = normalizePath(rawPath);
     const basename = childPath.split('/').pop() || '';
     if (basename.startsWith('.')) continue; // skip hidden children
-    const isFolder = listed.folders.some((f) => normalizePath(f) === childPath);
     const realPath = getRealPathSafe(adapter, childPath);
     try {
-      await reconcileItem(adapter, childPath, realPath, isFolder);
-      if (isFolder) {
+      const kind = await reconcileItem(adapter, childPath, realPath);
+      if (kind === 'folder') {
         await revealFolderContents(plugin, adapter, childPath);
       }
     } catch (e) {
       console.error(`revealFolderContents: error revealing ${childPath}:`, e);
+    }
+  }
+}
+
+export async function reconcileAndRevealAll(
+  plugin: CodeFilesPlugin,
+  adapter: DataAdapterWithInternal,
+  itemPaths: string[],
+  onError?: (itemPath: string, e: unknown) => void
+): Promise<void> {
+  for (const itemPath of itemPaths) {
+    try {
+      const realPath = getRealPathSafe(adapter, itemPath);
+      const kind = await reconcileItem(adapter, itemPath, realPath);
+      if (kind === 'folder') {
+        await revealFolderContents(plugin, adapter, itemPath);
+      }
+    } catch (e) {
+      onError?.(itemPath, e);
     }
   }
 }
@@ -93,22 +111,8 @@ export async function revealItems(
   itemPaths = itemPaths.map((p) => normalizePath(p));
   const adapter = getAdapter(plugin);
 
-  for (const itemPath of itemPaths) {
-    try {
-      // check if the item exists (file or folder)
-      const stat = await adapter.stat(itemPath);
-      if (!stat) continue;
-
-      const realPath = getRealPathSafe(adapter, itemPath);
-      await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
-
-      if (stat.type === 'folder') {
-        await revealFolderContents(plugin, adapter, itemPath);
-      }
-    } catch (e) {
-      console.error(`Reveal error ${itemPath}:`, e);
-    }
-  }
+  await reconcileAndRevealAll(plugin, adapter, itemPaths,
+    (itemPath, e) => console.error(`Reveal error ${itemPath}:`, e));
 
   // Persist the revealed state in settings (only for manual reveals)
   if (persist) {

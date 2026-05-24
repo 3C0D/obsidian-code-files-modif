@@ -5,17 +5,15 @@
 import { normalizePath, type TAbstractFile } from 'obsidian';
 import type CodeFilesPlugin from '../../main.ts';
 import { getAdapter, getRevealedItemsCache } from './state.ts';
-import { getRealPathSafe } from '../fileUtils.ts';
 import { getExtension, getActiveExtensions } from '../extensionUtils.ts';
 import { decorateFolders } from './badge.ts';
 import { scanDotEntries } from './scan.ts';
 import {
   revealItems,
   unrevealItems,
-  revealFolderContents,
-  setRevealedItemsEntry
+  setRevealedItemsEntry,
+  reconcileAndRevealAll
 } from './operations.ts';
-import { reconcileItem } from './reconcile.ts';
 import { unrevealProjectDotfiles } from '../projectUtils.ts';
 import { updateProjectFolderHighlight } from '../explorerUtils.ts';
 
@@ -81,36 +79,12 @@ export async function initRevealedFiles(plugin: CodeFilesPlugin): Promise<void> 
 
   // Handle root folder revealed items (key "" not covered by getAllFolders)
   const rootItems = plugin.settings.revealedItems[''] ?? [];
-  for (const itemPath of rootItems) {
-    const realPath = getRealPathSafe(adapter, itemPath);
-    try {
-      const stat = await adapter.stat(itemPath);
-      if (!stat) continue;
-      await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
-      if (stat.type === 'folder') {
-        await revealFolderContents(plugin, adapter, itemPath);
-      }
-    } catch {
-      /* file no longer exists */
-    }
-  }
+  await reconcileAndRevealAll(plugin, adapter, rootItems);
 
   await forEachVaultFolder(plugin, async (folderPath) => {
     // 1. Restore manually revealed items for this folder
     const revealed = plugin.settings.revealedItems[folderPath] ?? [];
-    for (const itemPath of revealed) {
-      const realPath = getRealPathSafe(adapter, itemPath);
-      try {
-        const stat = await adapter.stat(itemPath);
-        if (!stat) continue;
-        await reconcileItem(adapter, itemPath, realPath, stat.type === 'folder');
-        if (stat.type === 'folder') {
-          await revealFolderContents(plugin, adapter, itemPath);
-        }
-      } catch {
-        /* file no longer exists */
-      }
-    }
+    await reconcileAndRevealAll(plugin, adapter, revealed);
 
     // 2. Auto-reveal registered dotfiles
     if (extSet.size === 0) return;
