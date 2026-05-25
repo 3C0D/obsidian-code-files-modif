@@ -60,10 +60,10 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     });
 
     this.renderExtensionsSection(containerEl);
+    this.renderHiddenFilesSection(containerEl);
     this.renderEditorConfigSection(containerEl);
     this.renderHotkeySection(containerEl);
     this.renderConsoleSection(containerEl);
-    this.renderHiddenFilesSection(containerEl);
   }
 
   /**
@@ -116,6 +116,25 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;'
       }
     });
+
+    new Setting(containerEl)
+      .setName('Excluded extensions')
+      .setDesc(
+        'File extensions to always keep hidden, even when registered (without dot, comma-separated)'
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder('tmp, log, cache')
+          .setValue(this.plugin.settings.excludedExtensions.join(', '))
+          .onChange(async (value) => {
+            this.plugin.settings.excludedExtensions = value
+              .split(',')
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0);
+            await this.plugin.saveSettings();
+            await reregisterExtensions(this.plugin);
+          })
+      );
 
     new Setting(containerEl)
       .setName('Maximum file size')
@@ -376,8 +395,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
   }
 
   /**
-   * Renders the Hidden Files settings section: auto-reveal toggle,
-   * excluded folders, and excluded extensions.
+    * Renders the Hidden Files settings section: auto-reveal toggle,
+    * and excluded folders.
    *
    * @param containerEl HTMLElement where the section will be rendered
    */
@@ -430,24 +449,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl)
-      .setName('Excluded extensions')
-      .setDesc(
-        'File extensions to always keep hidden, even when registered (without dot, comma-separated)'
-      )
-      .addText((text) =>
-        text
-          .setPlaceholder('tmp, log, cache')
-          .setValue(this.plugin.settings.excludedExtensions.join(', '))
-          .onChange(async (value) => {
-            this.plugin.settings.excludedExtensions = value
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-            await this.plugin.saveSettings();
-            await reregisterExtensions(this.plugin);
-          })
-      );
   }
 
   /**
