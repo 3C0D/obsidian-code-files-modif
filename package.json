@@ -1,6 +1,6 @@
 {
   "name": "obsidian-code-files-modif",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Code Files Modif",
   "type": "module",
   "main": "src/main.ts",
