@@ -137,9 +137,9 @@ export interface FenceData {
  * @property {string} projectRootFolder - Vault-relative path for the project root
  * @property {boolean} [isUnregisteredExtension] - Whether the file extension is unregistered
  * @property {string} [background] - Background color for the iframe
-  * @property {number} consoleHeight - Height of the integrated console
-  * @property {boolean} [enableExplorerShortcuts] - Internal flag for explorer-shortcuts relay isolation
-  */
+ * @property {number} consoleHeight - Height of the integrated console
+ * @property {boolean} [enableExplorerShortcuts] - Internal flag for explorer-shortcuts relay isolation
+ */
 export interface InitParams {
   /** Unique identifier for this editor instance (file path or modal ID) */
   context: string;
