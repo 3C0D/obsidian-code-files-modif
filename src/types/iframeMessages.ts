@@ -6,8 +6,24 @@ export type IframeMessage =
   // Special message without context (handled before context validation)
   | { type: 'ready' }
   // Used for explorer-shortcuts relay
-  | { type: 'keydown-relay'; key: string; code: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }
-  | { type: 'keyup-relay'; key: string; code: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }
+  | {
+      type: 'keydown-relay';
+      key: string;
+      code: string;
+      ctrlKey: boolean;
+      metaKey: boolean;
+      shiftKey: boolean;
+      altKey: boolean;
+    }
+  | {
+      type: 'keyup-relay';
+      key: string;
+      code: string;
+      ctrlKey: boolean;
+      metaKey: boolean;
+      shiftKey: boolean;
+      altKey: boolean;
+    }
 
   // Messages with context (validated against codeContext)
   | { type: 'open-formatter-config'; context: string }

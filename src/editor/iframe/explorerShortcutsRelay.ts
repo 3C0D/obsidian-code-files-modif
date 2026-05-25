@@ -14,7 +14,9 @@ export function setExplorerHover(over: boolean): void {
   explorerHover = over;
 }
 
-export function registerExplorerShortcutsRelay(editor: Monaco.editor.IStandaloneCodeEditor): void {
+export function registerExplorerShortcutsRelay(
+  editor: Monaco.editor.IStandaloneCodeEditor
+): void {
   editor.onKeyDown((e: Monaco.IKeyboardEvent) => {
     if (enableRelay && e.browserEvent.key === ' ' && !e.browserEvent.repeat) {
       if (explorerHover) {
@@ -23,7 +25,15 @@ export function registerExplorerShortcutsRelay(editor: Monaco.editor.IStandalone
         e.preventDefault();
         e.stopPropagation();
         window.parent.postMessage(
-          { type: 'keydown-relay', key: ' ', code: e.browserEvent.code, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false },
+          {
+            type: 'keydown-relay',
+            key: ' ',
+            code: e.browserEvent.code,
+            ctrlKey: false,
+            metaKey: false,
+            shiftKey: false,
+            altKey: false
+          },
           getParentOrigin()
         );
       }
@@ -32,7 +42,15 @@ export function registerExplorerShortcutsRelay(editor: Monaco.editor.IStandalone
       e.preventDefault();
       e.stopPropagation();
       window.parent.postMessage(
-        { type: 'keydown-relay', key: e.browserEvent.key, code: e.browserEvent.code, ctrlKey: e.browserEvent.ctrlKey, metaKey: e.browserEvent.metaKey, shiftKey: e.browserEvent.shiftKey, altKey: e.browserEvent.altKey },
+        {
+          type: 'keydown-relay',
+          key: e.browserEvent.key,
+          code: e.browserEvent.code,
+          ctrlKey: e.browserEvent.ctrlKey,
+          metaKey: e.browserEvent.metaKey,
+          shiftKey: e.browserEvent.shiftKey,
+          altKey: e.browserEvent.altKey
+        },
         getParentOrigin()
       );
     }
@@ -47,7 +65,15 @@ export function registerExplorerShortcutsRelay(editor: Monaco.editor.IStandalone
       e.preventDefault();
       e.stopPropagation();
       window.parent.postMessage(
-        { type: 'keyup-relay', key: e.browserEvent.key, code: e.browserEvent.code, ctrlKey: e.browserEvent.ctrlKey, metaKey: e.browserEvent.metaKey, shiftKey: e.browserEvent.shiftKey, altKey: e.browserEvent.altKey },
+        {
+          type: 'keyup-relay',
+          key: e.browserEvent.key,
+          code: e.browserEvent.code,
+          ctrlKey: e.browserEvent.ctrlKey,
+          metaKey: e.browserEvent.metaKey,
+          shiftKey: e.browserEvent.shiftKey,
+          altKey: e.browserEvent.altKey
+        },
         getParentOrigin()
       );
     }
