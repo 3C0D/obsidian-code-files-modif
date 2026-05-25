@@ -35,7 +35,7 @@ jobs:
       - name: Package release files
         run: |
           mkdir release-package
-          cp manifest.json main.js styles.css monacoEditor.html monacoHtml.js monacoHtml.css release-package/
+          cp manifest.json main.js styles.css monacoEditor.html monacoHtml.css monacoBundle.js release-package/
           cp -r vs monaco-themes formatters release-package/
           cd release-package && zip -r ../obsidian-code-files-modif.zip .
 
