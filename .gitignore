@@ -34,8 +34,9 @@ vs/
 /formatters/
 
 # Monaco HTML config (generated at build time)
-/monacoHtml.css
-/monacoHtml.js
+monacoHtml.css
+monacoHtml.js
+monacoBundle.js
 
 # VSCode - keep settings.json for yarn protection
 .vscode/*
