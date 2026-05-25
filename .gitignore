@@ -50,7 +50,7 @@ monacoBundle.js
 .env
 
 #LLM
-.amazonq/*
-.kilo/*
-.trae/*
+.amazonq/
+.kilo/
+.trae/
 tsconfig.tsbuildinfo
