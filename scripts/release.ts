@@ -2,7 +2,7 @@ import { writeFile, stat } from 'fs/promises';
 import { execSync } from 'child_process';
 import dedent from 'dedent';
 import { join } from 'path';
-import { askConfirmation, createReadlineInterface, ensureGitSync } from './utils.js';
+import { askConfirmation, askQuestion, createReadlineInterface, ensureGitSync } from './utils.js';
 
 const rl = createReadlineInterface();
 
@@ -69,13 +69,12 @@ async function createTag(): Promise<void> {
 }
 
 async function doCommit(currentVersion: string | undefined, tag: string): Promise<void> {
-  rl.question(
+  const message = await askQuestion(
     `Enter the commit message for version ${currentVersion}: `,
-    async (message) => {
-      doNextSteps(message, tag);
-      rl.close();
-    }
+    rl
   );
+  rl.close();
+  await doNextSteps(message, tag);
 }
 
 async function doNextSteps(message: string, tag: string): Promise<void> {

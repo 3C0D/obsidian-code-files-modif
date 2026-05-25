@@ -1,6 +1,5 @@
 import path from 'path';
-import { copyFile, stat } from 'fs/promises';
-import { cp } from 'fs/promises';
+import { copyFile, stat, cp } from 'fs/promises';
 
 /**
  * Copy a file only if the destination doesn't exist or is older than the source.
@@ -45,16 +44,8 @@ async function smartCopyFile(src: string, dest: string): Promise<void> {
  */
 async function smartCopyDir(src: string, dest: string): Promise<void> {
   try {
-    const [srcStat, destStat] = await Promise.all([
-      stat(src).catch(() => null),
-      stat(dest).catch(() => null)
-    ]);
-    if (!srcStat || !destStat || srcStat.mtime > destStat.mtime) {
-      console.log(`[build] Copying ${dest}`);
-      await cp(src, dest, { recursive: true });
-    } else {
-      console.log(`[build] Skipping ${dest} (unchanged)`);
-    }
+    console.log(`[build] Copying ${dest}`);
+    await cp(src, dest, { recursive: true });
   } catch {
     console.log(`[build] Copying ${dest} (fallback)`);
     await cp(src, dest, { recursive: true });

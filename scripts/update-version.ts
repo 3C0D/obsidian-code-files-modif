@@ -55,9 +55,10 @@ async function getTargetVersion(currentVersion: string): Promise<string> {
     case 'maj':
     case '3':
       return incrementVersion(currentVersion, 'major');
-    default:
+    default: {
       const trimmed = updateType.trim();
       return isValidVersion(trimmed) ? trimmed : '';
+    }
   }
 }
 
