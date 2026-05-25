@@ -108,7 +108,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         });
       });
 
-    containerEl.createEl('p', {
+    const activeExtsEl = containerEl.createEl('p', {
       text:
         'Active: ' +
         (getActiveExtensions(this.plugin.settings).sort().join(', ') || 'none'),
@@ -116,6 +116,21 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         style: 'margin: -10px 0 16px 0; color: var(--text-muted); font-size: 0.9em;'
       }
     });
+
+    const debouncedExcludeChange = debounce(
+      async (value: string) => {
+        this.plugin.settings.excludedExtensions = value
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+        await this.plugin.saveSettings();
+        await reregisterExtensions(this.plugin);
+        activeExtsEl.textContent =
+          'Active: ' + (getActiveExtensions(this.plugin.settings).sort().join(', ') || 'none');
+      },
+      400,
+      true
+    );
 
     new Setting(containerEl)
       .setName('Excluded extensions')
@@ -126,14 +141,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         text
           .setPlaceholder('tmp, log, cache')
           .setValue(this.plugin.settings.excludedExtensions.join(', '))
-          .onChange(async (value) => {
-            this.plugin.settings.excludedExtensions = value
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-            await this.plugin.saveSettings();
-            await reregisterExtensions(this.plugin);
-          })
+          .onChange((value) => debouncedExcludeChange(value))
       );
 
     new Setting(containerEl)
