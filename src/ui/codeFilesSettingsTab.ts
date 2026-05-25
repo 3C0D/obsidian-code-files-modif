@@ -433,6 +433,22 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
           })
       );
 
+    const debouncedFolderChange = debounce(
+      async (value: string) => {
+        const prev = new Set(this.plugin.settings.excludedFolders);
+        const next = value
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+        const added = next.filter((f) => !prev.has(f));
+        this.plugin.settings.excludedFolders = next;
+        await this.plugin.saveSettings();
+        if (added.length > 0) await unrevealExcludedFolders(this.plugin, added);
+      },
+      400,
+      true
+    );
+
     new Setting(containerEl)
       .setName('Excluded folders')
       .setDesc(
@@ -442,19 +458,7 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         text
           .setPlaceholder('.git, node_modules, .trash')
           .setValue(this.plugin.settings.excludedFolders.join(', '))
-          .onChange(async (value) => {
-            const prev = new Set(this.plugin.settings.excludedFolders);
-            const next = value
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-
-            // Note: removed folders are not re-revealed automatically; user manages visibility manually
-            const added = next.filter((f) => !prev.has(f));
-            this.plugin.settings.excludedFolders = next;
-            await this.plugin.saveSettings();
-            if (added.length > 0) await unrevealExcludedFolders(this.plugin, added);
-          })
+          .onChange((value) => debouncedFolderChange(value))
       );
 
   }
