@@ -2,6 +2,14 @@
 
 Open and edit code files directly in Obsidian using a full Monaco Editor (the same editor as VS Code), with syntax highlighting, folding, line numbers, minimap, and validation.
 
+## Installation
+
+### Manual installation from releases
+
+- Download `obsidian-code-files-modif.zip` from the [Releases](https://github.com/3C0D/obsidian-code-files-modif/releases) page.
+- Unzip the archive into your vault's `.obsidian/plugins/obsidian-code-files-modif/` folder (create the folder if it does not exist).
+- Enable the plugin in Obsidian Settings → Community plugins.
+
 ---
 
 ## Features
