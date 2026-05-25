@@ -12,6 +12,10 @@ import { Platform } from 'obsidian';
 import { handleConsoleMessage, cleanupConsole, initConsole } from './consoleHandler.ts';
 import { getVaultBasePath } from '../../utils/fileUtils.ts';
 import { getExtension } from '../../utils/extensionUtils.ts';
+import {
+  isExplorerShortcutsEnabled,
+  setupExplorerHoverTracker
+} from './explorerShortcutsRelay.ts';
 
 // Desktop-only imports for drag-and-drop functionality
 let webUtils: { getPathForFile(file: File): string } | undefined;
@@ -77,6 +81,26 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
       }
       await loadProjectFiles(send);
       resolveReady();
+      return;
+    }
+
+    // Handle keydown/keyup relay from iframe (space + follow-up keys for obsidian-explorer-shortcuts etc.).
+    // Must be handled before context validation because these messages carry no 'context' field.
+    // Synthetic events are dispatched on the parent document so capture-phase listeners in
+    // other plugins can receive them with no cross-plugin coupling.
+    if (msg.type === 'keydown-relay' || msg.type === 'keyup-relay') {
+      const eventType = msg.type === 'keydown-relay' ? 'keydown' : 'keyup';
+      const synth = new KeyboardEvent(eventType, {
+        key: msg.key,
+        code: msg.code,
+        ctrlKey: msg.ctrlKey,
+        metaKey: msg.metaKey,
+        shiftKey: msg.shiftKey,
+        altKey: msg.altKey,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(synth);
       return;
     }
 
@@ -367,6 +391,14 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
     };
   }
 
+  // Only enable the obsidian-explorer-shortcuts hover tracker and relay if the third-party
+  // plugin is installed and enabled (and we are on Desktop). This completely isolates
+  // the feature: no mousemove listener and no 'explorer-hover' messages otherwise.
+  let cleanupHoverTracker: (() => void) | undefined;
+  if (isExplorerShortcutsEnabled(plugin.app)) {
+    cleanupHoverTracker = setupExplorerHoverTracker(send);
+  }
+
   return {
     handler: onMessage,
     /**
@@ -380,6 +412,7 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
       if (_paletteUninstall) _paletteUninstall();
       cleanupConsole(codeContext);
       _removeDragRelay?.();
+      cleanupHoverTracker?.();
     }
   };
 }

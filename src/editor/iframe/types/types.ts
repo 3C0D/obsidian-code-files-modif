@@ -99,6 +99,10 @@ export interface InitParams {
   background?: string;
   /** Height of the integrated console in pixels */
   consoleHeight?: number;
+  /** Whether the explorer-shortcuts relay (Space + key forwarding) is enabled.
+   * Only true on Desktop when obsidian-explorer-shortcuts plugin is installed and active.
+   */
+  enableExplorerShortcuts?: boolean;
 }
 
 /**
