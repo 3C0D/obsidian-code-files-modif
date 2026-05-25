@@ -1,1 +1,1 @@
-ok
+settingsTab fix and merged branch+cleaning
