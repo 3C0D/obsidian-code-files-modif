@@ -12,6 +12,11 @@ import { Platform } from 'obsidian';
 import { handleConsoleMessage, cleanupConsole, initConsole } from './consoleHandler.ts';
 import { getVaultBasePath } from '../../utils/fileUtils.ts';
 import { getExtension } from '../../utils/extensionUtils.ts';
+import {
+  isExplorerShortcutsEnabled,
+  setupExplorerHoverTracker,
+  handleKeyRelayMessage
+} from './explorerShortcutsRelay.ts';
 
 // Desktop-only imports for drag-and-drop functionality
 let webUtils: { getPathForFile(file: File): string } | undefined;
@@ -77,6 +82,12 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
       }
       await loadProjectFiles(send);
       resolveReady();
+      return;
+    }
+
+    // Handle keydown/keyup relay from iframe (Space + follow-up keys for obsidian-explorer-shortcuts).
+    if (msg.type === 'keydown-relay' || msg.type === 'keyup-relay') {
+      handleKeyRelayMessage(msg, plugin.app);
       return;
     }
 
@@ -367,6 +378,14 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
     };
   }
 
+  // Only enable the obsidian-explorer-shortcuts hover tracker and relay if the third-party
+  // plugin is installed and enabled (and we are on Desktop). This completely isolates
+  // the feature: no mousemove listener and no 'explorer-hover' messages otherwise.
+  let cleanupHoverTracker: (() => void) | undefined;
+  if (isExplorerShortcutsEnabled(plugin.app)) {
+    cleanupHoverTracker = setupExplorerHoverTracker(send);
+  }
+
   return {
     handler: onMessage,
     /**
@@ -380,6 +399,7 @@ export function buildMessageHandler(ctx: MessageHandlerContext): {
       if (_paletteUninstall) _paletteUninstall();
       cleanupConsole(codeContext);
       _removeDragRelay?.();
+      cleanupHoverTracker?.();
     }
   };
 }

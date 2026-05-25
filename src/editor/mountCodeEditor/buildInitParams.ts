@@ -4,6 +4,7 @@ import { getActiveExtensions } from '../../utils/extensionUtils.ts';
 import { getObsidianHotkey, parseHotkeyOverride } from '../../utils/hotkeyUtils.ts';
 import { resolveThemeParams } from '../../utils/themeUtils.ts';
 import { BUILTIN_THEMES, type InitParams } from '../../types/index.ts';
+import { isExplorerShortcutsEnabled } from './explorerShortcutsRelay.ts';
 
 /**
  * Builds the initParams object sent to the Monaco iframe on 'ready'.
@@ -75,7 +76,8 @@ export async function buildInitParams(
     settingsHotkey: finalSettingsHotkey,
     deleteFileHotkey: finalDeleteFileHotkey,
     consoleHotkey: finalConsoleHotkey,
-    consoleHeight: plugin.settings.consoleHeight
+    consoleHeight: plugin.settings.consoleHeight,
+    enableExplorerShortcuts: isExplorerShortcutsEnabled(plugin.app)
   };
 
   // If the editor is for a file with an extension that doesn't have a registered formatter,

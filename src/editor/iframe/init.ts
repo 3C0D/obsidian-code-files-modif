@@ -24,6 +24,11 @@ import {
 } from './actions.ts';
 import { setParentOrigin, getParentOrigin } from './utils.ts';
 import { initConsolePane, handleConsoleMessage, updateConsoleHotkey } from './console.ts';
+import {
+  setExplorerShortcutsEnabled,
+  setExplorerHover,
+  registerExplorerShortcutsRelay
+} from './explorerShortcutsRelay.ts';
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 let context: string | null = null;
@@ -272,6 +277,8 @@ function applyParams(params: InitParams): void {
   setSharedState(editor, context, currentLang);
   setFormatterContext(context);
   setActionsState(editor, context, runFormatWithDiff);
+  setExplorerShortcutsEnabled(!!params.enableExplorerShortcuts);
+  registerExplorerShortcutsRelay(editor);
   updateHotkeys(
     params.commandPaletteHotkey || null,
     params.settingsHotkey || null,
@@ -490,6 +497,10 @@ export function initMonacoApp(): void {
         break;
       case 'focus':
         if (editor) editor.focus();
+        break;
+      // obsidian-explorer-shortcuts hover tracker
+      case 'explorer-hover':
+        setExplorerHover(data.over);
         break;
       case 'scroll-to-position':
         if (editor && data.position) {

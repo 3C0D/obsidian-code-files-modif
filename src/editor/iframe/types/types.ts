@@ -55,6 +55,7 @@ export interface ProjectFile {
  * @property {HotkeyConfig | null} [commandPaletteHotkey] - Hotkey for opening the command palette
  * @property {HotkeyConfig | null} [settingsHotkey] - Hotkey for opening the plugin settings
  * @property {HotkeyConfig | null} [deleteFileHotkey] - Hotkey for deleting the current file
+ * @property {HotkeyConfig | null} [consoleHotkey] - Hotkey for toggling the integrated console
  * @property {boolean} [noSemanticValidation] - Advanced type checking for JS/TS
  * @property {boolean} [noSyntaxValidation] - Basic syntax error checking for JS/TS
  * @property {string} [projectRootFolder] - Vault-relative path for the project root
@@ -87,6 +88,8 @@ export interface InitParams {
   settingsHotkey?: HotkeyConfig | null;
   /** Hotkey for deleting the current file */
   deleteFileHotkey?: HotkeyConfig | null;
+  /** Hotkey for toggling the integrated console */
+  consoleHotkey?: HotkeyConfig | null;
   /** Advanced type checking and IntelliSense for JS/TS (inverse of plugin settings) */
   noSemanticValidation?: boolean;
   /** Basic syntax error checking for JS/TS (inverse of plugin settings) */
@@ -99,6 +102,10 @@ export interface InitParams {
   background?: string;
   /** Height of the integrated console in pixels */
   consoleHeight?: number;
+  /** Whether the explorer-shortcuts relay (Space + key forwarding) is enabled.
+   * Only true on Desktop when obsidian-explorer-shortcuts plugin is installed and active.
+   */
+  enableExplorerShortcuts?: boolean;
 }
 
 /**
