@@ -135,11 +135,11 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Excluded extensions')
       .setDesc(
-        'File extensions to always keep hidden, even when registered (without dot, comma-separated)'
+        'File extensions to exclude from Monaco, even when registered (without dot, comma-separated)'
       )
       .addText((text) =>
         text
-          .setPlaceholder('tmp, log, cache')
+          .setPlaceholder('tmp, log, bak')
           .setValue(this.plugin.settings.excludedExtensions.join(', '))
           .onChange((value) => debouncedExcludeChange(value))
       );
@@ -403,8 +403,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
   }
 
   /**
-    * Renders the Hidden Files settings section: auto-reveal toggle,
-    * and excluded folders.
+   * Renders the Hidden Files settings section: auto-reveal toggle,
+   * and excluded folders.
    *
    * @param containerEl HTMLElement where the section will be rendered
    */

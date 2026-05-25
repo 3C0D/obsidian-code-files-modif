@@ -1,6 +1,6 @@
 {
   "$schema": "https://app.kilo.ai/config.json",
   "commit_message": {
-    "prompt": "- Tu lances jamais prettier sans mon autorisation!!!\n- Pas de français dans le code que de l'anglais. Pareil pour les docs\n- Après avoir modifié un fichier, tu fais un lint, à la fin, pour vérifier s'il y a pas d'erreur. Ou sur tous les fichiers que t'as modifié. e.g: npx eslint src/utils/explorerUtils.ts"
+    "prompt": "- Lance lint avec discernement. Pas systématiquement sur des changements insignifiants!\n- Tu lances jamais prettier sans mon autorisation!!!\n- Pas de français dans le code que de l'anglais. Pareil pour les docs\n- Après avoir modifié un fichier, tu fais un lint, à la fin, pour vérifier s'il y a pas d'erreur. Ou sur tous les fichiers que t'as modifié. e.g: npx eslint src/utils/explorerUtils.ts"
   }
 }

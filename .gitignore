@@ -50,4 +50,6 @@ vs/
 
 #LLM
 .amazonq/*
+.kilo/*
+.trae/*
 tsconfig.tsbuildinfo
