@@ -111,8 +111,9 @@ export async function revealItems(
   itemPaths = itemPaths.map((p) => normalizePath(p));
   const adapter = getAdapter(plugin);
 
-  await reconcileAndRevealAll(plugin, adapter, itemPaths,
-    (itemPath, e) => console.error(`Reveal error ${itemPath}:`, e));
+  await reconcileAndRevealAll(plugin, adapter, itemPaths, (itemPath, e) =>
+    console.error(`Reveal error ${itemPath}:`, e)
+  );
 
   // Persist the revealed state in settings (only for manual reveals)
   if (persist) {

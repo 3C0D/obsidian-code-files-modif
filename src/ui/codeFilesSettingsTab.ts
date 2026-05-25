@@ -126,7 +126,8 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
         await this.plugin.saveSettings();
         await reregisterExtensions(this.plugin);
         activeExtsEl.textContent =
-          'Active: ' + (getActiveExtensions(this.plugin.settings).sort().join(', ') || 'none');
+          'Active: ' +
+          (getActiveExtensions(this.plugin.settings).sort().join(', ') || 'none');
       },
       400,
       true
@@ -460,7 +461,6 @@ export class CodeFilesSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.excludedFolders.join(', '))
           .onChange((value) => debouncedFolderChange(value))
       );
-
   }
 
   /**

@@ -4,7 +4,14 @@
  * If the new extension is unknown to both Code Files and Obsidian, offers to register it.
  * After renaming, reloads the leaf to open the file with the correct view for the new extension.
  */
-import { ButtonComponent, Modal, normalizePath, Notice, TextComponent, View } from 'obsidian';
+import {
+  ButtonComponent,
+  Modal,
+  normalizePath,
+  Notice,
+  TextComponent,
+  View
+} from 'obsidian';
 import type { TFile, WorkspaceLeaf } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 import { confirmation } from './confirmationModal.ts';

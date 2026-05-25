@@ -89,7 +89,9 @@ export function injectHeaderActions(context: HeaderActionsContext, file: TFile):
 
   // Extension has a native Obsidian viewer but is not managed by Code Files:
   // offer a way back to the default view.
-  const hasNativeViewer = !getActiveExtensions(context.plugin.settings).includes(ext) && context.plugin.app.viewRegistry.typeByExtension[ext];
+  const hasNativeViewer =
+    !getActiveExtensions(context.plugin.settings).includes(ext) &&
+    context.plugin.app.viewRegistry.typeByExtension[ext];
   if (hasNativeViewer && !context.noReturnAction) {
     context.returnAction = context.addAction(
       'undo-2',

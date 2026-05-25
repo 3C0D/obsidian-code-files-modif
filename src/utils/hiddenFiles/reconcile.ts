@@ -9,37 +9,37 @@ import type { DataAdapterWithInternal } from '../../types/index.ts';
  * Handles both Desktop (reconcileFileInternal) and Mobile (reconcileFileChanged) APIs.
  * Safely no-ops if the item no longer exists on disk (defensive).
  *
-  * @param adapter - The data adapter.
-  * @param itemPath - The normalized vault path.
-  * @param realPath - The real filesystem path.
-  * @returns The type that was actually reconciled, or null if the item did not exist.
+ * @param adapter - The data adapter.
+ * @param itemPath - The normalized vault path.
+ * @param realPath - The real filesystem path.
+ * @returns The type that was actually reconciled, or null if the item did not exist.
  */
-  export async function reconcileItem(
-    adapter: DataAdapterWithInternal,
-    itemPath: string,
-    realPath: string
-  ): Promise<'file' | 'folder' | null> {
-    const stat = await adapter.stat(itemPath);
-    if (!stat) return null; // item no longer exists — defensive no-op
+export async function reconcileItem(
+  adapter: DataAdapterWithInternal,
+  itemPath: string,
+  realPath: string
+): Promise<'file' | 'folder' | null> {
+  const stat = await adapter.stat(itemPath);
+  if (!stat) return null; // item no longer exists — defensive no-op
 
-    if (stat.type === 'folder') {
-      await adapter.reconcileFolderCreation(realPath, itemPath);
-      return 'folder';
-    }
-
-    // file
-    if (adapter.reconcileFileInternal) {
-      await adapter.reconcileFileInternal(realPath, itemPath);
-    } else if (
-      adapter.fs?.stat &&
-      adapter.reconcileFileChanged &&
-      adapter.getFullRealPath
-    ) {
-      const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
-      // Mobile: reconcileFileChanged expects a file, not a folder
-      if (fsStat.type === 'file') {
-        await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
-      }
-    }
-    return 'file';
+  if (stat.type === 'folder') {
+    await adapter.reconcileFolderCreation(realPath, itemPath);
+    return 'folder';
   }
+
+  // file
+  if (adapter.reconcileFileInternal) {
+    await adapter.reconcileFileInternal(realPath, itemPath);
+  } else if (
+    adapter.fs?.stat &&
+    adapter.reconcileFileChanged &&
+    adapter.getFullRealPath
+  ) {
+    const fsStat = await adapter.fs.stat(adapter.getFullRealPath(realPath));
+    // Mobile: reconcileFileChanged expects a file, not a folder
+    if (fsStat.type === 'file') {
+      await adapter.reconcileFileChanged(realPath, itemPath, fsStat);
+    }
+  }
+  return 'file';
+}

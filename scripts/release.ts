@@ -2,7 +2,12 @@ import { writeFile, stat } from 'fs/promises';
 import { execSync } from 'child_process';
 import dedent from 'dedent';
 import { join } from 'path';
-import { askConfirmation, askQuestion, createReadlineInterface, ensureGitSync } from './utils.js';
+import {
+  askConfirmation,
+  askQuestion,
+  createReadlineInterface,
+  ensureGitSync
+} from './utils.js';
 
 const rl = createReadlineInterface();
 
