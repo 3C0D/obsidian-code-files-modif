@@ -57,7 +57,7 @@ export async function validateEnvironment(pluginDir: string): Promise<void> {
 export async function getBuildPath(
   pluginDir: string,
   manifest: Manifest,
-  _isProd: boolean,
+  isProd: boolean,
   rl: Interface
 ): Promise<string> {
   // In-place development: already inside a plugins folder
@@ -68,6 +68,12 @@ export async function getBuildPath(
 
   // External development
   const useRealVault = process.argv.includes('-r') || process.argv.includes('real');
+
+  // Production build without vault copy: build in place, no vault resolution needed
+  if (isProd && !useRealVault) {
+    return pluginDir;
+  }
+
   const envKey = useRealVault ? 'REAL_VAULT' : 'TEST_VAULT';
   const envPath = path.join(pluginDir, '.env');
 
