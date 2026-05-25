@@ -44,8 +44,16 @@ async function smartCopyFile(src: string, dest: string): Promise<void> {
  */
 async function smartCopyDir(src: string, dest: string): Promise<void> {
   try {
-    console.log(`[build] Copying ${dest}`);
-    await cp(src, dest, { recursive: true });
+    const [srcStat, destStat] = await Promise.all([
+      stat(src).catch(() => null),
+      stat(dest).catch(() => null)
+    ]);
+    if (!srcStat || !destStat || srcStat.mtime > destStat.mtime) {
+      console.log(`[build] Copying ${dest}`);
+      await cp(src, dest, { recursive: true });
+    } else {
+      console.log(`[build] Skipping ${dest} (unchanged)`);
+    }
   } catch {
     console.log(`[build] Copying ${dest} (fallback)`);
     await cp(src, dest, { recursive: true });
