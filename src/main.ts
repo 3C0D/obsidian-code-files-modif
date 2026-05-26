@@ -51,13 +51,17 @@ export default class CodeFilesPlugin extends Plugin {
   async onload(): Promise<void> {
     await loadSettings(this);
     const needsDetectNotice = ensureDetectAllExtensions(this);
+    // Patch modal open behavior to intercept settings close and broadcast hotkeys
     this._modalOpenPatch = patchModalOpen();
+
+    // Patch file open to route code files to the Monaco editor view
     this._openFilePatch = patchOpenFile(this);
     patchMenuOverlay(this);
 
-    // Initialize _lastHotkeys with current hotkey state to enable change detection
+    // Snapshot current hotkey state — used later to detect changes and broadcast updates
     this._lastHotkeys = serializeMonacoHotkeys(this.app, this.settings);
 
+    // Register the Monaco-based code editor view for all tracked extensions
     this.registerView(viewType, (leaf) => new CodeEditorView(leaf, this));
     initExtensions(this);
     addRibbonIcon(this);
@@ -69,9 +73,13 @@ export default class CodeFilesPlugin extends Plugin {
       if (needsDetectNotice) {
         showDetectAllExtensionsNotice();
       }
+
       updateProjectFolderHighlight(this);
+
+      // Remove revealedItems entries whose files no longer exist on disk
       await cleanStaleRevealedFiles(this);
-      // Verify projectRootFolder still exists on disk
+
+      // If the saved projectRootFolder was deleted externally, reset it
       if (this.settings.projectRootFolder) {
         const exists = await this.app.vault.adapter.exists(
           this.settings.projectRootFolder
@@ -81,25 +89,33 @@ export default class CodeFilesPlugin extends Plugin {
           await this.saveSettings();
         }
       }
+
+      // Restore dotfile visibility from persisted revealedItems
       await initRevealedFiles(this);
-      // Re-scan badges only if hidden folders were revealed (key "" in revealedItems)
+
+      // Badges and folder highlight only needed if hidden folders were manually revealed
       if (this.settings.revealedItems['']?.length) {
         rescanExplorerBadges(this);
         updateProjectFolderHighlight(this);
       }
     });
 
+    // Mount extension badges on explorer items (file-type indicators)
     setupExplorerBadges(this);
 
+    // Patch adapter to intercept reconcileDeletion (dotfile protection) and rename (drag-and-drop fix)
     this.register(patchAdapter(this));
+
+    // Patch registerExtensions / unregisterExtensions to sync dotfile visibility with extension state
     this.register(patchRegisterExtensions(this));
 
+    // Keep folder eye-badges in sync with revealedItems on any vault structural change
     const debouncedDecorateFolders = debounce(() => decorateFolders(this), 400);
     this.registerEvent(this.app.vault.on('create', debouncedDecorateFolders));
     this.registerEvent(this.app.vault.on('delete', debouncedDecorateFolders));
     this.registerEvent(this.app.vault.on('rename', debouncedDecorateFolders));
 
-    // Watch for tsconfig.json changes in the project root to update Monaco IntelliSense
+    // Broadcast updated project files to Monaco when tsconfig.json changes
     const onTsConfigChange = async (file: TAbstractFile): Promise<void> => {
       const root = this.settings.projectRootFolder;
       if (!root || file.path !== root + '/tsconfig.json') return;

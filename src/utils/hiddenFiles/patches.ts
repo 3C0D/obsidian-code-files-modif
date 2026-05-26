@@ -103,7 +103,11 @@ export function patchAdapter(plugin: CodeFilesPlugin): () => void {
         // instead of the final path — correct it to dest/filename.
         if ((src.split('/').pop() || '').startsWith('.')) {
           const filename = src.split('/').pop() || '';
-          dest = dest + '/' + filename;
+          // Drag-and-drop gives just the target folder; explicit rename gives the full path.
+          // Only append if dest doesn't already end with the filename.
+          if (dest.split('/').pop() !== filename) {
+            dest = dest + '/' + filename;
+          }
         }
         const result = await next.call(this, src, dest);
 
