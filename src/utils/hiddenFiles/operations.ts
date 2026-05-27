@@ -71,6 +71,16 @@ export async function revealFolderContents(
   }
 }
 
+/**
+ * Reveals an array of items by reconciling each with Obsidian's vault index.
+ * Folders are revealed recursively via revealFolderContents.
+ * Errors per-item are forwarded to the optional onError callback.
+ *
+ * @param plugin - The plugin instance.
+ * @param adapter - The data adapter.
+ * @param itemPaths - Normalized vault-relative paths to reconcile.
+ * @param onError - Optional per-item error handler.
+ */
 export async function reconcileAndRevealAll(
   plugin: CodeFilesPlugin,
   adapter: DataAdapterWithInternal,

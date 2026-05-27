@@ -8,6 +8,7 @@ import type { HiddenItem } from '../../types/index.ts';
 import { getAdapter } from './state.ts';
 import { isSymlink } from './symlink.ts';
 import { getMaxFileSize } from '../fileUtils.ts';
+import { getExtension } from '../extensionUtils.ts';
 
 /**
  * Scans a folder on the physical file system to find dotfiles and dot-folders
@@ -48,7 +49,7 @@ export async function scanDotEntries(
         if (parentPath !== folderPath) continue;
         if (isFolder && plugin.settings.excludedFolders.includes(basename)) continue;
         if (!isFolder) {
-          const ext = basename.substring(1).split('.').pop() || basename.substring(1);
+          const ext = getExtension(basename);
           if (plugin.settings.excludedExtensions.includes(ext)) continue;
         }
 
