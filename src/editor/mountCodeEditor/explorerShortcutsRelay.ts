@@ -20,8 +20,15 @@ export function setupExplorerHoverTracker(
   send: (type: string, payload: Record<string, unknown>) => void
 ): () => void {
   let mouseOverExplorer = false;
+  let isThrottling = false;
 
   const onMouseMove = (e: MouseEvent): void => {
+    if (isThrottling) return;
+    isThrottling = true;
+    window.requestAnimationFrame(() => {
+      isThrottling = false;
+    });
+
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const over = !!el?.closest(
       ".workspace-leaf-content[data-type='file-explorer'] .nav-files-container"
