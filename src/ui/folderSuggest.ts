@@ -17,7 +17,7 @@ import type CodeFilesPlugin from '../main.ts';
 export class FolderSuggest extends AbstractInputSuggest<TFolder> {
   constructor(
     private plugin: CodeFilesPlugin,
-    inputEl: HTMLInputElement,
+    private inputEl: HTMLInputElement,
     private onChoose: (folder: TFolder) => void
   ) {
     super(plugin.app, inputEl);
@@ -26,7 +26,7 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
   protected getSuggestions(query: string): TFolder[] {
     const includeRoot = false;
     const folders = this.plugin.app.vault.getAllFolders(includeRoot);
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
     if (!q) return folders;
 
     return (

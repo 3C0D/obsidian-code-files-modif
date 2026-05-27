@@ -172,11 +172,11 @@ export class CreateCodeFileModal extends Modal {
 
     this.close();
     const newPath = finalPath;
-    const basename = newPath.split('/').pop() ?? '';
+    const isHiddenPath = newPath.split('/').some((part) => part.startsWith('.'));
     const adapter = this.getAdapter();
 
     if (await adapter.exists(newPath)) {
-      if (basename.startsWith('.') && !this.app.vault.getAbstractFileByPath(newPath)) {
+      if (isHiddenPath && !this.app.vault.getAbstractFileByPath(newPath)) {
         await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath));
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
@@ -192,7 +192,7 @@ export class CreateCodeFileModal extends Modal {
 
     let newFile: TFile | null = null;
     try {
-      if (basename.startsWith('.')) {
+      if (isHiddenPath) {
         await adapter.write(newPath, '');
         await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath));
         await new Promise((resolve) => setTimeout(resolve, 50));

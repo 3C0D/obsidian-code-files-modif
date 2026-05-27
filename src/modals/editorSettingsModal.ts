@@ -169,10 +169,24 @@ export class EditorSettingsModal extends Modal {
           .setPlaceholder('e.g., my-project')
           .setValue(this.plugin.settings.projectRootFolder);
 
+        const applyNewRoot = async (newPath: string):Promise<void> => {
+          const oldRoot = this.plugin.settings.projectRootFolder;
+          // No-op if value hasn't changed — avoids triggering broadcasts and side effects unnecessarily
+          if (newPath === oldRoot) return;
+          this.plugin.settings.projectRootFolder = newPath;
+          await this.plugin.saveSettings();
+          await broadcastProjectFiles(this.plugin);
+          updateProjectFolderHighlight(this.plugin);
+          if (this.plugin.settings.showHiddenFiles) {
+            if (oldRoot) await unrevealProjectDotfiles(this.plugin, oldRoot);
+            if (newPath) await revealProjectDotfiles(this.plugin);
+          }
+          revealFolderInExplorer(this.plugin, newPath || oldRoot);
+        };
+
         // Validate on blur (when user leaves the field)
         text.inputEl.addEventListener('blur', async () => {
           const trimmed = text.inputEl.value.trim();
-          // No-op if value hasn't changed — avoids triggering broadcasts and side effects unnecessarily
           if (trimmed === this.plugin.settings.projectRootFolder) return;
           if (trimmed) {
             const folder = this.plugin.app.vault.getAbstractFileByPath(trimmed);
@@ -182,34 +196,11 @@ export class EditorSettingsModal extends Modal {
               return;
             }
           }
-          const oldRoot = this.plugin.settings.projectRootFolder;
-          this.plugin.settings.projectRootFolder = trimmed;
-          await this.plugin.saveSettings();
-          await broadcastProjectFiles(this.plugin);
-          updateProjectFolderHighlight(this.plugin);
-
-          if (this.plugin.settings.showHiddenFiles) {
-            if (oldRoot && oldRoot !== trimmed)
-              await unrevealProjectDotfiles(this.plugin, oldRoot);
-            if (trimmed) await revealProjectDotfiles(this.plugin);
-          }
-
-          if (trimmed) revealFolderInExplorer(this.plugin, trimmed);
+          await applyNewRoot(trimmed);
         });
 
         new FolderSuggest(this.plugin, text.inputEl, async (folder) => {
-          const oldRoot = this.plugin.settings.projectRootFolder;
-          this.plugin.settings.projectRootFolder = folder.path;
-          await this.plugin.saveSettings();
-          await broadcastProjectFiles(this.plugin);
-          updateProjectFolderHighlight(this.plugin);
-          if (this.plugin.settings.showHiddenFiles) {
-            if (oldRoot && oldRoot !== folder.path)
-              await unrevealProjectDotfiles(this.plugin, oldRoot);
-            await revealProjectDotfiles(this.plugin);
-          }
-
-          revealFolderInExplorer(this.plugin, folder);
+          await applyNewRoot(folder.path);
         });
       });
 
