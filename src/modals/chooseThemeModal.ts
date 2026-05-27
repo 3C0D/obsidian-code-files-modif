@@ -15,6 +15,7 @@ import { broadcastBrightness } from '../utils/broadcast.ts';
 export class ChooseThemeModal extends SuggestModal<string> {
   private originalTheme: string;
   private confirmed = false;
+  private lastPreviewedTheme: string | null = null;
 
   /**
    * @param plugin - The plugin instance
@@ -98,7 +99,10 @@ export class ChooseThemeModal extends SuggestModal<string> {
       };
       if (idx === -1 || !chooser?.values?.[idx]) return;
       chooser.setSelectedItem?.(idx, e);
-      this.applyTheme(chooser.values[idx]);
+      if (chooser.values[idx] !== this.lastPreviewedTheme) {
+        this.lastPreviewedTheme = chooser.values[idx];
+        this.applyTheme(chooser.values[idx]);
+      }
     });
   }
 
