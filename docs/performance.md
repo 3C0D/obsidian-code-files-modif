@@ -55,9 +55,11 @@ Each editor instance exposes `editor.ready: Promise<void>`. Callers like `openIn
 
 `decorateFolders()` (eye badge updates) is debounced at 400ms on vault create/delete/rename events, preventing rapid successive calls during bulk operations.
 
-## 9. Auto-Reveal Yielding
+## 10. Mouse Event Optimizations
 
-`syncExtensionDotfiles ()` yields every 30 folders during scanning to avoid blocking the UI thread in large vaults.
+The plugin uses targeted mechanisms to reduce CPU usage during mouse movement:
+- **rAF Throttle**: High-frequency listeners (like the explorer-shortcuts relay) are throttled via `requestAnimationFrame` to run at most 60 times per second.
+- **Value Guards**: Logic like theme previewing uses a guard on the last processed value to avoid redundant updates when the mouse moves but remains on the same item.
 
 ---
 

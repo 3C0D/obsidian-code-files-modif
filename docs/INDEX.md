@@ -58,3 +58,4 @@ Run: git diff HEAD~10 HEAD -- src/
 Update the docs to reflect anything in the diff that is not already documented. Read index first to see how it's organized.
 Do not rewrite sections that are already accurate.
 Update ReadMe too if needed
+If needed update the readme too.

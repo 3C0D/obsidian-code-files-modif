@@ -86,9 +86,11 @@ Uses `'*'` as target origin because the iframe is loaded from a `blob:` URL whic
 window.parent.postMessage({ type: 'ready' }, getParentOrigin());
 window.parent.postMessage({ type: 'change', value, context }, getParentOrigin());
 ```
-Uses the captured parent origin (set during the `init` handshake). The `context` field is always the vault-relative file path, used to route messages to the correct editor instance when multiple files are open.
+Uses the captured parent origin (set during the `init` handshake). The `context` field is always the vault-relative file path, used to route messages to the correct editor instance when multiple files are open. Special messages like `ready`, `keydown-relay`, and `keyup-relay` are sent without a context and handled by the central dispatcher.
 
 **Parent listens** via `win.addEventListener('message', onMessage)` on the iframe's `contentWindow`. The `onMessage` handler in `messageHandler.ts` receives all messages FROM the iframe and dispatches them (spawn process, save settings, trigger navigation, etc.).
+
+**Explorer Shortcuts Relay:** A dedicated module `explorerShortcutsRelay.ts` on the parent side intercepts these relay messages and dispatches synthetic `KeyboardEvent`s to the parent document, allowing third-party plugins to react to keys pressed inside Monaco.
 
 **Security:** The parent message handler checks `event.source === iframe.contentWindow` to ignore messages from other iframes.
 
@@ -146,7 +148,7 @@ onload()
   ├─ ensureDetectAllExtensions()       → enables "show unsupported files" in Obsidian
   ├─ patchModalOpen()                  → fixes iframe focus crash on modal open
   ├─ patchOpenFile()                   → intercepts file opens to route to Monaco
-  ├─ patchMenuOverlay()                → adds file-type indicator to context menus
+  ├─ patchMenuOverlay()                → MutationObserver-based listener to add overlays to any Obsidian menu
   ├─ serializeMonacoHotkeys()          → snapshot for change detection
   ├─ registerView(viewType, factory)   → registers CodeEditorView
   ├─ initExtensions()                  → registers file extensions with Obsidian

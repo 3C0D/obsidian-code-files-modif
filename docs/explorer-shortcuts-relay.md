@@ -90,7 +90,7 @@ These are defined in `src/types/iframeMessages.ts` and handled before context va
 ## Future Considerations
 
 - If more third-party plugins need similar relay capabilities, the `handleKeyRelayMessage` function can be generalized or the hover detection made configurable.
-- Performance: one `mousemove` listener per open editor when the feature is enabled (acceptable because the listener is extremely cheap and only fires on actual mouse movement).
+- Performance: one `mousemove` listener per open editor when the feature is enabled. The listener is optimized with a **requestAnimationFrame (rAF) throttle** to ensure it only performs DOM checks at most once per frame (60fps), even if the mouse sends events at a higher frequency.
 
 ---
 
