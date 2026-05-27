@@ -51,8 +51,17 @@ export function patchMenuOverlay(plugin: CodeFilesPlugin): void {
     })
   );
 
-  // Add overlays globally when any context menu is opened
-  plugin.registerDomEvent(document.body, 'contextmenu', () => {
-    showOverlays();
+  // Add overlays globally when any Obsidian Menu appears in the DOM (right-click, three-dot button, etc.)
+  const menuObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of Array.from(mutation.addedNodes)) {
+        if (node instanceof HTMLElement && node.classList.contains('menu')) {
+          showOverlays();
+          return;
+        }
+      }
+    }
   });
+  menuObserver.observe(document.body, { childList: true });
+  plugin.register(() => menuObserver.disconnect());
 }
