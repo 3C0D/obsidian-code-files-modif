@@ -1,1 +1,1 @@
-settingsTab fix and merged branch+cleaning
+fusion branch explorer shortcuts and some fixes
