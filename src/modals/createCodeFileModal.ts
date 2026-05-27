@@ -13,7 +13,7 @@ import {
   TFile
 } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
-import { getRealPathSafe } from '../utils/fileUtils.ts';
+import { getRealPathSafe, isHiddenPath } from '../utils/fileUtils.ts';
 import { openInMonacoLeaf } from '../editor/codeEditorView/editorOpeners.ts';
 import { ChooseExtensionModal } from './chooseExtensionModal.ts';
 import { ExtensionSuggest } from '../ui/extensionSuggest.ts';
@@ -172,11 +172,10 @@ export class CreateCodeFileModal extends Modal {
 
     this.close();
     const newPath = finalPath;
-    const isHiddenPath = newPath.split('/').some((part) => part.startsWith('.'));
     const adapter = this.getAdapter();
 
     if (await adapter.exists(newPath)) {
-      if (isHiddenPath && !this.app.vault.getAbstractFileByPath(newPath)) {
+      if (isHiddenPath(newPath) && !this.app.vault.getAbstractFileByPath(newPath)) {
         await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath));
         await new Promise((resolve) => setTimeout(resolve, 50));
       }
@@ -192,7 +191,7 @@ export class CreateCodeFileModal extends Modal {
 
     let newFile: TFile | null = null;
     try {
-      if (isHiddenPath) {
+      if (isHiddenPath(newPath)) {
         await adapter.write(newPath, '');
         await reconcileItem(adapter, newPath, getRealPathSafe(adapter, newPath));
         await new Promise((resolve) => setTimeout(resolve, 50));

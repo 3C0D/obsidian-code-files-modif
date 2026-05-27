@@ -8,6 +8,18 @@ import type { App } from 'obsidian';
 import type CodeFilesPlugin from '../main.ts';
 
 /**
+ * Checks if a path contains any component starting with a dot.
+ * This identifies files or folders that Obsidian treats as hidden.
+ *
+ * @param path - The vault-relative path to check.
+ * @returns True if the path or any of its parents is hidden.
+ */
+export function isHiddenPath(path: string): boolean {
+  if (!path) return false;
+  return path.split('/').some((part) => part.startsWith('.'));
+}
+
+/**
  * Gets the maximum file size in bytes from the plugin settings.
  * Defaults to 10MB if not configured.
  */
