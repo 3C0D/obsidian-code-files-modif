@@ -32,7 +32,7 @@ Obsidian's file watcher calls `adapter.reconcileDeletion()` whenever it detects 
 - Otherwise → allow through (normal file deletion)
 
 ### rename Patch
-Fixes drag-and-drop for dotfiles (Obsidian passes folder as dest instead of full path) and updates `revealedItems` settings on rename. The patch intelligently handles destination paths, ensuring the filename is only appended if it's not already present (fixing edge cases where Obsidian provides the full path).
+Fixes drag-and-drop for dotfiles (Obsidian passes folder as dest instead of full path) and updates `revealedItems` settings on rename.
 
 ### vault.trash Patch
 Sets `_bypassPatch = true` during trash operations so the reconcileDeletion patch allows the deletion to proceed.
