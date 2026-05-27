@@ -185,8 +185,34 @@ export async function unrevealItems(
 }
 
 /**
- * Reveals a file temporarily (e.g. when restoring workspace state).
- * Tracks the file in temporaryRevealedPaths so it can be unrevealed on close.
+ * Reveals a file temporarily when Obsidian restores the active leaf on startup.
+ * Called from setState before onLayoutReady — the vault index may not yet reflect
+ * the revealed state of hidden folders.
+ *
+ * Two concerns must be addressed, independently:
+ *
+ * CONCERN 1 — PARENT HIERARCHY
+ *   Revealing a file before its parent folder is registered in the vault creates an
+ *   invalid hierarchy that reconcileFolderCreation can later invalidate. If a covering
+ *   entry exists in revealedItems (the file is a direct item or a descendant), reveal
+ *   that entry first so the parent folder is registered before the file.
+ *
+ * CONCERN 2 — FILE ITSELF
+ *   revealFolderContents skips children whose basename starts with '.' (hidden children).
+ *   So revealing the covering entry (step 1) does NOT necessarily reconcile the target
+ *   file. Always check after step 1 and reveal the file directly if still absent.
+ *   This also covers the case where there is no covering entry at all.
+ *
+ * CONCERN 3 — RECONCILE PROTECTION
+ *   Between this call and initRevealedFiles (onLayoutReady), Obsidian's background
+ *   reconciler may call reconcileDeletion for the file. Dot-basename files are protected
+ *   by patchAdapter's dot-prefix guard. Non-dot basenames inside dot-folders are NOT —
+ *   their only protection is an entry in temporaryRevealedPaths.
+ *   Files managed by isAutoRevealRegisteredDotfile are excluded: they have dot basenames
+ *   (protected by the dot guard) and are re-revealed by the dotfile scan at onLayoutReady.
+ *
+ * On close, cleanupTemporaryReveal skips the actual unreveal if the file is covered by a
+ * manually revealed entry (manuallyRevealed check), so over-tracking here is safe.
  */
 export async function handleTemporaryReveal(
   plugin: CodeFilesPlugin,
@@ -195,19 +221,40 @@ export async function handleTemporaryReveal(
   const normalizedPath = normalizePath(filePath);
   const stat = await plugin.app.vault.adapter.stat(normalizedPath);
   if (!stat || stat.type === 'folder') return;
+
+  // Compute once — used in both the reveal guard and the tracking decision.
+  const configDir = plugin.app.vault.configDir;
+  const isExternalFile = normalizedPath.startsWith(configDir + '/');
+  const ext = getExtension(normalizedPath.split('/').pop() || '');
+  const isManagedByAutoReveal =
+    !isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
+
   if (!plugin.app.vault.getAbstractFileByPath(normalizedPath)) {
-    const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
-    await revealItems(plugin, folderPath, [normalizedPath], false); // silent, no persist
+    // --- CONCERN 1: establish parent folder hierarchy via covering entry ---
+    const allRevealedItems = Object.values(plugin.settings.revealedItems).flat();
+    const coveringEntry = allRevealedItems.find(
+      (p) => normalizedPath === p || normalizedPath.startsWith(p + '/')
+    );
+    if (coveringEntry) {
+      // Reveal the covering entry (e.g. the dot-folder) so its parent is registered in the
+      // vault before we reconcile the target file. Without this, reconcileFolderCreation
+      // called later by initRevealedFiles can invalidate the file's vault entry.
+      const coveringFolderPath =
+        coveringEntry.substring(0, coveringEntry.lastIndexOf('/')) || '';
+      await revealItems(plugin, coveringFolderPath, [coveringEntry], false);
+      // Do NOT return here: revealFolderContents skips dot-basename children (concern 2).
+    }
 
-    // Track as temporary unless managed by isAutoRevealRegisteredDotfile.
-    // External files (configDir) are always tracked because they're never
-    // managed by isAutoRevealRegisteredDotfile (which only scans dotfiles).
-    const configDir = plugin.app.vault.configDir;
-    const isExternalFile = normalizedPath.startsWith(configDir + '/');
-    const ext = getExtension(normalizedPath.split('/').pop() || '');
-    const isManagedByAutoReveal =
-      !isExternalFile && ext && getActiveExtensions(plugin.settings).includes(ext);
+    // --- CONCERN 2: ensure the file itself is reconciled ---
+    // Needed when: no covering entry, OR the target has a dot basename (skipped by
+    // revealFolderContents even after the covering entry was revealed above).
+    if (!plugin.app.vault.getAbstractFileByPath(normalizedPath)) {
+      const folderPath =
+        normalizedPath.substring(0, normalizedPath.lastIndexOf('/')) || '';
+      await revealItems(plugin, folderPath, [normalizedPath], false); // silent, no persist
+    }
 
+    // --- CONCERN 3: track for patchAdapter reconcileDeletion protection ---
     if (
       !isManagedByAutoReveal &&
       !plugin.settings.temporaryRevealedPaths.includes(normalizedPath)
