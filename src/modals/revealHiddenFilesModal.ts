@@ -39,57 +39,40 @@ export class RevealHiddenFilesModal extends Modal {
     this.renderLoading();
     await cleanStaleRevealedFiles(this.plugin);
 
-    const allFolderPaths = [
+    const registeredExts = getActiveExtensions(this.plugin.settings);
+    this.sections = [];
+
+    // Iterative queue: starts with non-hidden subfolders, expands with already-revealed
+    // hidden folders discovered during scanning (so they appear as normal subfolders).
+    const processed = new Set<string>();
+    const queue = [
       this.folderPath,
       ...(await collectSubfolderPaths(this.plugin, this.folderPath))
     ];
 
-    this.hasSubfolders = allFolderPaths.length > 1;
+    while (queue.length > 0) {
+      const fp = queue.shift()!;
+      if (processed.has(fp)) continue;
+      processed.add(fp);
 
-    // Always fetch registered extensions to pre-check the registration column on re-open
-    const registeredExts = getActiveExtensions(this.plugin.settings);
+      const section = await this.buildSection(fp, registeredExts);
+      if (!section) continue;
 
-    this.sections = [];
+      this.sections.push(section);
 
-    for (const folderPath of allFolderPaths) {
-      const revealed = this.plugin.settings.revealedItems[folderPath] || [];
-      const initialRevealed = new Set<string>(revealed);
-      const selected = new Set<string>(revealed);
-
-      const allItems = await scanDotEntries(this.plugin, folderPath);
-
-      const items = filterManualDotEntries(allItems, this.plugin);
-
-      if (items.length === 0) continue;
-
-      const itemPaths = new Set(items.map((i) => i.path));
-
-      // Sync settings: remove stale entries that are now auto-managed
-      const current = this.plugin.settings.revealedItems[folderPath] || [];
-      const cleaned = current.filter((p) => itemPaths.has(p));
-      if (cleaned.length !== current.length) {
-        setRevealedItemsEntry(this.plugin, folderPath, cleaned);
-        await this.plugin.saveSettings();
-        decorateFolders(this.plugin);
+      // Expand queue: already-revealed hidden folders behave like normal subfolders
+      for (const item of section.items) {
+        if (
+          item.isFolder &&
+          section.initialRevealed.has(item.path) &&
+          !processed.has(item.path)
+        ) {
+          queue.push(item.path);
+        }
       }
-
-      this.sections.push({
-        folderPath,
-        items,
-        initialRevealed: new Set([...initialRevealed].filter((p) => itemPaths.has(p))),
-        selected: new Set([...selected].filter((p) => itemPaths.has(p))),
-        selectedForRegistration: new Set(
-          items
-            .filter((item) => {
-              if (item.isFolder) return false;
-              const ext = getExtension(item.name);
-              return ext !== null && registeredExts.includes(ext);
-            })
-            .map((item) => item.path)
-        )
-      });
     }
 
+    this.hasSubfolders = processed.size > 1;
     this.render();
   }
 
@@ -99,6 +82,85 @@ export class RevealHiddenFilesModal extends Modal {
     contentEl.addClass('hidden-files-modal');
     this.renderTitle(contentEl, false);
     contentEl.createEl('p', { text: 'Scanning folder...' });
+  }
+
+  /**
+   * Scans a folder path and builds a FolderSection, or returns null if no dot entries found.
+   * Handles settings sync (removes stale revealed entries that became auto-managed).
+   */
+  private async buildSection(
+    folderPath: string,
+    registeredExts: string[]
+  ): Promise<FolderSection | null> {
+    const revealed = this.plugin.settings.revealedItems[folderPath] || [];
+    const initialRevealed = new Set<string>(revealed);
+    const selected = new Set<string>(revealed);
+
+    const allItems = await scanDotEntries(this.plugin, folderPath);
+    const items = filterManualDotEntries(allItems, this.plugin);
+
+    if (items.length === 0) return null;
+
+    const itemPaths = new Set(items.map((i) => i.path));
+
+    // Sync settings: remove stale entries that are now auto-managed
+    const current = this.plugin.settings.revealedItems[folderPath] || [];
+    const cleaned = current.filter((p) => itemPaths.has(p));
+    if (cleaned.length !== current.length) {
+      setRevealedItemsEntry(this.plugin, folderPath, cleaned);
+      await this.plugin.saveSettings();
+      decorateFolders(this.plugin);
+    }
+
+    return {
+      folderPath,
+      items,
+      initialRevealed: new Set([...initialRevealed].filter((p) => itemPaths.has(p))),
+      selected: new Set([...selected].filter((p) => itemPaths.has(p))),
+      selectedForRegistration: new Set(
+        items
+          .filter((item) => {
+            if (item.isFolder) return false;
+            const ext = getExtension(item.name);
+            return ext !== null && registeredExts.includes(ext);
+          })
+          .map((item) => item.path)
+      )
+    };
+  }
+
+  /**
+   * Scans a newly-revealed hidden folder and inserts its section right after its parent's
+   * section. No-op if a section for this folder already exists.
+   */
+  private async expandHiddenFolder(
+    folderPath: string,
+    parentFolderPath: string
+  ): Promise<void> {
+    if (this.sections.find((s) => s.folderPath === folderPath)) return;
+
+    const registeredExts = getActiveExtensions(this.plugin.settings);
+    const section = await this.buildSection(folderPath, registeredExts);
+    if (!section) return; // No hidden items inside — nothing to show
+
+    const parentIdx = this.sections.findIndex((s) => s.folderPath === parentFolderPath);
+    const insertAt = parentIdx === -1 ? this.sections.length : parentIdx + 1;
+    this.sections.splice(insertAt, 0, section);
+
+    this.hasSubfolders = true;
+    this.render();
+  }
+
+  /**
+   * Removes the section for a hidden folder that was just unchecked.
+   * No-op if no section exists for this folder.
+   */
+  private collapseHiddenFolder(folderPath: string): void {
+    const idx = this.sections.findIndex((s) => s.folderPath === folderPath);
+    if (idx === -1) return;
+    this.sections.splice(idx, 1);
+    this.hasSubfolders = this.sections.length > 1;
+    this.render();
   }
 
   private renderTitle(contentEl: HTMLElement, hasSubfolders: boolean): void {
@@ -322,9 +384,16 @@ export class RevealHiddenFilesModal extends Modal {
         });
       }
 
-      revealCb.addEventListener('change', () => {
-        if (revealCb.checked) section.selected.add(item.path);
-        else section.selected.delete(item.path);
+      revealCb.addEventListener('change', async () => {
+        if (revealCb.checked) {
+          section.selected.add(item.path);
+          // Revealed hidden folder: scan and insert its own section right after the parent
+          if (item.isFolder) await this.expandHiddenFolder(item.path, section.folderPath);
+        } else {
+          section.selected.delete(item.path);
+          // Hidden folder unchecked: collapse its section
+          if (item.isFolder) this.collapseHiddenFolder(item.path);
+        }
         masterReveal.checked = section.items.every((i) => section.selected.has(i.path));
         masterReveal.indeterminate = !masterReveal.checked && section.selected.size > 0;
       });
