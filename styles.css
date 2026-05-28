@@ -253,3 +253,21 @@
 .hidden-files-subfolders-hint {
   opacity: 0.65;
 }
+
+/* Generic sticky footer for modals (same pattern as fence footer) */
+.modal:has(.code-files-modal-footer) {
+	display: flex;
+	flex-direction: column;
+}
+
+.modal:has(.code-files-modal-footer) .modal-content {
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+}
+
+.code-files-modal-footer {
+	flex-shrink: 0;
+	padding: 8px 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}

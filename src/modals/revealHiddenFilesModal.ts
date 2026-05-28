@@ -27,12 +27,12 @@ export class RevealHiddenFilesModal extends Modal {
   folderPath: string;
   private sections: FolderSection[] = [];
   private hasSubfolders = false;
+  private footerEl?: HTMLElement;
 
   constructor(plugin: CodeFilesPlugin, folderPath: string) {
     super(plugin.app);
     this.plugin = plugin;
-    this.folderPath = normalizePath(folderPath);
-    if (this.folderPath === '/') this.folderPath = '';
+    this.folderPath = normalizePath(folderPath) || '/';
   }
 
   async onOpen(): Promise<void> {
@@ -79,6 +79,10 @@ export class RevealHiddenFilesModal extends Modal {
   private renderLoading(): void {
     const { contentEl } = this;
     contentEl.empty();
+    if (this.footerEl) {
+      this.footerEl.remove();
+      this.footerEl = undefined;
+    }
     contentEl.addClass('hidden-files-modal');
     this.renderTitle(contentEl, false);
     contentEl.createEl('p', { text: 'Scanning folder...' });
@@ -183,6 +187,10 @@ export class RevealHiddenFilesModal extends Modal {
   private render(): void {
     const { contentEl } = this;
     contentEl.empty();
+    if (this.footerEl) {
+      this.footerEl.remove();
+      this.footerEl = undefined;
+    }
 
     const hasSubfolderSections = this.hasSubfolders || this.sections.length > 1;
     this.renderTitle(contentEl, hasSubfolderSections);
@@ -192,10 +200,10 @@ export class RevealHiddenFilesModal extends Modal {
         text: 'No hidden files found',
         cls: 'hidden-files-empty'
       });
-      const buttonContainer = contentEl.createDiv({
-        cls: 'modal-button-container'
+      this.footerEl = this.modalEl.createDiv({
+        cls: 'modal-button-container code-files-modal-footer'
       });
-      buttonContainer
+      this.footerEl
         .createEl('button', { text: 'Close' })
         .addEventListener('click', () => this.close());
       return;
@@ -224,9 +232,11 @@ export class RevealHiddenFilesModal extends Modal {
       this.renderSection(contentEl, this.sections[i], hasSubfolderSections);
     }
 
-    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    this.footerEl = this.modalEl.createDiv({
+      cls: 'modal-button-container code-files-modal-footer'
+    });
 
-    buttonContainer
+    this.footerEl
       .createEl('button', { text: 'Apply', cls: 'mod-cta' })
       .addEventListener('click', async () => {
         let anyRegistered = false;
@@ -284,7 +294,7 @@ export class RevealHiddenFilesModal extends Modal {
         this.close();
       });
 
-    buttonContainer
+    this.footerEl
       .createEl('button', { text: 'Cancel' })
       .addEventListener('click', () => this.close());
   }
@@ -300,7 +310,7 @@ export class RevealHiddenFilesModal extends Modal {
       });
       sectionHeader.createSpan({
         cls: 'u-pop hidden-files-folder-path',
-        text: section.folderPath || '(vault root)'
+        text: section.folderPath+' (vault root)'
       });
     }
 
