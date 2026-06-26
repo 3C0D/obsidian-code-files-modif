@@ -9,7 +9,7 @@ import {
   updateEnvFile,
   ensureEnvFile,
   promptForVaultPath
-} from '../utils.js';
+} from '../utils.ts';
 import { config } from 'dotenv';
 
 interface Manifest {

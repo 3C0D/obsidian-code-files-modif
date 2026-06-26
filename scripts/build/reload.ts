@@ -1,4 +1,4 @@
-import { OBSIDIAN_REST_PORT } from './constants.js';
+import { OBSIDIAN_REST_PORT } from './constants.ts';
 
 /**
  * Attempts to trigger "Reload app without saving" in Obsidian

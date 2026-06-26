@@ -4,18 +4,18 @@ import { config } from 'dotenv';
 import path from 'path';
 import { rm, mkdir } from 'fs/promises';
 import { type Interface } from 'readline';
-import { bundleFormatters } from './build/formatters.js';
-import { copyMonacoAssets, copyEditorFiles } from './build/assets.js';
-import { obsidianTypingsPlugin } from './build/typingsPlugin.js';
-import { EXTERNAL_DEPS, BANNER } from './build/constants.js';
+import { bundleFormatters } from './build/formatters.ts';
+import { copyMonacoAssets, copyEditorFiles } from './build/assets.ts';
+import { obsidianTypingsPlugin } from './build/typingsPlugin.ts';
+import { EXTERNAL_DEPS, BANNER } from './build/constants.ts';
 import {
   type Manifest,
   checkManifest,
   validateEnvironment,
   getBuildPath
-} from './build/env.js';
-import { copyFilesToTargetDir, createReadlineInterface, isValidPath } from './utils.js';
-import { reloadObsidian } from './build/reload.js';
+} from './build/env.ts';
+import { copyFilesToTargetDir, createReadlineInterface, isValidPath } from './utils.ts';
+import { reloadObsidian } from './build/reload.ts';
 
 // Determine the plugin directory (where the script is called from)
 const pluginDir = process.cwd();
