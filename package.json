@@ -1,6 +1,6 @@
 {
   "name": "obsidian-code-files-modif",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Code Files Modif",
   "type": "module",
   "main": "main.js",

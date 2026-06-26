@@ -1,7 +1,7 @@
 {
   "id": "obsidian-code-files-modif",
   "name": "Code Files Modif",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minAppVersion": "1.8.9",
   "description": "Open and edit code files in Obsidian with Monaco Editor",
   "author": "3C0D",
