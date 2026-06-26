@@ -1,1 +1,1 @@
-fusion branch explorer shortcuts and some fixes
+fix root path and config opti
