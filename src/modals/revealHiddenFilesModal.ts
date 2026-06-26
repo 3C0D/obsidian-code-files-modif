@@ -32,7 +32,8 @@ export class RevealHiddenFilesModal extends Modal {
   constructor(plugin: CodeFilesPlugin, folderPath: string) {
     super(plugin.app);
     this.plugin = plugin;
-    this.folderPath = normalizePath(folderPath) || '/';
+    this.folderPath = normalizePath(folderPath);
+    if (this.folderPath === '/') this.folderPath = '';
   }
 
   async onOpen(): Promise<void> {
@@ -310,7 +311,7 @@ export class RevealHiddenFilesModal extends Modal {
       });
       sectionHeader.createSpan({
         cls: 'u-pop hidden-files-folder-path',
-        text: section.folderPath+' (vault root)'
+        text: section.folderPath || '(vault root)'
       });
     }
 
